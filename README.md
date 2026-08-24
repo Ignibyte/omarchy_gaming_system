@@ -52,13 +52,39 @@ Expected response:
 ./scripts/check.sh
 ```
 
-This runs Rust formatting, Clippy, tests, and Docker Compose validation.
+This is an alias for the canonical fast gate. It runs Rust formatting, Clippy,
+tests, documentation, Compose validation, hook tests, shell syntax, and
+whitespace checks.
 
 Run the full server/database/QML health path without opening a window:
 
 ```bash
 ./scripts/dev.sh --smoke-test
 ```
+
+The delivery gate combines both levels and writes a worktree-bound commit
+receipt:
+
+```bash
+bin/gate.sh --diff
+```
+
+## Claude work pipeline
+
+Claude Code reads [CLAUDE.md](CLAUDE.md) and the binding
+[CONSTITUTION.md](CONSTITUTION.md). Feature work flows through:
+
+```text
+/work → /pipeline:plan → /pipeline:design → /pipeline:implement
+      → /pipeline:inspect → /pipeline:validate
+      → /pipeline:complete → /commit
+```
+
+The repository keeps tickets, active and completed pipeline narratives,
+architecture decisions, bulletins, and after-action lessons under
+`docs/planning/`. Claude hooks enforce phase ordering, knowledge recall, test
+execution, secret scanning, and a matching delivery receipt before code
+commits. The canonical gate remains usable without Claude.
 
 ## Layout
 
@@ -68,4 +94,6 @@ crates/server/     Rust API service
 docs/              Product and architecture decisions
 migrations/        PostgreSQL schema migrations
 scripts/           Local development commands
+.claude/           Claude commands and enforcement hooks
+bin/gate.sh        Canonical delivery gate
 ```
