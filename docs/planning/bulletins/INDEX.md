@@ -8,7 +8,6 @@ archive with a reason.
 
 | ID | Severity | Posted | Expires | Bulletin |
 |---|---|---|---|---|
-| `BUL-001-initial-push-pending` | warn | 2026-08-24 | — | GitHub has no `main` branch yet; the two existing commits and current workflow conversion are local, so CI remains remotely unconfirmed. |
 
 Severity: `critical`, `warn`, or `info`.
 
@@ -16,3 +15,4 @@ Severity: `critical`, `warn`, or `info`.
 
 | ID | Severity | Posted | Dismissed | Bulletin | Reason |
 |---|---|---|---|---|---|
+| `BUL-001-initial-push-pending` | warn | 2026-08-24 | 2026-08-25 | GitHub has no `main` branch yet; the two existing commits and current workflow conversion are local, so CI remains remotely unconfirmed. | Remote `main` was created and verified at commit `56965c7115fc35b2d0eaf11378bbe60ee1022ce1`. |
