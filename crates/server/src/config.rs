@@ -1,6 +1,7 @@
 use std::{env, net::SocketAddr};
 
 use anyhow::{Context, Result, anyhow};
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 
 use crate::mfa::MfaCipher;
 
@@ -8,11 +9,18 @@ const DEFAULT_BIND_ADDRESS: &str = "127.0.0.1:8080";
 const DEFAULT_DATABASE_URL: &str =
     "postgres://omarchy_gaming_system:omarchy_gaming_system@127.0.0.1:5432/omarchy_gaming_system";
 
-#[derive(Clone)]
 pub struct Config {
     pub bind_address: SocketAddr,
     pub database_url: String,
     pub mfa_cipher: MfaCipher,
+    pub provider: Option<ProviderConfig>,
+}
+
+pub struct ProviderConfig {
+    pub grant_signing_seed: [u8; 32],
+    pub pairwise_secret: Vec<u8>,
+    pub message_signing_seed: [u8; 32],
+    pub callback_authority: String,
 }
 
 impl Config {
@@ -28,13 +36,102 @@ impl Config {
             "OGS_MFA_ENCRYPTION_KEY is required and must be a base64url-encoded 32-byte key",
         )?;
         let mfa_cipher = parse_mfa_cipher(&encoded_mfa_key)?;
+        let provider = parse_provider_config([
+            env::var("OGS_PROVIDER_GRANT_SIGNING_SEED").ok(),
+            env::var("OGS_PROVIDER_PAIRWISE_SECRET").ok(),
+            env::var("OGS_PROVIDER_MESSAGE_SIGNING_SEED").ok(),
+            env::var("OGS_PROVIDER_CALLBACK_AUTHORITY").ok(),
+        ])?;
 
         Ok(Self {
             bind_address,
             database_url,
             mfa_cipher,
+            provider,
         })
     }
+}
+
+fn parse_provider_config(values: [Option<String>; 4]) -> Result<Option<ProviderConfig>> {
+    if values.iter().all(Option::is_none) {
+        return Ok(None);
+    }
+    if values.iter().any(Option::is_none) {
+        return Err(anyhow!(
+            "provider configuration is all-or-none: set grant seed, pairwise secret, message seed, and callback authority"
+        ));
+    }
+    let [
+        grant_seed,
+        pairwise_secret,
+        message_seed,
+        callback_authority,
+    ] = values.map(Option::unwrap);
+    let grant_signing_seed =
+        decode_exact_secret("OGS_PROVIDER_GRANT_SIGNING_SEED", &grant_seed, 32)?
+            .try_into()
+            .map_err(|_| anyhow!("OGS_PROVIDER_GRANT_SIGNING_SEED must decode to 32 bytes"))?;
+    let pairwise_secret =
+        decode_exact_secret("OGS_PROVIDER_PAIRWISE_SECRET", &pairwise_secret, 32)?;
+    let message_signing_seed =
+        decode_exact_secret("OGS_PROVIDER_MESSAGE_SIGNING_SEED", &message_seed, 32)?
+            .try_into()
+            .map_err(|_| anyhow!("OGS_PROVIDER_MESSAGE_SIGNING_SEED must decode to 32 bytes"))?;
+    if !valid_callback_authority(&callback_authority) {
+        return Err(anyhow!(
+            "OGS_PROVIDER_CALLBACK_AUTHORITY must be a lowercase DNS authority with an optional explicit port"
+        ));
+    }
+    Ok(Some(ProviderConfig {
+        grant_signing_seed,
+        pairwise_secret,
+        message_signing_seed,
+        callback_authority,
+    }))
+}
+
+fn decode_exact_secret(name: &str, encoded: &str, length: usize) -> Result<Vec<u8>> {
+    let decoded = URL_SAFE_NO_PAD
+        .decode(encoded)
+        .with_context(|| format!("{name} must be unpadded base64url"))?;
+    if decoded.len() != length {
+        return Err(anyhow!("{name} must decode to {length} bytes"));
+    }
+    Ok(decoded)
+}
+
+fn valid_callback_authority(value: &str) -> bool {
+    if value.is_empty()
+        || value.len() > 259
+        || value != value.to_ascii_lowercase()
+        || value
+            .chars()
+            .any(|character| matches!(character, '/' | '?' | '#' | '@'))
+    {
+        return false;
+    }
+    let (host, port) = match value.rsplit_once(':') {
+        Some((host, port))
+            if !port.is_empty() && port.bytes().all(|byte| byte.is_ascii_digit()) =>
+        {
+            (host, Some(port))
+        }
+        Some(_) => return false,
+        None => (value, None),
+    };
+    if port.is_some_and(|port| port.parse::<u16>().ok().is_none_or(|port| port == 0)) {
+        return false;
+    }
+    host.contains('.')
+        && host.split('.').all(|label| {
+            !label.is_empty()
+                && label.len() <= 63
+                && !label.starts_with('-')
+                && !label.ends_with('-')
+                && label
+                    .bytes()
+                    .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+        })
 }
 
 fn parse_mfa_cipher(encoded: &str) -> Result<MfaCipher> {
@@ -65,7 +162,8 @@ mod tests {
     use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 
     use super::{
-        DEFAULT_BIND_ADDRESS, DEFAULT_DATABASE_URL, parse_mfa_cipher, resolve_bind_address,
+        DEFAULT_BIND_ADDRESS, DEFAULT_DATABASE_URL, parse_mfa_cipher, parse_provider_config,
+        resolve_bind_address,
     };
 
     #[test]
@@ -119,5 +217,41 @@ mod tests {
             .expect("invalid key should fail");
         assert!(invalid.to_string().contains("OGS_MFA_ENCRYPTION_KEY"));
         assert!(parse_mfa_cipher(&URL_SAFE_NO_PAD.encode([0x44_u8; 31])).is_err());
+    }
+
+    #[test]
+    fn provider_configuration_is_absent_or_complete_and_exact() {
+        assert!(
+            parse_provider_config([None, None, None, None])
+                .expect("absent provider configuration should work")
+                .is_none()
+        );
+        assert!(
+            parse_provider_config([
+                Some(URL_SAFE_NO_PAD.encode([1_u8; 32])),
+                None,
+                Some(URL_SAFE_NO_PAD.encode([2_u8; 32])),
+                Some("callbacks.example.test".to_owned()),
+            ])
+            .is_err()
+        );
+        let complete = parse_provider_config([
+            Some(URL_SAFE_NO_PAD.encode([1_u8; 32])),
+            Some(URL_SAFE_NO_PAD.encode([2_u8; 32])),
+            Some(URL_SAFE_NO_PAD.encode([3_u8; 32])),
+            Some("callbacks.example.test:8443".to_owned()),
+        ])
+        .expect("complete provider configuration should parse")
+        .expect("provider should be enabled");
+        assert_eq!(complete.callback_authority, "callbacks.example.test:8443");
+        assert!(
+            parse_provider_config([
+                Some(URL_SAFE_NO_PAD.encode([1_u8; 31])),
+                Some(URL_SAFE_NO_PAD.encode([2_u8; 32])),
+                Some(URL_SAFE_NO_PAD.encode([3_u8; 32])),
+                Some("CALLBACKS.example.test".to_owned()),
+            ])
+            .is_err()
+        );
     }
 }

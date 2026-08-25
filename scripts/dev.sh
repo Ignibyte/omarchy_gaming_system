@@ -106,7 +106,9 @@ if [[ "$ogs_smoke_test" == true ]]; then
       version: 1,
       display_name: "Signal Siege",
       min_human_players: 1,
-      max_human_players: 1
+      max_human_players: 1,
+      authority: "platform_compiled",
+      provider_release_id: null
     }]' \
     <<<"$ogs_game_catalog" >/dev/null; then
     echo "Game catalog smoke did not advertise exact Signal Siege v1" >&2

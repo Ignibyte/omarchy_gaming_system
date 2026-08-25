@@ -88,6 +88,7 @@ if [[ "$ogs_mode" != "fast" ]]; then
   run_gate 15 "PostgreSQL integration tests" ./scripts/test-database.sh
   run_gate 16 "PostgreSQL + Rust API + QML smoke" ./scripts/dev.sh --smoke-test
   run_gate 17 "remote provider security conformance" ./scripts/test-provider-conformance.sh
+  run_gate 18 "first-party remote-provider authority pilot" ./scripts/test-provider-authority-pilot.sh
 fi
 
 if ((ogs_failures > 0)); then

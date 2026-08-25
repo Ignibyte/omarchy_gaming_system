@@ -72,6 +72,37 @@ pub enum CallbackDisposition {
     Duplicate,
 }
 
+/// Durable first-delivery policy selected by the platform projection layer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CallbackReceiptOutcome {
+    /// The authenticated event passed platform policy and may project.
+    Accepted,
+    /// The authenticated event failed platform policy and must never project.
+    Ignored,
+}
+
+/// Authenticated callback material. Construction is restricted to the broker,
+/// so platform code cannot accidentally project unverified JSON.
+pub struct AuthenticatedProviderEvent {
+    event: ProviderEvent,
+    body_sha256: String,
+    key_id: String,
+}
+
+impl AuthenticatedProviderEvent {
+    /// Exact verified provider event.
+    #[must_use]
+    pub fn event(&self) -> &ProviderEvent {
+        &self.event
+    }
+
+    /// Verification key identity suitable for bounded audit details.
+    #[must_use]
+    pub fn key_id(&self) -> &str {
+        &self.key_id
+    }
+}
+
 enum TransportProfile {
     Production,
     #[cfg(feature = "provider-conformance")]
@@ -100,6 +131,18 @@ impl ProviderBroker {
             message_signer,
             transport: TransportProfile::Production,
         }
+    }
+
+    /// Derive the exact opaque subject expected for one local participant.
+    /// This exposes no persona identifier or secret material.
+    pub fn pairwise_subject(
+        &self,
+        provider_id: &str,
+        game_key: &str,
+        persona_id: Uuid,
+    ) -> Result<String> {
+        self.grant_issuer
+            .pairwise_subject(provider_id, game_key, persona_id)
     }
 
     /// Construct the compile-time-gated exact loopback conformance broker.
@@ -400,13 +443,65 @@ impl ProviderBroker {
         body: &[u8],
         now: i64,
     ) -> Result<(CallbackDisposition, ProviderEvent)> {
+        let authenticated = self
+            .authenticate_callback(release_id, None, context, headers, body, now)
+            .await?;
+        let event = authenticated.event.clone();
+        let mut transaction = self
+            .registry
+            .pool()
+            .begin()
+            .await
+            .map_err(|error| map_database_error(error, "begin provider callback receipt"))?;
+        let disposition = self
+            .claim_callback_receipt(
+                &mut transaction,
+                &authenticated,
+                CallbackReceiptOutcome::Accepted,
+            )
+            .await?;
+        transaction
+            .commit()
+            .await
+            .map_err(|error| map_database_error(error, "commit provider callback receipt"))?;
+        self.registry
+            .record_security_event(
+                release_id,
+                "provider",
+                "registered_provider",
+                "callback_authenticated",
+                "recorded",
+                match disposition {
+                    CallbackDisposition::Accepted => "callback_accepted",
+                    CallbackDisposition::Duplicate => "callback_duplicate",
+                },
+                Some(event.message_id),
+                json!({
+                    "event_id": event.event_id,
+                    "provider_revision": event.revision,
+                    "key_id": authenticated.key_id
+                }),
+            )
+            .await?;
+        Ok((disposition, event))
+    }
+
+    /// Authenticate one exact provider callback without recording a receipt.
+    /// The optional expected subject binds the event to a locally owned
+    /// participant before the platform opens its projection transaction.
+    pub async fn authenticate_callback(
+        &self,
+        release_id: Uuid,
+        expected_subject: Option<&str>,
+        context: &RequestSignatureContext<'_>,
+        headers: &SignatureHeaders,
+        body: &[u8],
+        now: i64,
+    ) -> Result<AuthenticatedProviderEvent> {
         if release_id.is_nil() || context.release_id != release_id {
             return Err(ProviderError::InvalidInput);
         }
-        let material = self
-            .registry
-            .admit_callback(release_id, context.message_id)
-            .await?;
+        let material = self.registry.load_callback_material(release_id).await?;
         let authenticated = (|| {
             if context.provider_id != material.policy.provider_id {
                 return Err(ProviderError::ProtocolRejected);
@@ -423,6 +518,7 @@ impl ProviderBroker {
                 || event.rules_version != material.policy.rules_version
                 || event.cartridge_digest != material.policy.cartridge_digest
                 || event.message_id != context.message_id
+                || expected_subject.is_some_and(|subject| event.subject != subject)
             {
                 return Err(ProviderError::ProtocolRejected);
             }
@@ -446,29 +542,35 @@ impl ProviderBroker {
                 return Err(error);
             }
         };
-        let disposition = self
-            .record_callback_receipt(&event, &verified.body_sha256)
-            .await?;
-        self.registry
-            .record_security_event(
+        if let Err(error) = self
+            .registry
+            .admit_authenticated_callback(
                 release_id,
-                "provider",
-                "registered_provider",
-                "callback_authenticated",
-                "recorded",
-                match disposition {
-                    CallbackDisposition::Accepted => "callback_accepted",
-                    CallbackDisposition::Duplicate => "callback_duplicate",
-                },
-                Some(event.message_id),
-                json!({
-                    "event_id": event.event_id,
-                    "provider_revision": event.revision,
-                    "key_id": verified.key_id
-                }),
+                context.message_id,
+                &verified.key_id,
+                body.len(),
             )
-            .await?;
-        Ok((disposition, event))
+            .await
+        {
+            self.registry
+                .record_security_event(
+                    release_id,
+                    "provider",
+                    "registered_provider",
+                    "callback_rejected",
+                    "denied",
+                    error.code(),
+                    Some(context.message_id),
+                    json!({}),
+                )
+                .await?;
+            return Err(error);
+        }
+        Ok(AuthenticatedProviderEvent {
+            event,
+            body_sha256: verified.body_sha256,
+            key_id: verified.key_id,
+        })
     }
 
     async fn prepare_operation(
@@ -836,23 +938,23 @@ impl ProviderBroker {
         Ok(())
     }
 
-    async fn record_callback_receipt(
+    /// Claim an authenticated callback identity inside the caller's owning
+    /// projection transaction. The caller must lock the platform session root
+    /// first and commit this receipt together with every projection and sync
+    /// invalidation.
+    pub async fn claim_callback_receipt(
         &self,
-        event: &ProviderEvent,
-        body_digest: &str,
+        transaction: &mut Transaction<'_, Postgres>,
+        authenticated: &AuthenticatedProviderEvent,
+        outcome: CallbackReceiptOutcome,
     ) -> Result<CallbackDisposition> {
-        let mut transaction = self
-            .registry
-            .pool()
-            .begin()
-            .await
-            .map_err(|error| map_database_error(error, "begin provider callback receipt"))?;
+        let event = &authenticated.event;
         sqlx::query("SELECT release_id FROM provider_releases WHERE release_id = $1 FOR UPDATE")
             .bind(event.release_id)
-            .fetch_one(&mut *transaction)
+            .fetch_one(&mut **transaction)
             .await
             .map_err(|error| map_database_error(error, "lock provider callback receipt root"))?;
-        let existing = sqlx::query_as::<_, MessageReceiptRow>(
+        let existing = sqlx::query_as::<_, CallbackMessageReceiptRow>(
             r#"
             SELECT message_id, event_id, authenticated_sha256, platform_session_id
             FROM provider_message_receipts
@@ -865,38 +967,44 @@ impl ProviderBroker {
         .bind(event.release_id)
         .bind(event.message_id)
         .bind(event.event_id)
-        .fetch_optional(&mut *transaction)
+        .fetch_optional(&mut **transaction)
         .await
         .map_err(|error| map_database_error(error, "load provider callback receipt"))?;
         if let Some(existing) = existing {
             if existing.message_id == event.message_id
                 && existing.event_id == Some(event.event_id)
-                && existing.authenticated_sha256 == body_digest
+                && existing.authenticated_sha256 == authenticated.body_sha256
                 && existing.platform_session_id == event.platform_session_id
             {
-                transaction
-                    .commit()
-                    .await
-                    .map_err(|error| map_database_error(error, "commit callback duplicate"))?;
                 return Ok(CallbackDisposition::Duplicate);
             }
             return Err(ProviderError::Conflict);
         }
         record_message_receipt(
-            &mut transaction,
+            transaction,
             event.release_id,
             "callback",
             event.message_id,
             event.platform_session_id,
             Some(event.event_id),
-            body_digest,
+            &authenticated.body_sha256,
             event.revision,
         )
         .await?;
-        transaction
-            .commit()
+        if outcome == CallbackReceiptOutcome::Ignored {
+            sqlx::query(
+                r#"
+                UPDATE provider_message_receipts
+                SET disposition = 'ignored'
+                WHERE release_id = $1 AND direction = 'callback' AND message_id = $2
+                "#,
+            )
+            .bind(event.release_id)
+            .bind(event.message_id)
+            .execute(&mut **transaction)
             .await
-            .map_err(|error| map_database_error(error, "commit provider callback receipt"))?;
+            .map_err(|error| map_database_error(error, "mark provider callback ignored"))?;
+        }
         Ok(CallbackDisposition::Accepted)
     }
 
@@ -956,6 +1064,13 @@ struct AttemptRootRow {
 
 #[derive(FromRow)]
 struct MessageReceiptRow {
+    event_id: Option<Uuid>,
+    authenticated_sha256: String,
+    platform_session_id: Uuid,
+}
+
+#[derive(FromRow)]
+struct CallbackMessageReceiptRow {
     message_id: Uuid,
     event_id: Option<Uuid>,
     authenticated_sha256: String,
@@ -975,7 +1090,7 @@ async fn record_message_receipt(
 ) -> Result<()> {
     let existing = sqlx::query_as::<_, MessageReceiptRow>(
         r#"
-        SELECT message_id, event_id, authenticated_sha256, platform_session_id
+        SELECT event_id, authenticated_sha256, platform_session_id
         FROM provider_message_receipts
         WHERE release_id = $1 AND direction = $2 AND message_id = $3
         FOR UPDATE

@@ -15,6 +15,98 @@ pub const MAX_TLS_ROOT_BYTES: usize = 32 * 1024;
 /// Exact Ed25519 public-key length.
 pub const ED25519_PUBLIC_KEY_BYTES: usize = 32;
 
+/// Operator-controlled lifecycle for the one enabled remote gameplay pilot.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PilotStatus {
+    /// Advertise the pilot and admit new and existing gameplay.
+    Active,
+    /// Hide the pilot and deny new launches while preserving recovery data.
+    Suspended,
+    /// Permanently disable the pilot. This transition is terminal.
+    Retired,
+}
+
+impl PilotStatus {
+    /// Stable database representation.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Active => "active",
+            Self::Suspended => "suspended",
+            Self::Retired => "retired",
+        }
+    }
+}
+
+/// One platform-owned achievement definition accepted from an exact release.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct AchievementDefinitionInput {
+    /// Canonical game-scoped claim key.
+    pub key: String,
+    /// Public display label.
+    pub display_name: String,
+    /// Public bounded explanation.
+    pub description: String,
+}
+
+impl AchievementDefinitionInput {
+    fn validate(&self) -> Result<()> {
+        if !is_identifier(&self.key, 2, 48, b"-_")
+            || !is_display_name(&self.display_name)
+            || self.display_name.chars().count() > 96
+            || self.description.is_empty()
+            || self.description.chars().count() > 256
+            || self.description.chars().any(char::is_control)
+        {
+            Err(ProviderError::InvalidInput)
+        } else {
+            Ok(())
+        }
+    }
+}
+
+/// Complete operator-pinned public policy for the sole remote pilot release.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ActivatePilotInput {
+    /// Exact previously registered release.
+    pub release_id: Uuid,
+    /// Public catalog label.
+    pub display_name: String,
+    /// Minimum supported human participants.
+    pub min_human_players: u8,
+    /// Maximum supported human participants.
+    pub max_human_players: u8,
+    /// Exact platform-owned achievement allowlist.
+    pub achievements: Vec<AchievementDefinitionInput>,
+}
+
+impl ActivatePilotInput {
+    /// Validate public policy before database work.
+    pub fn validate(&self) -> Result<()> {
+        if self.release_id.is_nil()
+            || !is_display_name(&self.display_name)
+            || self.display_name.chars().count() > 64
+            || self.min_human_players == 0
+            || self.max_human_players < self.min_human_players
+            || self.max_human_players > 8
+            || self.achievements.len() > 64
+        {
+            return Err(ProviderError::InvalidInput);
+        }
+        require_unique(
+            self.achievements
+                .iter()
+                .map(|definition| definition.key.as_str()),
+        )?;
+        self.achievements
+            .iter()
+            .try_for_each(AchievementDefinitionInput::validate)
+    }
+}
+
 /// Mutable lifecycle for providers, releases, scopes, and operational keys.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -38,6 +130,7 @@ impl LifecycleStatus {
         }
     }
 
+    #[cfg(feature = "platform")]
     pub(crate) fn parse(value: &str) -> Result<Self> {
         match value {
             "active" => Ok(Self::Active),
@@ -101,6 +194,7 @@ impl ActiveSessionPolicy {
         }
     }
 
+    #[cfg(feature = "platform")]
     pub(crate) fn parse(value: &str) -> Result<Self> {
         match value {
             "terminate" => Ok(Self::Terminate),
@@ -431,6 +525,26 @@ pub enum OperatorCommand {
         /// Complete replacement quotas.
         quotas: ProviderQuotas,
     },
+    /// Enable one exact registered release as the sole remote gameplay pilot.
+    ActivatePilot {
+        /// Audited operator identity.
+        actor: String,
+        /// Audited reason.
+        reason: String,
+        /// Complete public pilot policy.
+        pilot: ActivatePilotInput,
+    },
+    /// Suspend, restore, or permanently retire an activated pilot.
+    SetPilotStatus {
+        /// Audited operator identity.
+        actor: String,
+        /// Audited reason.
+        reason: String,
+        /// Exact pilot release.
+        release_id: Uuid,
+        /// Requested pilot lifecycle.
+        status: PilotStatus,
+    },
 }
 
 impl OperatorCommand {
@@ -462,7 +576,8 @@ impl OperatorCommand {
             }
             Self::SetReleaseStatus { release_id, .. }
             | Self::SetScopeStatus { release_id, .. }
-            | Self::UpdateQuotas { release_id, .. } => {
+            | Self::UpdateQuotas { release_id, .. }
+            | Self::SetPilotStatus { release_id, .. } => {
                 if release_id.is_nil() {
                     Err(ProviderError::InvalidInput)
                 } else if let Self::UpdateQuotas { quotas, .. } = self {
@@ -480,6 +595,7 @@ impl OperatorCommand {
                     Ok(())
                 }
             }
+            Self::ActivatePilot { pilot, .. } => pilot.validate(),
         }
     }
 
@@ -491,7 +607,9 @@ impl OperatorCommand {
             | Self::SetReleaseStatus { actor, reason, .. }
             | Self::SetScopeStatus { actor, reason, .. }
             | Self::SetKeyStatus { actor, reason, .. }
-            | Self::UpdateQuotas { actor, reason, .. } => (actor, reason),
+            | Self::UpdateQuotas { actor, reason, .. }
+            | Self::ActivatePilot { actor, reason, .. }
+            | Self::SetPilotStatus { actor, reason, .. } => (actor, reason),
         }
     }
 }

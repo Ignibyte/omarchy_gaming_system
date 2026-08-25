@@ -61,6 +61,11 @@ and in this register.
 | `PR-omarchy-gaming-system-advance-durable-phase-before-phase-tools-001` | Record the completed validation phase in the active spec before invoking a phase-gated completion tool, then read back the tool receipt. | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
 | `PR-omarchy-gaming-system-serialize-dedupe-on-existing-root-001` | When a deduplication receipt may not exist, lock a guaranteed durable domain root before the first-read/insert decision and prove simultaneous first delivery. | `aar/AAR-018-production-remote-provider-security-foundation.md` |
 | `PR-omarchy-gaming-system-classify-provider-egress-by-global-allocation-001` | Classify provider destinations from the positively allocated global address space, then exclude current special-purpose ranges and test translation/reserved prefixes. | `aar/AAR-018-production-remote-provider-security-foundation.md` |
+| `PR-omarchy-gaming-system-preserve-first-callback-disposition-001` | Once an authenticated callback identity is durably accepted or ignored, an exact replay must preserve that first disposition instead of being reclassified by mutable current projection policy. | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `PR-omarchy-gaming-system-charge-authenticated-quota-after-authentication-001` | Charge shared authenticated-message quota only after exact signature/context/body verification, then recheck current key, lifecycle, and bounds before committing the charge. | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `PR-omarchy-gaming-system-layer-pilot-lifecycle-into-every-admission-001` | When a narrow activation lifecycle overlays a general provider release, lock and evaluate it at every launch, command, reconcile, event, and projection boundary. | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `PR-omarchy-gaming-system-use-one-provider-effect-lock-order-001` | Provider effect transactions acquire release, pilot, and session roots in one documented canonical order before receipts or projections. | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `PR-omarchy-gaming-system-gate-independent-executable-source-trees-001` | Every source tree that contributes an independently compiled executable or delivery proof must participate in the canonical gated-state hash. | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
 
 ## Register
 
@@ -188,3 +193,15 @@ and in this register.
 | `PR-omarchy-gaming-system-serialize-dedupe-on-existing-root-001` | rule | `aar/AAR-018-production-remote-provider-security-foundation.md` |
 | `PR-omarchy-gaming-system-classify-provider-egress-by-global-allocation-001` | rule | `aar/AAR-018-production-remote-provider-security-foundation.md` |
 | `AD-omarchy-gaming-system-remote-provider-security-foundation-001` | decision | `../../architecture/game-cartridges.md` |
+| `BF-omarchy-gaming-system-provider-callback-replay-reclassification-001` | failure | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `BF-omarchy-gaming-system-provider-callback-preauth-quota-001` | failure | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `BF-omarchy-gaming-system-provider-pilot-lifecycle-admission-gap-001` | failure | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `BF-omarchy-gaming-system-provider-client-trust-expansion-001` | failure | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `BF-omarchy-gaming-system-provider-lock-order-inversion-001` | failure | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `BF-omarchy-gaming-system-first-party-provider-gate-state-omission-001` | failure | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `PR-omarchy-gaming-system-preserve-first-callback-disposition-001` | rule | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `PR-omarchy-gaming-system-charge-authenticated-quota-after-authentication-001` | rule | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `PR-omarchy-gaming-system-layer-pilot-lifecycle-into-every-admission-001` | rule | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `PR-omarchy-gaming-system-use-one-provider-effect-lock-order-001` | rule | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `PR-omarchy-gaming-system-gate-independent-executable-source-trees-001` | rule | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `AD-omarchy-gaming-system-first-party-remote-authority-pilot-001` | decision | `../../architecture/adr-0002-game-cartridge-and-provider-boundary.md` |

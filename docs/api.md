@@ -632,12 +632,12 @@ A missing, malformed, or cross-conversation message returns 404
 owner-scope the acting persona before disclosing objects, and return
 `Cache-Control: no-store`, including on domain and request-parsing errors.
 
-## List compiled games
+## List games
 
 `GET /v1/games`
 
 This public endpoint returns stable `(key, version)`-ordered metadata for every
-compiled production game definition:
+available compiled game and the one optional operator-enabled remote pilot:
 
 ```json
 {
@@ -647,14 +647,20 @@ compiled production game definition:
       "version": 1,
       "display_name": "Signal Siege",
       "min_human_players": 1,
-      "max_human_players": 1
+      "max_human_players": 1,
+      "authority": "platform_compiled",
+      "provider_release_id": null
     }
   ]
 }
 ```
 
-Signal Siege v1 is the exact production entry. Tests may inject other compiled
-fixture definitions; those fixtures are not production catalog entries.
+Signal Siege v1 is the exact compiled production entry. When the provider
+runtime and Door Legends pilot are both active, the response also includes
+`door-legends` v1 with `authority: "registered_provider"` and its immutable
+release UUID. Provider endpoints, keys, grants, subjects, and health internals
+are never serialized. Tests may inject other compiled fixture definitions;
+those fixtures are not production catalog entries.
 
 ### Signal Siege v1 rules
 
@@ -699,9 +705,60 @@ The persona becomes the sole participant at seat 0. A persona may have at most
 concurrent requests cannot exceed the boundary. A new request over the limit
 returns 429 `too_many_active_game_sessions`, while exact retries still work.
 Malformed idempotency keys return 422 `invalid_game_start`; unavailable game
-versions return 409 `game_unavailable`; and a compiled definition that does not
-admit exactly one human returns 422 `invalid_game_participants`. Every response
-is private and carries `Cache-Control: no-store`.
+versions return 409 `game_unavailable`; and a definition that does not admit
+exactly one human returns 422 `invalid_game_participants`. Every response is
+private and carries `Cache-Control: no-store`.
+
+Every session now reports `authority`, `provider_release_id`, `availability`,
+and `result`. A compiled session uses `platform_compiled`, a null release and
+availability, and its existing authoritative `state`. A provider session uses
+`registered_provider`, pins an exact release, and exposes a provider-reported
+view through `state`; that view is presentation data, not platform-owned game
+state. Provider sessions may report `provisioning`, `ready`, `reconciling`,
+`unavailable`, `suspended`, `completed`, or `retired` availability. A validated
+terminal callback adds only this public result projection:
+
+```json
+{
+  "result": {
+    "outcome": "escaped",
+    "public_summary": { "ending": "sunlit_gate" },
+    "provider_revision": 1,
+    "projected_at": "2026-08-25T20:00:00.000Z"
+  }
+}
+```
+
+## Reconcile a provider game session
+
+`POST /v1/personas/{persona_id}/game-sessions/{game_session_id}/reconcile`
+
+Use this participant-private route after an unknown provider outcome, outage,
+or restore. The request is limited to the stable operation identity and the
+last authenticated provider revision:
+
+```json
+{
+  "idempotency_key": "91cc0000-0000-4000-8000-000000000003",
+  "expected_revision": 1
+}
+```
+
+The platform queries the pinned provider release and accepts only its signed
+receipt. It never selects a winner by timestamp and never runs a compiled
+fallback. A provider outage returns 503 `provider_unavailable`; retry with a
+new reconciliation key after recovery. Exact operation replays remain stable.
+
+## List provider achievements
+
+`GET /v1/personas/{persona_id}/achievements`
+
+This owner-scoped endpoint returns platform-approved achievements projected
+from authenticated provider events. Each record contains only the pinned
+definition (`key`, `display_name`, `description`), game and release identity,
+session identity, provider revision, and award timestamp. Exact callback
+replay cannot duplicate an award. Account IDs, pairwise subjects, grants,
+provider endpoints, signatures, and private provider state are excluded.
 
 ## Create and read game challenges
 

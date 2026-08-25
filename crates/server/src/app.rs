@@ -1,9 +1,10 @@
 use axum::{
     Json, Router,
+    body::Bytes,
     extract::{DefaultBodyLimit, Path, Query, State, WebSocketUpgrade},
     http::{
         HeaderMap, HeaderValue, StatusCode,
-        header::{AUTHORIZATION, CACHE_CONTROL, WWW_AUTHENTICATE},
+        header::{AUTHORIZATION, CACHE_CONTROL, HOST, WWW_AUTHENTICATE},
     },
     middleware,
     response::{IntoResponse, Response},
@@ -34,6 +35,7 @@ use crate::mfa::{
     self, BeginEnrollmentInput, ConfirmEnrollmentInput, DisableMfaInput, MfaCipher, MfaError,
 };
 use crate::personas::{self, CreatePersonaInput, Persona, PersonaError, UpdatePersonaInput};
+use crate::provider_games::{self, CallbackApplyOutcome, ProviderRuntime};
 use crate::sessions::{self, CreateSessionInput, DeviceSession, SessionCreation, SessionError};
 use crate::sync::{self, SyncError, SyncEvent, SyncEventKind, SyncHub};
 
@@ -45,6 +47,7 @@ pub struct AppState {
     mfa_cipher: MfaCipher,
     sync_hub: SyncHub,
     game_registry: GameRegistry,
+    provider_runtime: Option<ProviderRuntime>,
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -361,6 +364,8 @@ struct GameManifestResponse {
     display_name: String,
     min_human_players: u8,
     max_human_players: u8,
+    authority: &'static str,
+    provider_release_id: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -389,11 +394,23 @@ struct GameSessionResponse {
     game_version: u32,
     revision: i64,
     status: String,
-    state: serde_json::Value,
+    state: Option<serde_json::Value>,
+    authority: String,
+    provider_release_id: Option<String>,
+    availability: Option<String>,
+    result: Option<GameResultResponse>,
     participants: Vec<GameParticipantResponse>,
     completed_at: Option<String>,
     created_at: String,
     updated_at: String,
+}
+
+#[derive(Serialize)]
+struct GameResultResponse {
+    outcome: String,
+    public_summary: serde_json::Value,
+    provider_revision: i64,
+    projected_at: String,
 }
 
 #[derive(Serialize)]
@@ -416,6 +433,21 @@ struct GameCommandResponse {
     revision: i64,
     status: String,
     state: serde_json::Value,
+    authority: String,
+    provider_release_id: Option<String>,
+    availability: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReconcileGameRequest {
+    idempotency_key: String,
+    expected_revision: i64,
+}
+
+#[derive(Serialize)]
+struct ProviderAchievementListResponse {
+    achievements: Vec<provider_games::ProviderAchievement>,
 }
 
 #[derive(Deserialize)]
@@ -503,11 +535,22 @@ pub(crate) fn router_with_game_registry(
     router_with_runtime(pool, mfa_cipher, SyncHub::new(), game_registry)
 }
 
+#[cfg(test)]
 pub(crate) fn router_with_runtime(
     pool: PgPool,
     mfa_cipher: MfaCipher,
     sync_hub: SyncHub,
     game_registry: GameRegistry,
+) -> Router {
+    router_with_provider_runtime(pool, mfa_cipher, sync_hub, game_registry, None)
+}
+
+pub(crate) fn router_with_provider_runtime(
+    pool: PgPool,
+    mfa_cipher: MfaCipher,
+    sync_hub: SyncHub,
+    game_registry: GameRegistry,
+    provider_runtime: Option<ProviderRuntime>,
 ) -> Router {
     let inbox_routes = Router::new()
         .route(
@@ -544,6 +587,14 @@ pub(crate) fn router_with_runtime(
             "/v1/personas/{persona_id}/game-sessions/{game_session_id}/commands",
             post(apply_game_command).layer(DefaultBodyLimit::max(32 * 1024)),
         )
+        .route(
+            "/v1/personas/{persona_id}/game-sessions/{game_session_id}/reconcile",
+            post(reconcile_game_session).layer(DefaultBodyLimit::max(8 * 1024)),
+        )
+        .route(
+            "/v1/personas/{persona_id}/achievements",
+            get(list_provider_achievements),
+        )
         .layer(middleware::map_response(inbox_no_store));
     let challenge_routes = Router::new()
         .route(
@@ -569,6 +620,10 @@ pub(crate) fn router_with_runtime(
     Router::new()
         .route("/health", get(health))
         .route("/v1/games", get(list_games))
+        .route(
+            "/v1/provider-events/{release_id}",
+            post(receive_provider_event).layer(DefaultBodyLimit::max(512 * 1024)),
+        )
         .route(
             "/v1/accounts",
             post(register_account).layer(DefaultBodyLimit::max(1024)),
@@ -639,6 +694,7 @@ pub(crate) fn router_with_runtime(
             mfa_cipher,
             sync_hub,
             game_registry,
+            provider_runtime,
         })
         .layer(TraceLayer::new_for_http())
 }
@@ -1176,15 +1232,34 @@ async fn mark_conversation_read(
     ))
 }
 
-async fn list_games(State(state): State<AppState>) -> Json<GameCatalogResponse> {
-    Json(GameCatalogResponse {
-        games: state
-            .game_registry
-            .catalog()
-            .into_iter()
-            .map(game_manifest_response)
-            .collect(),
-    })
+async fn list_games(State(state): State<AppState>) -> Result<Json<GameCatalogResponse>, ApiError> {
+    let mut games = state
+        .game_registry
+        .catalog()
+        .into_iter()
+        .map(game_manifest_response)
+        .collect::<Vec<_>>();
+    if state.provider_runtime.is_some() {
+        games.extend(
+            provider_games::active_catalog(&state.pool)
+                .await
+                .map_err(ApiError::Game)?
+                .into_iter()
+                .map(|manifest| GameManifestResponse {
+                    key: manifest.key,
+                    version: manifest.version,
+                    display_name: manifest.display_name,
+                    min_human_players: manifest.min_human_players,
+                    max_human_players: manifest.max_human_players,
+                    authority: "registered_provider",
+                    provider_release_id: Some(manifest.release_id.to_string()),
+                }),
+        );
+        games.sort_by(|left, right| {
+            (left.key.as_str(), left.version).cmp(&(right.key.as_str(), right.version))
+        });
+    }
+    Ok(Json(GameCatalogResponse { games }))
 }
 
 async fn list_game_sessions(
@@ -1213,6 +1288,52 @@ async fn start_game_session(
     Json(request): Json<StartGameSessionRequest>,
 ) -> Result<Response, ApiError> {
     let token = bearer_token(&headers)?;
+    let input = StartGameSessionInput {
+        idempotency_key: request.idempotency_key.clone(),
+        game_key: request.game_key.clone(),
+        game_version: request.game_version,
+    };
+    let outcome = if let Some(runtime) = &state.provider_runtime {
+        match provider_games::start_solo_session(&state.pool, runtime, token, &persona_id, input)
+            .await
+            .map_err(ApiError::Game)?
+        {
+            Some(outcome) => outcome,
+            None => {
+                return start_compiled_game_session(state, token, persona_id, request).await;
+            }
+        }
+    } else {
+        games::start_solo_session(
+            &state.pool,
+            &state.game_registry,
+            token,
+            &persona_id,
+            StartGameSessionInput {
+                idempotency_key: request.idempotency_key,
+                game_key: request.game_key,
+                game_version: request.game_version,
+            },
+        )
+        .await
+        .map_err(ApiError::Game)?
+    };
+    let (status, session) = match outcome {
+        GameSessionStartOutcome::Created(session) => (StatusCode::CREATED, session),
+        GameSessionStartOutcome::Existing(session) => (StatusCode::OK, session),
+        GameSessionStartOutcome::Pending(session) => (StatusCode::ACCEPTED, session),
+    };
+    Ok(no_store(
+        (status, Json(game_session_response(session))).into_response(),
+    ))
+}
+
+async fn start_compiled_game_session(
+    state: AppState,
+    token: &str,
+    persona_id: String,
+    request: StartGameSessionRequest,
+) -> Result<Response, ApiError> {
     let outcome = games::start_solo_session(
         &state.pool,
         &state.game_registry,
@@ -1229,6 +1350,7 @@ async fn start_game_session(
     let (status, session) = match outcome {
         GameSessionStartOutcome::Created(session) => (StatusCode::CREATED, session),
         GameSessionStartOutcome::Existing(session) => (StatusCode::OK, session),
+        GameSessionStartOutcome::Pending(_) => return Err(ApiError::Game(GameError::Internal)),
     };
     Ok(no_store(
         (status, Json(game_session_response(session))).into_response(),
@@ -1257,24 +1379,115 @@ async fn apply_game_command(
     Json(request): Json<GameCommandRequest>,
 ) -> Result<Response, ApiError> {
     let token = bearer_token(&headers)?;
-    let result = games::apply_command(
-        &state.pool,
-        &state.game_registry,
-        token,
-        &persona_id,
-        &game_session_id,
-        GameCommandInput {
-            idempotency_key: request.idempotency_key,
-            expected_revision: request.expected_revision,
-            command: request.command,
-        },
-    )
-    .await
-    .map_err(ApiError::Game)?;
+    let input = GameCommandInput {
+        idempotency_key: request.idempotency_key,
+        expected_revision: request.expected_revision,
+        command: request.command,
+    };
+    let result = if provider_games::is_provider_session(&state.pool, &game_session_id)
+        .await
+        .map_err(ApiError::Game)?
+    {
+        let runtime = state
+            .provider_runtime
+            .as_ref()
+            .ok_or(ApiError::Game(GameError::GameUnavailable))?;
+        provider_games::apply_command(
+            &state.pool,
+            runtime,
+            token,
+            &persona_id,
+            &game_session_id,
+            input,
+        )
+        .await
+        .map_err(ApiError::Game)?
+    } else {
+        games::apply_command(
+            &state.pool,
+            &state.game_registry,
+            token,
+            &persona_id,
+            &game_session_id,
+            input,
+        )
+        .await
+        .map_err(ApiError::Game)?
+    };
 
     Ok(no_store(
         Json(game_command_response(result)).into_response(),
     ))
+}
+
+async fn reconcile_game_session(
+    State(state): State<AppState>,
+    Path((persona_id, game_session_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(request): Json<ReconcileGameRequest>,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    let runtime = state
+        .provider_runtime
+        .as_ref()
+        .ok_or(ApiError::Game(GameError::GameUnavailable))?;
+    let result = provider_games::reconcile(
+        &state.pool,
+        runtime,
+        token,
+        &persona_id,
+        &game_session_id,
+        request.idempotency_key,
+        request.expected_revision,
+    )
+    .await
+    .map_err(ApiError::Game)?;
+    Ok(no_store(
+        Json(game_command_response(result)).into_response(),
+    ))
+}
+
+async fn list_provider_achievements(
+    State(state): State<AppState>,
+    Path(persona_id): Path<String>,
+    headers: HeaderMap,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    let achievements = provider_games::list_achievements(&state.pool, token, &persona_id)
+        .await
+        .map_err(ApiError::Game)?;
+    Ok(no_store(
+        Json(ProviderAchievementListResponse { achievements }).into_response(),
+    ))
+}
+
+async fn receive_provider_event(
+    State(state): State<AppState>,
+    Path(release_id): Path<String>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<StatusCode, ApiError> {
+    let Some(runtime) = &state.provider_runtime else {
+        return Ok(StatusCode::NOT_FOUND);
+    };
+    let authority = headers
+        .get(HOST)
+        .and_then(|value| value.to_str().ok())
+        .ok_or(ApiError::Game(GameError::Unauthorized))?;
+    let outcome = provider_games::apply_callback(
+        &state.pool,
+        runtime,
+        &release_id,
+        authority,
+        &headers,
+        &body,
+    )
+    .await
+    .map_err(ApiError::Game)?;
+    Ok(match outcome {
+        CallbackApplyOutcome::Accepted | CallbackApplyOutcome::Duplicate => StatusCode::NO_CONTENT,
+        CallbackApplyOutcome::Ignored => StatusCode::ACCEPTED,
+    })
 }
 
 async fn create_game_challenge(
@@ -1588,6 +1801,8 @@ fn game_manifest_response(manifest: GameManifest) -> GameManifestResponse {
         display_name: manifest.display_name,
         min_human_players: manifest.min_human_players,
         max_human_players: manifest.max_human_players,
+        authority: "platform_compiled",
+        provider_release_id: None,
     }
 }
 
@@ -1599,6 +1814,17 @@ fn game_session_response(session: GameSession) -> GameSessionResponse {
         revision: session.revision,
         status: session.status,
         state: session.state,
+        authority: session.authority,
+        provider_release_id: session
+            .provider_release_id
+            .map(|release_id| release_id.to_string()),
+        availability: session.availability,
+        result: session.result.map(|result| GameResultResponse {
+            outcome: result.outcome,
+            public_summary: result.public_summary,
+            provider_revision: result.provider_revision,
+            projected_at: result.projected_at,
+        }),
         participants: session
             .participants
             .into_iter()
@@ -1623,6 +1849,11 @@ fn game_command_response(result: GameCommandResult) -> GameCommandResponse {
         revision: result.revision,
         status: result.status,
         state: result.state,
+        authority: result.authority,
+        provider_release_id: result
+            .provider_release_id
+            .map(|release_id| release_id.to_string()),
+        availability: result.availability,
     }
 }
 
@@ -2038,6 +2269,11 @@ impl IntoResponse for ApiError {
                 StatusCode::CONFLICT,
                 "game_idempotency_conflict",
                 "the game idempotency key was already used for another request",
+            ),
+            ApiError::Game(GameError::ProviderUnavailable) => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "provider_unavailable",
+                "the game provider is unavailable; reconcile the session before retrying",
             ),
             ApiError::Game(GameError::InitializationFailed | GameError::Internal) => (
                 StatusCode::INTERNAL_SERVER_ERROR,

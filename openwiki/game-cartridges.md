@@ -35,12 +35,12 @@ sources:
     resource: repo://crates/game-provider/src/broker.rs
   - id: openwiki-source-5e865738b8ee35e0eee853d7
     resource: repo://crates/game-provider/src/egress.rs
-  - id: openwiki-source-25c2deb1d0664370b4037c40
-    resource: repo://crates/game-provider/src/lib.rs
-  - id: openwiki-source-a3286660bf513fa99c420af7
-    resource: repo://crates/game-provider/src/protocol.rs
   - id: openwiki-source-183d71a1a996865fb003e694
     resource: repo://crates/game-provider/src/registry.rs
+  - id: openwiki-source-ff1ed569f105aff512baba65
+    resource: repo://crates/server/src/provider_game_api_tests.rs
+  - id: openwiki-source-0e10f198b5749ecebf761185
+    resource: repo://crates/server/src/provider_games.rs
   - id: openwiki-source-408aa68caebee417a5a319b8
     resource: repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
@@ -49,6 +49,8 @@ sources:
     resource: repo://docs/planning/pipeline/completed/separate-repository-sdk-and-first-party-cartridge.notes.md
   - id: openwiki-source-047cb62ee1741c598c0f11a5
     resource: repo://migrations/0014_provider_security_foundation.sql
+  - id: openwiki-source-c1f2a0cfcd9a603e8e6b291c
+    resource: repo://migrations/0015_first_party_remote_provider_authority.sql
   - id: openwiki-source-d69dbacb0ae7fe382ee46161
     resource: repo://scripts/test-game-cartridge-renderer.sh
   - id: openwiki-source-8df9ad1a3495f8360740ff03
@@ -57,10 +59,10 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-25T19:56:58.182Z"}
+generated: {by: "codex", at: "2026-08-25T22:05:16.359Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-25T20:01:00.857Z
+    at: 2026-08-25T22:05:16.359Z
 ---
 
 # Game Cartridges and portable provider direction
@@ -73,18 +75,20 @@ and inert store. Ticket 016 supplies the production render-plan compiler, fixed
 trusted QML vocabulary, and isolated preview CLI. Ticket 017 adds the
 deterministic public SDK export, signed release and catalog-policy verification,
 separate-repository first-party proof, and secure local importer. The main QML
-connector does not launch cartridges yet. Ticket 018 adds a production-grade,
-but deliberately dormant, provider registration, protocol, guarded-egress,
-replay, quota, and audit foundation. It is not instantiated by the player
-server and does not authorize remote gameplay authority. The compiled Rust
-runtime and OmarchyGS PostgreSQL snapshot/revision remain authoritative under
-Constitution §10; [Runtime foundation](runtime-foundation.md) maps that path.
+connector does not launch cartridges yet. Ticket 018 adds the production-grade
+provider registration, protocol, guarded-egress, replay, quota, and audit
+foundation. Ticket 019 instantiates it as an optional player-server runtime for
+the operator-pinned Door Legends v1 first-party pilot and amends Constitution
+§10 to assign each session exactly one rules/state/revision authority. Compiled
+Signal Siege remains platform-authoritative; external providers remain
+unauthorized. [Runtime foundation](runtime-foundation.md) maps both paths.
 
 Ticket 014 contributes an isolated executable architecture proof. Its broker,
 provider, and QML surface are not a public SDK or deployed runtime. Ticket 018
 replaces that proof's security assumptions with a production workspace crate
-and durable schema, but remote authority still needs a player-server integration
-pipeline and explicit Constitution amendment.
+and durable schema. Ticket 019 adds the narrowly scoped player-server bridge,
+authority migration, lifecycle, projection, and independent-database proof; it
+does not generalize provider onboarding.
 
 ## Product and system model
 
@@ -109,17 +113,17 @@ game repository
        trusted OmarchyGS QML components
                   │ unconfirmed declared action
                   ▼
-       authenticated OmarchyGS broker (dormant foundation)
+       authenticated OmarchyGS broker
                   │ scoped, short-lived pairwise grant
                   ▼
-       registered provider (not connected to players)
+       registered provider (Door Legends v1 pilot only)
 ```
 
 The cartridge supplies signed presentation data. OmarchyGS supplies all
 executable QML, focus/navigation, accessibility, themes, platform dialogs,
-networking, and security policy. After a separately authorized authority
-migration, a provider may supply game rules and private gameplay state; it
-never supplies the trusted frontend.
+networking, and security policy. In the separately authorized Door Legends
+pilot, the provider supplies game rules and private gameplay state; it never
+supplies the trusted frontend.
 
 ## Package and presentation trust
 
@@ -203,7 +207,7 @@ main-client launcher or a privileged multi-user sandbox.
 | Accounts, sessions, MFA, personas/avatar projections, social state | OmarchyGS |
 | Catalog, launch policy, provider registration/revocation, audit | OmarchyGS |
 | Platform session envelope, participants, pinned identities, accepted result receipts | OmarchyGS |
-| Game rules, private gameplay state, turn/time/randomness, provider revision in a future remote mode | Exactly one registered provider |
+| Game rules, private gameplay state, turn/time/randomness, provider revision in the Door Legends remote mode | Exactly one registered provider |
 | Rendering, input, accessibility, theme, local cosmetic animation | Trusted OmarchyGS client |
 | Durable client recovery | OmarchyGS REST/cursor feed; WebSockets remain hints |
 
@@ -212,11 +216,12 @@ not make the publisher trusted for memory, CPU, action shape, or UI authority.
 OmarchyGS retains every executable QML component, trusted preference,
 origin/failure surface, and future action dispatcher.
 
-The dormant remote-provider foundation preserves the intended flow: the client
-calls authenticated OmarchyGS APIs, and an OmarchyGS-only broker resolves an
-operator-registered destination and sends a short-lived grant bound to provider
-audience, exact release/game/rules/cartridge identities, platform session, one
-scope, a pairwise provider/game persona subject, expiry, and replay ID. Account
+The implemented remote-provider pilot preserves the intended flow: the client
+calls authenticated OmarchyGS APIs, and an OmarchyGS-only broker resolves the
+operator-registered Door Legends destination and sends a short-lived grant
+bound to provider audience, exact release/game/rules/cartridge identities,
+platform session, one scope, a pairwise provider/game persona subject, expiry,
+and replay ID. Account
 identity, raw persona identity, reusable device-session credentials, and
 database access never cross the boundary.
 
@@ -239,6 +244,24 @@ trusts only registered roots, and disables proxies, redirects, decompression,
 and unbounded responses. The compile-time conformance mode admits one exact
 generated loopback socket; it cannot create a production private-network
 allowlist.
+
+Ticket 019 adds the player-facing authority bridge without creating a second
+gameplay owner. Migration 0015 makes `platform_compiled` sessions require local
+object state and no provider release, while `registered_provider` sessions
+require an exact release pin, explicit availability, and null local rules
+state. Door Legends launch first persists the platform envelope, participant,
+start receipt, and sync invalidation, then performs network I/O. Commands and
+explicit reconciliation reuse a stable idempotency key and expected provider
+revision; no session transaction remains open across the provider call.
+
+Only authenticated bounded provider views are returned to the cartridge. A
+callback is admitted after exact signature and current lifecycle checks, then
+deduplicated inside the same transaction that validates pinned event policy and
+records allowlisted results, achievement awards, audit, and persona-sync
+effects. Suspension removes the pilot from new discovery and denies launches,
+commands, and callbacks while preserving read-only views and reconciliation.
+Restoration requires authenticated reconciliation; retirement is terminal.
+Unknown outcomes and outages never trigger a compiled failback.
 
 ## Graphics envelope
 
@@ -339,11 +362,21 @@ scripts/test-game-cartridge-spike.sh
 
 The production renderer is gate 12, the SDK/release/import proof is gate 13,
 and this isolated provider proof is gate 14 in every `bin/gate.sh` mode. In
-diff/full modes, gate 17 additionally exercises the dormant production provider
+diff/full modes, gate 17 exercises the production provider
 boundary against migrated PostgreSQL and a separate TLS provider process:
 
 ```bash
 scripts/test-provider-conformance.sh
+```
+
+Gate 18 then packages the public provider protocol, builds Door Legends from a
+clean clone without platform-only features, runs it as a separate TLS process
+against its own PostgreSQL database, drives catalog/start/command/reconcile and
+callback projection through the real server bridge, exercises lifecycle and
+failure recovery, and restores the provider backup into a second database:
+
+```bash
+scripts/test-provider-authority-pilot.sh
 ```
 
 See [Development and validation](development-and-validation.md) for the full
@@ -361,12 +394,12 @@ gate and failure routing.
    platform-authoritative.
 4. Challenges and the first playable use those stable seams without waiting
    for remote hosting.
-5. Ticket 018 implements dormant production provider registration,
+5. Ticket 018 implements production provider registration,
    grants/message security, guarded egress, quotas, replay state, audit, and
-   revocation without connecting it to player routes.
-6. Ticket 019 pilots one first-party remote authority migration and proposes
-   the required Constitution §10 amendment. External providers wait until
-   operations, recovery, suspension, and support policy are proven.
+   revocation before connecting it to player routes.
+6. Ticket 019 implements one first-party Door Legends remote-authority pilot
+   and the required Constitution §10 amendment. External providers wait for a
+   separate onboarding, operations, transparency, and support pipeline.
 
 First-party games use the same public schemas and conformance suite intended
 for later publishers. They may have a higher catalog trust tier, but never a
@@ -390,4 +423,4 @@ decisions and monotonic policy versions.
 | Trusted renderer and graphics profile | `crates/game-cartridge-renderer`; `client/qml/cartridge`; Ticket 016 | `scripts/test-game-cartridge-renderer.sh`; schema/action/resource rejection, keyboard/accessibility/fixed states, and constrained Core/Rich-2D measurements |
 | Separate-repository SDK/release | `crates/game-cartridge/src/sdk.rs`, `release.rs`, `lifecycle.rs`, `secure_store.rs`; Ticket 017 | `scripts/test-game-cartridge-sdk.sh`; deterministic export, clean-clone reproducibility, signed provenance/policy, lifecycle matrix, descriptor-relative import, rollback/race/permission rejection |
 | Provider security foundation | `crates/game-provider`; migration `0014_provider_security_foundation.sql`; `docs/operators/provider-security.md`; Ticket 018 | `scripts/test-provider-conformance.sh`; TLS and sender authentication, public-only pinned egress, grant/replay/key/quota/lease/audit, lifecycle, race, and failure tests |
-| Remote authority migration | Constitution §10; ADR-0002; Ticket 019 | One durable gameplay owner, explicit migration/rollback/reconciliation, accepted constitutional change |
+| Remote authority migration | Constitution §10; ADR-0002; migration `0015`; `crates/server/src/provider_games.rs`; Ticket 019 | `scripts/test-provider-authority-pilot.sh`; one durable gameplay owner, exact replay/reconciliation, callback projection, lifecycle, independent database and restore evidence |

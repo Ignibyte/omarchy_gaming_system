@@ -1,6 +1,6 @@
 # ADR-0002: Game Cartridge and provider boundary
 
-- Status: accepted for staged adoption; remote authority not yet authorized
+- Status: accepted; scoped first-party remote authority authorized by Ticket 019
 - Date: 2026-08-24
 - Knowledge ID: `AD-omarchy-gaming-system-game-cartridge-provider-boundary-001`
 
@@ -79,21 +79,31 @@ general-purpose code because a richer profile is added.
 
 ## Constitution reconciliation
 
-This ADR does not amend the constitution and therefore does not enable remote
-gameplay authority. The following current rules remain binding:
+Ticket 019 amends Constitution §10 after implementing and exercising the
+first-party authority gate. The amendment distinguishes **platform authority**
+from **registered scoped gameplay authority**:
 
-- OmarchyGS PostgreSQL and compiled rules own all production gameplay state;
-- games start as compiled Rust crates;
-- REST/JSON is durable truth and WebSockets are advisory; and
-- the trusted QML client consumes only public OmarchyGS APIs.
+- OmarchyGS retains authentication, accounts/personas, social state, catalog
+  and launch policy, the participant-private session envelope, public
+  result/achievement definitions and projections, audit, suspension, and
+  recovery;
+- compiled sessions retain the original OmarchyGS rules/state/revision
+  authority;
+- a provider session pins one operator-registered exact immutable release as
+  the sole durable owner of rules, private state, turns, game time/randomness,
+  provider revision, and outcome;
+- OmarchyGS stores no writable provider gameplay snapshot and offers no
+  compiled failback;
+- only brokered, signed, scoped exchanges may cross the boundary, and provider
+  claims become platform effects only in the atomic policy/projection
+  transaction; and
+- REST/cursor recovery remains durable truth while WebSockets remain hints.
 
-Before the first remote provider is enabled, a later pipeline must propose the
-exact §10 replacement. At minimum it must distinguish **platform authority**
-from **registered scoped gameplay authority**, require a single durable owner
-for each game revision, prohibit provider access to account credentials and
-platform storage, preserve brokered REST/cursor recovery, and name the
-provider registration, revocation, audit, and reconciliation invariants. That
-amendment cannot be used to bypass the remote-provider implementation gate.
+This authorization is deliberately narrow: Door Legends v1 is the sole
+first-party pilot, and external or self-service providers remain unauthorized.
+The amendment follows the implementation and separate-process proof; it does
+not waive registration, TLS/egress, replay, quota, lifecycle, audit,
+reconciliation, disaster-recovery, or delivery gates.
 
 ## Current-code gap map
 

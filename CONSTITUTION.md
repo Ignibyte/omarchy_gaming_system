@@ -94,8 +94,25 @@ check. Phase 4 must run the tests; writing them is not proof.
 
 ## §10 — Product and architecture boundaries
 
-- The server is authoritative for authentication, game state, turns, time,
-  randomness, rewards, and permissions.
+- The OmarchyGS server is authoritative for authentication, accounts,
+  personas, social state, catalog and launch policy, platform permissions,
+  provider registration, the participant-private game-session envelope,
+  public result and achievement policy/projections, audit, suspension, and
+  durable recovery.
+- A `platform_compiled` session keeps OmarchyGS as the sole authority for game
+  rules, private state, turns, game time/randomness, revision, and outcome.
+  An operator-registered `registered_provider` session may instead pin one
+  exact immutable provider/game/rules/cartridge release as the sole durable
+  authority for those game-scoped surfaces. Every session has exactly one
+  authority: OmarchyGS must not retain a writable provider gameplay snapshot,
+  and a provider-owned session must never fail back to compiled rules.
+- Registered provider traffic is server-to-server through the authenticated
+  OmarchyGS broker. Providers receive only pairwise subjects and scoped,
+  expiring grants; they receive no account identity, reusable device
+  credential, platform database access, or executable frontend privilege.
+  Their signed results and achievement claims have no platform effect until
+  OmarchyGS atomically authenticates, deduplicates, validates pinned policy,
+  and records allowlisted projections plus cursor-sync invalidations.
 - Accounts and personas are separate domain identities. Social and game
   surfaces expose personas, not account ownership.
 - REST/JSON is the durable command/query interface. WebSockets notify clients;
@@ -107,6 +124,10 @@ check. Phase 4 must run the tests; writing them is not proof.
   platform-owned components. Loading publisher native/QML/JavaScript code is
   out of scope; any future executable extension runtime requires an explicit
   sandbox decision.
+- Remote authority is limited to explicitly operator-enabled exact releases
+  that pass the provider pipeline and lifecycle controls. External/self-service
+  provider onboarding remains unauthorized until its own architecture and
+  security pipeline passes.
 - The QML connector is keyboard-first and consumes only public API or trusted
   render-plan contracts.
 

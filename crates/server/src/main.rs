@@ -8,6 +8,7 @@ mod games;
 mod inboxes;
 mod mfa;
 mod personas;
+mod provider_games;
 mod sessions;
 mod sync;
 
@@ -23,6 +24,8 @@ mod inbox_api_tests;
 mod mfa_api_tests;
 #[cfg(test)]
 mod persona_api_tests;
+#[cfg(test)]
+mod provider_game_api_tests;
 #[cfg(test)]
 mod session_api_tests;
 #[cfg(test)]
@@ -54,6 +57,11 @@ async fn main() -> Result<()> {
         .run(&pool)
         .await
         .context("failed to run database migrations")?;
+    let provider_runtime = config
+        .provider
+        .map(|provider| provider_games::ProviderRuntime::production(pool.clone(), provider))
+        .transpose()
+        .map_err(|error| anyhow!("invalid provider runtime: {}", error.code()))?;
 
     let listener = TcpListener::bind(config.bind_address)
         .await
@@ -68,7 +76,13 @@ async fn main() -> Result<()> {
 
     let server_result = axum::serve(
         listener,
-        app::router_with_runtime(pool, config.mfa_cipher, sync_hub, game_registry),
+        app::router_with_provider_runtime(
+            pool,
+            config.mfa_cipher,
+            sync_hub,
+            game_registry,
+            provider_runtime,
+        ),
     )
     .with_graceful_shutdown(shutdown_signal())
     .await;

@@ -1,6 +1,7 @@
 # OmarchyGS Game Cartridges — architecture and delivery plan
 
-Status: the data-only cartridge/provider boundary was accepted by
+Status: the data-only cartridge/provider boundary and one scoped first-party
+remote authority pilot were accepted by
 [`ADR-0002`](adr-0002-game-cartridge-and-provider-boundary.md) after the
 [`TICKET-014`](../planning/tickets/closed/TICKET-014-portable-games-sdk-and-remote-hosting-spike.md)
 proof. Ticket 015 implements the local v1 package, verifier, conformance CLI,
@@ -9,10 +10,11 @@ vocabulary, isolated preview command, and measured Core/Rich-2D reference
 profiles. Ticket 017 adds the deterministic v1 SDK export, signed release
 provenance, first-party clean-room repository proof, signed catalog lifecycle,
 and descriptor-relative privileged import boundary. Public Internet publication,
-third-party onboarding, and remote-provider authority remain gated follow-up
-stages. Ticket 018 adds the dormant production provider trust/protocol
-foundation, but no player route or gameplay-authority migration; this design
-never authorizes loading third-party code.
+third-party onboarding remains a gated follow-up stage. Ticket 018 adds the
+production provider trust/protocol foundation. Ticket 019 connects Door
+Legends v1 as the sole operator-enabled remote authority pilot with an
+independent provider database, player routes, atomic projections, and tested
+recovery; this design never authorizes loading third-party code.
 
 ## Product model
 
@@ -86,13 +88,12 @@ authority across the network without replacing the player-facing cartridge.
 | Current compiled Rust definition | OmarchyGS process and PostgreSQL | Strong capability boundary in the Rust trait, but no process boundary | Platform release pins exact compiled key/version | Lowest latency; platform can resume locally | Lowest initially; every game change releases the platform | Retain for the private alpha and deterministic first-game rules |
 | Separate-repository compiled first-party artifact | OmarchyGS process after reviewed build/import | Same runtime boundary; source and release provenance improve | Independent source version, but platform still rebuilds to consume it | Same as current | Moderate CI/supply-chain work; no provider operations | First migration step for proving repository and SDK portability |
 | Sandboxed local executable/Wasm rules | Local platform client or server sandbox | Depends on a narrow host ABI, quotas, and a maintained runtime | Portable artifact can release independently | Low latency and stronger offline behavior | New sandbox, determinism, resource, patch, and ABI burden | Defer; evaluate later for offline/local rules, never as a frontend escape hatch |
-| Registered remote provider | Provider owns rules and durable gameplay revision; OmarchyGS owns the platform envelope | Separate process/network/failure domain with least-privilege grants | Provider and cartridge deploy independently; sessions pin exact identities | Network-dependent; cached views are read-only during outage | Highest: registry, egress, keys, quotas, audit, reconciliation, support | Long-term target after cartridge/SDK stages and a constitution amendment |
+| Registered remote provider | Provider owns rules and durable gameplay revision; OmarchyGS owns the platform envelope | Separate process/network/failure domain with least-privilege grants | Provider and cartridge deploy independently; sessions pin exact identities | Network-dependent; cached views are read-only during outage | Highest: registry, egress, keys, quotas, audit, reconciliation, support | Enabled only for the operator-pinned Door Legends v1 first-party pilot; external providers remain gated |
 
-The staged recommendation is therefore **compiled now, portable cartridge and
-conformance contract next, separate first-party repository after that, and a
-brokered remote provider only after the authority migration is explicitly
-approved**. This avoids forcing the private alpha to operate a distributed
-game platform while keeping today's APIs from becoming the permanent SDK.
+The staged recommendation now retains compiled Signal Siege while the
+operator-pinned Door Legends v1 release proves the brokered remote model.
+External providers still require review/onboarding, transparency, operations,
+and support gates rather than inheriting the first-party authorization.
 
 ## Authority and data ownership
 
@@ -109,10 +110,10 @@ game platform while keeping today's APIs from becoming the permanent SDK.
 | Durable recovery notification | OmarchyGS cursor feed; WebSockets remain hints |
 
 The platform and provider must not both claim authority over the same gameplay
-snapshot or revision. The spike must decide the exact migration from today's
-platform-owned compiled snapshot to a provider-owned remote state. Until a
-later ADR and constitution amendment are accepted, the current local authority
-model remains binding.
+snapshot or revision. Migration 0015 makes that choice explicit: compiled
+sessions require local object state and no provider release; registered-
+provider sessions require a pinned release and null local state. The retained
+authenticated view is presentation-only and cannot advance or restore rules.
 
 ## Cartridge identity and contents
 
@@ -635,11 +636,13 @@ authority and policy decisions remain Ticket 019 work.
    explicit publisher key, both clones produce byte-identical releases that the
    production verifier, descriptor-relative importer, and trusted previewer
    consume. Compiled server rules remain in OmarchyGS pending later game work.
-3. **First-party remote provider — security foundation implemented:** Ticket
-   018 adds the dormant registry, scoped grants/messages, guarded egress,
-   durable failure/replay controls, and separate-process TLS conformance.
-   Ticket 019 must still amend authority, define the single-owner state
-   migration, and connect a player-facing broker adapter.
+3. **First-party remote provider — Door Legends pilot implemented:** Ticket
+   018 supplies registry, scoped grants/messages, guarded egress, durable
+   replay controls, and TLS conformance. Ticket 019 adds the single-owner
+   migration, optional all-or-none broker runtime, provider-backed catalog/
+   start/command/reconcile APIs, atomic result/achievement callbacks, explicit
+   availability/lifecycle states, and a separately built Door Legends TLS
+   process with its own PostgreSQL database and callback outbox.
 4. **Reviewed external providers:** add publisher onboarding, catalog review,
    quotas, monitoring, suspension, support policy, and game-scoped achievement
    trust.
@@ -651,15 +654,14 @@ The challenge and first-game work should consume only seams confirmed by the
 spike. It should not implement speculative remote tables or expose provider
 endpoints before the proof and ADR are accepted.
 
-## Production decisions that remain after the security foundation
+## Production decisions that remain after the first-party pilot
 
-- the remote transition from platform snapshots/revisions to provider-owned
-  state without dual authority;
 - pairwise persona subject derivation and avatar delivery/cache policy;
 - how later media formats or profile budgets are added without weakening v1;
 - whether the production renderer is a new constrained process or a hardened
   surface inside the OmarchyGS client;
-- provider event pull versus callback reconciliation and disaster recovery;
+- generalized provider event pull/callback policy and disaster recovery beyond
+  the one Door Legends runbook;
 - Qt Quick 3D/WebEngine packaging, licensing, update, and containment policy;
   and
 - public SDK hosting, transparency/CI attestation, signing-key operations, and

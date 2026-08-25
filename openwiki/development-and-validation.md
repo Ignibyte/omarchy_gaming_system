@@ -59,10 +59,7 @@ sources:
     resource: repo://scripts/test-game-cartridge.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-25T19:56:58.182Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-25T19:56:58.182Z
+generated: {by: "codex", at: "2026-08-25T22:05:16.359Z"}
 ---
 
 # Development and validation
@@ -138,7 +135,9 @@ docker compose down
 `bin/gate.sh --fast` runs the static development loop without writing a receipt.
 `bin/gate.sh --diff` adds isolated migrated PostgreSQL tests plus the live
 PostgreSQL → Rust game-catalog/health/account/session/persona/social/inbox/
-challenge/sync/MFA API → QML smoke and writes a receipt for the exact gated worktree at
+challenge/sync/MFA API → QML smoke, provider security conformance, and the
+Door Legends authority pilot, then writes a receipt for the exact gated
+worktree at
 `.git/omarchy-gaming-system-gate-receipt`.
 
 The gate currently covers:
@@ -159,7 +158,7 @@ The gate currently covers:
 6. the isolated Game Cartridge workspace format, Clippy, tests, binaries,
    rustdoc, signed package, broker/provider/probe exchange, privacy assertions,
    trusted-QML smoke, and frame/memory/package measurements;
-7. forty-three ignored router tests against SQLx-managed PostgreSQL databases
+7. forty-four ignored router tests against SQLx-managed PostgreSQL databases
    in diff/full modes; and
 8. the live Signal Siege catalog, idempotent launch, bounded completed match,
    final replay/history/sync, health, registration, duplicate-conflict,
@@ -168,10 +167,14 @@ The gate currently covers:
    private inbox, synchronization recovery, and block lifecycle, TOTP
    enrollment, challenged login, recovery replay rejection, MFA disablement,
    session revocation, rejected-token, and QML smoke.
-9. the dormant production provider boundary's operator registry, lifecycle,
+9. the production provider boundary's operator registry, lifecycle,
    grants, fixed signed messages, public-only pinned HTTPS egress, replay and
    callback deduplication, quotas, concurrency leases, audit, and fail-closed
    behavior against migrated PostgreSQL and a separate TLS provider process.
+10. the first-party Door Legends authority pilot built from a clean clone,
+    running through the real player-server bridge against an independent
+    provider database, with replay, revision races, callbacks, projection,
+    outage/restart/reconciliation, lifecycle, privacy, and backup/restore proof.
 
 ### Production Game Cartridge conformance
 
@@ -257,9 +260,28 @@ pinning; strict body/time limits; idempotent replay and concurrent callback
 deduplication; quota and lease races; retry-after-unknown behavior; and safe
 audit records.
 
-This crate remains absent from the current player server. Passing gate 17 proves
-the dormant security/control-plane boundary, not production remote gameplay
-authority or player-route integration.
+Gate 17 proves the reusable provider security/control-plane boundary. The
+player server instantiates that crate only when its all-or-none provider
+configuration is present; gate 18 owns the separately reviewed player-route
+and authority proof.
+
+### First-party remote-provider authority pilot
+
+`scripts/test-provider-authority-pilot.sh` is the Ticket 019 entrypoint and gate
+18 in diff/full modes. It packages the public provider protocol, copies the
+Door Legends example into a fresh Git repository, clones it, and builds its TLS
+provider with default platform features disabled. The script rejects a
+platform-only dependency or source-tree path in the resulting binary.
+
+The proof creates an independent provider database, runs the real server router
+with an empty compiled registry plus the operator-enabled release, and verifies
+authority-tagged catalog, start, command, read, result, achievement, and sync
+responses. Its single PostgreSQL integration case covers exact replay,
+expected-revision command races, callback tamper/deduplication/policy,
+participant privacy, timeout-after-commit reconciliation, outage and process
+restart, suspension, restoration, and terminal retirement. Finally it dumps
+the provider database, restores it into a second database, and checks the
+authoritative sessions, operation receipts, and delivered event outbox.
 
 Five general game integration tests prove atomic exact-version initialization and
 commands, ordered participants, semantic replay, isolated idempotency and
@@ -299,8 +321,8 @@ status privacy, TOTP/recovery/challenge replay resistance, account inactivity,
 independent bounded challenge issuance, cross-challenge attempt locks, and
 dual-proof disablement with cleanup. Together with two registration and three
 session tests plus three persona tests, five game tests, six challenge tests,
-and six synchronization tests, plus four Signal Siege cases, these make
-forty-three PostgreSQL-backed tests.
+and six synchronization tests, plus four Signal Siege cases and one Door
+Legends authority case, these make forty-four PostgreSQL-backed tests.
 The synchronization cases
 exercise durable baseline/incremental/reset behavior, mutation-coupled event
 delivery, owner privacy, and real-TCP WebSocket authentication, hinting, frame
@@ -406,7 +428,12 @@ server, so absent or stale provenance fails closed.
 - Provider-security failure: run `scripts/test-provider-conformance.sh` and fix
   the named registration, lifecycle, signature, egress, replay, callback,
   quota/lease, audit, TLS-process, or PostgreSQL race failure; do not bypass
-  gate 17 or connect the dormant crate to player routes.
+  gate 17.
+- Provider-authority failure: run `scripts/test-provider-authority-pilot.sh`
+  and fix the named clean-clone dependency, authority shape, player route,
+  replay/revision race, callback projection, lifecycle, independent database,
+  reconciliation, restart, or restore failure; do not bypass gate 18 or widen
+  the pilot to another provider.
 - Pipeline structure failure: repair the ticket/spec/AAR/skill or Codex wiring
   named by `scripts/check-pipeline.sh`.
 - Pipeline-tool readiness failure: rerun `scripts/setup-pipeline-tools.sh` only

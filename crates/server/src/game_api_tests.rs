@@ -154,21 +154,27 @@ async fn public_catalog_is_stable_and_production_is_honestly_empty() {
                     "version": 1,
                     "display_name": "Fixture 1",
                     "min_human_players": 1,
-                    "max_human_players": 2
+                    "max_human_players": 2,
+                    "authority": "platform_compiled",
+                    "provider_release_id": null
                 },
                 {
                     "key": "alpha",
                     "version": 2,
                     "display_name": "Fixture 2",
                     "min_human_players": 1,
-                    "max_human_players": 2
+                    "max_human_players": 2,
+                    "authority": "platform_compiled",
+                    "provider_release_id": null
                 },
                 {
                     "key": "zeta",
                     "version": 2,
                     "display_name": "Fixture 2",
                     "min_human_players": 1,
-                    "max_human_players": 2
+                    "max_human_players": 2,
+                    "authority": "platform_compiled",
+                    "provider_release_id": null
                 }
             ]
         })
@@ -510,6 +516,9 @@ async fn commands_commit_atomically_replay_semantic_json_and_reject_conflicts(po
             "game_session_id": session_id.to_string(),
             "revision": 1,
             "status": "active",
+            "authority": "platform_compiled",
+            "provider_release_id": null,
+            "availability": null,
             "state": {
                 "rules_version": 1,
                 "human_players": 2,

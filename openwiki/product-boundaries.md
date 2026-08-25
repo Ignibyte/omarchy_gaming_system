@@ -67,10 +67,7 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-8df9ad1a3495f8360740ff03
     resource: repo://scripts/test-game-cartridge-sdk.sh
-generated: {by: "codex", at: "2026-08-25T18:10:29.411Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-25T18:20:39.585Z
+generated: {by: "codex", at: "2026-08-25T22:05:16.359Z"}
 ---
 
 # Product and architecture boundaries
@@ -85,9 +82,15 @@ surface.
 
 ## Authority and identity
 
-The Rust server is authoritative for authentication, authorization, game state,
-turns, time, randomness, and rewards. Transport handlers translate requests and
-responses; domain modules own permissions and invariants.
+OmarchyGS is authoritative for authentication, authorization, identities,
+social state, catalog and launch policy, the participant-private game-session
+envelope, public result and achievement policy/projections, audit, suspension,
+and durable recovery. A `platform_compiled` session also keeps OmarchyGS as its
+sole rules/state/revision owner. The Door Legends v1 pilot may instead pin one
+operator-registered provider release as the sole owner of its scoped rules,
+private gameplay state, turns, game time/randomness, revision, and outcome.
+Transport handlers translate requests and responses; domain modules own
+permissions and invariants.
 
 Accounts and personas are deliberately different identities. Accounts own
 credentials, sessions, and administrative status. Personas are the public
@@ -174,8 +177,9 @@ history, and atomic acceptance into those sessions are also implemented.
 Signal Siege v1 now adds one deterministic production rules definition,
 owner-scoped solo launch, and a completed match with an explicit durable
 outcome on top of the same synchronization rule without treating WebSocket
-delivery as durable truth. QML game launch and outcome-derived achievements or
-rewards remain later slices.
+delivery as durable truth. Door Legends v1 now adds one operator-pinned remote
+authority pilot with platform-owned result and achievement projections. QML
+game launch and external-provider onboarding remain later slices.
 
 The current server is a local development slice. Bearer tokens require
 production TLS in transit, and public login requires distributed attempt
@@ -190,7 +194,7 @@ contract deliberately or introduce a separately designed verifiable private
 registration channel before replacing it with a generic response; MFA does not
 remove the registration-side disclosure.
 
-## Later boundaries
+## Game authority boundaries
 
 Synchronization and games build on the implemented persona connection and
 private inbox boundaries. Conversation-local message sequences remain history
@@ -218,9 +222,25 @@ so it creates no bot account, persona, credential, or participant row.
 Completed history and final-command replay are implemented; QML gameplay and
 result-derived platform effects remain later boundaries.
 
-Compiled Rust crates are the initial extension model. Loading user-supplied
-native code is outside the first-alpha scope and would require a separate
-sandbox decision.
+For registered-provider sessions, migration 0015 prohibits a writable local
+gameplay snapshot: the platform envelope pins one exact release and keeps local
+state null. The authenticated broker sends only short-lived scoped grants and
+pairwise subjects, preserves operation idempotency and expected provider
+revision, and projects only bounded authenticated views. There is no compiled
+failback.
+
+Provider callbacks have no platform effect until OmarchyGS authenticates the
+exact message, rechecks lifecycle and pinned identity, claims the durable
+receipt, validates allowlisted result and achievement policy, and commits the
+projection, audit, and persona-sync invalidation atomically. Suspension denies
+new launches, commands, and callbacks but retains private reads and explicit
+reconciliation. Reactivation requires reconciliation before readiness;
+retirement is terminal.
+
+This authorization is limited to the operator-pinned Door Legends v1
+first-party pilot. External or self-service provider registration, direct
+client-provider networking, raw provider UI, and loading user-supplied native
+code remain outside the first-alpha boundary and require separate decisions.
 
 ### Portable game direction
 
@@ -258,20 +278,15 @@ serializes monotonic signed-policy transitions, and persists denial policy
 before enforcement. The exact store UID is still authoritative, so a later
 privileged or shared launcher needs a dedicated service identity or equivalent
 external monotonic authority. The main client still does not browse or launch
-cartridges, and the server does not ingest them into its public game catalog.
+cartridges, and the server does not ingest cartridge files into its public game
+catalog. The optional provider runtime instead lists only an operator-enabled
+manifest already pinned in the provider registry.
 
-This direction does not change present authority. Production still uses the
-compiled runtime and OmarchyGS-owned PostgreSQL snapshot/revision described
-above. Remote provider authority requires a later production protocol,
-migration, and explicit Constitution §10 amendment that assigns each gameplay
-revision to exactly one durable authority.
-
-If that later mode is approved, OmarchyGS remains the authenticated broker and
-platform authority for accounts, sessions, MFA, personas and avatar
-projections, social state, catalog and launch policy, achievements,
-notifications, audit, suspension, and the platform session envelope. A
-registered provider may own only its game rules and private gameplay state.
-The provider receives a short-lived audience/game/version/session/scope-bound
-pairwise persona grant—never account identity, credentials, reusable device
-tokens, or database access. See [Game Cartridges](game-cartridges.md) for the
-full trust, graphics, failure, and rollout model.
+The Door Legends mode keeps OmarchyGS as the authenticated broker and platform
+authority for accounts, sessions, MFA, personas and avatar projections, social
+state, catalog and launch policy, achievements, notifications, audit,
+suspension, and the platform session envelope. The provider receives a
+short-lived audience/game/version/session/scope-bound pairwise persona
+grant—never account identity, credentials, reusable device tokens, or database
+access. See [Game Cartridges](game-cartridges.md) for the full trust, graphics,
+failure, and rollout model.

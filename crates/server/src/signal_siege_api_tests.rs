@@ -92,7 +92,9 @@ async fn production_catalog_and_solo_start_body_bound_are_public_and_exact() {
                 "version": 1,
                 "display_name": "Signal Siege",
                 "min_human_players": 1,
-                "max_human_players": 1
+                "max_human_players": 1,
+                "authority": "platform_compiled",
+                "provider_release_id": null
             }]
         })
     );
@@ -153,6 +155,10 @@ async fn solo_start_is_owner_scoped_atomic_idempotent_and_registry_independent(p
     assert_eq!(document["game_version"], 1);
     assert_eq!(document["revision"], 0);
     assert_eq!(document["status"], "active");
+    assert_eq!(document["authority"], "platform_compiled");
+    assert!(document["provider_release_id"].is_null());
+    assert!(document["availability"].is_null());
+    assert!(document["result"].is_null());
     assert!(document["completed_at"].is_null());
     assert_eq!(document["participants"].as_array().map(Vec::len), Some(1));
     assert_eq!(document["participants"][0]["seat"], 0);
@@ -163,12 +169,16 @@ async fn solo_start_is_owner_scoped_atomic_idempotent_and_registry_independent(p
     assert_eq!(
         sorted_keys(&document),
         vec![
+            "authority",
+            "availability",
             "completed_at",
             "created_at",
             "game_key",
             "game_version",
             "id",
             "participants",
+            "provider_release_id",
+            "result",
             "revision",
             "state",
             "status",

@@ -216,6 +216,38 @@ async fn separate_tls_provider_proves_replay_faults_events_outage_and_reconcilia
         release_id: RELEASE_ID,
         message_id: event_message_id,
     };
+    let callback_quota_before: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(sum(used), 0)::BIGINT FROM provider_quota_windows WHERE release_id = $1 AND quota_kind = 'callback'",
+    )
+    .bind(RELEASE_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("callback quota should query");
+    let mut invalidly_signed_body = event_body.clone();
+    invalidly_signed_body.push(b' ');
+    assert!(matches!(
+        broker
+            .ingest_callback(
+                RELEASE_ID,
+                &event_context,
+                &parsed_event_headers,
+                &invalidly_signed_body,
+                unix_seconds(),
+            )
+            .await,
+        Err(ProviderError::ProtocolRejected)
+    ));
+    let callback_quota_after: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(sum(used), 0)::BIGINT FROM provider_quota_windows WHERE release_id = $1 AND quota_kind = 'callback'",
+    )
+    .bind(RELEASE_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("callback quota should query after rejection");
+    assert_eq!(
+        callback_quota_after, callback_quota_before,
+        "unauthenticated callbacks must not consume provider quota",
+    );
     let (first_event, racing_duplicate) = tokio::join!(
         broker.ingest_callback(
             RELEASE_ID,

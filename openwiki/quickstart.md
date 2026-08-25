@@ -47,10 +47,7 @@ sources:
     resource: repo://scripts/test-game-cartridge.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-25T19:56:58.182Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-25T19:56:58.182Z
+generated: {by: "codex", at: "2026-08-25T22:05:16.359Z"}
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -80,8 +77,10 @@ bounded play, durable completion, exact final-command replay, and retained
 history. Production also includes canonical signed Game Cartridges, an
 isolated trusted Core/Rich-2D renderer/preview CLI, a deterministic public SDK
 export, signed release and catalog-policy verification, and a secure local
-cartridge importer. The main QML connector still renders health and does not yet
-browse or launch cartridges.
+cartridge importer. When the optional provider runtime is configured, the
+server also exposes the operator-pinned Door Legends v1 release and routes its
+player operations to a separate provider process and database. The main QML
+connector still renders health and does not yet browse or launch cartridges.
 
 The product is game-first: connections, private inboxes, challenges, and
 persistent game history define the intended experience. A public message board
@@ -92,8 +91,8 @@ The server-side first playable now spans account, authentication, persona,
 connection, private inbox, durable synchronization, challenge-to-session
 orchestration, and one completed asynchronous solo match with an explicit
 outcome. The flagship QML connector still has no game catalog, launch, or
-gameplay flow, and outcome-derived achievements and rewards remain future
-work.
+gameplay flow, and compiled Signal Siege outcome-derived achievements and
+rewards remain future work.
 
 ADR-0002 now accepts the **Game Cartridge** as the staged portable-game
 direction: a publisher-signed, data-only presentation package rendered by
@@ -104,13 +103,14 @@ render-plan compiler, fixed trusted QML vocabulary, private preview output, and
 measured Core/Rich-2D profile. Ticket 017 implements a deterministic public SDK,
 signed reproducible release and five-state catalog policy, a Linux
 descriptor-relative secure importer, and a clean-clone first-party repository
-proof. No server catalog-ingestion or main-client launch route and no provider
-network are connected. Ticket 018 adds a dormant production provider security
-crate and durable schema for operator-pinned registration, signed grants and
-messages, guarded egress, replay, quotas, leases, lifecycle, and audit. The
-compiled Rust runtime plus OmarchyGS-owned PostgreSQL game snapshot remain
-authoritative until a later provider migration and Constitution-amendment
-pipeline explicitly connects that foundation.
+proof. Ticket 018 adds the production provider security crate and durable
+schema for operator-pinned registration, signed grants and messages, guarded
+egress, replay, quotas, leases, lifecycle, and audit. Ticket 019 connects that
+foundation to one narrowly authorized first-party pilot: compiled Signal Siege
+sessions retain OmarchyGS rules authority, while a Door Legends session pins
+one exact provider release as its only durable rules/state/revision authority.
+External providers, server-side cartridge ingestion, and main-client launch
+remain later work.
 
 ## Task routing
 
@@ -119,7 +119,7 @@ pipeline explicitly connects that foundation.
 | Change server startup, configuration, migrations, or health behavior | [Runtime foundation](runtime-foundation.md) | `crates/server/src/main.rs`, `config.rs`, `app.rs`; `migrations/` | `cargo test -p omarchy-gaming-system-server`; health smoke |
 | Change accounts, device sessions, MFA, personas, or connections | [Runtime foundation](runtime-foundation.md) | `accounts.rs`, `credentials.rs`, `sessions.rs`, `mfa.rs`, `personas.rs`, `connections.rs`; `docs/api.md` | Domain tests plus multi-account PostgreSQL evidence |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
-| Change cartridge packaging, trusted rendering, SDK portability, or provider integration | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/game-provider`; `client/qml/cartridge`; migration `0014`; ADR-0002; Tickets 015–019 | `scripts/test-game-cartridge.sh`; `scripts/test-game-cartridge-renderer.sh`; `scripts/test-game-cartridge-sdk.sh`; `scripts/test-provider-conformance.sh`; threat/authority review and constitutional authority check |
+| Change cartridge packaging, trusted rendering, SDK portability, or provider integration | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `client/qml/cartridge`; migrations `0014`–`0015`; ADR-0002; Tickets 015–019 | `scripts/test-game-cartridge.sh`; `scripts/test-game-cartridge-renderer.sh`; `scripts/test-game-cartridge-sdk.sh`; `scripts/test-provider-conformance.sh`; `scripts/test-provider-authority-pilot.sh`; threat/authority review and constitutional authority check |
 | Run or diagnose the local stack and quality gate | [Development and validation](development-and-validation.md) | `scripts/dev.sh`; `bin/gate.sh`; `client/qml/Main.qml` | `bin/gate.sh --fast` or `--diff` |
 | Start or resume a non-trivial change | [Codex workflow](codex-workflow.md) | `AGENTS.md`; `$omarchy-workflow`; active pipeline | Phase receipts and canonical gate |
 
@@ -151,13 +151,16 @@ conversation-local and monotonic. A separate persona cursor recovers retained
 cross-resource changes through REST; hint-only WebSockets tell clients when to
 query it.
 
-The current game boundary is executable. `GET /v1/games` returns stable
-compiled manifest metadata and production advertises exactly the one-human
-Signal Siege v1 definition. An authenticated account may launch that exact
-solo definition for an owned persona with a durable UUID receipt. The
-persona-root transaction checks exact replay before current registry and
-inventory policy, admits at most 25 active solo starts, and creates only the
-human seat; the deterministic bot has no account or persona row.
+The current game boundary is executable. `GET /v1/games` always returns stable
+compiled Signal Siege v1 metadata and, when the optional all-or-none provider
+configuration is present, adds only an active operator-pinned Door Legends v1
+manifest. Every catalog record declares `platform_compiled` or
+`registered_provider` authority and an optional exact provider release. An
+authenticated account may launch either admitted one-human definition for an
+owned persona with a durable UUID receipt. The persona-root transaction checks
+exact replay before current admission, admits at most 25 active solo starts,
+and creates only the human seat; the deterministic Signal Siege bot has no
+account or persona row.
 
 Connected, unblocked personas may separately use the existing challenge flow
 for an exact registered two-player version. Challenge creation is bounded and
@@ -168,7 +171,12 @@ revision. A transition now returns both state and authoritative active or
 completed lifecycle. Completion stores its timestamp and explicit outcome;
 the exact final command replays after completion, while new commands conflict.
 List/detail history and payload-minimal sync invalidations remain reconnect
-safe. The QML game discovery, launch, and gameplay flow remains a later slice.
+safe. Door Legends commands retain their idempotency key and expected provider
+revision through the broker, while explicit reconciliation recovers unknown
+outcomes. Provider session reads expose only the authority-tagged platform
+envelope, last authenticated bounded view, availability, and optional
+allowlisted result—not provider-private rules state. The QML game discovery,
+launch, and gameplay flow remains a later slice.
 
 The production cartridge crates can independently pack and verify a canonical
 signed `.ogsc`, report host compatibility, install/revoke it in a bounded
@@ -179,11 +187,15 @@ release attestations, enforce signed five-state lifecycle policy, and import a
 release through a Linux descriptor-relative secure store. The preview CLI
 writes only read-only plan/assets into a caller-created private directory and
 reports no provider, database, or credential use. The current main QML connector
-does not browse or launch cartridges, and the server does not ingest cartridges
-or contact a provider. The dormant `omarchy-game-provider` crate separately
-implements operator-pinned releases, signed pairwise grants and messages,
-public-only pinned HTTPS egress, and durable replay/quota/lease/audit controls;
-it is not instantiated by the server and owns no player-facing authority.
+does not browse or launch cartridges, and the server does not ingest cartridge
+files directly. The `omarchy-game-provider` crate implements operator-pinned
+releases, signed pairwise grants and messages, public-only pinned HTTPS egress,
+and durable replay/quota/lease/audit controls. The optional production bridge
+instantiates it only for the Door Legends pilot. Migration 0015 prevents dual
+authority: compiled sessions require local object state and no provider release,
+whereas provider sessions require a release pin and null local rules state.
+Authenticated callbacks become results, achievements, views, audit, and sync
+effects only through one policy-checked projection transaction.
 
 Current runtime identifiers use the gaming-system namespace; see [Runtime
 foundation](runtime-foundation.md) for the narrow local compatibility window

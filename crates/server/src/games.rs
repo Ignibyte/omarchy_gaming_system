@@ -27,11 +27,23 @@ pub struct GameSession {
     pub game_version: u32,
     pub revision: i64,
     pub status: String,
-    pub state: Value,
+    pub state: Option<Value>,
+    pub authority: String,
+    pub provider_release_id: Option<Uuid>,
+    pub availability: Option<String>,
+    pub result: Option<GameResult>,
     pub participants: Vec<GameParticipant>,
     pub completed_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct GameResult {
+    pub outcome: String,
+    pub public_summary: Value,
+    pub provider_revision: i64,
+    pub projected_at: String,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -46,6 +58,9 @@ pub struct GameCommandResult {
     pub revision: i64,
     pub status: String,
     pub state: Value,
+    pub authority: String,
+    pub provider_release_id: Option<Uuid>,
+    pub availability: Option<String>,
 }
 
 pub struct StartGameSessionInput {
@@ -58,6 +73,7 @@ pub struct StartGameSessionInput {
 pub enum GameSessionStartOutcome {
     Created(GameSession),
     Existing(GameSession),
+    Pending(GameSession),
 }
 
 pub struct GameCommandInput {
@@ -83,6 +99,7 @@ pub enum GameError {
     GameCompleted,
     RevisionConflict,
     IdempotencyConflict,
+    ProviderUnavailable,
     Internal,
 }
 
@@ -93,7 +110,15 @@ struct GameSessionRow {
     game_version: i64,
     revision: i64,
     status: String,
-    state: Json<Value>,
+    state: Option<Json<Value>>,
+    authority: String,
+    provider_release_id: Option<Uuid>,
+    provider_availability: Option<String>,
+    provider_view: Option<Json<Value>>,
+    result_outcome: Option<String>,
+    result_summary: Option<Json<Value>>,
+    result_revision: Option<i64>,
+    result_projected_at: Option<String>,
     completed_at: Option<String>,
     created_at: String,
     updated_at: String,
@@ -118,7 +143,8 @@ struct LockedGameSessionRow {
     game_version: i64,
     revision: i64,
     status: String,
-    state: Json<Value>,
+    state: Option<Json<Value>>,
+    authority: String,
     actor_seat: i16,
 }
 
@@ -179,8 +205,8 @@ pub(crate) async fn create_session(
 
     let session_id = sqlx::query_scalar::<_, Uuid>(
         r#"
-        INSERT INTO game_sessions (game_key, game_version, state)
-        VALUES ($1, $2, $3)
+        INSERT INTO game_sessions (game_key, game_version, state, authority)
+        VALUES ($1, $2, $3, 'platform_compiled')
         RETURNING id
         "#,
     )
@@ -358,6 +384,16 @@ pub async fn list_sessions(
             session.revision,
             session.status,
             session.state,
+            session.authority,
+            session.provider_release_id,
+            session.provider_availability,
+            view.view AS provider_view,
+            result.outcome AS result_outcome,
+            result.public_summary AS result_summary,
+            result.provider_revision AS result_revision,
+            CASE WHEN result.projected_at IS NULL THEN NULL ELSE
+              to_char(result.projected_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+            END AS result_projected_at,
             CASE WHEN session.completed_at IS NULL THEN NULL ELSE
               to_char(session.completed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
             END AS completed_at,
@@ -366,6 +402,8 @@ pub async fn list_sessions(
         FROM game_sessions AS session
         JOIN game_session_participants AS actor
           ON actor.game_session_id = session.id AND actor.persona_id = $1
+        LEFT JOIN provider_game_session_views AS view ON view.game_session_id = session.id
+        LEFT JOIN provider_game_results AS result ON result.game_session_id = session.id
         ORDER BY session.created_at DESC, session.id DESC
         LIMIT $2
         "#,
@@ -389,7 +427,7 @@ pub async fn get_session(
     load_session_for_participant(pool, actor_id, session_id).await
 }
 
-async fn load_session_for_participant(
+pub(crate) async fn load_session_for_participant(
     pool: &PgPool,
     actor_id: Uuid,
     session_id: Uuid,
@@ -403,6 +441,16 @@ async fn load_session_for_participant(
             session.revision,
             session.status,
             session.state,
+            session.authority,
+            session.provider_release_id,
+            session.provider_availability,
+            view.view AS provider_view,
+            result.outcome AS result_outcome,
+            result.public_summary AS result_summary,
+            result.provider_revision AS result_revision,
+            CASE WHEN result.projected_at IS NULL THEN NULL ELSE
+              to_char(result.projected_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+            END AS result_projected_at,
             CASE WHEN session.completed_at IS NULL THEN NULL ELSE
               to_char(session.completed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
             END AS completed_at,
@@ -411,6 +459,8 @@ async fn load_session_for_participant(
         FROM game_sessions AS session
         JOIN game_session_participants AS actor
           ON actor.game_session_id = session.id AND actor.persona_id = $1
+        LEFT JOIN provider_game_session_views AS view ON view.game_session_id = session.id
+        LEFT JOIN provider_game_results AS result ON result.game_session_id = session.id
         WHERE session.id = $2
         "#,
     )
@@ -458,6 +508,7 @@ pub async fn apply_command(
             session.revision,
             session.status,
             session.state,
+            session.authority,
             actor.seat AS actor_seat
         FROM game_sessions AS session
         JOIN game_session_participants AS actor
@@ -508,6 +559,9 @@ pub async fn apply_command(
             revision: receipt.applied_revision,
             status: receipt.session_status,
             state: receipt.state.0,
+            authority: "platform_compiled".to_owned(),
+            provider_release_id: None,
+            availability: None,
         });
     }
 
@@ -516,6 +570,9 @@ pub async fn apply_command(
     }
     if locked.status != GameSessionStatus::Active.as_str() {
         return Err(GameError::Internal);
+    }
+    if locked.authority != "platform_compiled" {
+        return Err(GameError::GameUnavailable);
     }
     if locked.revision != expected_revision {
         return Err(GameError::RevisionConflict);
@@ -526,7 +583,7 @@ pub async fn apply_command(
         .apply_command(
             &locked.game_key,
             game_version,
-            &locked.state.0,
+            &locked.state.as_ref().ok_or(GameError::Internal)?.0,
             actor_seat,
             &command,
         )
@@ -623,6 +680,9 @@ pub async fn apply_command(
         revision: applied_revision,
         status: transition.status.as_str().to_owned(),
         state: transition.state,
+        authority: "platform_compiled".to_owned(),
+        provider_release_id: None,
+        availability: None,
     })
 }
 
@@ -689,7 +749,31 @@ async fn load_session_participants(
                 game_version,
                 revision: row.revision,
                 status: row.status,
-                state: row.state.0,
+                state: match row.authority.as_str() {
+                    "platform_compiled" => Some(row.state.ok_or(GameError::Internal)?.0),
+                    "registered_provider" => row.provider_view.map(|view| view.0),
+                    _ => return Err(GameError::Internal),
+                },
+                authority: row.authority,
+                provider_release_id: row.provider_release_id,
+                availability: row.provider_availability,
+                result: match (
+                    row.result_outcome,
+                    row.result_summary,
+                    row.result_revision,
+                    row.result_projected_at,
+                ) {
+                    (Some(outcome), Some(summary), Some(provider_revision), Some(projected_at)) => {
+                        Some(GameResult {
+                            outcome,
+                            public_summary: summary.0,
+                            provider_revision,
+                            projected_at,
+                        })
+                    }
+                    (None, None, None, None) => None,
+                    _ => return Err(GameError::Internal),
+                },
                 participants,
                 completed_at: row.completed_at,
                 created_at: row.created_at,
@@ -699,7 +783,7 @@ async fn load_session_participants(
         .collect()
 }
 
-async fn authenticate_owned_persona(
+pub(crate) async fn authenticate_owned_persona(
     pool: &PgPool,
     token: &str,
     actor_id: &str,

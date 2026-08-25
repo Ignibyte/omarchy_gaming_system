@@ -5,10 +5,13 @@
 //! protocol messages, guarded egress, durable replay/quota/audit state, and a
 //! conformance boundary for a later authority-migration pipeline.
 
+#[cfg(feature = "platform")]
 pub mod broker;
+#[cfg(feature = "platform")]
 pub mod egress;
 pub mod model;
 pub mod protocol;
+#[cfg(feature = "platform")]
 pub mod registry;
 
 use thiserror::Error;

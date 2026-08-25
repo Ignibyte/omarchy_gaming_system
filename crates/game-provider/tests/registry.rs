@@ -3,9 +3,9 @@ use ed25519_dalek::SigningKey;
 use omarchy_game_provider::{
     ProviderError,
     model::{
-        ActiveSessionPolicy, LifecycleStatus, OperationalKeyInput, OperationalKeyKind,
-        OperatorCommand, ProviderEndpoint, ProviderQuotas, ProviderScope, RegisterReleaseInput,
-        SessionAdmission,
+        AchievementDefinitionInput, ActivatePilotInput, ActiveSessionPolicy, LifecycleStatus,
+        OperationalKeyInput, OperationalKeyKind, OperatorCommand, PilotStatus, ProviderEndpoint,
+        ProviderQuotas, ProviderScope, RegisterReleaseInput, SessionAdmission,
     },
     protocol::GrantIssuer,
     registry::{IssueGrantRequest, ProviderRegistry},
@@ -90,6 +90,111 @@ fn quotas() -> ProviderQuotas {
         connect_timeout_ms: 500,
         total_timeout_ms: 2_000,
     }
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-provider-conformance.sh"]
+async fn pilot_activation_pins_public_policy_and_retirement_is_terminal(pool: PgPool) {
+    let registry = register_fixture(&pool, quotas()).await;
+    let activation = OperatorCommand::ActivatePilot {
+        actor: "integration-operator".to_owned(),
+        reason: "enable one exact first-party provider pilot".to_owned(),
+        pilot: ActivatePilotInput {
+            release_id: release_id(),
+            display_name: "Signal Siege Remote Fixture".to_owned(),
+            min_human_players: 1,
+            max_human_players: 1,
+            achievements: vec![AchievementDefinitionInput {
+                key: "first_win".to_owned(),
+                display_name: "First Win".to_owned(),
+                description: "Win the exact registered fixture once.".to_owned(),
+            }],
+        },
+    };
+    registry
+        .apply_operator_command(&activation)
+        .await
+        .expect("first pilot activation should pass");
+    registry
+        .apply_operator_command(&activation)
+        .await
+        .expect("exact activation replay should be stable");
+    let policy: (String, i16, i16, String) = sqlx::query_as(
+        r#"
+        SELECT display_name, min_human_players, max_human_players, status
+        FROM provider_game_pilots
+        WHERE release_id = $1
+        "#,
+    )
+    .bind(release_id())
+    .fetch_one(&pool)
+    .await
+    .expect("pilot policy should persist");
+    assert_eq!(
+        policy,
+        (
+            "Signal Siege Remote Fixture".to_owned(),
+            1,
+            1,
+            "active".to_owned()
+        )
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM provider_achievement_definitions WHERE release_id = $1",
+        )
+        .bind(release_id())
+        .fetch_one(&pool)
+        .await
+        .expect("achievement definitions should count"),
+        1
+    );
+    registry
+        .apply_operator_command(&OperatorCommand::SetPilotStatus {
+            actor: "integration-operator".to_owned(),
+            reason: "exercise read-only provider suspension".to_owned(),
+            release_id: release_id(),
+            status: PilotStatus::Suspended,
+        })
+        .await
+        .expect("pilot should suspend");
+    registry
+        .apply_operator_command(&OperatorCommand::SetPilotStatus {
+            actor: "integration-operator".to_owned(),
+            reason: "restore the exact provider pilot".to_owned(),
+            release_id: release_id(),
+            status: PilotStatus::Active,
+        })
+        .await
+        .expect("pilot should restore");
+    registry
+        .apply_operator_command(&OperatorCommand::SetPilotStatus {
+            actor: "integration-operator".to_owned(),
+            reason: "permanently retire the provider pilot".to_owned(),
+            release_id: release_id(),
+            status: PilotStatus::Retired,
+        })
+        .await
+        .expect("pilot should retire");
+    let revival = registry
+        .apply_operator_command(&OperatorCommand::SetPilotStatus {
+            actor: "integration-operator".to_owned(),
+            reason: "attempt a forbidden pilot revival".to_owned(),
+            release_id: release_id(),
+            status: PilotStatus::Active,
+        })
+        .await;
+    assert!(matches!(revival, Err(ProviderError::Denied)));
+    assert!(
+        sqlx::query(
+            "DELETE FROM provider_achievement_definitions WHERE release_id = $1 AND achievement_key = 'first_win'",
+        )
+        .bind(release_id())
+        .execute(&pool)
+        .await
+        .is_err(),
+        "platform achievement policy must be immutable"
+    );
 }
 
 #[sqlx::test(migrations = "../../migrations")]

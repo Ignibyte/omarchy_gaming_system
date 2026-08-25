@@ -44,11 +44,15 @@ result recorded.
 - Rust modular monolith backed by PostgreSQL
 - Versioned JSON API plus WebSocket notifications
 - Account and persona identities remain separate
-- Games are deterministic and server-authoritative
+- Every game session has one server-side authority. OmarchyGS owns compiled
+  games; an operator-pinned registered provider may own one remote game's
+  rules/state/revision while OmarchyGS retains identity, envelope, policy,
+  projections, audit, and recovery.
 - WebSockets are advisory; durable cursor sync recovers missed events
-- Private-alpha rules run as reviewed compiled Rust crates; signed declarative
-  cartridges and the versioned conformance SDK provide the portable frontend
-  contract, while remote gameplay authority remains a later gated decision
+- Signal Siege remains a reviewed compiled Rust crate. Door Legends v1 is the
+  sole first-party remote authority pilot. Signed declarative cartridges and
+  the versioned conformance SDK remain the portable frontend contract;
+  external provider onboarding is still gated.
 
 ## Definition of private-alpha done
 

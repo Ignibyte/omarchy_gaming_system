@@ -1,8 +1,11 @@
 # Remote provider security operations
 
-Status: Ticket 018 installs the operator control plane and dormant broker
-foundation. There is no player-facing remote-provider route, and registering a
-release does not transfer gameplay authority or make it catalog-visible.
+Status: Ticket 018 installs the operator control plane and broker foundation.
+Ticket 019 uses it for one operator-pinned first-party Door Legends release.
+Registration alone still does not transfer gameplay authority or make a
+release catalog-visible; the separate pilot activation command is required.
+See [`provider-authority-pilot.md`](provider-authority-pilot.md) for the exact
+activation, recovery, and retirement procedure.
 
 ## Operating model
 

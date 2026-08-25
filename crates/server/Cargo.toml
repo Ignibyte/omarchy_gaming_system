@@ -14,6 +14,7 @@ data-encoding.workspace = true
 hmac.workspace = true
 omarchy-game-runtime = { path = "../game-runtime" }
 omarchy-game-signal-siege = { path = "../game-signal-siege" }
+omarchy-game-provider = { path = "../game-provider" }
 percent-encoding.workspace = true
 rand_core.workspace = true
 serde.workspace = true
@@ -29,7 +30,13 @@ uuid.workspace = true
 zeroize.workspace = true
 
 [dev-dependencies]
+axum-server.workspace = true
+ed25519-dalek.workspace = true
 futures-util.workspace = true
 http-body-util.workspace = true
+rcgen.workspace = true
+rustls.workspace = true
+tempfile = "3.23.0"
 tokio-tungstenite.workspace = true
 tower.workspace = true
+omarchy-game-provider = { path = "../game-provider", features = ["provider-conformance"] }

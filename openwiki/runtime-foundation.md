@@ -63,10 +63,7 @@ sources:
     resource: repo://migrations/0012_game_challenges.sql
   - id: openwiki-source-926664a4167297129df76802
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
-generated: {by: "codex", at: "2026-08-25T18:10:29.411Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-25T18:10:29.411Z
+generated: {by: "codex", at: "2026-08-25T22:05:16.359Z"}
 ---
 
 # Runtime foundation
@@ -82,6 +79,13 @@ graceful shutdown. A failure to connect, migrate, subscribe, bind, or serve
 carries context and stops startup instead of exposing a partially ready
 process. Shutdown also aborts the listener task.
 
+After migrations, startup may also construct a production `ProviderRuntime`
+and inject it into the router. The provider runtime is absent when all provider
+environment values are absent. It is enabled only when the grant-signing seed,
+pairwise secret, message-signing seed, and callback authority are all present
+and valid; a partial or malformed set stops startup rather than exposing a
+partially configured broker.
+
 Configuration lives in `crates/server/src/config.rs`. `DATABASE_URL` and
 `OGS_BIND_ADDRESS` can override development defaults; `BBS_BIND_ADDRESS` is a
 transitional fallback only when the new variable is absent. The defaults point
@@ -90,6 +94,8 @@ Startup also requires `OGS_MFA_ENCRYPTION_KEY` as an unpadded base64url-encoded
 32-byte value. All replicas and restored instances that need to verify enrolled
 authenticators must receive the same protected key. Keep network, key, and
 credential policy explicit when introducing a non-local deployment profile.
+The optional provider secrets use unpadded base64url and the callback authority
+must be a bounded lowercase DNS authority with an optional nonzero port.
 
 ## Health flow
 
@@ -382,10 +388,13 @@ definitions. A manifest uses one canonical key, a positive exact version, a
 bounded control-free display name, and human-player limits within the global
 eight-seat cap. Registry construction rejects invalid manifests and duplicate
 `(key, version)` definitions and stores them in deterministic key/version
-order. Production constructs a registry containing exactly Signal Siege v1;
-tests may inject fixture versions or an empty registry to prove retained
-history and replay. The public `GET /v1/games` route projects only manifest
-metadata.
+order. Production constructs a compiled registry containing exactly Signal
+Siege v1; tests may inject fixture versions or an empty registry to prove
+retained history and replay. The public `GET /v1/games` route always projects
+that compiled metadata and, when the optional provider runtime is enabled,
+merges only active provider-pilot manifests. Every record identifies its
+`platform_compiled` or `registered_provider` authority and optional pinned
+provider release.
 
 A definition receives only the human-player count when initializing and only
 the current object state, actor seat, and object command when transitioning. It
@@ -399,7 +408,7 @@ typed errors. A successful definition returns a bounded next snapshot and a
 closed `active|completed` lifecycle; identical initialization or command
 inputs are expected to be deterministic.
 
-`games::create_session` is a crate-private transaction primitive invoked by
+`games::create_session` is the platform-compiled crate-private transaction primitive invoked by
 challenge acceptance and the owner-scoped solo-start transaction. It rejects
 empty, duplicate, or over-eight participant sets before persistence;
 initializes the exact rules version;
@@ -431,8 +440,11 @@ Authenticated inventory and detail routes first validate the Bearer session,
 then require the acting persona to belong to its derived account and to each
 returned game session. Inventory defaults to 50, caps at 100, and orders newest
 first. Responses expose the durable key, version, revision, active/completed
-status, state, optional completion time, timestamps, seats, and the existing
-public persona shape; they contain no account ownership or registry internals.
+status, authority, optional provider release and availability, state or
+authenticated provider view, optional allowlisted provider result, completion
+time, timestamps, seats, and the existing public persona shape; they contain no
+account ownership, provider endpoint, credential, grant, or private provider
+rules state.
 Foreign, malformed, and absent session IDs share the same not-found result.
 Reads come directly from PostgreSQL, so a process registry that has gained,
 lost, or replaced versions cannot silently reinterpret an old session.
@@ -460,6 +472,45 @@ minimal invalidation per canonically ordered participant. Rules rejection,
 malformed input, unavailable rules, completed lifecycle, revision conflict,
 and later transaction failure leave state, receipt, and invalidations
 unchanged.
+
+## Registered-provider game flow
+
+Ticket 019 adds one optional registered-provider path for the operator-pinned
+Door Legends v1 release. An owner-scoped start first locks the persona root and
+resolves a durable start receipt before current catalog admission. New work
+persists a `registered_provider` session envelope with a null local state,
+release pin, `provisioning` availability, seat-zero participant, start receipt,
+and sync invalidation, then commits before sending the signed launch operation.
+The platform therefore has a durable recovery root even if the first network
+outcome is unknown, without storing a writable copy of provider rules state.
+
+Provider command and reconcile routes authenticate the same owned participant
+and dispatch through `ProviderBroker`; they never invoke `GameRegistry`. Each
+operation retains one idempotency UUID and expected provider revision. The
+broker issues a fresh short-lived pairwise grant, enforces registered endpoint,
+TLS, key, scope, lifecycle, body, timeout, replay, quota, and lease policy, and
+authenticates the exact response. The platform then conditionally projects only
+the bounded Door Legends view, revision, lifecycle, and availability in a new
+transaction. A timeout or outage marks an explicit recovery state, and an
+explicit reconcile operation asks the provider for authoritative state. There
+is no compiled fallback.
+
+Provider callbacks first validate the fixed callback authority and path,
+registered identity, pairwise subject, exact signed bytes, key, bounds, quota,
+and current pilot lifecycle. The projection transaction locks release, pilot,
+and session roots in one order, claims the durable callback receipt, validates
+event revision and platform-pinned result/achievement policy, and commits the
+view, allowlisted result or awards, audit, and persona-sync invalidation
+together. Invalid signatures consume no authenticated callback quota;
+authenticated events outside policy are durably ignored and audited without a
+platform effect; exact replays are effect-free.
+
+Suspension removes the pilot from the catalog, denies launches, commands, and
+callbacks, preserves participant-private reads, and allows explicit
+reconciliation to establish the authoritative remote state. Reactivation
+keeps sessions non-ready until that reconciliation succeeds. Retirement is
+terminal. The provider database remains independent of the OmarchyGS database;
+the tested recovery procedure backs it up and restores it separately.
 
 ## Identity-ready schema
 
@@ -507,7 +558,12 @@ typed challenge/session references and retained persona events with an exact
 payload-minimal challenge variant. Migration `0013` adds the consistent
 active/completed session and timestamp shape, stores the applied lifecycle in
 every command receipt, and adds persona/idempotency/session-linked solo-start
-receipts with exact game identity and participant integrity. Add later
+receipts with exact game identity and participant integrity. Migration `0014`
+adds the registered-provider security/control-plane foundation. Migration
+`0015` adds the session authority discriminator and exclusive state shape,
+provider release and availability, the singleton pilot, authenticated bounded
+views, immutable result and achievement projections, and terminal lifecycle
+guards. Add later
 capabilities through domain modules and thin handlers rather than placing policy
 directly in SQL or transport code.
 
@@ -558,3 +614,9 @@ six migrated PostgreSQL cases cover participant privacy, exact creation replay
 and collisions, typed inbox and minimal sync payloads, exact-version acceptance
 and seat order, terminal history and lazy expiry, pending limits, initializer
 and block rollback, and one-winner terminal races.
+Provider player-route changes use `provider_game_api_tests.rs` plus
+`scripts/test-provider-authority-pilot.sh`. The clean-clone proof covers the
+independent TLS process and database, protocol-only dependency, mixed catalog,
+exact start and command replay, expected-revision races, unknown-outcome
+reconciliation, callback authentication/deduplication/policy, participant
+privacy, lifecycle containment, restart, and separate provider backup/restore.

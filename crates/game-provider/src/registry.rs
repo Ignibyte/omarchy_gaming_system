@@ -10,9 +10,9 @@ use uuid::Uuid;
 use crate::{
     ProviderError, Result,
     model::{
-        ActiveSessionPolicy, LifecycleStatus, OperationalKeyInput, OperationalKeyKind,
-        OperatorCommand, ProviderEndpoint, ProviderQuotas, ProviderScope, RegisterReleaseInput,
-        ReleasePolicy, SessionAdmission,
+        ActivatePilotInput, ActiveSessionPolicy, LifecycleStatus, OperationalKeyInput,
+        OperationalKeyKind, OperatorCommand, PilotStatus, ProviderEndpoint, ProviderQuotas,
+        ProviderScope, RegisterReleaseInput, ReleasePolicy, SessionAdmission,
     },
     protocol::{GrantIssuer, ProviderGrantClaims, SignedProviderGrant, sha256_hex},
 };
@@ -79,6 +79,8 @@ impl RegisteredOperationalKey {
 pub struct ProviderSecurityMaterial {
     /// Exact policy snapshot.
     pub policy: ReleasePolicy,
+    /// Optional first-party pilot lifecycle layered over the general release.
+    pub pilot_status: Option<PilotStatus>,
     /// Active provider message verification keys.
     pub message_keys: Vec<RegisteredOperationalKey>,
     /// Active registered TLS root DER certificates.
@@ -199,6 +201,20 @@ impl ProviderRegistry {
                 release_id,
                 quotas,
             } => self.update_quotas(actor, reason, *release_id, quotas).await,
+            OperatorCommand::ActivatePilot {
+                actor,
+                reason,
+                pilot,
+            } => self.activate_pilot(actor, reason, pilot).await,
+            OperatorCommand::SetPilotStatus {
+                actor,
+                reason,
+                release_id,
+                status,
+            } => {
+                self.set_pilot_status(actor, reason, *release_id, *status)
+                    .await
+            }
         }
     }
 
@@ -491,20 +507,19 @@ impl ProviderRegistry {
         Ok(())
     }
 
-    /// Charge callback quota after resolving the exact release identity.
-    pub async fn admit_callback(
+    /// Load callback verification material without charging authenticated quota.
+    pub async fn load_callback_material(
         &self,
         release_id: Uuid,
-        correlation_id: Uuid,
     ) -> Result<ProviderSecurityMaterial> {
-        if correlation_id.is_nil() {
+        if release_id.is_nil() {
             return Err(ProviderError::InvalidInput);
         }
         let mut transaction = self
             .pool
             .begin()
             .await
-            .map_err(|error| map_database_error(error, "begin provider callback admission"))?;
+            .map_err(|error| map_database_error(error, "begin provider callback material"))?;
         let material = load_material_locked(&mut transaction, release_id).await?;
         let scope_status =
             load_scope_status(&mut transaction, release_id, ProviderScope::Event).await?;
@@ -514,6 +529,42 @@ impl ProviderRegistry {
             ProviderScope::Event,
             SessionAdmission::Existing,
         )?;
+        transaction
+            .commit()
+            .await
+            .map_err(|error| map_database_error(error, "commit provider callback material"))?;
+        Ok(material)
+    }
+
+    /// Recheck authenticated callback policy and charge its shared quota.
+    pub async fn admit_authenticated_callback(
+        &self,
+        release_id: Uuid,
+        correlation_id: Uuid,
+        key_id: &str,
+        body_len: usize,
+    ) -> Result<ProviderSecurityMaterial> {
+        if release_id.is_nil() || correlation_id.is_nil() || key_id.is_empty() {
+            return Err(ProviderError::InvalidInput);
+        }
+        let mut transaction =
+            self.pool.begin().await.map_err(|error| {
+                map_database_error(error, "begin authenticated callback admission")
+            })?;
+        let material = load_material_locked(&mut transaction, release_id).await?;
+        let scope_status =
+            load_scope_status(&mut transaction, release_id, ProviderScope::Event).await?;
+        evaluate_admission(
+            &material,
+            scope_status,
+            ProviderScope::Event,
+            SessionAdmission::Existing,
+        )?;
+        if body_len > material.policy.quotas.response_body_bytes as usize
+            || !material.message_keys.iter().any(|key| key.key_id == key_id)
+        {
+            return Err(ProviderError::Denied);
+        }
         charge_quota_locked(
             &mut transaction,
             release_id,
@@ -521,10 +572,9 @@ impl ProviderRegistry {
             material.policy.quotas.callbacks_per_minute,
         )
         .await?;
-        transaction
-            .commit()
-            .await
-            .map_err(|error| map_database_error(error, "commit provider callback admission"))?;
+        transaction.commit().await.map_err(|error| {
+            map_database_error(error, "commit authenticated callback admission")
+        })?;
         Ok(material)
     }
 
@@ -1122,6 +1172,270 @@ impl ProviderRegistry {
             status: None,
         })
     }
+
+    async fn activate_pilot(
+        &self,
+        actor: &str,
+        reason: &str,
+        pilot: &ActivatePilotInput,
+    ) -> Result<OperatorReceipt> {
+        let mut transaction = self
+            .pool
+            .begin()
+            .await
+            .map_err(|error| map_database_error(error, "begin provider pilot activation"))?;
+        let row = lock_release_row(&mut transaction, pilot.release_id).await?;
+        if row.provider_status != "active" || row.release_status != "active" {
+            return Err(ProviderError::Denied);
+        }
+        let required_scopes: i64 = sqlx::query_scalar(
+            r#"
+            SELECT count(*)
+            FROM provider_release_scopes
+            WHERE release_id = $1
+              AND scope = ANY($2)
+              AND status = 'active'
+            "#,
+        )
+        .bind(pilot.release_id)
+        .bind([
+            ProviderScope::Launch.as_str(),
+            ProviderScope::Command.as_str(),
+            ProviderScope::Reconcile.as_str(),
+            ProviderScope::Event.as_str(),
+        ])
+        .fetch_one(&mut *transaction)
+        .await
+        .map_err(|error| map_database_error(error, "validate provider pilot scopes"))?;
+        if required_scopes != 4 {
+            return Err(ProviderError::Denied);
+        }
+        let existing_active: Option<Uuid> = sqlx::query_scalar(
+            "SELECT release_id FROM provider_game_pilots WHERE status = 'active' FOR UPDATE",
+        )
+        .fetch_optional(&mut *transaction)
+        .await
+        .map_err(|error| map_database_error(error, "lock active provider pilot"))?;
+        if existing_active.is_some_and(|release_id| release_id != pilot.release_id) {
+            return Err(ProviderError::Conflict);
+        }
+        sqlx::query(
+            r#"
+            INSERT INTO provider_game_pilots (
+                release_id, display_name, min_human_players, max_human_players
+            )
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (release_id) DO NOTHING
+            "#,
+        )
+        .bind(pilot.release_id)
+        .bind(&pilot.display_name)
+        .bind(i16::from(pilot.min_human_players))
+        .bind(i16::from(pilot.max_human_players))
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| map_database_error(error, "insert provider pilot"))?;
+        let stored = sqlx::query_as::<_, (String, i16, i16, String)>(
+            r#"
+            SELECT display_name, min_human_players, max_human_players, status
+            FROM provider_game_pilots
+            WHERE release_id = $1
+            FOR UPDATE
+            "#,
+        )
+        .bind(pilot.release_id)
+        .fetch_one(&mut *transaction)
+        .await
+        .map_err(|error| map_database_error(error, "load provider pilot"))?;
+        if stored.0 != pilot.display_name
+            || stored.1 != i16::from(pilot.min_human_players)
+            || stored.2 != i16::from(pilot.max_human_players)
+            || stored.3 != "active"
+        {
+            return Err(ProviderError::Conflict);
+        }
+        for definition in &pilot.achievements {
+            sqlx::query(
+                r#"
+                INSERT INTO provider_achievement_definitions (
+                    release_id, achievement_key, display_name, description
+                )
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (release_id, achievement_key) DO NOTHING
+                "#,
+            )
+            .bind(pilot.release_id)
+            .bind(&definition.key)
+            .bind(&definition.display_name)
+            .bind(&definition.description)
+            .execute(&mut *transaction)
+            .await
+            .map_err(|error| map_database_error(error, "insert pilot achievement definition"))?;
+            let matches: bool = sqlx::query_scalar(
+                r#"
+                SELECT display_name = $3 AND description = $4
+                FROM provider_achievement_definitions
+                WHERE release_id = $1 AND achievement_key = $2
+                "#,
+            )
+            .bind(pilot.release_id)
+            .bind(&definition.key)
+            .bind(&definition.display_name)
+            .bind(&definition.description)
+            .fetch_one(&mut *transaction)
+            .await
+            .map_err(|error| map_database_error(error, "verify pilot achievement definition"))?;
+            if !matches {
+                return Err(ProviderError::Conflict);
+            }
+        }
+        let definition_count: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM provider_achievement_definitions WHERE release_id = $1",
+        )
+        .bind(pilot.release_id)
+        .fetch_one(&mut *transaction)
+        .await
+        .map_err(|error| map_database_error(error, "count pilot achievement definitions"))?;
+        if definition_count
+            != i64::try_from(pilot.achievements.len()).map_err(|_| ProviderError::Internal)?
+        {
+            return Err(ProviderError::Conflict);
+        }
+        insert_audit(
+            &mut transaction,
+            &row.provider_id,
+            Some(pilot.release_id),
+            "operator",
+            actor,
+            "pilot_activated",
+            "recorded",
+            "operator_pilot_activation",
+            None,
+            json!({
+                "reason": reason,
+                "min_human_players": pilot.min_human_players,
+                "max_human_players": pilot.max_human_players,
+                "achievement_keys": pilot.achievements.iter().map(|definition| &definition.key).collect::<Vec<_>>()
+            }),
+        )
+        .await?;
+        transaction
+            .commit()
+            .await
+            .map_err(|error| map_database_error(error, "commit provider pilot activation"))?;
+        Ok(OperatorReceipt {
+            command: "activate_pilot",
+            provider_id: row.provider_id,
+            release_id: Some(pilot.release_id),
+            config_revision: None,
+            status: Some(LifecycleStatus::Active),
+        })
+    }
+
+    async fn set_pilot_status(
+        &self,
+        actor: &str,
+        reason: &str,
+        release_id: Uuid,
+        status: PilotStatus,
+    ) -> Result<OperatorReceipt> {
+        let mut transaction = self
+            .pool
+            .begin()
+            .await
+            .map_err(|error| map_database_error(error, "begin provider pilot lifecycle"))?;
+        let row = lock_release_row(&mut transaction, release_id).await?;
+        let current: String = sqlx::query_scalar(
+            "SELECT status FROM provider_game_pilots WHERE release_id = $1 FOR UPDATE",
+        )
+        .bind(release_id)
+        .fetch_optional(&mut *transaction)
+        .await
+        .map_err(|error| map_database_error(error, "lock provider pilot"))?
+        .ok_or(ProviderError::NotFound)?;
+        if current == "retired" && status != PilotStatus::Retired {
+            return Err(ProviderError::Denied);
+        }
+        if status == PilotStatus::Active
+            && (row.provider_status != "active" || row.release_status != "active")
+        {
+            return Err(ProviderError::Denied);
+        }
+        if status == PilotStatus::Active {
+            let other: Option<Uuid> = sqlx::query_scalar(
+                "SELECT release_id FROM provider_game_pilots WHERE status = 'active' AND release_id <> $1 FOR UPDATE",
+            )
+            .bind(release_id)
+            .fetch_optional(&mut *transaction)
+            .await
+            .map_err(|error| map_database_error(error, "lock other active provider pilot"))?;
+            if other.is_some() {
+                return Err(ProviderError::Conflict);
+            }
+        }
+        sqlx::query(
+            r#"
+            UPDATE provider_game_pilots
+            SET status = $2,
+                retired_at = CASE WHEN $2 = 'retired' THEN clock_timestamp() ELSE NULL END,
+                updated_at = clock_timestamp()
+            WHERE release_id = $1
+            "#,
+        )
+        .bind(release_id)
+        .bind(status.as_str())
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| map_database_error(error, "update provider pilot lifecycle"))?;
+        let availability = match status {
+            PilotStatus::Active => "reconciling",
+            PilotStatus::Suspended => "suspended",
+            PilotStatus::Retired => "retired",
+        };
+        sqlx::query(
+            r#"
+            UPDATE game_sessions
+            SET provider_availability = $2,
+                updated_at = GREATEST(updated_at, clock_timestamp())
+            WHERE provider_release_id = $1
+              AND authority = 'registered_provider'
+              AND status = 'active'
+            "#,
+        )
+        .bind(release_id)
+        .bind(availability)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| map_database_error(error, "update provider session availability"))?;
+        insert_audit(
+            &mut transaction,
+            &row.provider_id,
+            Some(release_id),
+            "operator",
+            actor,
+            "pilot_status_changed",
+            "recorded",
+            "operator_pilot_lifecycle",
+            None,
+            json!({"reason": reason, "from": current, "to": status.as_str()}),
+        )
+        .await?;
+        transaction
+            .commit()
+            .await
+            .map_err(|error| map_database_error(error, "commit provider pilot lifecycle"))?;
+        Ok(OperatorReceipt {
+            command: "set_pilot_status",
+            provider_id: row.provider_id,
+            release_id: Some(release_id),
+            config_revision: None,
+            status: Some(match status {
+                PilotStatus::Active => LifecycleStatus::Active,
+                PilotStatus::Suspended => LifecycleStatus::Suspended,
+                PilotStatus::Retired => LifecycleStatus::Revoked,
+            }),
+        })
+    }
 }
 
 const RELEASE_POLICY_QUERY: &str = r#"
@@ -1268,6 +1582,13 @@ async fn load_material_locked(
         .fetch_one(&mut **transaction)
         .await
         .map_err(|error| map_database_error(error, "lock provider release"))?;
+    let pilot_status: Option<String> = sqlx::query_scalar(
+        "SELECT status FROM provider_game_pilots WHERE release_id = $1 FOR UPDATE",
+    )
+    .bind(release_id)
+    .fetch_optional(&mut **transaction)
+    .await
+    .map_err(|error| map_database_error(error, "lock provider pilot lifecycle"))?;
     let row = sqlx::query_as::<_, ReleasePolicyRow>(RELEASE_POLICY_QUERY)
         .bind(release_id)
         .fetch_one(&mut **transaction)
@@ -1283,6 +1604,14 @@ async fn load_material_locked(
     }
     Ok(ProviderSecurityMaterial {
         policy,
+        pilot_status: pilot_status
+            .map(|status| match status.as_str() {
+                "active" => Ok(PilotStatus::Active),
+                "suspended" => Ok(PilotStatus::Suspended),
+                "retired" => Ok(PilotStatus::Retired),
+                _ => Err(ProviderError::Internal),
+            })
+            .transpose()?,
         message_keys: message_rows
             .into_iter()
             .map(|row| RegisteredOperationalKey {
@@ -1348,13 +1677,15 @@ pub fn evaluate_admission(
     if scope_status != LifecycleStatus::Active
         || material.message_keys.is_empty()
         || material.tls_roots_der.is_empty()
+        || material.pilot_status == Some(PilotStatus::Retired)
         || material.policy.provider_status == LifecycleStatus::Revoked
         || material.policy.release_status == LifecycleStatus::Revoked
     {
         return Err(ProviderError::Denied);
     }
     let suspended = material.policy.provider_status == LifecycleStatus::Suspended
-        || material.policy.release_status == LifecycleStatus::Suspended;
+        || material.policy.release_status == LifecycleStatus::Suspended
+        || material.pilot_status == Some(PilotStatus::Suspended);
     if !suspended {
         return Ok(());
     }
@@ -1638,6 +1969,7 @@ mod tests {
                     total_timeout_ms: 2_000,
                 },
             },
+            pilot_status: None,
             message_keys: vec![RegisteredOperationalKey {
                 key_id: "provider-key".to_owned(),
                 public_material: vec![1; 32],
@@ -1712,6 +2044,55 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn pilot_lifecycle_is_part_of_every_provider_admission() {
+        let mut suspended = material(
+            LifecycleStatus::Active,
+            LifecycleStatus::Active,
+            ActiveSessionPolicy::ReadOnly,
+        );
+        suspended.pilot_status = Some(PilotStatus::Suspended);
+        assert!(
+            evaluate_admission(
+                &suspended,
+                LifecycleStatus::Active,
+                ProviderScope::Reconcile,
+                SessionAdmission::Existing,
+            )
+            .is_ok()
+        );
+        for (scope, session) in [
+            (ProviderScope::Launch, SessionAdmission::New),
+            (ProviderScope::Command, SessionAdmission::Existing),
+            (ProviderScope::Event, SessionAdmission::Existing),
+        ] {
+            assert!(
+                evaluate_admission(&suspended, LifecycleStatus::Active, scope, session).is_err(),
+                "suspended read-only pilot must deny {scope:?}",
+            );
+        }
+
+        let mut retired = suspended;
+        retired.pilot_status = Some(PilotStatus::Retired);
+        for scope in [
+            ProviderScope::Launch,
+            ProviderScope::Command,
+            ProviderScope::Reconcile,
+            ProviderScope::Event,
+        ] {
+            assert!(
+                evaluate_admission(
+                    &retired,
+                    LifecycleStatus::Active,
+                    scope,
+                    SessionAdmission::Existing,
+                )
+                .is_err(),
+                "retired pilot must deny {scope:?}",
+            );
+        }
     }
 
     #[test]
