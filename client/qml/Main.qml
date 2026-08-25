@@ -8,12 +8,12 @@ Window {
     minimumWidth: 640
     minimumHeight: 420
     visible: true
-    title: "Omarchy BBS"
+    title: "Omarchy Gaming System"
     color: "#070b12"
 
     property string healthUrl: "http://127.0.0.1:8080/health"
     property string connectionState: "CONNECTING"
-    property string connectionDetail: "Dialing the local BBS service..."
+    property string connectionDetail: "Dialing the local game service..."
     property color statusColor: "#f4c95d"
     property bool requestInFlight: false
     property bool smokeTest: Qt.application.arguments.indexOf("--smoke-test") !== -1
@@ -97,7 +97,7 @@ Window {
 
             Text {
                 width: parent.width
-                text: "OMARCHY // BBS"
+                text: "OMARCHY // GAMES"
                 color: "#8aa4c0"
                 font.family: "monospace"
                 font.pixelSize: 18
@@ -163,4 +163,3 @@ Window {
         }
     }
 }
-

@@ -1,0 +1,7 @@
+[mcp_servers.codegraph]
+command = "bash"
+args = ["-c", "exec \"$(git rev-parse --show-toplevel)/scripts/mcp-codegraph.sh\""]
+
+[mcp_servers.openwiki]
+command = "bash"
+args = ["-c", "exec \"$(git rev-parse --show-toplevel)/scripts/mcp-openwiki.sh\""]

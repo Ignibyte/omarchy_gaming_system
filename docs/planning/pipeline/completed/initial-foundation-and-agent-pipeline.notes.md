@@ -10,11 +10,11 @@ pipeline_id: 99052ba2-3095-443d-a469-607158643a6c
 - The first playable foundation is the real QML → `/health` → PostgreSQL path.
 - The user selected Rust for the server, QML on Omarchy, and the existing
   `Ignibyte/omarchy_bbs` repository.
-- Work expanded to adapt the Claude pipeline from `Ignibyte/rustal`.
+- Work expanded to adapt the agent pipeline from `Ignibyte/rustal`.
 
 ## Phase 2 — Design
 
-- Rustal surfaces inspected: `CLAUDE.md`, `CONSTITUTION.md`, phase commands,
+- Rustal surfaces inspected: project guidance, `CONSTITUTION.md`, phase playbooks,
   settings/hooks, ticket/spec/notes/AAR templates, local knowledge register,
   and `bin/gate.sh` receipt model.
 - Adopted: one active pipeline, EARS criteria, mandatory inspect, local memory,
@@ -22,7 +22,7 @@ pipeline_id: 99052ba2-3095-443d-a469-607158643a6c
 - Adapted: the gate targets Rust, PostgreSQL, Compose, and QML. Rustal's CMS,
   Playwright, mutation, coverage, Fable/Opus batch, and component-generation
   specifics remain out of scope until the project has those surfaces.
-- File manifest: `.claude/`, `bin/`, `CONSTITUTION.md`, `CLAUDE.md`, planning
+- File manifest: agent configuration, `bin/`, `CONSTITUTION.md`, project guidance, planning
   stores/templates, architecture docs, README, CI, and verification scripts.
 
 ### Regression plan
@@ -30,19 +30,19 @@ pipeline_id: 99052ba2-3095-443d-a469-607158643a6c
 | Requirement | Evidence |
 |---|---|
 | REQ-001 | Live migration/API/QML smoke and table inspection |
-| REQ-002 | Expected command inventory plus valid `.claude/settings.json` |
+| REQ-002 | Expected phase-guidance inventory plus valid hook configuration |
 | REQ-003 | Commit hook denies missing/stale receipts and allows matching receipts |
 | REQ-004 | Link/path audit over ticket, spec, AAR, architecture, bulletin, and knowledge files |
-| REQ-005 | CI references canonical gate and GitHub Actions completes successfully |
+| REQ-005 | CI references the canonical gate; confirm the first Actions run after initial push |
 
 ## Phase 3 — Implement
 
-- Added the Claude project guide, binding constitution, `/work`, `/brainstorm`,
-  six phase commands, and `/commit`.
+- Added the project guide, binding constitution, work and brainstorm guidance,
+  six phase playbooks, and delivery guidance.
 - Added local ticket, intake, pipeline, bulletin, architecture, knowledge, and
   AAR stores with templates and the bootstrap TICKET-001 record.
 - Added phase, recall, task, validation, completion, secret, and commit-receipt
-  hooks wired through `.claude/settings.json`.
+  hooks wired through the project agent configuration.
 - Added a canonical gate with a content-bound receipt, pipeline structure
   checks, and isolated hook self-tests. CI now calls the canonical fast gate.
 - Added the system overview, pipeline ADR, roadmap, and README instructions.
@@ -81,8 +81,8 @@ pipeline_id: 99052ba2-3095-443d-a469-607158643a6c
   | REQ-002 | satisfied | Nine command files cover work, brainstorm, six ordered phases, and commit; seven configured enforcement hooks resolve to executable files. |
   | REQ-003 | satisfied | Isolated tests prove missing/stale receipt denial and matching/staged receipt allowance; the real worktree receipt also passed the commit hook. |
   | REQ-004 | satisfied | `scripts/check-pipeline.sh` verifies required local stores, templates, pairs, tickets, and AAR links. |
-  | REQ-005 | satisfied | `.github/workflows/ci.yml` invokes `bin/gate.sh --fast`, the same command proven green locally; the pushed Actions run is the final remote confirmation. |
-- Docs updated: README, constitution, Claude guide, roadmap, system overview,
+  | REQ-005 | satisfied locally | `.github/workflows/ci.yml` invokes `bin/gate.sh --fast`, the same command proven green locally; the first remote Actions run remains pending until `main` is pushed. |
+- Docs updated: README, constitution, project guide, roadmap, system overview,
   ADR-0001, local ticket/knowledge/bulletin stores, and all templates.
 - AAR: `docs/planning/knowledge/aar/AAR-001-initial-foundation-and-pipeline.md`
   submitted with both encountered failures and prevention rules registered.

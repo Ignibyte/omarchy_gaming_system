@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 
-# Shared, side-effect-free helpers for the delivery gate and Claude commit hook.
+# Shared, side-effect-free helpers for the delivery gate and Codex commit hook.
 
-BBS_PROJECT_ROOT="${BBS_PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+OGS_PROJECT_ROOT="${OGS_PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
-bbs_is_gated_path() {
-  local bbs_path="$1"
+ogs_is_gated_path() {
+  local ogs_path="$1"
 
-  git -C "$BBS_PROJECT_ROOT" check-ignore -q "$bbs_path" 2>/dev/null && return 1
+  git -C "$OGS_PROJECT_ROOT" check-ignore -q "$ogs_path" 2>/dev/null && return 1
 
-  case "$bbs_path" in
+  case "$ogs_path" in
     crates/* | client/* | migrations/* | scripts/*.sh | bin/*.sh | \
       Cargo.toml | Cargo.lock | compose.yaml | mise.toml | \
-      .github/workflows/* | .claude/settings.json | .claude/hooks/*.sh)
+      .github/workflows/* | .codex/config.toml | .codex/hooks.json | \
+      .codex/hooks/*.sh | openwiki/* | \
+      .agents/skills/* | AGENTS.md | CONSTITUTION.md)
       return 0
       ;;
   esac
@@ -20,37 +22,37 @@ bbs_is_gated_path() {
   return 1
 }
 
-bbs_gated_file_list() {
+ogs_gated_file_list_nul() {
   {
-    git -C "$BBS_PROJECT_ROOT" ls-files 2>/dev/null
-    git -C "$BBS_PROJECT_ROOT" ls-files --others --exclude-standard 2>/dev/null
-  } | LC_ALL=C sort -u | while IFS= read -r bbs_file; do
-    if bbs_is_gated_path "$bbs_file" && [[ -f "$BBS_PROJECT_ROOT/$bbs_file" ]]; then
-      printf '%s\n' "$bbs_file"
+    git -C "$OGS_PROJECT_ROOT" ls-files -z 2>/dev/null
+    git -C "$OGS_PROJECT_ROOT" ls-files -z --others --exclude-standard 2>/dev/null
+  } | LC_ALL=C sort -zu | while IFS= read -r -d '' ogs_file; do
+    if ogs_is_gated_path "$ogs_file" && [[ -f "$OGS_PROJECT_ROOT/$ogs_file" ]]; then
+      printf '%s\0' "$ogs_file"
     fi
   done
 }
 
-bbs_gate_state_hash() {
+ogs_gate_state_hash() {
   if ! command -v sha256sum >/dev/null 2>&1; then
     printf 'sha256sum-missing-%s\n' "$$"
     return 0
   fi
 
   {
-    git -C "$BBS_PROJECT_ROOT" rev-parse HEAD 2>/dev/null || printf 'no-head\n'
-    bbs_gated_file_list | while IFS= read -r bbs_file; do
-      sha256sum "$BBS_PROJECT_ROOT/$bbs_file"
+    git -C "$OGS_PROJECT_ROOT" rev-parse HEAD 2>/dev/null || printf 'no-head\n'
+    ogs_gated_file_list_nul | while IFS= read -r -d '' ogs_file; do
+      sha256sum --zero -- "$OGS_PROJECT_ROOT/$ogs_file"
     done
   } | sha256sum | awk '{print $1}'
 }
 
-bbs_gate_receipt_path() {
-  local bbs_git_dir
-  bbs_git_dir=$(git -C "$BBS_PROJECT_ROOT" rev-parse --git-dir 2>/dev/null) || return 1
+ogs_gate_receipt_path() {
+  local ogs_git_dir
+  ogs_git_dir=$(git -C "$OGS_PROJECT_ROOT" rev-parse --git-dir 2>/dev/null) || return 1
 
-  case "$bbs_git_dir" in
-    /*) printf '%s/omarchy-bbs-gate-receipt\n' "$bbs_git_dir" ;;
-    *) printf '%s/%s/omarchy-bbs-gate-receipt\n' "$BBS_PROJECT_ROOT" "$bbs_git_dir" ;;
+  case "$ogs_git_dir" in
+    /*) printf '%s/omarchy-gaming-system-gate-receipt\n' "$ogs_git_dir" ;;
+    *) printf '%s/%s/omarchy-gaming-system-gate-receipt\n' "$OGS_PROJECT_ROOT" "$ogs_git_dir" ;;
   esac
 }

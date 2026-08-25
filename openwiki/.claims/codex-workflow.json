@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:5c8ed05089661b00881f76a282cdb98ee3e05b61a9ef491be1ba492abf307375",
+  "claims": [
+    {
+      "id": "claim_9a5f02855f2e4ecb9dd760a157b88b08",
+      "statement": "Every non-trivial change follows one active ticketed pipeline through recall, plan, design, implement, inspect, validate, complete, and separately authorized delivery.",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L16-L36",
+          "version": "repo-lines-v1:sha256:a2178307615da5f0abd340a9e10f4afce08fe2d2647091b9dd0565d2febb2f03:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiZGJmZDhkNWViODFjNTBlZWI0ZTU0YjhmNWM4NGNmOWMyMjZmZmM0MzE2ZGZkMjE5NWViODcwOGQwZWIxNTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE1MjdiZDRjODY5MTJhYjhhMjBlZjAwMTE3M2EyMzAwM2U1MDZmM2IxZjUzZmVmOWU0ZTAwMGQwNDc5OWRhYmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImExNzE2NzU1ZjMwMzgwYmY3YzFiMjhhYTljNWY0ZmRhMDkzMjJkOTg3NDk3Y2U5NTA2OWY0MDhlMWM1NzUzZjAifQ"
+        },
+        {
+          "resource": "repo://CONSTITUTION.md#L35-L56",
+          "version": "repo-lines-v1:sha256:6e0597701db77db2ec55779bd655fa760ad147d09589419b2bc0efd12c7b17fe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0M2UyMjcwODU4MzM0ZWFkNTZmYmQ2MGJmMDQ2OTE1NWY0MDA4ZjJiYTE0N2E5NWYxNmM0MmFjMzI2NDM0ZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhMjU0MWVjOWQ1NTViZDc5MjczMjg0NTczYTkwMzQ5ZmNjMWEzYWMxZDhhZjgwNzBiZjRlZGQ3M2JmMjVhYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU2Y2E0NjFkMTBkYTg3ZDY5ZGU1NWQ0ODZhNzZjMmJmZDAzYjFjZWI1OTFiMjYzYTVhMTFjMzVmOGUzMDM5YmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAzMjVhZmM3Nzc4ZWRhYWJmMDNiYzRlYmE1ZTM4MDA2ZGY4MzNjMDI0ZDAwNjU1M2UyN2FlNGE5NDZjZGU3YTgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_698694a687d6488f96d774022d404796",
+      "statement": "CodeGraph structural evidence is required during design and again after implementation, with direct review retained for unsupported sources and tests.",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L48-L63",
+          "version": "repo-lines-v1:sha256:58590076be967748a9d37da9523ab4e6da4db2413d557e7198dd07e1f56723f8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkNDIxNTQ0Yzk2M2I4NmQ5YmJmNWNlNWU2ODkxMjMxODljM2M3NjE4Y2ZkMzMxMTkyMzcxNmRkMGRjMDE1YzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxODBhNDgyNmQ4ZTEwZDQ5YWU4ZTY2MWNkN2MxYTlhNTAyOGU5NDQwODk2YzA0MTJlYmRmNTU2MDIxODYzOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI4NWJlNjkyYTdiYmQ5NTgyYmNjNWUyOTNiYmQyYjIzMDM4NzE1YzZhMmE1YWYyY2QwZWUwMDM0YzdlN2FlMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5MmU1YzAxOTU1YWNiZDQ0MDE0MjM0OTAyYjQ4M2M5NjI1ZDlmMjc3YjdhMzQxOWY4OTcyODM3ZmY5ZjAwODkifQ"
+        },
+        {
+          "resource": "repo://.agents/skills/omarchy-workflow/references/phases.md#L51-L61",
+          "version": "repo-lines-v1:sha256:c4c41564dc06a06f8b2a8ed7af6c99d6af4150741a2d19b97807844ac495edc3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk5ZjY0YzEzMjMxNjlhMzg1MjNkZjNkNzViYTI2ZTg0MjkwN2IzMzcwMDQzNzQzNGVhMGM4NDQ3ODFiMTRhMGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllMzRhOTFkNzljODJmYWYzNzliODkwZmZkYzAwNTQ3ZmM0YzEwNThiNjdmNzJjZTQ3N2M2MjMyNjdmMjhlNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVhNGRkMWRiMmE5NzI4OGZmMWVjYmYwNzAxYzhkNTRiNWNhNTRjNmMyYjFmNGEwNzZiYmEyMjFiMzhjODA4NzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY3NTAyYmI4YzlmYzg1OGY1Mzg4MzVhNGJmZjgzOWU5NjNlMDVjZjE2NjllMDQwYTc3ZjAzMGFiNTk5YTdmMjMifQ"
+        },
+        {
+          "resource": "repo://.agents/skills/omarchy-workflow/references/phases.md#L94-L102",
+          "version": "repo-lines-v1:sha256:acf8fcdfda3ce00b6f63e4ce4d432ccc65928b7402bea89fc0f22b422910cd0a:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzMyYTZkZDUxYWE5MTA0NjU4MzBmOTM2MjAxMzZhMjNlNjA5NDQ0YjAxNzQ0YzYwY2NhZjE0ZmEzOGEwYzA4OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjFlZDQ3M2EzODg0NGNkMDUzZDIwNjBkYmE2MDU0MDE1MDQ2YWI3NzgzNjlhYWFiNzI4OWY5Y2ZjZjM0YTgzMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTMzMmRhN2M5NWQyYWM4ZmFkNzE2MDg0OGI5MWIyODYzMWVhZmI2YWRlMzU5NTExNTk5NDJlNWIzZDc0NWEwOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODM2OGEwM2Q3MzY3MjhhMjc4MjUwZmM0YTg0Yzg1ZTEzOTRiMjg1ODljMTRhYzE0MjFmOGUxYzY0MmYzMmM1NyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_dbe6cad7e7cf4db1a1cab18981321018",
+      "statement": "OpenWiki reconciliation is required during pipeline completion and must finish before the pipeline artifacts are archived.",
+      "evidence": [
+        {
+          "resource": "repo://.agents/skills/omarchy-workflow/references/phases.md#L117-L138",
+          "version": "repo-lines-v1:sha256:75ea148fcbe4485476bccf54aa3db3bfde1c1a2d8e03bc8b35209e5c8defe294:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0ZjE1NTgwMWVlOTRjY2M0MjMwMzk4ZTY3MjdhZjNhNGQ4ODUwZDdhMjYxMmEwODk1M2IyMWUyNjU4NTBlMzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0ZWUxNDRlNTJlNDU1MTJiNTExMGRhZDQ0MWMzNzRiMzkwY2ZiMjM0MzhiNzIyZmRiYTRlYzc5YmYxNDVmZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5ZTE3MDBmMmZjYzAzYmU0MDVjM2UxZTk2NDMxZWY1OTVlMjQ1MGUxOWRkODQzZmNlYmRmMjViYmIwYTlhMDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3NDlmZDFjOWI0MzI0NzY3N2QxYTBmOTdiYzg2M2U0NjVhOGJlYjg3YzU3ZDYyMWJhZmZiZjllYmQzNDMyYzcifQ"
+        },
+        {
+          "resource": "repo://.agents/skills/openwiki/SKILL.md#L12-L29",
+          "version": "repo-lines-v1:sha256:2a687dea27cb2402f0710ca21039c31d0c54da7a6b7c7e1db614482645cc3ca3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyNDFhOWI2MTY4YjUyODdhYTNmNWZkM2FmOTJkOTExNTA5YjY1ZDUxMTQ1Y2U4MzI3YjM0YWZhZDU4MWUxOWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhNzhkODlmZTlhOWI4ZDVjMTZjNTM0MjI0MzJmNTA4OTYwMjYyMDRiZjFmOWI1ZTkyMDcwZjBmZmZiNmRlZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNiOGNhODQzMTI0NDFlYjY0MTEwOGU0NmM2YjI2MjI1OWQzODVjMTA3MTViZGI5Y2ZjMmQxMTI2M2RmNmJlYTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAzMTFmMTI5NDAxOTIzNzMyYmViNGIwYzQ4OTZhMTA0OTI0ODkwZmRlNmIxZjBhOTBkYWRiYzNhNDYzNWJhN2UifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f24f5a67a19e41b199a83d20af246bc9",
+      "statement": "Codex hooks bind CodeGraph, OpenWiki, and delivery evidence to the current gated worktree, while the canonical gate remains the load-bearing delivery proof.",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L65-L73",
+          "version": "repo-lines-v1:sha256:b9c84bddc569b165fd8089ef127d97dbe484b688ca0ab82cfb70bfd0b34e2ac8:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTUzZGMyYTQyY2Y2ZTJkMjI2Yjc1YWFiZDI3YmM1NGYyMWVjNGNhYjljNDg1Y2JkMTI5YTExMDQ0ZTEzOGUxYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjcxY2E2ZjdjNWJkYjc0NmMzZDczZWVhNTMxMmRlMDQ4ZmM3M2Y1MGFlN2QwMjYyYTJkMDZhOTRhMTI1MjU0MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjc2MTgzZDhlMTBlMDZjZGY1NjZhNWZlYWJhYmNiNmJkMGMyYWZjZGU2NzYxMDAxMjhjZThjZTc4YTgyYWI3OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWIxYmM1YmM0YTIzN2Y1NzhlNmFmNGE0MTVkMDY0N2Y5OTEwYjAzYjM2NGUxZTI3YzFmMWRiYWE3NDNkMDNiYSJ9"
+        },
+        {
+          "resource": "repo://CONSTITUTION.md#L100-L114",
+          "version": "repo-lines-v1:sha256:bbfc0c5e9e69555343b0ab4a12f3e2f2e3d0734c28e5586e03e0c8a362e58caa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1YmU1MTA0YWVkMWE2NGE3MzU0MGYyNGU5NWZjMzlhZDNmODUwNmRmODE5OGU3OTdiMGVmM2RmMDU0NTBmZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5YWE2MDgwOGYxMzEyYmNlMGQ0OTEzNTY4MmQ2MThiMzlhYmNiNWRmYjNjYmUxZjg1YWIyNzYxNmE3ZTAwNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIxYjM3YmMwZmM1MGZkNDBjYTVlMjI3ZTZjZGZkNzY3NjZmOTg0MTlhMDVmMjNhYzMwN2IxOTFmMDNlOTllNjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ2Zjc0ZjUyZjFlZTc3NmVkNmI1ZWRkY2Y2MmNjNDlhNDM1NmI0ZWVjNTY5OGEyNGNiMGUzNWQ0ZTg1YzI0ZTkifQ"
+        },
+        {
+          "resource": "repo://.codex/hooks.json#L26-L50",
+          "version": "repo-lines-v1:sha256:31f4b39d3b18813408c7791ef41100e0b30487a72c81028e8abd31b255e8484b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmMTY2MmU0YjY2MWZlZGVjMGExOGIxNWFmZDM2MzA4OGYyY2Y5NzAxNjlhMjk4MzM0NDVhZjUxZTM5MTcwMDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4MDA1ZDU3MTA2YTM2MmViMDAwZGFmM2RhNDY3NGM4MmI1MThmZjVhMmUyZjY3ZWU4ZTc1N2EzMzNjMmFmNjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0N2ZlZTRhY2NhMzA5MDIxNzMwMTE1YzhhZmQwZDk4ZDBjNDEyOWQwNjc5Mzk4Zjk3ODVmYTNkN2MyZmM4NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4OGFiYWY1YTUwNDBhYTNlNmJlMWFhZWZhZmIzMTliYTcxMjk5MWViNzQ3YmFjNjNjMDIwZDM4MGJkMDgzNWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_bafcb7ccd23e419e87e51a992870c33d",
+      "statement": "Commits, pushes, and pull requests require explicit user authorization even after the workflow and gate succeed.",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L27-L30",
+          "version": "repo-lines-v1:sha256:8d66f2ba748fa394164b6839168a20fffe1d952dd2520978a67407cc386746e1:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDY2MTYyZmQ3MjFlNjk4NWMyNGY0NzBmNmM4MmEzOThmMmVjYjQ5ZGIwOTkwOWQ2N2I3MWZmZjJjN2U5YmQ1MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTQ4MTUwYjhjYTNjYWZhMGM5OTRlNzA4OWQwNWQwMjliM2E2Njk3NDlhZjA1YzY3MDE1NTE2OThmY2JhZDViZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjg5NjkwZTI3YTVjMjdlZWUyYTJmYzU2YTkyZDk3ZTFiNjhiMDk1YjJmZjg5ZGZkMWE5YjAzODdkM2QyNTI2NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDdiZjVjM2ZmY2FhNTU5MTRiZDIxODJiZWMwYzc2OTUwODY5NTRiZGRiZGYwMjM3YjAyNGNkZTcwM2Y2MTRhNyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ac1329dcb1ed4fd1bf6e65f3a21c28ce",
+      "statement": "The phase hook canonicalizes relative, absolute, traversal, and symlinked edit paths against the Git worktree and blocks pre-design edits whose paths escape or cannot be resolved.",
+      "evidence": [
+        {
+          "resource": "repo://.codex/hooks/lib-hook-helpers.sh#L11-L28",
+          "version": "repo-lines-v1:sha256:0eefd1cd46c516bc9962f5fcedb9f39941a5ed96da809e2e888294d4865522bc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwOGI0MDg5MjM4OWRjZjJhNDlhMzJiNzNkZTgwM2ZmN2MxYTlhM2RmOWQyYzNkZGE3NzFkYzdjOWE4NDEzM2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNkNmI3MWYzNTk3ZmEyOWZlMWZkNmY0ODVhNzA1NGY5ZWIxNTFhMzFhMTc3NGVkYThiNzdmZjVlNGQwNmY0ODAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0MTI1NzNjMTQ1YjAzNWVkMThmODIwNWE3ZjZjY2VlMTUxN2NiYjJjNmJjMjY4MWM1MTUyYjFhNjY5NTdiOWMifQ"
+        },
+        {
+          "resource": "repo://.codex/hooks/enforce-phase-gate.sh#L10-L31",
+          "version": "repo-lines-v1:sha256:8bfb89d56c2c61b6039743bafe0a93c0fa0e39bda8f84304c3f26afee0a6be35:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjM2QyZjA5YzE4NGFkYTQxYTdmMDRjZjNmZGUxMGM0NGYxNGEzZWU5MzM4YmEzNDg4YWJjN2MyOGEzYmNlMGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzNjJmYjYzMmIxNTdmMjgzYjkxMzU4MDRhNTE3ZGE2NDkxZDkzOWQ4NjM1NDM1OTExYTkxZjM4OWM5ZTRhZmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg2MjdlYWQxMTQ1NDI2NWFkM2Y0ODQ5YWRkMTE4ZGFkODg0MjBhMWZjN2NkN2FkNjUxNTM3NDhlMTUyYmViZGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://scripts/selftest-hooks.sh#L123-L169",
+          "version": "repo-lines-v1:sha256:3d66f17ff7743b9bd81f5e700d9296d68da4808d85b6768851ac0eec9958758f:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2OGNhNWVhYzJmOTk5NmZiMGQ3ZTFiZDVmOWMxYWI2ZGFhY2EwMWY0ZWI3ZDI2YjA5NzRlMGVlMWFlMTFkMWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkODlmYTU5YTMyYjcyNTMxODY0ZmE1MjRjMTI0YzAzMDUxODQxM2IxOGU0MGMyYTE5ZTRhYjBlNjc4ZWU5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM0MzQyZGM5MmViOWUwZDdjMzMxYzdjYWNlMjgyNzUwNmUwNTI5ZGQxMzA1OTU3NjU1ODc4NjU4NmFiMDI2YmIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_954231e8f79c4f32b062e601e2ddadf5",
+      "statement": "The commit hook exempts only an exact standalone git commit help, short-help, or dry-run command, so a non-mutating token cannot mask a mutating commit inside a compound command.",
+      "evidence": [
+        {
+          "resource": "repo://.codex/hooks/enforce-commit-gate.sh#L15-L35",
+          "version": "repo-lines-v1:sha256:0cae38c05259d8f25622fcead301802cc08f9747de7dac4c6ea09652f6d5aac4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmNGEwMDk1OTAyZjU0ODkyMzc4N2YxMTI4M2VmZjZlM2FhNjdiMmZhNGY1ODAxZjYxYzhjNGRmMmQ2NWI3NmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyYTI0NmU0ZGM1MDg4ZThjMTRhYjRjODk3ZjYzZDI0OTFhN2ZkMWNmMmQ3MzZmM2Y1ZDliMTA3YTRkMWY0NTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg2MjdlYWQxMTQ1NDI2NWFkM2Y0ODQ5YWRkMTE4ZGFkODg0MjBhMWZjN2NkN2FkNjUxNTM3NDhlMTUyYmViZGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI2YjQ1Y2UyZTBmYjMxYWU4NTk0NGJiY2ZiNzUwYTY1ZDY1NTFhN2I4NTZmYzI4MjQ2NTY3YjRmNDY0M2E4NjAifQ"
+        },
+        {
+          "resource": "repo://scripts/selftest-hooks.sh#L97-L122",
+          "version": "repo-lines-v1:sha256:384f5f4fdec60474a477e654cdba1df0f07b2b2eac417698c6e439623575b4f3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczYjk2N2FiY2E5ZTg5ZTliZGUzNjFkZGJjYmIyNDQxY2Y4MzRhNmFlYzJmOTk0MjJiNjE1YWU5ZmI3NzIxM2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxMTdmYTAwNmJhOTIwODUwMGIyOTMwY2U2OWNiZGU0MzZjNjQ3YWZhOTE3Y2I3Mzk2YTliYzkxMTFhNDZkZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRkYmVhYzMyZjAwYTRmNWY4MjlhMDk2MjQ5NjFjODFiMjIzYWJiNjMyOGU5ZTFkZWU1NzgwMDdmZTJjNWI1ZmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyZjRiOGEyYzZiYWQwZThiYjRkMzRlMzM3YzQ3MTQxYTIyYjBkMTRmMTU3NjAxN2E1YWQwMDkyNzJiNjBjN2QifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_47aa4ea955de433ab17c78b57b795c08",
+      "statement": "The repository installs OpenWiki from a reviewed commit with an integrity-pinned pnpm bootstrap, frozen lockfile, disabled install scripts, Codex-only source patch, and a fail-closed build-provenance receipt checked before MCP startup.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/setup-pipeline-tools.sh#L185-L320",
+          "version": "repo-lines-v1:sha256:06dfadcea7106b1f6074a9f1ba5e9d6d9297406b5656e4c8296e9b29a42d8d94:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3ZTZmYWVlNDczNTlmYmI5NzFlY2Y2NmRmMjlmOTEwMDMyM2FjZGFlYmE1YzdmOTZmOWM5NDk5YjE2MWZiMDE5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5NDc2YWYxNTYwNWZlMGYzN2M3YzZkZjM5NDM5YTE4ZTJmZDBjMzE1ZDZiNDI1ODQ5YjQzYTFjNDY0ZTAwZWIyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI4NWExMmE1NDYyZWIyM2M5MDgwZGFlZmJiNDQ2YTZjNTgyMzY0ZmU2MDU4YzVlYzNkM2YxMWVjZWIwMzhhZjQxIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyZWZhYzc4ZDJkOTAxOTFhYmM5MTc5NWEwN2IxOWQ3MWI0MTdkY2YxNTBiYTM1MzRkNjYwYWU0YTU3OGM4NGNiIn0"
+        },
+        {
+          "resource": "repo://scripts/check-pipeline-tools.sh#L124-L184",
+          "version": "repo-lines-v1:sha256:c9122ba5cc19d09b285d671a071311ebf43b765d406d556310352433c01b1570:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEyZjhhYjdmMTA1YmE4NGM1YTUxYTNhZWM0YmM3NTc3OWQ0MTI0NzY1YzMzNzM3NGYwMmYxOThkNmNiMWQ5MDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1OGYyZDgzMjMwYWM3MzcwOTVmNWY4ZGMyNzQyMzI0MmVkYTY2OGQ2MGU2NjBiNzUxNmIxNWZhMzk0MjhlZWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY1N2NmNzIxNzBmYjlhZTgwYjQ0MTdjYmE0ZDIxZDI1ZWM3ZTdkOTI4ZmMwMGUyZGJmMjhhNjYwOGE2YzFiY2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://scripts/mcp-openwiki.sh#L8-L22",
+          "version": "repo-lines-v1:sha256:ed23c058fcc43860574b9391a178db92dfee5e6e3084d1d42f3c49ebcd276124:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2NmMyNTY5NGViOGYwNzYxZDgyNWRjOGMwY2FlNzk5ZDVkNDkyNjE0YThiMTBiMGQ0MjExM2QyM2ZhMGM2ZTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwNDI2NzdlY2MxZDQzODdjYjRkY2NmMDA4N2FkMDYwMjI5MTUwOGM1NTFiNTFiMDdkODc1Y2Q3YTQ0ZjMwMGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ2ZjY5YzA3YmE5MTBiNDk3MjFjMGFiM2VmYTc3ZTBhZjAyOGYwNjZjNjhkMmQ5ZjQ4OTA0MGRlNmI1NDViMjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f8d511e95c9f4ef8a14447d3691638ec",
+      "statement": "The shared secret scanner uses NUL-delimited Git path inventories and option-safe regular-file inspection, so newline, space, or leading-dash filenames cannot hide a high-signal changed credential.",
+      "evidence": [
+        {
+          "resource": "repo://.codex/hooks/enforce-secrets.sh#L9-L30",
+          "version": "repo-lines-v1:sha256:66b800157f5bbcbea7ab9cbf9e154c1c3b3ac101423cf899519359887c3cff7f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjYmVjOTFhNWU3Y2JhYzhlYTRkMDU3NzE4NDM0YzFmZWNlMjZhZTJlMTE3NTViNzAyYWQ4MDNkZmI0MjJmZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyYTI0NmU0ZGM1MDg4ZThjMTRhYjRjODk3ZjYzZDI0OTFhN2ZkMWNmMmQ3MzZmM2Y1ZDliMTA3YTRkMWY0NTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg2MjdlYWQxMTQ1NDI2NWFkM2Y0ODQ5YWRkMTE4ZGFkODg0MjBhMWZjN2NkN2FkNjUxNTM3NDhlMTUyYmViZGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYifQ"
+        },
+        {
+          "resource": "repo://.codex/hooks.json#L38-L50",
+          "version": "repo-lines-v1:sha256:205fae73bc997e805d9453e744e18b38caddf924b4c3da2229390ed7d67baa6d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViMjQ3ZmI4Yjg3YWM0OWM2ODllMDRmODRmOTExMWU2N2Y2ZWUwZjg0NTY5MDc0NzY2OTdjYzNhYTNkM2NhNzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4MDA1ZDU3MTA2YTM2MmViMDAwZGFmM2RhNDY3NGM4MmI1MThmZjVhMmUyZjY3ZWU4ZTc1N2EzMzNjMmFmNjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0N2ZlZTRhY2NhMzA5MDIxNzMwMTE1YzhhZmQwZDk4ZDBjNDEyOWQwNjc5Mzk4Zjk3ODVmYTNkN2MyZmM4NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4OGFiYWY1YTUwNDBhYTNlNmJlMWFhZWZhZmIzMTliYTcxMjk5MWViNzQ3YmFjNjNjMDIwZDM4MGJkMDgzNWIifQ"
+        },
+        {
+          "resource": "repo://bin/gate.sh#L44-L50",
+          "version": "repo-lines-v1:sha256:3057da261ca4319c97d3959422e51cb99998a9ecfa0b39d0f77e735061cbb57a:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjQyZjA4NDM1NmI2MGEyN2VlMWU4MjYzYmUzYmIzNTA2YjM4M2Q4OTgwN2U4YmQ0YjhiMjMxMjU1NGM5MTRiYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmVkNzYzN2YxMzA4ZjIyYTZjMTk0MmVjMjQ3YTg4N2EyMTEyNzI4NzkyNmZjYmM1MGE0NTQ3NWFhNDVkMzA2ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTgyNjE5YjFkN2Q4MzUzMmIxN2M0ZWEwNTYxNzBmOWRkM2FkYWZlNmJkNDcxODdlMzhjZDNiOGMxNDE0MjAyZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_22f56d82635a4c31a967fc7af126aed8",
+      "statement": "Hook self-tests reject stale receipts after a newline-bearing gated-file edit and reject high-signal credentials in newline, space, and leading-dash filenames while preserving ordinary and near-miss behavior.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/selftest-hooks.sh#L56-L102",
+          "version": "repo-lines-v1:sha256:b4adf1123bbc12200e36adb86d8c39442b9e2f2306bf504d9377b232a92d8e86:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxZjM0ZjlhOGExZTdlOTdjNTc3ODU1MDFlYTc1MjQ1YmE3MGE1ZWNhZWQ4NGQ0ZTA0MDJmNTVhOWIyYTUxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhMWZkNWM0Y2YwMGUwYjI5YzVhZjI5MTJiZWJhYjMxN2E0ZTgyYTA0MDUyZTJhZjMyNDE2MzBjZDQwYzVlNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ1ZDg0NjIwYjFjNTljODVhYjM4NzI4OTI1NjZhZWNmMzNjMTA1NmQ0OTU0NDY4Mjg1YThjMTJhMjVkMzFiZWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxNmUyZDM0NWY2MmY3MzE1ZmUzMTE3NTZkOTM0MzgzYmIxNTEzYjkzZTU5YjU5NWFjZGI0OTJjZDQwMDU4NGUifQ"
+        },
+        {
+          "resource": "repo://scripts/selftest-hooks.sh#L313-L392",
+          "version": "repo-lines-v1:sha256:1e6a54562f934ef18a1e797c0a0ecbb992e4c93fa3e3a78e2589ddc7360c0907:eyJzZWxlY3RlZExpbmVDb3VudCI6ODAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhODNiNmRlYWNkMmY1MTYyN2RjMTFhYWU5OWNkNzA4ZmQ2MTZmMDkyM2I1MGVhMWIwMTkwYWE2MzlmMjNmOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3MDJkNDlkMDVhMjY3NGZmMTk0YTM5MGNhMjAyYTU2NzNjMDBhYjg2YjJlYjE5MzBlNzIxMTRmODk4ZTNkODIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQxNjhkNjI0MmM2NjNhNmZhZWViZGY5YmQwMTJmMWM5OGI5YWI0MDY2ZmQ5ZDBjNjUzY2RkOTI3MzQ4MDE2YjkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_79466bd7b9694c938e49aaabe5a5bb44",
+      "statement": "The shared secret scanner uses NUL-delimited Git path inventories and option-safe regular-file inspection, so newline, space, or leading-dash filenames cannot hide a high-signal changed credential.",
+      "evidence": [
+        {
+          "resource": "repo://.codex/hooks/enforce-secrets.sh#L9-L30",
+          "version": "repo-lines-v1:sha256:66b800157f5bbcbea7ab9cbf9e154c1c3b3ac101423cf899519359887c3cff7f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjYmVjOTFhNWU3Y2JhYzhlYTRkMDU3NzE4NDM0YzFmZWNlMjZhZTJlMTE3NTViNzAyYWQ4MDNkZmI0MjJmZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyYTI0NmU0ZGM1MDg4ZThjMTRhYjRjODk3ZjYzZDI0OTFhN2ZkMWNmMmQ3MzZmM2Y1ZDliMTA3YTRkMWY0NTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg2MjdlYWQxMTQ1NDI2NWFkM2Y0ODQ5YWRkMTE4ZGFkODg0MjBhMWZjN2NkN2FkNjUxNTM3NDhlMTUyYmViZGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYifQ"
+        },
+        {
+          "resource": "repo://.codex/hooks.json#L38-L50",
+          "version": "repo-lines-v1:sha256:205fae73bc997e805d9453e744e18b38caddf924b4c3da2229390ed7d67baa6d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViMjQ3ZmI4Yjg3YWM0OWM2ODllMDRmODRmOTExMWU2N2Y2ZWUwZjg0NTY5MDc0NzY2OTdjYzNhYTNkM2NhNzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4MDA1ZDU3MTA2YTM2MmViMDAwZGFmM2RhNDY3NGM4MmI1MThmZjVhMmUyZjY3ZWU4ZTc1N2EzMzNjMmFmNjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0N2ZlZTRhY2NhMzA5MDIxNzMwMTE1YzhhZmQwZDk4ZDBjNDEyOWQwNjc5Mzk4Zjk3ODVmYTNkN2MyZmM4NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4OGFiYWY1YTUwNDBhYTNlNmJlMWFhZWZhZmIzMTliYTcxMjk5MWViNzQ3YmFjNjNjMDIwZDM4MGJkMDgzNWIifQ"
+        },
+        {
+          "resource": "repo://bin/gate.sh#L44-L50",
+          "version": "repo-lines-v1:sha256:3057da261ca4319c97d3959422e51cb99998a9ecfa0b39d0f77e735061cbb57a:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjQyZjA4NDM1NmI2MGEyN2VlMWU4MjYzYmUzYmIzNTA2YjM4M2Q4OTgwN2U4YmQ0YjhiMjMxMjU1NGM5MTRiYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYmVkNzYzN2YxMzA4ZjIyYTZjMTk0MmVjMjQ3YTg4N2EyMTEyNzI4NzkyNmZjYmM1MGE0NTQ3NWFhNDVkMzA2ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTgyNjE5YjFkN2Q4MzUzMmIxN2M0ZWEwNTYxNzBmOWRkM2FkYWZlNmJkNDcxODdlMzhjZDNiOGMxNDE0MjAyZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_984120bca2f443eebc8fbf4424732de4",
+      "statement": "Hook self-tests reject stale receipts after a newline-bearing gated-file edit and reject high-signal credentials in newline, space, and leading-dash filenames while preserving ordinary and near-miss behavior.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/selftest-hooks.sh#L56-L102",
+          "version": "repo-lines-v1:sha256:b4adf1123bbc12200e36adb86d8c39442b9e2f2306bf504d9377b232a92d8e86:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxZjM0ZjlhOGExZTdlOTdjNTc3ODU1MDFlYTc1MjQ1YmE3MGE1ZWNhZWQ4NGQ0ZTA0MDJmNTVhOWIyYTUxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhMWZkNWM0Y2YwMGUwYjI5YzVhZjI5MTJiZWJhYjMxN2E0ZTgyYTA0MDUyZTJhZjMyNDE2MzBjZDQwYzVlNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ1ZDg0NjIwYjFjNTljODVhYjM4NzI4OTI1NjZhZWNmMzNjMTA1NmQ0OTU0NDY4Mjg1YThjMTJhMjVkMzFiZWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxNmUyZDM0NWY2MmY3MzE1ZmUzMTE3NTZkOTM0MzgzYmIxNTEzYjkzZTU5YjU5NWFjZGI0OTJjZDQwMDU4NGUifQ"
+        },
+        {
+          "resource": "repo://scripts/selftest-hooks.sh#L313-L392",
+          "version": "repo-lines-v1:sha256:1e6a54562f934ef18a1e797c0a0ecbb992e4c93fa3e3a78e2589ddc7360c0907:eyJzZWxlY3RlZExpbmVDb3VudCI6ODAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhODNiNmRlYWNkMmY1MTYyN2RjMTFhYWU5OWNkNzA4ZmQ2MTZmMDkyM2I1MGVhMWIwMTkwYWE2MzlmMjNmOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3MDJkNDlkMDVhMjY3NGZmMTk0YTM5MGNhMjAyYTU2NzNjMDBhYjg2YjJlYjE5MzBlNzIxMTRmODk4ZTNkODIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQxNjhkNjI0MmM2NjNhNmZhZWViZGY5YmQwMTJmMWM5OGI5YWI0MDY2ZmQ5ZDBjNjUzY2RkOTI3MzQ4MDE2YjkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_572e1145f72347568ffbd26c11336d32",
+      "statement": "The delivery-state hash and commit classification enumerate tracked and untracked paths as NUL-delimited exact bytes, so a newline-bearing gated path changes the receipt and is treated as gated.",
+      "evidence": [
+        {
+          "resource": "repo://bin/lib-gate.sh#L25-L47",
+          "version": "repo-lines-v1:sha256:3eece2ebcaa51871f9be6607d51c66c7db62688af73d7137abcea21326c1f185:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyMTI5Mzk2ZWMwNzkyYzFlNTE5ZGFkMTBhYjliMjcwYTc5MDFmMDk2ZGUyZTQzNTY2Y2QzYWExODgzOWM4YzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwNWMxMGE0Y2NiMGEwMjYyMDI4MTU3Njc5ZDU3NWE5MTAzZGU2ZTEwOTJkODQyYzMyOTk1OWY3ZGEwNTcwNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNhNTU0MjkyYWIxMGJkYzNiNGYwMDc5ZjY3YjU2MDJkNDllZWM3MmFjMjdiZjgxZmFiZGExNGVjYTUyNTFkZDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxYjAwNmJiMmExYTQ0NzE4MWQ0ZDlmMzg3Y2RmMzEzMDcyOGM5NDViMDA4ZjI4NDAzMzEyOGJiNWY1NTRiZmMifQ"
+        },
+        {
+          "resource": "repo://.codex/hooks/enforce-commit-gate.sh#L38-L57",
+          "version": "repo-lines-v1:sha256:b9b0732776d0812dd46cb7de9c47f3d4c9cd003c5846f8912373db84ff302523:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjYmVjOTFhNWU3Y2JhYzhlYTRkMDU3NzE4NDM0YzFmZWNlMjZhZTJlMTE3NTViNzAyYWQ4MDNkZmI0MjJmZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzNjJmYjYzMmIxNTdmMjgzYjkxMzU4MDRhNTE3ZGE2NDkxZDkzOWQ4NjM1NDM1OTExYTkxZjM4OWM5ZTRhZmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0MjdhZWRmOThkZmEyZjc1Y2RjZTdlNmNiOTVkYzdjZTNkNjhmMjE5NmMzYzRjMDJjYTFiNzFlMGE3MTBiMTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_70666ea0fe004d11ae60eabad93c884d",
+      "statement": "CodeGraph setup verifies repository-reviewed wrapper and platform SHA-512 values, disables lifecycle scripts, limits the installed package pair, checks the exact package tree and executable link, and records provenance that readiness validates before execution.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/setup-pipeline-tools.sh#L1-L183",
+          "version": "repo-lines-v1:sha256:8e85577111f1ea7e3f719bc68b4f8dd61868e2705bae86dd8ed624059e88a8d4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxZDk1ZmMwNGE4MGM5NTJmNDljZTQxODg2MjdjNTNiMGZiZThjNDQwNDFiOTUyZDU5MmFjZDFkZTk5ODYxNDY2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI1NjE3NjZhNGRiYmQ3MGI2YjgzNGM1MzVmZDY4MDQxYTRiNDc5MDAzM2IyMDE2YzMyZDRmNTU3OTUzZDFmNTA3IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyMGYxN2Y5NDg2OGFmMzkzMWI4MmE1NjI4OTgwMjQzYzkwNjdhNjQ0ZmQxNDBiMjYxMzFjNjM1YWU2YjdiOWJmIn0"
+        },
+        {
+          "resource": "repo://scripts/check-pipeline-tools.sh#L1-L123",
+          "version": "repo-lines-v1:sha256:6c26c08737d633191ac5d8e2348db2bd822421a2525cf91d9fdb4d00759957d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxZDk1ZmMwNGE4MGM5NTJmNDljZTQxODg2MjdjNTNiMGZiZThjNDQwNDFiOTUyZDU5MmFjZDFkZTk5ODYxNDY2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4ZTQzYzE3ZGQ1ZTM4MjRkNDhlN2MyNjZkMDAxMjlkZjI0NGI0NWUyNTlhMWVlMGVkZWYxMGU5OGQ0NmFiYmQ0In0"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.3.3",
+    "at": "2026-08-25T01:37:12.518Z"
+  }
+}

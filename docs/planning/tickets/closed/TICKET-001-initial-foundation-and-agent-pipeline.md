@@ -14,7 +14,7 @@ pipeline_spec: docs/planning/pipeline/completed/initial-foundation-and-agent-pip
 ## Summary
 
 Establish the first verified Rust/PostgreSQL/QML vertical slice and adapt
-Rustal's Claude work pipeline for this repository.
+Rustal's agent work pipeline for this repository.
 
 ## Why
 
@@ -26,15 +26,15 @@ before accounts, personas, inboxes, connections, and games begin accumulating.
 | ID | EARS requirement | Verification |
 |---|---|---|
 | REQ-001 | When the local development command starts, the system shall apply PostgreSQL migrations, serve a healthy Rust endpoint, and let the QML client consume it. | `./scripts/dev.sh --smoke-test`; migration/table inspection |
-| REQ-002 | When Claude begins feature work, the repository shall provide ordered plan, design, implement, inspect, validate, complete, and commit commands. | Command-file inventory and settings validation |
-| REQ-003 | When gated files are committed through Claude, the commit hook shall require a receipt matching the current gated worktree. | Hook self-test and `bin/gate.sh --diff` |
+| REQ-002 | When Codex begins feature work, the repository shall provide ordered plan, design, implement, inspect, validate, complete, and delivery guidance. | Project instruction and workflow-skill validation |
+| REQ-003 | When gated files are committed through Codex, the commit hook shall require a receipt matching the current gated worktree. | Hook self-test and `bin/gate.sh --diff` |
 | REQ-004 | When a future session starts work, the repository shall provide local tickets, pipeline history, architecture decisions, bulletins, and recallable lessons. | Planning-tree and link audit |
-| REQ-005 | When CI runs on GitHub, it shall execute the repository's canonical fast gate. | Workflow inspection and successful Actions run |
+| REQ-005 | When CI runs on GitHub, it shall execute the repository's canonical fast gate. | Workflow inspection; first Actions run after initial push |
 
 ## Scope
 
-- In: local server/client/database slice, developer commands, CI, Claude
-  commands/hooks, local planning and knowledge stores, canonical gate.
+- In: local server/client/database slice, developer commands, CI, Codex
+  instructions/skills/hooks, local planning and knowledge stores, canonical gate.
 - Out: registration endpoints, persona APIs, inboxes, connections, game rules,
   deployment infrastructure, coverage/mutation floors.
 

@@ -1,0 +1,55 @@
+{
+  "description": "Omarchy Gaming System phase, tool-evidence, delivery, completion-claim, and secret guardrails.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/enforce-commit-gate.sh\"",
+            "statusMessage": "Checking the delivery receipt"
+          }
+        ]
+      },
+      {
+        "matcher": "^(apply_patch|Edit|Write)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/enforce-phase-gate.sh\"",
+            "statusMessage": "Checking pipeline phase readiness"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(mcp__codegraph__codegraph_explore|mcp__openwiki__openwiki_finish)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/record-pipeline-tool-use.sh\"",
+            "statusMessage": "Recording pipeline tool evidence"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/enforce-stop-claims.sh\"",
+            "statusMessage": "Verifying workflow completion claims"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/enforce-secrets.sh\"",
+            "statusMessage": "Scanning changed files for secrets"
+          }
+        ]
+      }
+    ]
+  }
+}

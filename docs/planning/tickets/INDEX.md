@@ -1,12 +1,11 @@
-# Ticket index — Omarchy BBS
+# Ticket index — Omarchy Gaming System
 
 This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `002`**
+- **Next ticket number: `014`**
 
 ## Open queue
 
-| # | Ticket | Type | State |
-|---|---|---|---|
+No tickets are open.

@@ -13,13 +13,13 @@ created: 2026-08-23
 ## Intent
 
 Ship the first database-backed server-to-QML connection and establish a
-Rustal-inspired Claude workflow that can carry subsequent product slices with
+Rustal-inspired agent workflow that can carry subsequent product slices with
 explicit scope, independent inspection, local memory, and verifiable gates.
 
 ## Scope
 
 - In: Rust health server, identity migration, PostgreSQL Compose service, QML
-  health client, one-command dev/smoke path, Claude commands/hooks, local work
+  health client, one-command dev/smoke path, agent guidance/hooks, local work
   record, project-specific gate, and CI.
 - Out: user-facing identity operations, messaging, game runtime, production
   deployment, Rustal's mature coverage/mutation/Playwright gates.
@@ -29,17 +29,17 @@ explicit scope, independent inspection, local memory, and verifiable gates.
 | ID | EARS requirement | Verification |
 |---|---|---|
 | REQ-001 | When the local development command starts, the system shall apply PostgreSQL migrations, serve a healthy Rust endpoint, and let the QML client consume it. | `./scripts/dev.sh --smoke-test`; SQL migration/table queries |
-| REQ-002 | When Claude begins feature work, the repository shall provide ordered plan, design, implement, inspect, validate, complete, and commit commands. | Inventory under `.claude/commands/`; settings JSON validation |
-| REQ-003 | When gated files are committed through Claude, the commit hook shall require a receipt matching the current gated worktree. | Hook self-test and `bin/gate.sh --diff` |
+| REQ-002 | When Codex begins feature work, the repository shall provide ordered plan, design, implement, inspect, validate, complete, and delivery guidance. | Project instruction and workflow-skill validation |
+| REQ-003 | When gated files are committed through Codex, the commit hook shall require a receipt matching the current gated worktree. | Hook self-test and `bin/gate.sh --diff` |
 | REQ-004 | When a future session starts work, the repository shall provide local tickets, pipeline history, architecture decisions, bulletins, and recallable lessons. | Planning-tree and link audit |
-| REQ-005 | When CI runs on GitHub, it shall execute the repository's canonical fast gate. | Workflow inspection and successful Actions run |
+| REQ-005 | When CI runs on GitHub, it shall execute the repository's canonical fast gate. | Workflow inspection; first Actions run after initial push |
 
 ## Locked decisions
 
 | # | Decision | Why |
 |---|---|---|
 | 1 | Use Rustal's phase progression and local-memory model. | It is already proven in the owner's adjacent Rust project. |
-| 2 | Keep the canonical gate independent of Claude. | Humans, CI, and other agents need the same truth source. |
+| 2 | Keep the canonical gate independent of Codex. | Humans and CI need the same truth source. |
 | 3 | Start with static Rust checks plus the real DB/API/QML smoke path. | These are the current executable surfaces; later quality tiers should ratchet with real code. |
 | 4 | Keep one active ticket and EARS requirements. | It controls scope and enables a requirement-by-requirement completion audit. |
 
@@ -60,4 +60,4 @@ explicit scope, independent inspection, local memory, and verifiable gates.
 | 3.5 Inspect | Cross-file and enforcement review | findings dispositioned |
 | 4 Validate | Hook tests and canonical gate green | matching receipt |
 | 5 Complete | AC audit, submitted AAR, ticket and pair archived | no silent drops |
-| `/commit` | Staged review and commit | receipt matches |
+| Delivery | Staged review and authorized commit | receipt matches |

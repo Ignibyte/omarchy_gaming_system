@@ -14,7 +14,7 @@ effectiveness: 5
 
 | ID or source | How surfaced | Useful? |
 |---|---|---|
-| `Ignibyte/rustal` Claude pipeline | Direct inspection of commands, hooks, constitution, templates, and gate | Yes — supplied the phase and receipt model while exposing CMS-specific pieces to omit. |
+| `Ignibyte/rustal` agent pipeline | Direct inspection of phase playbooks, hooks, constitution, templates, and gate | Yes — supplied the phase and receipt model while exposing CMS-specific pieces to omit. |
 
 ## What happened
 

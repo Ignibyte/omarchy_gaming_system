@@ -1,10 +1,15 @@
-# Omarchy BBS product charter
+# Omarchy Gaming System product charter
 
 ## Product promise
 
-Omarchy BBS is an API-first social gaming system with a keyboard-first QML
-connector. It should feel alive for one or two people and grow naturally into a
-small community.
+Omarchy Gaming System—OmarchyGS for short—is an API-first social gaming system
+with a keyboard-first QML connector. It should feel alive for one or two people
+and grow naturally into a small community.
+
+The primary experience is playing and maintaining relationships through
+connections, private inboxes, challenges, and persistent game history. A
+public message board may become a complementary community surface later, but
+it is not the current product identity or private-alpha focus.
 
 ## First playable outcome
 
@@ -14,7 +19,7 @@ result recorded.
 
 ## Private-alpha scope
 
-- Accounts and revocable sessions
+- Accounts, opt-in TOTP two-factor authentication, and revocable sessions
 - Persona creation and profiles
 - Connection requests and blocking
 - Inbox threads and typed game messages
@@ -48,4 +53,3 @@ result recorded.
 Two clean Omarchy installations can connect to one server, create personas,
 connect, exchange messages, finish a challenged match, reconnect after going
 offline, and observe the correct match result without developer intervention.
-

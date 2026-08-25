@@ -47,4 +47,4 @@ created: YYYY-MM-DD
 | 3.5 Inspect | Findings ledger and fixes | lead disposition |
 | 4 Validate | Tests run and delivery gate green | gate receipt |
 | 5 Complete | AC audit, docs, submitted AAR, archive | no silent drops |
-| `/commit` | Fresh gate, staged review, commit | matching receipt |
+| Delivery | Fresh gate, staged review, authorized commit | matching receipt |

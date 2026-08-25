@@ -1,0 +1,458 @@
+---
+type: "Reference"
+title: "Runtime foundation"
+openwiki_generated: true
+sources:
+  - id: openwiki-source-30e12d7dfe374ac923c8ddbd
+    resource: repo://crates/game-runtime/src/lib.rs
+  - id: openwiki-source-66facc66e34ad7f2a74321e1
+    resource: repo://crates/server/src/accounts.rs
+  - id: openwiki-source-e61b285fcaa489b63922f43f
+    resource: repo://crates/server/src/app.rs
+  - id: openwiki-source-b691fa90e62f9509a0c1869a
+    resource: repo://crates/server/src/config.rs
+  - id: openwiki-source-4b133589ca70bd174cf19eb9
+    resource: repo://crates/server/src/connections.rs
+  - id: openwiki-source-17c0b29fc571b7362a541c89
+    resource: repo://crates/server/src/credentials.rs
+  - id: openwiki-source-a243b385d49ea9224173d77a
+    resource: repo://crates/server/src/game_api_tests.rs
+  - id: openwiki-source-26aac996689c040c6aab6825
+    resource: repo://crates/server/src/games.rs
+  - id: openwiki-source-4773699be275375a3bb0c216
+    resource: repo://crates/server/src/inboxes.rs
+  - id: openwiki-source-a13fe4db1eee073d0a7e2c4d
+    resource: repo://crates/server/src/main.rs
+  - id: openwiki-source-1f3bbf6debbcae2e3b3c3b61
+    resource: repo://crates/server/src/mfa_api_tests.rs
+  - id: openwiki-source-83e16151ac88c29a31cb79d2
+    resource: repo://crates/server/src/mfa.rs
+  - id: openwiki-source-54f6da1456b2b76d94d11b0e
+    resource: repo://crates/server/src/personas.rs
+  - id: openwiki-source-d943a78fae758ed47e30a12a
+    resource: repo://crates/server/src/sessions.rs
+  - id: openwiki-source-46fb4135d6a71efad1062c0d
+    resource: repo://crates/server/src/sync_api_tests.rs
+  - id: openwiki-source-e7a72df5b89c1ac350ffe062
+    resource: repo://crates/server/src/sync.rs
+  - id: openwiki-source-72d1d6cc0f49cdc59cc77234
+    resource: repo://migrations/0001_identity_foundation.sql
+  - id: openwiki-source-cc81194d2be7a8c404889b15
+    resource: repo://migrations/0002_canonical_account_usernames.sql
+  - id: openwiki-source-358c515ea0211d4b7f4f722a
+    resource: repo://migrations/0003_device_session_metadata.sql
+  - id: openwiki-source-80556fe53504b4a8da1cd08a
+    resource: repo://migrations/0004_canonical_persona_handles.sql
+  - id: openwiki-source-0a7e68dc488e993e49a7053c
+    resource: repo://migrations/0005_totp_two_factor_authentication.sql
+  - id: openwiki-source-db59744a1b86bb366d2bc988
+    resource: repo://migrations/0006_persona_connections_and_blocks.sql
+  - id: openwiki-source-c873ebda6240c16d74d77455
+    resource: repo://migrations/0009_persona_sync_events.sql
+  - id: openwiki-source-48796f93204ecc1ec11191f8
+    resource: repo://migrations/0010_game_registry_and_sessions.sql
+  - id: openwiki-source-c79a682b6a5bf55579dee651
+    resource: repo://migrations/0011_idempotent_revision_checked_game_commands.sql
+generated: {by: "codex", at: "2026-08-25T01:37:12.518Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-25T01:37:12.518Z
+---
+
+# Runtime foundation
+
+## Startup flow
+
+`crates/server/src/main.rs` owns process startup. It initializes tracing, loads
+environment-backed configuration, connects a PostgreSQL pool, applies embedded
+SQLx migrations, starts the PostgreSQL-backed synchronization listener and
+in-process notification hub, injects the deliberately empty production game
+registry, binds the configured listener, and serves the Axum router with
+graceful shutdown. A failure to connect, migrate, subscribe, bind, or serve
+carries context and stops startup instead of exposing a partially ready
+process. Shutdown also aborts the listener task.
+
+Configuration lives in `crates/server/src/config.rs`. `DATABASE_URL` and
+`OGS_BIND_ADDRESS` can override development defaults; `BBS_BIND_ADDRESS` is a
+transitional fallback only when the new variable is absent. The defaults point
+only at loopback and use the `omarchy_gaming_system` development database.
+Startup also requires `OGS_MFA_ENCRYPTION_KEY` as an unpadded base64url-encoded
+32-byte value. All replicas and restored instances that need to verify enrolled
+authenticators must receive the same protected key. Keep network, key, and
+credential policy explicit when introducing a non-local deployment profile.
+
+## Health flow
+
+`app::router` installs `GET /health` and shares the database pool through Axum
+state. The handler executes `SELECT 1`:
+
+- a result of `1` produces HTTP 200 and reports both service and database as
+  `ok`;
+- any other result or database error produces HTTP 503 and reports a degraded
+  service with the database unavailable.
+
+Both documents identify the service as `omarchy-gaming-system`. The response
+construction has focused identity, healthy, and degraded unit tests. The
+delivery smoke supplies the live proof that migrations, PostgreSQL, HTTP
+serialization, and the QML consumer work together.
+
+## Account registration flow
+
+`app::router` also installs `POST /v1/accounts` with a 1 KiB request-body cap.
+The handler translates JSON and delegates to `accounts::register_account`; it
+returns only the created account ID and canonical username.
+
+The account domain owns the sensitive work:
+
+- usernames are trimmed, ASCII-lowercased, and restricted to a 3–32 byte ASCII
+  namespace beginning with a letter or digit;
+- passwords are not trimmed and must contain 12–128 bytes;
+- shared credential code runs password hashing through `spawn_blocking` with an
+  OS-random salt and Argon2id v19 parameters `m=19456`, `t=2`, and `p=1`;
+- the resulting PHC string is inserted into PostgreSQL, and only the named
+  username uniqueness violation becomes the public `409` conflict outcome.
+
+Validation failures become stable `422` errors. Unexpected database, task, or
+hashing failures collapse to a generic `500` response rather than exposing
+internal or password-derived data.
+
+Registration and login share a four-permit semaphore before entering their
+memory-hard blocking work. Missing-account login still performs a dummy Argon2
+operation, while wrong-password, suspended, and disabled accounts verify the
+stored hash before returning the same `invalid_credentials` response.
+
+## Device-session flow
+
+`POST /v1/sessions` accepts credentials and a bounded device name. When MFA is
+disabled, the session domain generates 32 OS-random bytes, encodes them as an
+`ogs1_` base64url token, stores only `SHA-256(token)`, and returns the raw token
+once in a `Cache-Control: no-store` response. When MFA is enabled, the same
+primary-credential check returns a challenge and creates no session until the
+factor succeeds.
+
+During the local pre-alpha transition, parsing also accepts structurally valid
+legacy `bbs1_` tokens. It hashes the complete presented token, so an existing
+stored digest still resolves without a migration and then passes through the
+same account-status, revocation, absolute-expiry, and idle-expiry predicates as
+a new token. New sessions never emit the legacy prefix.
+
+`GET /v1/sessions` and `DELETE /v1/sessions/{session_id}` accept that value only
+as an `Authorization: Bearer` credential. Authentication atomically advances
+last use only if PostgreSQL finds an active account and a session that is:
+
+- not revoked;
+- inside its 30-day absolute expiry;
+- active within the last seven days.
+
+Inventory filters by the authenticated account and marks the presenting device
+as current. Revocation predicates on both the authenticated account and target
+session ID, so foreign and absent UUIDs share the same not-found result. The
+current device may revoke itself, after which the token fails immediately.
+
+## Opt-in TOTP MFA flow
+
+The account-level MFA routes are deliberately separate from public persona
+identity:
+
+- authenticated `POST /v1/account/mfa` rechecks the current password, creates a
+  random 160-bit TOTP secret, and returns the Base32 secret and `otpauth` URI;
+- `POST /v1/account/mfa/confirm` must receive a valid code within ten minutes
+  before the authenticator becomes active and ten independently generated
+  recovery codes are returned once;
+- `GET /v1/account/mfa` exposes only enabled state and unused recovery-code
+  count;
+- `DELETE /v1/account/mfa` requires the current password plus a valid TOTP or
+  unused recovery code, then removes the authenticator, recovery codes, and
+  outstanding challenges without revoking existing device sessions.
+
+The recoverable TOTP secret is AES-256-GCM ciphertext with a random nonce and
+the account UUID as associated data. Recovery codes and login challenges are
+stored only as SHA-256 digests. All enrollment, confirmation, status, challenge,
+and completed-session responses that contain authentication state are marked
+`Cache-Control: no-store`.
+
+An enabled account's password login creates a five-minute `ogm1_` challenge
+instead of a device session. The account row is locked during issuance, so up
+to ten unexpired challenges can coexist for independent device attempts; an
+additional valid-password request receives HTTP 429 without consuming or
+replacing any live challenge. Expired and consumed challenges are cleaned up
+during later issuance.
+
+`POST /v1/sessions/mfa` locks the selected challenge, account, and authenticator
+in one transaction. A successful six-digit TOTP or unused recovery code is
+consumed together with the challenge before the new device session is issued.
+The RFC 6238 profile uses HMAC-SHA-1, a 30-second step, and one adjacent step on
+either side for clock drift; `last_used_step` prevents replay. Recovery codes
+are also single-use. Five consecutive factor failures across challenges lock
+verification for five minutes, while successful verification clears the
+failure state. These local controls do not replace distributed public-edge
+throttling or TLS, and TOTP is not phishing-resistant.
+
+## Persona flow
+
+Authenticated `POST /v1/personas` and `GET /v1/personas` create and list
+personas for the account derived from the presented device session.
+Authenticated `PATCH /v1/personas/{persona_id}` accepts only handle, display
+name, bio, and status fields and predicates the update on both the persona UUID
+and derived account UUID. A foreign, absent, or malformed persona ID therefore
+shares the same not-found response, and an unauthenticated malformed ID still
+fails authentication first.
+
+The persona domain owns the profile rules:
+
+- handles are trimmed, ASCII-lowercased, and restricted to a 3–24 byte ASCII
+  namespace beginning with a letter or digit;
+- display names contain 1–64 trimmed, non-control Unicode characters;
+- bios contain at most 1,000 Unicode characters and allow tabs and newlines but
+  no other controls;
+- status messages contain at most 160 trimmed, non-control characters;
+- empty edits are rejected, and the named handle-uniqueness conflict becomes a
+  stable `409` without revealing the existing owner.
+
+Public `GET /v1/personas/by-handle/{handle}` canonicalizes one exact handle and
+returns the same not-found result for invalid and absent values. Persistence
+rows are first narrowed into a domain model and then into an explicit transport
+DTO containing only ID, handle, display name, bio, status message, and created/
+updated timestamps. Account IDs and authentication data are not fields in
+either response model. Successful authenticated persona responses carry
+`Cache-Control: no-store`; public lookup is intentionally enumerable by handle.
+
+## Persona connection and block flow
+
+Connection and block routes are persona-scoped, but path identity never grants
+authority by itself. The `connections` domain authenticates the Bearer token,
+derives the private account ID, and requires the acting persona to belong to
+that account. A missing, malformed, or foreign actor returns the same
+`persona_not_found` response. Targets must exist on another account; invalid,
+same-account, or blocked targets share `connection_unavailable` for
+state-creating commands.
+
+`PUT /v1/personas/{actor}/connection-requests/{target}` creates one outgoing
+pending request and safely returns the existing request on retry. Inventories
+split pending rows into stable incoming and outgoing arrays. Creation enforces
+at most 100 pending rows in either direction: it checks the requester's
+outgoing count and the addressee's incoming count after locking both persona
+roots, so concurrent boundary attempts serialize and an existing outgoing
+request remains retryable at the limit. Only the addressee can accept through
+`PUT /v1/personas/{actor}/connections/{requester}`; the accepted row then
+appears as one mutual connection to both participants. Either participant can
+use `DELETE` on the connection path to cancel pending state or remove accepted
+state. Authenticated delete retries intentionally return `204` even when the
+target state is absent.
+
+Every pair mutation locks both extant persona rows in ascending UUID order
+before checking ownership, target policy, blocks, or relationship state. This
+serializes opposite requests, concurrent acceptance, removal, and blocking
+without cross-table invariant windows. One canonical pair row stores either
+`pending` requester/addressee direction or an `accepted_at` timestamp; database
+checks bind those fields to the same canonical pair.
+
+Blocks use a separate directional `(blocker_id, blocked_id)` row and are listed
+only for the blocker. Creating or retrying a block deletes any pending or
+accepted pair row in the same transaction. Requests then fail with the same
+generic result in both directions. This keeps block rows and inventories from
+direct disclosure, but a caller may still infer direction by comparing a
+denied interaction with its own block inventory; the product does not promise
+to conceal that residual inference. Unblock is idempotent and does not restore
+an earlier request or connection. Social responses carry
+`Cache-Control: no-store` and embed the existing seven-field public persona
+shape rather than account ownership or persistence identifiers.
+
+## Private inbox flow
+
+Only a real pending-to-accepted transition calls the inbox domain inside the
+connection transaction. It creates or reuses one conversation for the
+canonical persona pair and appends exactly one typed, server-authored
+`connection_accepted` message. Retrying an already accepted command returns the
+connection without appending another event.
+
+The inbox routes expose bounded conversation inventory, bounded message
+history, body-only user sends, and monotonic read acknowledgement. Every
+operation authenticates the device session and owner-scopes the acting persona;
+conversation inventory and history additionally require that persona to be one
+of the durable participants. Responses embed public persona profiles but never
+the peer's account ownership or private read cursor. Pages default to 50 and
+cap at 100. The inbox router applies `Cache-Control: no-store` to successful
+documents, domain failures, and request-extractor rejections.
+
+Sending first locks both persona roots through the connection domain, verifies
+that the pair is currently accepted and unblocked, then locks the conversation
+row and appends. Removal and blocking use the same persona-root order, so a
+send either commits before the social mutation or observes its denial. The
+message remains durable in the former case. Existing history stays readable
+after removal or block; unblock alone does not restore send permission.
+
+Each conversation has its own positive message sequence. The conversation row
+lock allocates the next value and serializes concurrent user and system
+messages. The sender's read position advances with its new message; explicit
+read acknowledgement uses `GREATEST`, so older retries cannot move a cursor
+backward. This sequence is a conversation history cursor only, not the
+cross-resource persona synchronization cursor.
+
+## Durable persona synchronization and live hints
+
+Every committed social, inbox, or game-session mutation that changes visible
+state appends a typed row to each affected persona's monotonic synchronization
+stream in the same transaction as the domain write. It then emits a PostgreSQL
+notification carrying only the persona ID; the durable cursor remains in REST.
+No-op retries append nothing. Retention pruning is transactional too, so the
+oldest retained cursor defines the recovery boundary. A game invalidation
+carries only the session UUID, never its state or participant list.
+
+`GET /v1/personas/{persona_id}/sync` is the durable source of truth. Without an
+`after` cursor it returns a bounded baseline; with one it returns strictly newer
+events in order. A cursor outside retained history, ahead of the persona, or
+separated from the first returned row produces `reset_required` instead of a
+silently incomplete page. Authentication and persona ownership are checked
+before state is disclosed.
+
+`GET /v1/personas/{persona_id}/sync/live` upgrades only a header-authenticated
+owner; query-string tokens are rejected. The socket sends `ready`, advisory
+`changed`, and lag-recovery `resync_required` messages, never durable domain
+payloads. Incoming frames are capped at 1 KiB, and permits cap connections at
+five per persona, twenty per account, and 256 per process. The prepared socket
+retains UUIDs rather than a raw token and revalidates the session without
+extending idle lifetime before readiness, before hints, and every 30 seconds;
+revoked, expired, or inactive sessions close fail-closed.
+
+## Compiled game registry, versioned sessions, and commands
+
+`crates/game-runtime` is a database-free boundary for trusted compiled game
+definitions. A manifest uses one canonical key, a positive exact version, a
+bounded control-free display name, and human-player limits within the global
+eight-seat cap. Registry construction rejects invalid manifests and duplicate
+`(key, version)` definitions and stores them in deterministic key/version
+order. Production currently injects a valid empty registry; tests inject
+compiled fixture versions. The public `GET /v1/games` route projects only that
+manifest metadata.
+
+A definition receives only the human-player count when initializing and only
+the current object state, actor seat, and object command when transitioning. It
+has no pool, network, clock, session, account, or ambient-randomness capability
+in the interface. The registry resolves exactly the requested version, checks
+that the count fits its manifest, and rejects initialization errors, non-object
+JSON, or serialized initial state above 64 KiB. Command execution also rejects
+state above 64 KiB, command input above 16 KiB, an out-of-range actor seat,
+trusted-rules rejection, and non-object or over-64-KiB output through stable
+typed errors. Identical initialization or command inputs are expected to be
+deterministic.
+
+`games::create_session` is a crate-private transaction primitive for trusted
+future orchestration. It rejects empty, duplicate, or over-eight participant
+sets before persistence; initializes the exact rules version; locks all
+existing persona roots in canonical UUID order; then stores the immutable game
+key/version, revision-zero active object snapshot, and caller-ordered seats. It
+appends one `game_session_changed` event for every participant inside the same
+caller-owned transaction. Any error must be propagated so state, seats, and
+invalidations roll back together. No public creation route exists yet because
+challenge acceptance will own that authorization policy.
+
+Authenticated inventory and detail routes first validate the Bearer session,
+then require the acting persona to belong to its derived account and to each
+returned game session. Inventory defaults to 50, caps at 100, and orders newest
+first. Responses expose the durable key, version, revision, status, state,
+timestamps, seats, and the existing public persona shape; they contain no
+account ownership or registry internals. Foreign, malformed, and absent session
+IDs share the same not-found result. Reads come directly from PostgreSQL, so a
+process registry that has gained, lost, or replaced versions cannot silently
+reinterpret an old session.
+
+`POST /v1/personas/{persona_id}/game-sessions/{game_session_id}/commands`
+accepts a body-capped object containing a UUID idempotency key, nonnegative
+expected revision, and object command. The handler returns only the game
+session ID, committed revision, and state with `Cache-Control: no-store`.
+Authentication owner-scopes the acting persona; the transaction then locks the
+active session only through that persona's participant row, keeping malformed,
+absent, and non-participant sessions indistinguishable.
+
+While holding the session lock, the domain checks the session-wide replay
+receipt before enforcing the current revision. A receipt replays only when its
+actor, expected revision, and PostgreSQL-`JSONB`-semantic command match; it
+returns the stored result without rerunning rules or appending another event.
+Any identity mismatch is an idempotency conflict. A new key must carry the
+current revision, and the stored exact game version must still be compiled.
+Success atomically writes the next bounded state, increments one revision,
+preserves a monotonic `updated_at`, inserts the replay receipt, and appends one
+minimal game-session invalidation per canonically ordered participant. Rules
+rejection, malformed input, unavailable rules, revision conflict, and any later
+transaction failure leave state, receipt, and invalidations unchanged.
+
+## Identity-ready schema
+
+The forward-only `0001_identity_foundation.sql` migration creates three
+separate persistence roots:
+
+- `accounts` stores a case-insensitively unique username, password hash,
+  lifecycle status, and timestamps;
+- `account_sessions` belongs to an account and stores only a unique token hash,
+  expiry, last-used, revocation, and creation timestamps;
+- `personas` belongs to an account and stores a case-insensitively unique handle
+  plus bounded public profile fields.
+
+The forward-only `0002_canonical_account_usernames.sql` migration additionally
+enforces the account namespace for every database writer. Migration `0003`
+adds bounded device names and requires 32-byte stored token digests. Migration
+`0004` enforces the same canonical persona-handle namespace for every database
+writer, and the persona endpoints implement the existing profile tables.
+Migration `0005` adds one TOTP authenticator per account, hashed single-use
+recovery codes, and hashed expiring login challenges. Its constraints bound
+ciphertext and nonce lengths, digest sizes, device names, failure counts, and
+challenge expiry. Migration `0006` adds the canonical pending/accepted
+connection pair and directional block tables, with foreign keys, direction and
+status checks, and indexes for both request directions, both connection sides,
+and reverse block checks. Migration `0007` adds one canonical-pair conversation,
+per-participant read positions, exact user/system message constraints, and an
+accepted-pair backfill. Forward migration `0008` converts the initial global
+identity values and existing read/latest positions into conversation-local
+sequences, then enforces unique `(conversation_id, message_sequence)` values
+and a matching composite latest-message foreign key. Migration `0009` adds one
+cursor state row per persona plus bounded retained synchronization events and
+indexes for ordered recovery and pruning. Migration `0010` adds exact-version
+game sessions, revision-zero object snapshots, unique ordered persona seats,
+and the shaped `game_session_changed` UUID payload in retained persona events.
+Migration `0011` adds session-wide command receipts, binds each actor to a
+durable participant, allows one receipt per applied revision, requires the
+applied revision to be exactly one beyond its nonnegative expected revision,
+and enforces object command and state shapes. The database enforces object
+shape and canonical identity; the compiled runtime applies the serialized
+state and command bounds before persistence. Add later
+capabilities through domain modules and thin handlers rather than placing policy
+directly in SQL or transport code.
+
+## Safe change path
+
+Start with the owning domain behavior and tests, then update thin routes and
+persistence. Never rewrite a migration after it may have run; add a numbered
+forward migration. Validate database-sensitive behavior against PostgreSQL and
+finish with `bin/gate.sh --diff`. Registration's narrow proof is the account
+unit tests plus the ignored SQLx router tests run by `scripts/test-database.sh`.
+Session changes additionally use the dedicated multi-account lifecycle tests.
+Persona changes use `persona_api_tests.rs`, whose migrated router tests cover
+multiple owners, exact public field sets, foreign-object denial, public lookup,
+handle movement and conflicts, input allowlists, and storage preservation.
+MFA changes use `mfa_api_tests.rs`, whose migrated router tests cover encrypted
+enrollment, status privacy, TOTP/recovery/challenge replay, independent bounded
+challenge issuance, cross-challenge attempt locking, dual-proof disablement,
+and restoration of password-only login. Connection changes use
+`connection_api_tests.rs`: its five migrated multi-account cases cover
+direction and response privacy, race-safe request caps, participant-only
+acceptance/removal, atomic block behavior under a request race, and
+serialization of opposite requests and concurrent acceptance. Inbox changes
+use `inbox_api_tests.rs`: its five migrated cases cover transition-only
+conversation creation, typed body-only messages, private monotonic unread
+state, conversation-local ordering, bounded durable history, lifecycle send
+denial, no-store failures, and concurrent send/read behavior. Synchronization
+changes use `sync_api_tests.rs`: its migrated cases cover baseline and
+incremental recovery, retention resets, owner privacy, transaction-coupled
+invalidations, real TCP WebSocket authentication and hints, principal-scoped
+quotas, frame bounds, permit release, and session revocation, expiry,
+inactivity, and no-touch revalidation.
+Game-runtime changes use its five unit tests for manifest validation, stable
+exact-version lookup, and bounded deterministic initialization and commands.
+Game transport or persistence changes also use `game_api_tests.rs`: two local
+router cases and five migrated PostgreSQL cases cover the honest empty catalog,
+body bounds, atomic creation and command transitions, ordered seats, semantic
+replay and isolated collision axes, revision conflicts, rollback silence,
+minimal per-participant sync, bounded private reads, indistinguishable foreign
+and absent objects, registry-independent stored history, and one-winner command
+concurrency.

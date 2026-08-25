@@ -1,0 +1,418 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:23f990bf36e9a22db5e79330080ab39b0e856343ebf52b7699035646394eb087",
+  "claims": [
+    {
+      "id": "claim_6694314ff9ed40c7b402b20720f16d87",
+      "statement": "The Rust server is authoritative for authentication, permissions, game state, turns, time, randomness, and rewards.",
+      "evidence": [
+        {
+          "resource": "repo://CONSTITUTION.md#L67-L68",
+          "version": "repo-lines-v1:sha256:f31072c623bae12d9789aa94ecbbbb8e42f2aee4046f04070169c1b2d5ae893a:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWYzNmZjZTQ2YWFjNDY1ZDFlMjM1ZmE5ODljMDVkZTdmZTgyOWI0MDRkYTI3NjJlOWFmOGRlOGJmZGRkMGMzMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWZkMzVhYzRhMmE5OWNkNjFmODIzYzNkNzA1YTA5NzliYjI3YTU2OWM4MTYyYjI3MWVhNzA5YjU2YTVhZTViMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjExMTkwMDEyYTEyMTdmYTYyNmY2N2ZkNTc0MDQ5MmFhOWM4MDY1ODJjNTY2OTA4ZGM1ZDM5NDE3Nzk0Y2RiYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWE0ZjkyZjdiZmVkZGIyMzg1MDFiNGFjOWY2ZjYxMmMwM2ZmOTZhMTNlNWViMDBiNTEwZThmMjlmMGViMjA1YyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_f73e497e3c654264bf65683855f95d0f",
+      "statement": "Account identity and persona identity are separate, and social or game surfaces expose personas rather than account ownership.",
+      "evidence": [
+        {
+          "resource": "repo://CONSTITUTION.md#L69-L70",
+          "version": "repo-lines-v1:sha256:7996a2d9e1b6cdfb107c030af208e100acfd8e57de616658ec3a4a9ecca7ae7b:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmQ4YWRmOWI1MTlmOTRmNGVhMDE4NWU0MDllY2IxNmIzYzVhZTE3YWZjZTk2NjY2ZjU2NmI3NWI2NmY5NmY2MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmI2OTIzNDIwOWM2MzhlZWFiNWUzMjVlMGQxYzc0YTViYjU1N2Y3OTgwZjZlNjRkZDg1YWM5MWFjNDM4YzhhMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDhiMDRlYmNhYmQyZDljMDE2M2U1MzE0ZmNkZDI4Mjc4YWU0ZTYxNTgxODUyZTRmYjIxN2VlNGE5ZjJjNTE3ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWVlZDlkOTQ4MmZjYTRmMGQ1NDJjYTUxYzg4MmYwMjU4NTUwN2U4NjBiMTJhYzUwMmFkZDBiMGUyYWVkMWI4OSJ9"
+        },
+        {
+          "resource": "repo://docs/product-charter.md#L37-L44",
+          "version": "repo-lines-v1:sha256:0baef94b0f06b1d59d7a655d38f495e5c73462b823ced92c61c5099b10fa2450:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWI1MjZiMmFiOTU3OTQwZDVjMDdkMzI0MGE2MmRkZTJlZDg0N2ZlOWRhMDBlMjEyOWU5NmFmZjQ4NmMyYzg5OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDY4ZjFkNTJhYzhhOWVkNWVhYzJhZDhjNWUwNTJiNjQ2Y2ZkZWIyNjc3MTBjNmU2MmI4OGE3ZTcwNzFmMDlkNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDRhMGFjZDMxNmRiYjM3OGRmYWU3NDRiZmRjZDQ0OTJhNzQyODNlYjgwOWFiMjE1YTA0NjhkZDUxNWZmNTcyZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmQ0YjU4ZDcxYzM3ZmJkOGE0NWM0MDdlNDY1ZmY0YTY3NTE2ODBjMTRhNjM0MTY2MWJlYTVjMDg5ZTZlMDFiZiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_956b22571cb94f9e89857dc02a2cd7e6",
+      "statement": "REST/JSON is the durable command and query interface; WebSocket notifications are advisory and cursor synchronization is the recovery source of truth.",
+      "evidence": [
+        {
+          "resource": "repo://CONSTITUTION.md#L71-L73",
+          "version": "repo-lines-v1:sha256:1eed9d9482fca4f0d542ca51c882f02585507e860b12ac502add0b0e2aed1b89:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjg1MjgwMmMzMzUwMTZjM2QxNTRlYjYxMWM2NDIwZWRlMzM0NWM4YjZjMjk4YmIyYzUyOGRjYjg1ZThlOGJhZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGI4NTQzOGRiMDI3MWU3N2I1ZjUzOWFiMDI4Yjc2OGZkMWRkMjA4ZDc1NzdlMTRhYzVlNjUxODg5NTFmNzExZiJ9"
+        },
+        {
+          "resource": "repo://docs/architecture/system-overview.md#L24-L33",
+          "version": "repo-lines-v1:sha256:7b9a2454ee04a2e7ee147fba8adf921f3cb83e541e1d94f9346d3f6f7267f7b3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxZWNkZjA5YjE3MjcyZmRkZDFkMTFhODFmMzVjMTU4MWYwMjFmZDk2MDc1Y2I0YjQ5YzZhYTkzZGZjNTZiY2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5MTNmOGUyM2MwMWZkMzhjYWQwYTMxZGQ4ZGYzMzY5NTJmZTUwN2Y5MTZiN2RhMmI4NWMxNjg2MmVlNjg4YjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3YWNjNDMxODAzYTAwYTVlNGI5YzliYjQ3NDZlMzVkYWVkY2I3NGQ3NzIxNmY2YWUyMDRjNGI4YTJiODUyYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ0ZDgzZjg3YmRkYjhjZjU1OWQ5Njc0NjM1NGRkNGM5YTdjNTViYWEyMzVkZTg3YWU5ZWNjMjg5Njg1ZTA4ZDQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_37eb2f7e20a54eaf9f3abe3bf3017c59",
+      "statement": "HTTP and WebSocket handlers translate transport data while domain modules own authorization and invariants.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture/system-overview.md#L24-L29",
+          "version": "repo-lines-v1:sha256:18925bb2ad8f0e5bc7d38a41a9eff4ae80267321b249681e908f2927bb96d427:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzFlY2RmMDliMTcyNzJmZGRkMWQxMWE4MWYzNWMxNTgxZjAyMWZkOTYwNzVjYjRiNDljNmFhOTNkZmM1NmJjZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWM2MDQzZjRhYjcyNWM1MGQxMGZhZDMzYTA3MmZlMmRkNWQ1NDUwMTVjZjE4MzBhOGE2YTU5YjhlMTcyYWZjYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDdhY2M0MzE4MDNhMDBhNWU0YjljOWJiNDc0NmUzNWRhZWRjYjc0ZDc3MjE2ZjZhZTIwNGM0YjhhMmI4NTJiNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmUxNzhkZDBjYTVjMDcxYWQ0NWZlYTQ2ZjhmMDg1MWJkMDQ2Njk2M2M4MGNlNTZiODNmNDAzNjQwYzgwNTQyNCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_824ce67ba5814663b5f34951ede1c74e",
+      "statement": "Account and session authentication, TOTP MFA, persona social state, private inboxes, durable cursor synchronization, and exact-version durable game sessions with revision-checked idempotent participant commands are implemented; public creation, challenges, results, playable rules, and game UI remain later roadmap areas.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/app.rs#L454-L467",
+          "version": "repo-lines-v1:sha256:94d781becf2cfef6ec97a10876e86de5890207da6c280640a34d47f558b00f46:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkOTZhMTJjZWY4OTU5NjZhN2RkMTRmN2JlNzc2YjY5YmJkOTU4MjRkMDJhYWQxMjk3ZjY3ODIzMGE5NTNjMGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmZWQ2ZWQ0YmEzN2YwNTM4ZDU3NjI3OTMwNjAxYTc0YTVhMDVjMDYxMjAwNjI4YzAxYTExYzJkZjdjMDkxMzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0NTZmZWZhNmViZjVhYWEzZjZhZjkxNTFiNjkwMTliMjg3MzYxY2JhMzUyODhkNjVlODNiZjUyMzE5YzYwM2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxYjg1Y2U1Nzg3YWI4ODI5ZmFmMTcwNGI2OGIwOGFlYTk3MWE0Mzk4OWMwOWUzZWY2YzAwYzQzYmRjN2Q0ZDYifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/games.rs#L270-L451",
+          "version": "repo-lines-v1:sha256:c114172e703fc97bd31f8923d9463630b58678b28ee5de5c11aca75b54787b32:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJjNWFhMjYzNzgxODQ5YjJjY2M2Mjc5ZTU0NWRjMTgwY2YzYjE4OTQxMjc5ZDMyYWMxM2VkYzE0ZjYyMTlhMDE2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyNDYyMzkwYWM3OGMyZDFmMmQyZGRkYWI4OGNhOWY3ZDcxMDU3Y2FlODNkY2FjOTU3YmNlMjc4NDk5MDhkMTZkIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhODNmZTcyMDM2YTBmMTMxZjFhZjEzYzEzYzQ3MTM4MjU2ZTQyN2YwMGM3NzY3MjJkMjM5ZjE1OGYyYWY0ZmIyIn0"
+        },
+        {
+          "resource": "repo://docs/planning/ROADMAP.md",
+          "version": "repo-file-v1:sha256:4edcbd6a77c0d8db14b510d90f1c7fa72e69b6da1e2ec8b88faad5d204baf8bd"
+        }
+      ]
+    },
+    {
+      "id": "claim_8d66340b3f45424aaa0f7ebf744d7f5f",
+      "statement": "Registration creates an account credential identity only and does not create or expose a persona.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/accounts.rs#L30-L63",
+          "version": "repo-lines-v1:sha256:a37a4a7b1e3786afe371bf6053313cdab10b99f9176ad16d0496d6004b7cb30f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmZTY1YjI1ZjJlYjM0MmUyMzI5ODA3N2FjZTdjZGYzODk3YTY1NTMxMzgxZDg2ZDIyY2RhMGE4NTBhMjg2MTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRmMmIwMWM5ZTE0ZGJkNDUwNzQyZWU3YmYzMTA1MDYzMGQxMWNlZTMzMDQ5NGMyMzFhZTA5M2U5OWIxMGI5MWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxMDM2ODYzMjkwZTVjZTkzMzVjMGI2NTZhYWNlZWVhY2U2ZDczYTE1Y2YxZmZhYjg2ZjNlOGYyOTljMGVhNTgifQ"
+        },
+        {
+          "resource": "repo://docs/api.md#L6-L49",
+          "version": "repo-lines-v1:sha256:090e8c6319b2f3e9ab2b43908a5f39cc6069a6ef57818c85ed3a26dd717548cf:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3ZGU3M2MyNzJkNDA3MTUzMDk4ODkzYTEwNGI1ZDc1ZTM5OWM5NDRmODhhMGYwYWU5ZTAyNDRiZGY0OWRlMDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3ODExMzljOTA3NjBkY2VjNGY0MDI5NTE2ZWNhMzgwOGJhYmUyZGRmNmY1M2JjNDQwMzA4M2QxYmJkOTg3MzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ2OWNjNWU5Njg1YjRlOTA2NDg1Y2Q0NDcyZGY0ZTRkN2Y5ZGY2OGY2ZWYwOGRmZDI2NDQ1YWZiMzNiNzBhM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRmOWNiNjhhY2ZmNWE4NGUyNzgxYTdhMmRjOTM4ODAzMzcyNTdiMzZmZmQ0YzY3MGYyZjBkZmI0MDJiNTM1OWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a6bb74f8be894e9babaad84d9ff2e067",
+      "statement": "Device-session JSON omits account ownership and token digests; password login either returns a new session or an MFA challenge, and authenticated account-level operations do not create a persona identity.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/app.rs#L49-L67",
+          "version": "repo-lines-v1:sha256:052ebb47d1237080cabedfb5c0c3972e639b708dac10c0ca54939c37545d2e7d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5NjAyMWJjNDgwOTk3YjUxZmViODlkYjA4YThiMzc2YWE4NjBlMWU2OWFjNGM5Y2Q1OTZkMDc3Yjg5MzM0ZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU3YmEwMzQwOTA3Y2UzNzQ1NWZlZGNlZTU2MzBkNWE1YTNhNDUxZDE3OWM5MzNlMmMzNGNiN2MwYzg4NmU0OTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyOWMwNDNhM2MxZDRhODUyMGE0OGRiN2QzNzNiZmMzYjNjMjRlZTRkNzQ2ZWE2MDk4N2FkYTEyMTY5YjlhNjgifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/app.rs#L253-L314",
+          "version": "repo-lines-v1:sha256:376e6b20d682648e026e3ad5d24beb6527e8cb4e850a79070d2c509be2bc3da4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFmMDgxODc4ZThhNzRkNWE2OGI3ZjdhMWY5ZjU0ODYwMzA4NjVlY2E4MGI5NjU3YWI2ODM4MGY1MmJlNWQxMDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgzZTlkYWU1NDA4YzZhYWZjM2IzMGFjNzUwMGFjY2QzOTIxYTVhZmM4MjMyZWI3OWI2ZDY0MWNjOTBlODRmOTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYxMTNiOTIxMDg3MGVlN2M1NTc2YzU5MzE1NzRjZDJmMjU1MjlmOWFjZWZhYjhlNDI5Mjk2NjczNDExZDIxZTUifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/sessions.rs#L21-L40",
+          "version": "repo-lines-v1:sha256:c9c5b976d7516f4848ff3a7bdf51c1aab2f517531bc036f6ff00c92d2ef556ae:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiNjNhZmYyNjljYTdmZWUyYmFiMDg2M2ZiMmZkMzk2ZWM0ODVkMjcyMTExMjg1Mjc1Y2NiYWNjNmY1NTQ1OTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmYmFmMDdmNTFlNzk4MWY3YjRmZmI2NzA3NDBlM2Y4NjU4ZTVmMzg1NGYxYjI2MzA4OTk4YjVjZWZlODg5ZWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2Y2VkZjEyOGU5MmI4ODZiMTAxMjk4MTM1MTIxZjk5N2Q4NDJjOGJhZDIzMWExYWU4MzQyNDRjMDUwYWIwN2EifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_351a16bb4ed54b41ae7aac7f7eb5f698",
+      "statement": "The current local bearer-token slice requires production TLS and distributed login throttling before public deployment.",
+      "evidence": [
+        {
+          "resource": "repo://docs/api.md#L198-L200",
+          "version": "repo-lines-v1:sha256:f9ed3130b2002e273033af8b93a2ce57aec78555c717696f6ceba08f5f6d9b71:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzI4NTBmOGYyOGI3MWVhMjQ4OTM1NDUwNTA4Zjc1Y2VjMjE2YmI3YWNkMjNlMTgzZWQxYTExN2M3YjZhYTQ5MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjQzZjFlNDAwYThhZTIxMzgwODJlNTZlNTQ3ODFhZTc0MTk4ZWUzZGEzMzU5ZDI0ODZlZTZiN2I2ODQ2YzQyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGMwNjMyZTg5MDA0MWRiZjY1Y2JhNWRlZDc0ZjlmYWY3YzIzOTc2ZmE4M2YxZDJlY2NlMDViMmY3ZGI1ZTdiZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://docs/architecture/system-overview.md#L65-L68",
+          "version": "repo-lines-v1:sha256:019451f74f15ef816ed3441840c61c4d9032a4aaa90f8071980dde5b7f4857ee:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWZjNGIwNGJmNWEwMzEzNTAyNzA0MDEwNDk2Y2VjMjExNWQ5NDBlZTBjMjgwMDJhZmNhMjVjOTFiMWNiNjYwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjA5ZTMyMzZkNTIyYWVjZDBmM2I1MjhhNDdkNzA0N2NlNGJiOWE3MjcxNTMwM2FlNGU0YWU4NWFhOTBlNWZlYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGRmNjk3MWYzNjdiMDJjZTkyOTlmMjk3NzJiNmE0OWVhYWI0NmQ5OGU2YWMyZWQyZWJlMjg0MmVhNDk1YTI1OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_7995621a9859448aa11f98eaab661341",
+      "statement": "Authenticated persona creation, inventory, and editing derive the private account owner from a validated session, and owner mutation uses both account and persona IDs.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/personas.rs#L54-L118",
+          "version": "repo-lines-v1:sha256:9e1c6bbf1276a468c08c03315dbe819f53204d0ef364828659906ceb24d98474:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM4NGRlMTM5YTFhMTY5NjY0YTA4OWEwMzljN2ExOWFmYWVhYzFjOGFlYTQ3NDM1Y2EyZDBjN2YxOGY3NmI4YTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1YTRhZDVhOWYyMjg4MjJiMDYwYzM0NjU4ZTQ2MjY4ZTA4NDA2MGRlNTc3NThjZjY2ZTNiYjIwYWVkZjUyNjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZiY2IzNzNlYTc1MzgyY2M1YzQ2MzgyMGViNDM3NDg4Nzc5YWI4OWM2MzBlN2I3YzllMzhmMGNlYzZmM2Q1NzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU4YjJhZGE2YzE1Yjc1MTViNGZlYzlkMzdkNjNjZmFhMDJmZGNhOWMyNDlkMGQ3MDI2MWI4MzA4MzJlZWQxZDEifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/personas.rs#L149-L220",
+          "version": "repo-lines-v1:sha256:5d26755be645d1ff490be1657fc54ba36bec40bfbf13c34f5073302f9eba0e47:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhMTdmMmJjNjBlNWZkOGUyYjU1MmMzZTZmM2NhNTg3YWUwNDhkYjgyNTA0ZTM4NjFkNGY2YjM2NTcwMTg5YTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlMzg0NDljM2VmOGZlM2Q2NzFmYTk5ZTA1ZjQ4NTYxZmJjMmQ5MmE5OGEyNDIyODg2YTA2NTQyYTViZDJlOTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwODdhMGM4MGQ3NmIxOTY3MmRkYzM3Y2MzZGY1YTc3MmI2MjdlMDc4OTE1YjQyOWEwNzE0YzczODljODg0MmQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_57eea74aebc2462ba6a7e6aa805512b7",
+      "statement": "Persona responses expose only seven public profile fields, while exact canonical handle lookup is intentionally public and does not reveal the owning account.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/app.rs#L94-L108",
+          "version": "repo-lines-v1:sha256:27d420d3aeca755811e8ee0b89195a6f3894ee397be9dd59f368751efea428e7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjZDIwMTdiMjk2ZmJmZDMwOWRmZmQxMTkxOGI0ODQ4ZmJmNjI5NjNhZTljMTUxNTE2NzVjMGM3N2E4NWNmYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFkNTY4NWM2MGY2MDhkZDE2ZDhjZTc1MzExMTdjMTlkZjc1Njk0ZTI4Y2E5NmNhN2M2ZTdlYWUwNTQ0ZGRkNzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0NmVjN2ViMTZjOTk2MDg5OTU5ZWY4NzMyNWUyZTM3MjkxY2JlODk1YWQ3YjFmNGJhZWVhYjc5NThjYjQwOTQifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/app.rs#L289-L321",
+          "version": "repo-lines-v1:sha256:40cf32747a0abfc122eef23f556f2464c5e4cb8314fe49333a3e55149087c33e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3ZTEwOGNiNjllYjIyNTkwMjZhZjYwNzE5Mzc4OGMwZjdhNDQ4NTdhOGM3YTA3NjZhZjc3NzIyODYyOTE3MTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmYzQwMDg5MGQ3YzQ4Mzc4ZDM4ODI2YWMxYjQ5YzA2ZGI3NDM0MWNlOWUwZDJiOWQ4YThiMDg0NTNhOWQwODkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgzZTlkYWU1NDA4YzZhYWZjM2IzMGFjNzUwMGFjY2QzOTIxYTVhZmM4MjMyZWI3OWI2ZDY0MWNjOTBlODRmOTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdlN2UxMjEwZTIwYWJmMzVlYmU3ZDdiZjNiNmZkZjVhM2VjNmM0MzVjOWQ2Mzg3ZTQxNmY4ZGVmYmU5YzFhMjcifQ"
+        },
+        {
+          "resource": "repo://docs/api.md#L161-L196",
+          "version": "repo-lines-v1:sha256:f2cce3eda33e4f22534ac1c839a03c6606e4ed54a9f8a5647bb62eaade5e0e7f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4OTMxMjU4Y2NlZWFkY2RmZTZjYzA0OGZkZjIyMzlhYzYwMjZjMTZmMTJhYTQzZmM4YjRmMDNiNWIxMWIxYTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjYTI4NGRjOTNmYjQ4YmM1ODczOWQ1MzRmNDFmNWQxZTkxNTdlNDZlODAwYTdjMDU5ODU1NTAwNzkwYjVhYjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg4MDkxOGFjNjQzMDcwNDAzMDA0MzI3OGFiYjE2NzAwMWM2ODM0M2ZjNWEzYWRmN2Y4MmI2MTY5NTI5Yjg0YWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVhOGQyMTU4MzhhYWVmYjkxMTljZTcwNWVkOGQ2ZjhlMDliZjAxNjA5MTQzZjM4MDZmMGNjNmIwNTdmMjgxYTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_57408648ea6e42a6a47290595d132242",
+      "statement": "The private-alpha product is game-first, while public message boards remain outside the current identity and first-alpha scope.",
+      "evidence": [
+        {
+          "resource": "repo://docs/product-charter.md#L9-L12",
+          "version": "repo-lines-v1:sha256:f985224deed1378756e9377c30eb888198feaf5bcd3282c25b3f84bc34350495:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzEzODcwZjg0YmRkZDIxZWI2YWM4NDM2MDAzNTNkNmVkMGE5MmEyMWIxZjAxNGE3YmE5ZmY4MGQxNzMwNjkzMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWMwYzYwYTY4NjEzNWU2NTNmNGRjZDQ3YjNhODUzZTk1N2FkMTM0NWM5NjM0ZTYxNDg5NGEzMWM1MjgwY2I5OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODQ5ZTlhZTZiZDk3NDA2YmJiNGIyOTEyZGI1NmUxMzhmZjNkYTViMzRjZjhmYjEyNmZlNzM4NDVhYmQ4NTU5NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmZlMjhjMTdjZjExY2I5MWM3ZTc2ZTBmMzcyOTljMzcxM2Y4NmJjNTQzNWQ4YmVkMGZkMjA0YWM2MTQ3NGM2NSJ9"
+        },
+        {
+          "resource": "repo://docs/product-charter.md#L32-L40",
+          "version": "repo-lines-v1:sha256:c3c17e26884d0ffae7541c378a81e8c6a516a706d651bc17b077e6a66dfc2778:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDU5NDQwNWFlOWM0MTZhYjA0NTUyYTM1NjJhYzk3OTRmNmExNTc1ZDFiMDdjYjZjZTAwM2RiODBlMmU2M2JhNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGMzNmI0MGFmODczM2IwNjU5NzAyZWEzZjc2Y2YyYjllZGJlZGU5ZTg2NjA4ZGE0YzJkMjcyYmE0MWM3NzJkNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDE2NzQ4OGE2ZjFjZTU3MjRkOGMxZDY2MzAzMmFjZDQxMzZjMGQzYjAzOGRiOGU4MjY4NWJjYjA5Y2FjODhlZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTI5MWMxYmEzYjc4Njk1ODI2YWFlYmVmNzQ3MjAwOWNjODI1MmMxNDg1ZWJmZjFlNjRmMjczZWQ4MDJjYjgyYyJ9"
+        },
+        {
+          "resource": "repo://docs/planning/ROADMAP.md#L3-L8",
+          "version": "repo-lines-v1:sha256:42d2e1164e85d0917b0bec6ca6303709bd2d58902103f5f00806aa103c6f2a1a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2M4YzI0YjlmMWU3YzZkMTMzYTM0NTk1MGVmNDdjZGI2YTg5NDMxNGQ3OWJkMTdmNTE1YTQ4YWMwMDUwZjIzNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTRlMjViOTViYTIzYTQ2N2FlN2Y2OWZjZTAxZGQ3Y2Y0NjVmNDBiN2FhN2VhMjlhYTZlNDNmYWY4M2I5YjFhMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjIsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODdhOTUxZmU5MGVjM2VjMjdmMmRiNGU4OGIxMzU1YWEyMTMxMmY2NWYzMDA5MjhiNGJiOTg0MDFhODViYmI0MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTAxNDk4MmJjNjI4MDJiY2ViNjljYmZkMTA4ZGFmMzYxMGVkYWVkZTAzYmZkOTk1YTc4ZDg4ZGEwYzdjMTdiYSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_1e78428406384ca8868e4eecc8899d82",
+      "statement": "Optional TOTP MFA belongs to private account authentication rather than public persona identity, and successful factor verification gates creation of a new device session without changing existing sessions.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/mfa.rs#L516-L643",
+          "version": "repo-lines-v1:sha256:e3f6cd13d9a946cf0ca6cd62fdfe894e81f70ba4b0aa8f351ac8cb08917bb92c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiZWUyNzZkNzFjYThkNzc3ZjNjNjU4ZGJmNjc1NDNjMDgzMzdiYmQ5M2FkNTdlZjhhMmZjYjQwMzEzZGQ4MmYyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxZDcwODgzOWMzOGI5OTZjY2NmOWY3MDVlYjkxOGJmOTllNmE4OTc5Y2VhMWRhOTA0MjA3ZWU1ZGUxNTkzNzMyIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI1M2NjN2ExYzJlOWJkZWI3MWUzZTZhYWE2ODQ4ZDBjZWQ3ZjY0ZDc2MGIwMDI2MzZhNTdlYmYyN2U3N2JmMjk5In0"
+        },
+        {
+          "resource": "repo://crates/server/src/mfa.rs#L382-L446",
+          "version": "repo-lines-v1:sha256:3dc215677e84add71b58f1b92a851759219850d0f9649bcb87e205f9a4193530:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlM2JhMjI5ZjZjMzk5M2VlNTNjMWJkM2NkZjY0MWFkNTZiMTI2ZmE4NTZjODFjYmUxZWRlMTA3NmNmOThmZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNjNjNGQxYWY4Y2Q4OWJiMGJkZDc2NTdmZmNiZjY4MDZhNjEwZDc5ZDZjOGQ0YzMwN2MyNDFkZjM5MDA1MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzYTIwNjI3ODVjNTUzMjA3M2FmNDFlNjhkMWUzMDRhZWMxY2U4MmFmNTg1ZTE4MjhlZjNhMWY4YjE3ZTVlZGQifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/sessions.rs#L59-L140",
+          "version": "repo-lines-v1:sha256:56c214c2449a9d7d541c672a77c69be0faaa2b8390c96e62af612034685ce25c:eyJzZWxlY3RlZExpbmVDb3VudCI6ODIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5MjdkMTFmNmVlNjQ4M2M0Mjg3MDJkMzRjOTc4ZDYwNTAyNDYzODFkY2M0ZGY5YTY3MDM4MDUxZDA4MzgxMmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkOTMzOGQ4N2MxZDBkNWU0YzE0M2Q2MGQzZTZlOTMxOWRlOTZkOTNhZDI3YzMzZmI0N2E5NTZjYWI0OWViNDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEwZGM4YzU4MGJlNzFhM2RkZmMwMzc1MGFiMjljYzQ4MjZmMzg0NTg3MmMwODM4N2FmOGZmZGVlNjU0YjRlYTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2cb39d82cd504b2b934c2d165baeb221",
+      "statement": "Public registration currently returns a distinct username conflict response, so production deployment must accept enumeration risk or introduce a separately designed verifiable private registration channel.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/accounts.rs#L53-L63",
+          "version": "repo-lines-v1:sha256:9c40d223e8bf290bf0ac265f6869d34bf80f28b07f532832f94ed45d918e4ea5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmNDQwODk4OGZkYzBlZTAwNzExZjliOGJmYjBhNzA4NGU0NzZhNDgwNGQ4OWFmY2RhNzI1Nzc2MWVkMmQ3ZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlMGIyNDVkYTIzZTA3NGZhYTNjNjYzMjA4ZTZhY2ExOGExMTkyMmYzMDk5ZjFlODEzZWMwZDc3M2MwOGQ1MzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxMDM2ODYzMjkwZTVjZTkzMzVjMGI2NTZhYWNlZWVhY2U2ZDczYTE1Y2YxZmZhYjg2ZjNlOGYyOTljMGVhNTgifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/app.rs#L573-L592",
+          "version": "repo-lines-v1:sha256:db9daebb6b6450c4ad5388c868b5e9d7d1b333612e6a3943a6b29b4c05c4bca1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwZWY0NzQ4MWZjNWExMjhmNzQxZTMzYjA2YzMyNTg5MjZhN2VjNmU1OWYzNDZhZmIzMmExM2I4ZjdkZjcyYzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRkMzRhOWRmNzc5Yjk1NjZiMDRhZDJiOWU2Y2RkZTNiMWQ1ZTZjMWE4YzhiOTdhYjdjMjhhN2IxM2EzM2JkNmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBjMTYxZjgzY2YzMmUyNDkwODY0Mzc2YmMwMjlhNDYyZjFjMDFiMDIyZDNhMjNlNGE3N2I2NTEwMDAwY2QxNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkzNzU1M2U5ZTg3ZjEwNGQxNWE4ZTQ1ZjAzNGFlMWM4MDFiNTI3M2RjMmYyZjc5N2NkNWExNjE2ZmFlMDdkYzAifQ"
+        },
+        {
+          "resource": "repo://docs/api.md#L36-L49",
+          "version": "repo-lines-v1:sha256:591951a7e9608a1e1cbdbc047c9deed1260a1a2908ad8e066b2c731b22d5ef07:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkMDA3Nzk4YzU1OGYzMTVjYThmNzRiZDY1YWNkNWNiN2Q5MjI4MzA4N2MwYmFmYTM5YTExZjI4NmRkNGU4OTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3ODExMzljOTA3NjBkY2VjNGY0MDI5NTE2ZWNhMzgwOGJhYmUyZGRmNmY1M2JjNDQwMzA4M2QxYmJkOTg3MzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2ODZiMTU1MTA5YzllOTgxOWU1MGNiZWMxMmU2ZmFmMDE4NjRiZmMzYzFkYzBiZTRkMmNlNjJhY2Y5YThhMGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRmOWNiNjhhY2ZmNWE4NGUyNzgxYTdhMmRjOTM4ODAzMzcyNTdiMzZmZmQ0YzY3MGYyZjBkZmI0MDJiNTM1OWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b8ede05843d94e2eac36e7b8796531d0",
+      "statement": "Social graph state belongs to public personas, but every acting persona is owner-scoped to the private account derived from the Bearer session and same-account personas cannot form social edges.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/connections.rs#L610-L638",
+          "version": "repo-lines-v1:sha256:8d0c6efc1bd64047b7ba719e68675d59a3d5753dd25f80d7749ed6dcba0c52f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlODlkN2IyOWY4NjA3MGRkYjJmYzlkMWE3MzljMzBlNDNkYmMxNGY3N2JkYjhiZDFhOTg3YmNjOTczMDU3NDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5MDc1Mjc2MDczODQxNzE0YTE1MGY1YjRjNTc4MDQ4YmEyZjc1NDc4MzFhNjViNmI1YjVhNGNkN2RkOWNmOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkNDU0NDZjOWY3ZmEwMDIwNzY2OGQzZmYzZTM3ZTI5YmY3ZTJlMmNkYTcwYjlhYjRlMTYyNTViYTIyNDY0YTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVmNGVlMjQ3Zjc3ZDJhMDI2NDE3ZDExNGFiYjEwODU4YWM2NmJjZDVjNDRlZDI4NzFiNzExZDg3MjRkNjBiY2YifQ"
+        },
+        {
+          "resource": "repo://docs/architecture/system-overview.md#L124-L128",
+          "version": "repo-lines-v1:sha256:0956a315202220745588d801a46728a99a1b76cf1f717a1b71f3aa5d292d83cd:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGY3MmZlZjUzZGQ3ZDI4NDQxODQ3MzNjYTcyNWVmY2E5NzA2YzJiMDA1ZjE1ZmU2Yjk2NzAzNWUzYWY1NDI2MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDcwMjEyY2ExYTA1ZTdlMDdmZmQ5NDM5NjBkMmVlODhhODBhZGU5YTNjNWM4OGQzYzY1ZDk2YjFhYThhNWI2MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGRmNjk3MWYzNjdiMDJjZTkyOTlmMjk3NzJiNmE0OWVhYWI0NmQ5OGU2YWMyZWQyZWJlMjg0MmVhNDk1YTI1OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOWZiMWU5ZDlkN2YwZDJjODBhMmJjMjU4Y2Y5ZDBjYmNjYzUzODk1M2Q5ZDIxOGQ4OTlhOTBhMGY3YjY4NDdjOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_0dea07658d2c48429b8bcc0e08ece8f2",
+      "statement": "Accepted persona connections are mutual and block rows and inventories remain owner-private and directional, but a denied interaction with a known persona may still permit an indirect inference about block direction.",
+      "evidence": [
+        {
+          "resource": "repo://docs/api.md#L464-L500",
+          "version": "repo-lines-v1:sha256:a6a07bd4af234c6d82aec77b853a4f5bc6d35472bf9b3573e4290ab01f6e0fe0:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzZDZkOWUwNDhlZDYzNzllODJkNzYwZGNjYjRhMzBmYzNiMTFmZmNmMGEyNjFhNmVlN2RmOTYzMzNiNzc4MTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4ZWEyYTk3MzBiM2VkYzdjZDRiOTAyY2NjYzExNmZjNGY4ZDZlNTJhZWE1NDQyMDBlZDkwNjIwOWFjZjFjNTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg4MDkxOGFjNjQzMDcwNDAzMDA0MzI3OGFiYjE2NzAwMWM2ODM0M2ZjNWEzYWRmN2Y4MmI2MTY5NTI5Yjg0YWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyNzA5OWMwYjViODZhN2I5ZDUyNWFhODI3MmY4ZWFlMzMyNDgyYzAzMzE5MjVhNTQ1MzU5MTE0MGJjMTA2NDgifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/connections.rs#L652-L671",
+          "version": "repo-lines-v1:sha256:f877eda9a629daf4149f91fa34f055bf8fe7961bc6fffb7fd52e101cea66b228:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk5YWQyYjMzZDczNGNjOTNkMGY4ZDk2M2YzMmZhMzJmNDEzYTNlNWZkYjc0N2YyYzEzYmRlMjFhNjc3NGYxZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhMWRhOGI1NGI3ZTAyZmU0MzI0YTMwNDVlMzQzYmRmMjQ3YWFhMjUzOGMyMTUzNmQzMzBlMTY1YTJiZjcwMzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1OTY1ZmUzOTBhMTVhNTQ4MmFkZGM4MTZkNjdiODE1NmZkMzNlOTljZWQ0NTAwNGJmODMzNjkzN2FmMzYzYmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2OTY4NDViZTlkODg1ZmNhMDg0ODYwZjM1N2NiZTZhZThhNDFkZWE5NWZiMmY4MTM0YzY0YzkxOTVmYTE1YTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4e0a51b1195f40a49bafa87f43bd41ab",
+      "statement": "Private inbox authorization is persona-participant scoped: account ownership and peer read positions are omitted, history survives relationship removal or blocking, and new sends require an accepted unblocked connection.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/inbox_api_tests.rs#L31-L171",
+          "version": "repo-lines-v1:sha256:68f3e45ed280293a75aa7dcb1713b8ab483a4e0698ae5a479cce903c50e2dfb0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxODdjMGVhMDBhMTAyNTBhOTJkMWVkNGM3N2E0NzIwYjIwMWE0NTI3MjA3ZDg2ZGRiZGIwYjFjYjAzMTI5OTExIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJiZWM0ZGI5NjQ5YjU3MWE3NjAyYjA3Njg2YjY2MGExMjcwY2JkYjdiMjk2NmIxMGVkMDNjMjU2NGZhZWJlNDM5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwNmNhMDEzODVjMDRiOWM4OTIxMDhkODIzNjQzYTZhMjE4ZjZhNjYwMzEwMDlhODZjYThhNjg5Y2MwMWRjY2EwIn0"
+        },
+        {
+          "resource": "repo://crates/server/src/inbox_api_tests.rs#L234-L397",
+          "version": "repo-lines-v1:sha256:64a6df7a190058b60237387688647952c43b93ab254b0b41c6da3afa166c58aa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTY0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxODdjMGVhMDBhMTAyNTBhOTJkMWVkNGM3N2E0NzIwYjIwMWE0NTI3MjA3ZDg2ZGRiZGIwYjFjYjAzMTI5OTExIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhNTkzNzY3OTFlNjk0NzZmN2EwNzE4OTZkYzI1YjkxMzdlZjg0MjNlM2U5NjM0MGNjZmFjMzMyM2Q0MmNhNTFlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwNmNhMDEzODVjMDRiOWM4OTIxMDhkODIzNjQzYTZhMjE4ZjZhNjYwMzEwMDlhODZjYThhNjg5Y2MwMWRjY2EwIn0"
+        },
+        {
+          "resource": "repo://docs/api.md#L522-L625",
+          "version": "repo-lines-v1:sha256:0d182f65090cf9dc5af1bd815a752a45cf5804bf8acaaa6b31bd7942c19ef6a6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmMTM2MGQyMDBiNGQyZWI1Y2UwNzEyN2I3NWY2ZjdmMjAyMzQxNDhmMDA2OWVjYWMwYjQyYzk4ZTlhMjljY2Y0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI1ZGNhYzQ1ZjM4MTMwYWU1MTlkMzRkMTZiMzhhMDg0YzBjMjAwZGYyZDA4OTViZTUzMDQ5NDMxMmJmNzhmYjJiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YjlhZmE1ZDAwY2I2NDg2OTEwYTc1YmU5NTQ0ZjU1YjhhYWI5YWU4OTYzYzcxYjI4NTY5NDMxN2MyNjgwMWI1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI2YTcwMmMyMDg2MzRiM2RhNmRiZWVmZTMzNjRlNmQwMzlkMzU2MWM0ZDcxNWNlOTMxYTNiOWJkZDcwY2Q0OGMzIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_93cb2a69d3b442c89d218fbfede31da6",
+      "statement": "Public inbox cursors are local to one conversation, so message sequence gaps do not reveal unrelated private conversation volume.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0008_conversation_local_message_sequences.sql#L1-L54",
+          "version": "repo-lines-v1:sha256:9f176deb1695ad6b493ba62381ab9fe7981914bcead97d5b5c20a631ffc63588:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlNDU1ZmNmZTU4ZWVjY2NiZmRhY2JkZGMwMzY3MjQ2ZjUzMjg4YjY0NTRmNzM4NTVkNjdmOWEzM2RhY2RhNjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmY2UwMjBhMjZhNTlmMTEyZjBkZDYwMGE0MjgzZmM1MWYxNTcwZjVhNTY5YmI2MjAzMDFkZTJhMzQ3OWUwZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/inbox_api_tests.rs#L173-L232",
+          "version": "repo-lines-v1:sha256:93ae136d2f199ba9dfa053f3f8a62ed518b3f5dec3693efa84271d8e186b517d:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4N2MwZWEwMGExMDI1MGE5MmQxZWQ0Yzc3YTQ3MjBiMjAxYTQ1MjcyMDdkODZkZGJkYjBiMWNiMDMxMjk5MTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE1OTM3Njc5MWU2OTQ3NmY3YTA3MTg5NmRjMjViOTEzN2VmODQyM2UzZTk2MzQwY2NmYWMzMzIzZDQyY2E1MWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA2Y2EwMTM4NWMwNGI5Yzg5MjEwOGQ4MjM2NDNhNmEyMThmNmE2NjAzMTAwOWE4NmNhOGE2ODljYzAxZGNjYTAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_94ac0c5f223849268d450f0fa68d3083",
+      "statement": "An owned persona's synchronization feed uses a retained persona-local cursor for durable REST recovery and explicit reset, while its header-authenticated WebSocket carries no domain payload and only advises the client to return to REST.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/sync.rs#L238-L335",
+          "version": "repo-lines-v1:sha256:718ad6ba627076dba944ea9c677fd35073c253a7b018fdfcb85a794b565835cf:eyJzZWxlY3RlZExpbmVDb3VudCI6OTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0NWZkNGM0NTIzMzFjYWJlNzRhNWZjMmNhMGM5ZGQzNjFiMmI3MTgyMTNmNWI2ZTUwZGU0MTkxYjIwNDI0ODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1MzRiZmZjZThmMDg1Mjc1Nzg4ZGZiNThhYTQ4NmZlNGRlMzJiMjhjODlmMzhhNGU5ZmIzY2RmMWVkNjQ0MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFmYWM5NTRiZDRiNGNmNTlmNTE5OWRhNzM1YTZiYjExYTQzMDYwMDJmZjk4NjJlMDJiNGM1ODA0YjgxZjRkY2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRjYWY1MDk4NWYyODVlZTE2MzNkZGU1MDAyNGRmYmY1Nzc2NzY4OWYxODI0ZWJkMThlMjdhOTMxNmRkNGM3YjIifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/app.rs#L1102-L1141",
+          "version": "repo-lines-v1:sha256:96c8e128a8ff5eaa36fae86de18607147c9506d3e76ef9b4e99b91fffe394cc1:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwNjI0NmZhZWMxNjJmOWRlMTAyNTUxYjBmZDU1ZjRhZjk2NTdjZGIxNTJhYzQ2NjE3MWJkY2JmNWU5ODdlYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkZTA5MmVhYzJiM2M4NTY1YTc1ZGNiOWI0NTVkMjVkM2YwYTNiZjFkMTdlNWExZDY2MjU5OWNlNDFkMWY3ZjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgzZTlkYWU1NDA4YzZhYWZjM2IzMGFjNzUwMGFjY2QzOTIxYTVhZmM4MjMyZWI3OWI2ZDY0MWNjOTBlODRmOTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEzYmFlZWM3YWYzNTE1M2U1YTNjNjA1NzI5MDg5MDU1OWQ4OWQ5MzNlNzk3MTQ1YmQ5ZWRmNThmMTdiMWI3ZTcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_49b21d95077445d5ac332bbc5ac8ce0e",
+      "statement": "Compiled game definitions receive only bounded initialization or current-state, actor-seat, and command inputs and have no database, network, clock, session, account, or ambient-randomness capability in the runtime interface.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-runtime/src/lib.rs#L24-L36",
+          "version": "repo-lines-v1:sha256:7af18a6acd3cb76cbd4df27da0ccb4d7dc5f3275d12c8f47a14064c9dee033aa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwNjgyMmI0MjY5MzMyYzZmOTQ0NjhlNDk3YmZlMGM5ODczYjlhNDQ3MGFlY2U1NWNjNWRhZTkyODE1MGU4MDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzN2I3N2ZlZWU4NTYzMmQzNDZlYzVjNTE3NGY2M2Q5MmJlOGZlMmRmZTE0MGRlMjY3YjJiYjYzMTkzODc0OGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY1Nzc3ODE3ODliYzgxZTNiM2EwNDlkMWY4YTY2YzM5ZmY1Y2QwOTVhNDg3OTYzN2JhYTA5YzI4ZWM5MGQxNDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVlMDNhYjFiOGNjMjAxMTJkOTYxZDQ3NDNjYzNjN2VhMjE3MmI5MGRlZjdlMGE1YWIyZmY4OWFkNDkzMjdjODkifQ"
+        },
+        {
+          "resource": "repo://crates/game-runtime/src/lib.rs#L138-L203",
+          "version": "repo-lines-v1:sha256:27e4026a8d89183fcfa72a6107a9d2d47786cf6d8dae6bd52ec20a9b91104faf:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlODRhODYzN2U3YzE5Zjc2MGFhYjYxZTBlZjc0Mzg0YzZmNTVjNzZkMTc0MDQwZGYyMTI3OGNmNThhNGU4MzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJmMDVhNDI2YWE2MDk1ZjE2ODYyNTRkYTViNGVmMjgwMWQ2MGYyMmVjZTQyYTQyZmVmYWRmNTlmMGIwM2VmYjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg1NTgwYmM0YjdiOTk3MTNiOTRiNjdhY2I3M2U1NDM2ZWU2ZmNlZDAxOTAyNWY0NGEwYTE5NzVmNjc0OGQ1ODcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e1aa89b62f264768aa5fbd6ac0f26ff4",
+      "statement": "Durable game sessions expose persona participants rather than account ownership, pin their exact rules version and snapshot, and remain readable from PostgreSQL even when that version is absent from the current process registry.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/games.rs#L20-L50",
+          "version": "repo-lines-v1:sha256:d3d726c9caec15b12e8f98594b0033af1627a3c33354d9c645e5756b765cbd5b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0NmZiMzM2OTVjNjZmYzAyNzQ1YmQxZmU1YTU5MzA1NDU4YTJmMTg0ODQ4MzUyMTUzOTMxZTYxNTRjOWIzYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkzODRlZjUxNTI5ZWZhOWNmOGIyNjVkMWY2ZGI5Zjk3OTYwZWZmYWQzOTI3ZmRhNTAzMjVmMjMxYTFhMjU0NTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhZDg4NWU4ZjQ3N2RhMWRhODgwN2VlNGM0YzMwYWFjNjZhMzk2ODllZjJiZmQ0OTNkOWY1MGFmODM1NjlkOGIifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/games.rs#L199-L268",
+          "version": "repo-lines-v1:sha256:676517dab0b6a05c7b72bdd02f9a99e5e114de30ae221a221687f1e2f00bb4aa:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmMDJiZTJmNjFjMTM3YjQ1NGZlN2IzMTUwYWY2MDA5MDYxMTk3YTEzMDA3NDczZTU5OWZlZmQ3OWYzN2E1NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3NGE3NjVmZTNkYzZmODAwMjhjNmQ4YTczNGEwNDAyOTZmNWVkN2VjMDc1ZDYwNDg5NjhmNzkxZDQzZjA2M2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllMDFjM2QxMmMyZWUxMzc3ZjgxYTEwM2UzN2I4ZDY3NzQxOWZlZjc5ZWEwOTgwNjM0NDZjMmRmZjE0OGQ2MzEifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/game_api_tests.rs#L321-L478",
+          "version": "repo-lines-v1:sha256:b84c122357e7a6a53ebd92c6a2dac835ff85d93f9e8b20006153a9262d01ac07:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4YjQwZWQzODU1YmQxZjBkMzFmZGE4MzUxODcwNTBiNzJhYzE4ZmJjODYxYzJlMWQ4ZGYyZWEzYWYwODA5YTU4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhM2U2MGFmNTJhNjg5YmJlMmZiOTViNjJlMGY1OThmNzBmNzJhMGM0OTA2OTgzYjdlMmRiMmI5ZjYyZDI3ZDFiIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwNmNhMDEzODVjMDRiOWM4OTIxMDhkODIzNjQzYTZhMjE4ZjZhNjYwMzEwMDlhODZjYThhNjg5Y2MwMWRjY2EwIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_885c3aa4e4d647c9a585c2c467114716",
+      "statement": "The current transport exposes a public compiled-game catalog, participant-private session reads, and participant-authorized revision-checked commands, but no public game-session creation; challenge policy remains a separate later slice.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/app.rs#L454-L467",
+          "version": "repo-lines-v1:sha256:94d781becf2cfef6ec97a10876e86de5890207da6c280640a34d47f558b00f46:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkOTZhMTJjZWY4OTU5NjZhN2RkMTRmN2JlNzc2YjY5YmJkOTU4MjRkMDJhYWQxMjk3ZjY3ODIzMGE5NTNjMGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmZWQ2ZWQ0YmEzN2YwNTM4ZDU3NjI3OTMwNjAxYTc0YTVhMDVjMDYxMjAwNjI4YzAxYTExYzJkZjdjMDkxMzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0NTZmZWZhNmViZjVhYWEzZjZhZjkxNTFiNjkwMTliMjg3MzYxY2JhMzUyODhkNjVlODNiZjUyMzE5YzYwM2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxYjg1Y2U1Nzg3YWI4ODI5ZmFmMTcwNGI2OGIwOGFlYTk3MWE0Mzk4OWMwOWUzZWY2YzAwYzQzYmRjN2Q0ZDYifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/games.rs#L199-L451",
+          "version": "repo-lines-v1:sha256:8034867aae31213423b21aeac8e10375fe937ceed2b36ec06c1039089301f688:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5ZjAyYmUyZjYxYzEzN2I0NTRmZTdiMzE1MGFmNjAwOTA2MTE5N2ExMzAwNzQ3M2U1OTlmZWZkNzlmMzdhNTRiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0NzRhNzY1ZmUzZGM2ZjgwMDI4YzZkOGE3MzRhMDQwMjk2ZjVlZDdlYzA3NWQ2MDQ4OTY4Zjc5MWQ0M2YwNjNmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhODNmZTcyMDM2YTBmMTMxZjFhZjEzYzEzYzQ3MTM4MjU2ZTQyN2YwMGM3NzY3MjJkMjM5ZjE1OGYyYWY0ZmIyIn0"
+        },
+        {
+          "resource": "repo://docs/planning/ROADMAP.md",
+          "version": "repo-file-v1:sha256:4edcbd6a77c0d8db14b510d90f1c7fa72e69b6da1e2ec8b88faad5d204baf8bd"
+        }
+      ]
+    },
+    {
+      "id": "claim_fadc29b320cd4056b5c4e188a7ad1383",
+      "statement": "Compiled game definitions receive only bounded initialization or current-state, actor-seat, and command inputs and have no database, network, clock, session, account, or ambient-randomness capability in the runtime interface.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-runtime/src/lib.rs#L24-L36",
+          "version": "repo-lines-v1:sha256:7af18a6acd3cb76cbd4df27da0ccb4d7dc5f3275d12c8f47a14064c9dee033aa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwNjgyMmI0MjY5MzMyYzZmOTQ0NjhlNDk3YmZlMGM5ODczYjlhNDQ3MGFlY2U1NWNjNWRhZTkyODE1MGU4MDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzN2I3N2ZlZWU4NTYzMmQzNDZlYzVjNTE3NGY2M2Q5MmJlOGZlMmRmZTE0MGRlMjY3YjJiYjYzMTkzODc0OGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY1Nzc3ODE3ODliYzgxZTNiM2EwNDlkMWY4YTY2YzM5ZmY1Y2QwOTVhNDg3OTYzN2JhYTA5YzI4ZWM5MGQxNDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVlMDNhYjFiOGNjMjAxMTJkOTYxZDQ3NDNjYzNjN2VhMjE3MmI5MGRlZjdlMGE1YWIyZmY4OWFkNDkzMjdjODkifQ"
+        },
+        {
+          "resource": "repo://crates/game-runtime/src/lib.rs#L138-L203",
+          "version": "repo-lines-v1:sha256:27e4026a8d89183fcfa72a6107a9d2d47786cf6d8dae6bd52ec20a9b91104faf:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlODRhODYzN2U3YzE5Zjc2MGFhYjYxZTBlZjc0Mzg0YzZmNTVjNzZkMTc0MDQwZGYyMTI3OGNmNThhNGU4MzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJmMDVhNDI2YWE2MDk1ZjE2ODYyNTRkYTViNGVmMjgwMWQ2MGYyMmVjZTQyYTQyZmVmYWRmNTlmMGIwM2VmYjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg1NTgwYmM0YjdiOTk3MTNiOTRiNjdhY2I3M2U1NDM2ZWU2ZmNlZDAxOTAyNWY0NGEwYTE5NzVmNjc0OGQ1ODcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8dc6df8f10ac4605a7a6048dbc555d8d",
+      "statement": "Durable game sessions expose persona participants rather than account ownership, pin their exact rules version and snapshot, and remain readable from PostgreSQL even when that version is absent from the current process registry.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/games.rs#L20-L50",
+          "version": "repo-lines-v1:sha256:d3d726c9caec15b12e8f98594b0033af1627a3c33354d9c645e5756b765cbd5b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0NmZiMzM2OTVjNjZmYzAyNzQ1YmQxZmU1YTU5MzA1NDU4YTJmMTg0ODQ4MzUyMTUzOTMxZTYxNTRjOWIzYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkzODRlZjUxNTI5ZWZhOWNmOGIyNjVkMWY2ZGI5Zjk3OTYwZWZmYWQzOTI3ZmRhNTAzMjVmMjMxYTFhMjU0NTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhZDg4NWU4ZjQ3N2RhMWRhODgwN2VlNGM0YzMwYWFjNjZhMzk2ODllZjJiZmQ0OTNkOWY1MGFmODM1NjlkOGIifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/games.rs#L199-L268",
+          "version": "repo-lines-v1:sha256:676517dab0b6a05c7b72bdd02f9a99e5e114de30ae221a221687f1e2f00bb4aa:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmMDJiZTJmNjFjMTM3YjQ1NGZlN2IzMTUwYWY2MDA5MDYxMTk3YTEzMDA3NDczZTU5OWZlZmQ3OWYzN2E1NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3NGE3NjVmZTNkYzZmODAwMjhjNmQ4YTczNGEwNDAyOTZmNWVkN2VjMDc1ZDYwNDg5NjhmNzkxZDQzZjA2M2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllMDFjM2QxMmMyZWUxMzc3ZjgxYTEwM2UzN2I4ZDY3NzQxOWZlZjc5ZWEwOTgwNjM0NDZjMmRmZjE0OGQ2MzEifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/game_api_tests.rs#L321-L478",
+          "version": "repo-lines-v1:sha256:b84c122357e7a6a53ebd92c6a2dac835ff85d93f9e8b20006153a9262d01ac07:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4YjQwZWQzODU1YmQxZjBkMzFmZGE4MzUxODcwNTBiNzJhYzE4ZmJjODYxYzJlMWQ4ZGYyZWEzYWYwODA5YTU4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhM2U2MGFmNTJhNjg5YmJlMmZiOTViNjJlMGY1OThmNzBmNzJhMGM0OTA2OTgzYjdlMmRiMmI5ZjYyZDI3ZDFiIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwNmNhMDEzODVjMDRiOWM4OTIxMDhkODIzNjQzYTZhMjE4ZjZhNjYwMzEwMDlhODZjYThhNjg5Y2MwMWRjY2EwIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_14fcd376e1b34d61806d4a2f5034b64d",
+      "statement": "The current transport exposes a public compiled-game catalog, participant-private session reads, and participant-authorized revision-checked commands, but no public game-session creation; challenge policy remains a separate later slice.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/app.rs#L454-L467",
+          "version": "repo-lines-v1:sha256:94d781becf2cfef6ec97a10876e86de5890207da6c280640a34d47f558b00f46:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkOTZhMTJjZWY4OTU5NjZhN2RkMTRmN2JlNzc2YjY5YmJkOTU4MjRkMDJhYWQxMjk3ZjY3ODIzMGE5NTNjMGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmZWQ2ZWQ0YmEzN2YwNTM4ZDU3NjI3OTMwNjAxYTc0YTVhMDVjMDYxMjAwNjI4YzAxYTExYzJkZjdjMDkxMzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0NTZmZWZhNmViZjVhYWEzZjZhZjkxNTFiNjkwMTliMjg3MzYxY2JhMzUyODhkNjVlODNiZjUyMzE5YzYwM2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxYjg1Y2U1Nzg3YWI4ODI5ZmFmMTcwNGI2OGIwOGFlYTk3MWE0Mzk4OWMwOWUzZWY2YzAwYzQzYmRjN2Q0ZDYifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/games.rs#L199-L451",
+          "version": "repo-lines-v1:sha256:8034867aae31213423b21aeac8e10375fe937ceed2b36ec06c1039089301f688:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5ZjAyYmUyZjYxYzEzN2I0NTRmZTdiMzE1MGFmNjAwOTA2MTE5N2ExMzAwNzQ3M2U1OTlmZWZkNzlmMzdhNTRiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0NzRhNzY1ZmUzZGM2ZjgwMDI4YzZkOGE3MzRhMDQwMjk2ZjVlZDdlYzA3NWQ2MDQ4OTY4Zjc5MWQ0M2YwNjNmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhODNmZTcyMDM2YTBmMTMxZjFhZjEzYzEzYzQ3MTM4MjU2ZTQyN2YwMGM3NzY3MjJkMjM5ZjE1OGYyYWY0ZmIyIn0"
+        },
+        {
+          "resource": "repo://docs/planning/ROADMAP.md",
+          "version": "repo-file-v1:sha256:4edcbd6a77c0d8db14b510d90f1c7fa72e69b6da1e2ec8b88faad5d204baf8bd"
+        }
+      ]
+    },
+    {
+      "id": "claim_82194b090177434583cb54d93b58d31e",
+      "statement": "A game command is a durable REST mutation whose success or matching replay returns only session ID, committed revision, and state; WebSocket notifications remain advisory and carry no command payload.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/app.rs#L367-L380",
+          "version": "repo-lines-v1:sha256:2e681df3cfc8232621f78a04e98c1f32026f065a25c23660aa5e14c06267485c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5NjAyMWJjNDgwOTk3YjUxZmViODlkYjA4YThiMzc2YWE4NjBlMWU2OWFjNGM5Y2Q1OTZkMDc3Yjg5MzM0ZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1NGVjYTdiM2E4OWZiOGUyZTFmMWEzZWM2MmVhY2FlNGJkYzUyYTVhYTAyNTY4MmY0MjgzYzMwZjA2NDQyNzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0NmVjN2ViMTZjOTk2MDg5OTU5ZWY4NzMyNWUyZTM3MjkxY2JlODk1YWQ3YjFmNGJhZWVhYjc5NThjYjQwOTQifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/app.rs#L1123-L1148",
+          "version": "repo-lines-v1:sha256:72f9fcaaa809bb5264f63a46727592ecfe421eaee54327c0dd9fb4c65a20eafe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxNTYyMDkwZjUyNTYyOTgyMTQ1NTg4NGM1NTI3MWJhNmIyMDdhYzQyY2M1MTQ0MDkxZGFhMjU1MmE5NjA4M2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgzZTlkYWU1NDA4YzZhYWZjM2IzMGFjNzUwMGFjY2QzOTIxYTVhZmM4MjMyZWI3OWI2ZDY0MWNjOTBlODRmOTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2YjE1ODU1YzhiZDBmYzkzNDE0OTUyNTQ5ZjEwNjkxZmMzNmRjZTdmOWM2ZTZiYWYwMDkzMjAyZWUxOTM1YmUifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/sync.rs#L34-L52",
+          "version": "repo-lines-v1:sha256:44d9e7de35df0cf9d5eb2c86f06c1db0bebe64418afadcb584178dab4839dbea:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxMmQxOWZiOTZhMWU3Yzg1ODc0NWFkYjJkNTNiMjE0OTEyNTk1MDFiZmUyNjcyNmJiNGE3OWQ4OWZmY2QyYzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBjZjNhNjVhOWFmNWMwZjI5OWUyMDRmODMzN2NmN2RlMjFkODdhMWVmYzcxYTBiNDkxMGVmZjExNGU5OTNlNTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0e1f4211abe14569843ae0c7161ffd4b",
+      "statement": "A game command is a durable REST mutation whose success or matching replay returns only session ID, committed revision, and state; WebSocket notifications remain advisory and carry no command payload.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/app.rs#L367-L380",
+          "version": "repo-lines-v1:sha256:2e681df3cfc8232621f78a04e98c1f32026f065a25c23660aa5e14c06267485c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5NjAyMWJjNDgwOTk3YjUxZmViODlkYjA4YThiMzc2YWE4NjBlMWU2OWFjNGM5Y2Q1OTZkMDc3Yjg5MzM0ZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1NGVjYTdiM2E4OWZiOGUyZTFmMWEzZWM2MmVhY2FlNGJkYzUyYTVhYTAyNTY4MmY0MjgzYzMwZjA2NDQyNzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0NmVjN2ViMTZjOTk2MDg5OTU5ZWY4NzMyNWUyZTM3MjkxY2JlODk1YWQ3YjFmNGJhZWVhYjc5NThjYjQwOTQifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/app.rs#L1123-L1148",
+          "version": "repo-lines-v1:sha256:72f9fcaaa809bb5264f63a46727592ecfe421eaee54327c0dd9fb4c65a20eafe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxNTYyMDkwZjUyNTYyOTgyMTQ1NTg4NGM1NTI3MWJhNmIyMDdhYzQyY2M1MTQ0MDkxZGFhMjU1MmE5NjA4M2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgzZTlkYWU1NDA4YzZhYWZjM2IzMGFjNzUwMGFjY2QzOTIxYTVhZmM4MjMyZWI3OWI2ZDY0MWNjOTBlODRmOTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2YjE1ODU1YzhiZDBmYzkzNDE0OTUyNTQ5ZjEwNjkxZmMzNmRjZTdmOWM2ZTZiYWYwMDkzMjAyZWUxOTM1YmUifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/sync.rs#L34-L52",
+          "version": "repo-lines-v1:sha256:44d9e7de35df0cf9d5eb2c86f06c1db0bebe64418afadcb584178dab4839dbea:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxMmQxOWZiOTZhMWU3Yzg1ODc0NWFkYjJkNTNiMjE0OTEyNTk1MDFiZmUyNjcyNmJiNGE3OWQ4OWZmY2QyYzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBjZjNhNjVhOWFmNWMwZjI5OWUyMDRmODMzN2NmN2RlMjFkODdhMWVmYzcxYTBiNDkxMGVmZjExNGU5OTNlNTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.3.3",
+    "at": "2026-08-25T01:37:12.518Z"
+  }
+}

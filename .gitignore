@@ -1,6 +1,6 @@
 /target/
 /.dev/
+/.codegraph/
 /.env
 /build/
 *.user
-

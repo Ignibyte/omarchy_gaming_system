@@ -1,8 +1,9 @@
-# Omarchy BBS Constitution
+# Omarchy Gaming System Constitution
 
-The binding development rules for Omarchy BBS. Claude commands and hooks cite
-the numbered sections below. The workflow is based on the proven Rustal
-pipeline, adapted to this API-first Rust server and QML client.
+The binding development rules for Omarchy Gaming System. Codex project instructions,
+skills, and hooks cite the numbered sections below. The workflow is based on
+the proven Rustal pipeline, adapted to this API-first Rust server and QML
+client.
 
 ## §0 — Quality gate
 
@@ -22,10 +23,14 @@ The current gates are:
 3. Workspace tests
 4. Rust documentation with warnings denied
 5. Docker Compose validation
-6. Bash syntax validation for project and Claude hook scripts
+6. Bash syntax validation for project and Codex hook scripts
 7. Whitespace validation across tracked, staged, and untracked files
 8. The real PostgreSQL migration → Rust health API → QML health-client smoke
    path (DIFF/FULL only)
+
+Repository-local CodeGraph and OpenWiki are workflow instruments, not CI
+dependencies. `scripts/setup-pipeline-tools.sh` prepares their pinned generated
+state, while committed checks validate the wiring without network access.
 
 Cargo commands run sequentially. Never weaken a gate, delete a test, or edit a
 receipt to manufacture green. Fix the source.
@@ -35,9 +40,7 @@ receipt to manufacture green. Fix the source.
 One shippable slice moves through one active pipeline:
 
 ```text
-/work → /pipeline:plan → /pipeline:design → /pipeline:implement
-      → /pipeline:inspect → /pipeline:validate
-      → /pipeline:complete → /commit
+recall → plan → design → implement → inspect → validate → complete → delivery
 ```
 
 - Never keep more than one spec/notes pair in
@@ -50,7 +53,8 @@ One shippable slice moves through one active pipeline:
 - Work that is not ready for commitment belongs in `docs/planning/intake/`.
 - Application code includes `crates/`, `client/`, `migrations/`, runtime and
   validation scripts, Cargo manifests/lockfile, Compose, CI, and gate/hook
-  code. Planning documents are not application code.
+  code. Codex project instructions and repository skills are also gated
+  workflow code. Planning documents are not application code.
 
 ## §7 — Testing
 
@@ -96,13 +100,18 @@ check. Phase 4 must run the tests; writing them is not proof.
 ## §15 — Evidence and anti-circumvention
 
 If a test or gate did not run, do not claim it passed. A DIFF/FULL green writes
-`.git/omarchy-bbs-gate-receipt`, containing a hash of the gated worktree.
-The Claude commit hook recomputes that hash before a commit touching gated
+`.git/omarchy-gaming-system-gate-receipt`, containing a hash of the gated worktree.
+The Codex commit hook recomputes that hash before a commit touching gated
 files. Any later gated edit invalidates the receipt.
 
 Hooks are a discipline scaffold, not a security boundary. The receipt is the
 load-bearing proof. Do not amend this constitution or its hooks mid-pipeline to
 escape a failure.
+
+Codex also records local pipeline-tool receipts under `.git`. Phase 2 and Phase
+3.5 claims require CodeGraph evidence for the current pipeline and gated
+worktree. Phase 5 claims require an OpenWiki lifecycle that finished against
+that same state. Any later gated edit invalidates the corresponding receipt.
 
 ## §18 — Inspect and knowledge first
 
@@ -115,9 +124,12 @@ Phase 3.5 is mandatory. Review the implementation through independent lenses:
 - QML usability and keyboard behavior when client surfaces changed.
 
 Before planning and implementing, search the local knowledge register, nearest
-completed pipeline notes, and relevant architecture documents. At completion,
-record new failures (`BF-*`), prevention rules (`PR-*`), and architecture
-decisions (`AD-*`) in the AAR and in the knowledge register.
+completed pipeline notes, generated OpenWiki, and relevant architecture
+documents. Use CodeGraph during design and inspection to expose runtime flows,
+callers, and blast radius, with direct review for unsupported sources. At
+completion, reconcile OpenWiki and record new failures (`BF-*`), prevention
+rules (`PR-*`), and architecture decisions (`AD-*`) in the AAR and in the
+knowledge register.
 
 ## §19 — Local work record
 

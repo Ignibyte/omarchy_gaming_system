@@ -24,19 +24,19 @@ effectiveness:
 
 | ID | Failure | Where surfaced |
 |---|---|---|
-| `BF-omarchy-bbs-<topic>-NNN` | | |
+| `BF-omarchy-gaming-system-<topic>-NNN` | | |
 
 ## Prevention rules captured
 
 | ID | Rule | Why |
 |---|---|---|
-| `PR-omarchy-bbs-<topic>-NNN` | | |
+| `PR-omarchy-gaming-system-<topic>-NNN` | | |
 
 ## Architecture decisions
 
 | ID | Decision | ADR |
 |---|---|---|
-| `AD-omarchy-bbs-<topic>-NNN` | | |
+| `AD-omarchy-gaming-system-<topic>-NNN` | | |
 
 Every new ID above must also be appended to
 `docs/planning/knowledge/INDEX.md`.

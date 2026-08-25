@@ -1,72 +1,72 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-bbs_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-bbs_mode="full"
-bbs_failures=0
+ogs_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ogs_mode="full"
+ogs_failures=0
 
 case "${1:-}" in
   "") ;;
-  --full) bbs_mode="full" ;;
-  --diff) bbs_mode="diff" ;;
-  --fast) bbs_mode="fast" ;;
+  --full) ogs_mode="full" ;;
+  --diff) ogs_mode="diff" ;;
+  --fast) ogs_mode="fast" ;;
   *)
     echo "Usage: $0 [--fast|--diff|--full]" >&2
     exit 2
     ;;
 esac
 
-cd "$bbs_root"
+cd "$ogs_root"
 
 # shellcheck source=bin/lib-gate.sh
-source "$bbs_root/bin/lib-gate.sh"
+source "$ogs_root/bin/lib-gate.sh"
 
 run_gate() {
-  local bbs_number="$1"
-  local bbs_name="$2"
+  local ogs_number="$1"
+  local ogs_name="$2"
   shift 2
 
-  printf '\n[%s] %s\n' "$bbs_number" "$bbs_name"
+  printf '\n[%s] %s\n' "$ogs_number" "$ogs_name"
   if "$@"; then
-    printf '[%s] PASS\n' "$bbs_number"
+    printf '[%s] PASS\n' "$ogs_number"
   else
-    printf '[%s] FAIL\n' "$bbs_number" >&2
-    bbs_failures=$((bbs_failures + 1))
+    printf '[%s] FAIL\n' "$ogs_number" >&2
+    ogs_failures=$((ogs_failures + 1))
   fi
 }
 
 check_shell_syntax() {
-  local bbs_script
+  local ogs_script
 
-  while IFS= read -r bbs_script; do
-    bash -n "$bbs_script" || return 1
+  while IFS= read -r ogs_script; do
+    bash -n "$ogs_script" || return 1
   done < <(
-    find bin scripts .claude/hooks -type f -name '*.sh' -print | LC_ALL=C sort
+    find bin scripts .codex/hooks -type f -name '*.sh' -print | LC_ALL=C sort
   )
 }
 
 check_changed_secrets() {
-  printf '{}\n' | .claude/hooks/enforce-secrets.sh
+  printf '{}\n' | .codex/hooks/enforce-secrets.sh
 }
 
 check_whitespace() {
-  local bbs_file
-  local bbs_output
-  local bbs_whitespace_failures=0
+  local ogs_file
+  local ogs_output
+  local ogs_whitespace_failures=0
 
-  git diff --check || bbs_whitespace_failures=1
-  git diff --cached --check || bbs_whitespace_failures=1
+  git diff --check || ogs_whitespace_failures=1
+  git diff --cached --check || ogs_whitespace_failures=1
 
-  while IFS= read -r bbs_file; do
-    [[ -f "$bbs_file" ]] || continue
-    bbs_output=$(git diff --no-index --check -- /dev/null "$bbs_file" 2>&1 || true)
-    if [[ -n "$bbs_output" ]]; then
-      printf '%s\n' "$bbs_output" >&2
-      bbs_whitespace_failures=1
+  while IFS= read -r ogs_file; do
+    [[ -f "$ogs_file" ]] || continue
+    ogs_output=$(git diff --no-index --check -- /dev/null "$ogs_file" 2>&1 || true)
+    if [[ -n "$ogs_output" ]]; then
+      printf '%s\n' "$ogs_output" >&2
+      ogs_whitespace_failures=1
     fi
   done < <(git ls-files --others --exclude-standard)
 
-  ((bbs_whitespace_failures == 0))
+  ((ogs_whitespace_failures == 0))
 }
 
 run_gate 1 "rustfmt" cargo fmt --all --check
@@ -77,24 +77,25 @@ run_gate 5 "compose" docker compose config --quiet
 run_gate 6 "shell syntax" check_shell_syntax
 run_gate 7 "pipeline structure" ./scripts/check-pipeline.sh
 run_gate 8 "changed-file secret scan" check_changed_secrets
-run_gate 9 "Claude hook self-tests" ./scripts/selftest-hooks.sh
+run_gate 9 "Codex hook self-tests" ./scripts/selftest-hooks.sh
 run_gate 10 "whitespace errors" check_whitespace
 
-if [[ "$bbs_mode" != "fast" ]]; then
-  run_gate 11 "PostgreSQL + Rust API + QML smoke" ./scripts/dev.sh --smoke-test
+if [[ "$ogs_mode" != "fast" ]]; then
+  run_gate 11 "PostgreSQL integration tests" ./scripts/test-database.sh
+  run_gate 12 "PostgreSQL + Rust API + QML smoke" ./scripts/dev.sh --smoke-test
 fi
 
-if ((bbs_failures > 0)); then
-  printf '\nGATE RED [%s] — %d check(s) failed\n' "$bbs_mode" "$bbs_failures" >&2
+if ((ogs_failures > 0)); then
+  printf '\nGATE RED [%s] — %d check(s) failed\n' "$ogs_mode" "$ogs_failures" >&2
   exit 1
 fi
 
-if [[ "$bbs_mode" != "fast" ]]; then
-  bbs_receipt=$(bbs_gate_receipt_path) || {
-    echo "GATE RED [$bbs_mode] — could not resolve receipt path" >&2
+if [[ "$ogs_mode" != "fast" ]]; then
+  ogs_receipt=$(ogs_gate_receipt_path) || {
+    echo "GATE RED [$ogs_mode] — could not resolve receipt path" >&2
     exit 1
   }
-  bbs_gate_state_hash >"$bbs_receipt"
+  ogs_gate_state_hash >"$ogs_receipt"
 fi
 
-printf '\nGATE GREEN [%s]\n' "$bbs_mode"
+printf '\nGATE GREEN [%s]\n' "$ogs_mode"

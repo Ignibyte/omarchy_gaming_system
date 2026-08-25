@@ -1,8 +1,33 @@
+mod accounts;
 mod app;
 mod config;
+mod connections;
+mod credentials;
+mod games;
+mod inboxes;
+mod mfa;
+mod personas;
+mod sessions;
+mod sync;
+
+#[cfg(test)]
+mod connection_api_tests;
+#[cfg(test)]
+mod game_api_tests;
+#[cfg(test)]
+mod inbox_api_tests;
+#[cfg(test)]
+mod mfa_api_tests;
+#[cfg(test)]
+mod persona_api_tests;
+#[cfg(test)]
+mod session_api_tests;
+#[cfg(test)]
+mod sync_api_tests;
 
 use anyhow::{Context, Result};
 use config::Config;
+use omarchy_game_runtime::GameRegistry;
 use sqlx::{PgPool, migrate::Migrator, postgres::PgPoolOptions};
 use tokio::{net::TcpListener, signal};
 use tracing::info;
@@ -25,17 +50,26 @@ async fn main() -> Result<()> {
         .await
         .with_context(|| format!("failed to bind server to {}", config.bind_address))?;
 
-    info!(address = %config.bind_address, "Omarchy BBS server listening");
-
-    axum::serve(listener, app::router(pool))
-        .with_graceful_shutdown(shutdown_signal())
+    let sync_hub = sync::SyncHub::new();
+    let sync_listener = sync::start_postgres_listener(&pool, sync_hub.clone())
         .await
-        .context("HTTP server stopped unexpectedly")
+        .context("failed to start persona sync listener")?;
+
+    info!(address = %config.bind_address, "Omarchy Gaming System server listening");
+
+    let server_result = axum::serve(
+        listener,
+        app::router_with_runtime(pool, config.mfa_cipher, sync_hub, GameRegistry::empty()),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await;
+    sync_listener.abort();
+    server_result.context("HTTP server stopped unexpectedly")
 }
 
 fn init_tracing() {
     let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("omarchy_bbs_server=info,tower_http=info"));
+        .unwrap_or_else(|_| EnvFilter::new("omarchy_gaming_system_server=info,tower_http=info"));
 
     tracing_subscriber::fmt().with_env_filter(filter).init();
 }
