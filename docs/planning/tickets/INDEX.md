@@ -4,14 +4,16 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `022`**
+- **Next ticket number: `023`**
 
 ## Open queue
 
-- [`TICKET-019` — First-party remote-provider migration pilot](open/TICKET-019-first-party-remote-provider-migration-pilot.md)
+No open tickets.
 
 ## Closed
 
+- [`TICKET-022` — Keyboard-first QML account and persona onboarding](closed/TICKET-022-keyboard-first-qml-account-and-persona-onboarding.md)
+- [`TICKET-019` — First-party remote-provider migration pilot](closed/TICKET-019-first-party-remote-provider-migration-pilot.md)
 - [`TICKET-018` — Production remote-provider security foundation](closed/TICKET-018-production-remote-provider-security-foundation.md)
 - [`TICKET-021` — Signal Siege compiled game and solo bot matches](closed/TICKET-021-signal-siege-compiled-game-and-solo-bot-matches.md)
 - [`TICKET-020` — Game challenges, turn notifications, history, and expiration](closed/TICKET-020-game-challenges-turn-notifications-history-and-expiration.md)

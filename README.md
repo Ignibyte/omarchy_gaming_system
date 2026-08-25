@@ -93,6 +93,17 @@ Authenticated accounts can create and manage multiple personas through
 shape, while account ownership remains private. The API reference documents
 the validation, privacy, and owner-authorization contract.
 
+The shipped QML connector now provides the first keyboard-first player access
+slice rather than only a health probe. It accepts HTTPS servers plus loopback
+HTTP for development, distinguishes configuration/offline/protocol states,
+supports account registration, password login, existing TOTP or recovery-code
+challenges, and owned-persona creation or selection. Passwords and factor input
+are masked and cleared after submission; bearer and MFA challenge tokens live
+only in process memory and are erased on logout, endpoint changes, invalid
+sessions, or protocol failure. Persistent sign-in waits for a reviewed OS
+keyring boundary. Connections, inbox, challenges, and gameplay remain the next
+client screens.
+
 Owned personas can now send and accept idempotent connection requests, remove
 connections, and privately block or unblock another persona. Pair mutations
 are serialized in PostgreSQL so a block atomically removes pending or accepted
@@ -134,11 +145,15 @@ unit tests, documentation, Compose validation, hook tests, shell syntax, and
 whitespace checks. The non-fast gate also runs isolated PostgreSQL integration
 tests.
 
-Run the full server/database/QML health path without opening a window:
+Run the full server/database/QML onboarding path without opening a window:
 
 ```bash
 ./scripts/dev.sh --smoke-test
 ```
+
+The smoke includes deterministic hostile HTTP fixtures, real QML registration
+and persona creation, and an enrolled MFA recovery login before the existing
+API/game/social/reconnect checks complete.
 
 The delivery gate combines both levels and writes a worktree-bound commit
 receipt:

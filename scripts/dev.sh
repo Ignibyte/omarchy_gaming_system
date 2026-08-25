@@ -4,6 +4,7 @@ set -Eeuo pipefail
 ogs_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ogs_log_dir="$ogs_root/.dev"
 ogs_mfa_key_file="$ogs_log_dir/mfa-encryption-key"
+ogs_qml_live_config="$ogs_log_dir/qml-onboarding/live-config.json"
 ogs_server_pid=""
 ogs_qml_arguments=()
 ogs_smoke_test=false
@@ -22,6 +23,7 @@ case "${1:-}" in
 esac
 
 cleanup() {
+  rm -f -- "$ogs_qml_live_config"
   if [[ -n "$ogs_server_pid" ]] && kill -0 "$ogs_server_pid" 2>/dev/null; then
     kill "$ogs_server_pid"
     wait "$ogs_server_pid" 2>/dev/null || true
@@ -36,6 +38,59 @@ for command_name in docker mise qml6 curl jq openssl python3 cmp; do
     exit 1
   fi
 done
+
+if [[ "$ogs_smoke_test" == true ]]; then
+  for command_name in qmake6 flock; do
+    if ! command -v "$command_name" >/dev/null 2>&1; then
+      echo "Missing required smoke-test command: $command_name" >&2
+      exit 1
+    fi
+  done
+fi
+
+run_live_qml_onboarding() {
+  local ogs_scenario="$1"
+  local ogs_username="$2"
+  local ogs_password="$3"
+  local ogs_persona_handle="$4"
+  local ogs_factor="$5"
+  local ogs_qt_bins
+  local ogs_qml_test_runner
+  local ogs_live_lock_fd
+
+  ogs_qt_bins=$(qmake6 -query QT_INSTALL_BINS)
+  ogs_qml_test_runner="$ogs_qt_bins/qmltestrunner"
+  if [[ ! -x "$ogs_qml_test_runner" ]]; then
+    echo "Qt Quick Test runner not found at $ogs_qml_test_runner" >&2
+    return 1
+  fi
+
+  mkdir -p "$(dirname "$ogs_qml_live_config")"
+  chmod 0700 "$(dirname "$ogs_qml_live_config")"
+  exec {ogs_live_lock_fd}>"$ogs_log_dir/qml-onboarding/live.lock"
+  flock "$ogs_live_lock_fd"
+  printf '%s\0%s\0%s\0%s\0%s\0%s\0' \
+    "http://$OGS_BIND_ADDRESS" \
+    "$ogs_scenario" \
+    "$ogs_username" \
+    "$ogs_password" \
+    "$ogs_persona_handle" \
+    "$ogs_factor" \
+    | python3 "$ogs_root/client/qml/tests/fixture_server.py" \
+        --write-live-config "$ogs_qml_live_config"
+
+  env \
+    QT_QPA_PLATFORM=offscreen \
+    QT_QUICK_BACKEND=software \
+    QML_XHR_ALLOW_FILE_READ=1 \
+    "$ogs_qml_test_runner" \
+      -input "$ogs_root/client/qml/tests/live" \
+      -import "$ogs_root/client/qml" \
+      -eventdelay 0 \
+      -keydelay 0
+  rm -f -- "$ogs_qml_live_config"
+  flock -u "$ogs_live_lock_fd"
+}
 
 cd "$ogs_root"
 mkdir -p "$ogs_log_dir"
@@ -95,6 +150,9 @@ if ! jq -e \
 fi
 
 if [[ "$ogs_smoke_test" == true ]]; then
+  ogs_qml_arguments=(-- --smoke-test "--server-url=http://$OGS_BIND_ADDRESS")
+  "$ogs_root/scripts/test-qml-onboarding.sh"
+
   ogs_game_catalog=$(curl \
     --fail \
     --silent \
@@ -114,6 +172,16 @@ if [[ "$ogs_smoke_test" == true ]]; then
     echo "Game catalog smoke did not advertise exact Signal Siege v1" >&2
     exit 1
   fi
+
+  ogs_qml_registration_username="qml_$(date +%s)_$$"
+  ogs_qml_registration_password="TEST-ONLY-qml-registration-passphrase"
+  ogs_qml_persona_handle="q$(date +%s)_$$"
+  run_live_qml_onboarding \
+    register \
+    "$ogs_qml_registration_username" \
+    "$ogs_qml_registration_password" \
+    "$ogs_qml_persona_handle" \
+    ""
 
   ogs_registration_username="smoke_$(date +%s)_$$"
   ogs_registration_password="TEST-ONLY-registration-passphrase"
@@ -901,32 +969,12 @@ PY
   ogs_first_recovery_code=$(jq -er '.recovery_codes[0]' <<<"$ogs_mfa_confirmation")
   ogs_second_recovery_code=$(jq -er '.recovery_codes[1]' <<<"$ogs_mfa_confirmation")
 
-  ogs_mfa_login=$(curl \
-    --fail \
-    --silent \
-    --header "Content-Type: application/json" \
-    --data "$ogs_session_payload" \
-    "http://$OGS_BIND_ADDRESS/v1/sessions")
-  ogs_mfa_challenge=$(jq -er \
-    '.challenge_token | select(startswith("ogm1_"))' \
-    <<<"$ogs_mfa_login")
-  if jq -e 'has("token") or has("session")' <<<"$ogs_mfa_login" >/dev/null; then
-    echo "MFA-gated primary login created a session before factor verification" >&2
-    exit 1
-  fi
-
-  ogs_mfa_completion_payload=$(jq -nc \
-    --arg challenge_token "$ogs_mfa_challenge" \
-    --arg code "$ogs_first_recovery_code" \
-    '{challenge_token: $challenge_token, code: $code}')
-  ogs_mfa_session=$(curl \
-    --fail \
-    --silent \
-    --header "Content-Type: application/json" \
-    --data "$ogs_mfa_completion_payload" \
-    "http://$OGS_BIND_ADDRESS/v1/sessions/mfa")
-  jq -er '.token | select(startswith("ogs1_"))' \
-    <<<"$ogs_mfa_session" >/dev/null
+  run_live_qml_onboarding \
+    mfa \
+    "$ogs_registration_username" \
+    "$ogs_registration_password" \
+    "" \
+    "$ogs_first_recovery_code"
 
   ogs_replay_login=$(curl \
     --fail \

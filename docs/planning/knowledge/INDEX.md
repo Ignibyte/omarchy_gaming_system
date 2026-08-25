@@ -66,6 +66,12 @@ and in this register.
 | `PR-omarchy-gaming-system-layer-pilot-lifecycle-into-every-admission-001` | When a narrow activation lifecycle overlays a general provider release, lock and evaluate it at every launch, command, reconcile, event, and projection boundary. | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
 | `PR-omarchy-gaming-system-use-one-provider-effect-lock-order-001` | Provider effect transactions acquire release, pilot, and session roots in one documented canonical order before receipts or projections. | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
 | `PR-omarchy-gaming-system-gate-independent-executable-source-trees-001` | Every source tree that contributes an independently compiled executable or delivery proof must participate in the canonical gated-state hash. | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
+| `PR-omarchy-gaming-system-retire-qml-xhr-after-generation-invalidation-001` | Invalidate the current QML request generation before retiring an XHR, detach its callback, retain it briefly, and abort outside the active callback. | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `PR-omarchy-gaming-system-protect-test-secret-file-handoffs-001` | For test-only credential handoffs, use a mode-0700 directory and mode-0600 non-symlink file, keep secrets out of argv and logs, and remove the exact file on every exit. | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `PR-omarchy-gaming-system-mirror-authoritative-client-response-bounds-001` | Client success validators and form limits must mirror the authoritative server contract exactly and reject empty required values or expired authority. | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `PR-omarchy-gaming-system-reconcile-regression-claims-with-executed-cases-001` | Reconcile every claimed hostile fixture outcome with an invoked test case before accepting the inspection gate. | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `PR-omarchy-gaming-system-compile-production-qml-root-after-control-edits-001` | Instantiate the production QML root after shared-control contract edits instead of relying only on isolated component assumptions. | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `PR-omarchy-gaming-system-own-headless-qt-test-environment-001` | Headless QML gate entrypoints must set their platform and rendering backend unconditionally. | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
 
 ## Register
 
@@ -205,3 +211,16 @@ and in this register.
 | `PR-omarchy-gaming-system-use-one-provider-effect-lock-order-001` | rule | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
 | `PR-omarchy-gaming-system-gate-independent-executable-source-trees-001` | rule | `aar/AAR-019-first-party-remote-provider-migration-pilot.md` |
 | `AD-omarchy-gaming-system-first-party-remote-authority-pilot-001` | decision | `../../architecture/adr-0002-game-cartridge-and-provider-boundary.md` |
+| `BF-omarchy-gaming-system-qml-xhr-abort-lifetime-crash-001` | failure | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `BF-omarchy-gaming-system-qml-test-secret-path-authority-gap-001` | failure | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `BF-omarchy-gaming-system-qml-client-contract-bound-drift-001` | failure | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `BF-omarchy-gaming-system-qml-regression-claim-coverage-gap-001` | failure | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `BF-omarchy-gaming-system-qml-textarea-limit-api-assumption-001` | failure | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `BF-omarchy-gaming-system-qml-headless-platform-inheritance-001` | failure | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `PR-omarchy-gaming-system-retire-qml-xhr-after-generation-invalidation-001` | rule | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `PR-omarchy-gaming-system-protect-test-secret-file-handoffs-001` | rule | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `PR-omarchy-gaming-system-mirror-authoritative-client-response-bounds-001` | rule | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `PR-omarchy-gaming-system-reconcile-regression-claims-with-executed-cases-001` | rule | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `PR-omarchy-gaming-system-compile-production-qml-root-after-control-edits-001` | rule | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `PR-omarchy-gaming-system-own-headless-qt-test-environment-001` | rule | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `AD-omarchy-gaming-system-qml-onboarding-authority-boundary-001` | decision | `../../architecture/system-overview.md` |

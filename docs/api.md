@@ -364,6 +364,35 @@ Bearer tokens grant account-level authority. Production transport must protect
 them with TLS, and a public deployment must add distributed login throttling;
 neither deployment control is supplied by the current local slice.
 
+## QML account and persona onboarding
+
+The production QML connector composes the existing endpoints above without a
+separate client protocol. It begins with exact `/health`, then uses
+`POST /v1/accounts`, `POST /v1/sessions`, optional
+`POST /v1/sessions/mfa`, authenticated `GET /v1/personas`, and authenticated
+`POST /v1/personas`. Registration does not implicitly authenticate; the
+canonical returned username is carried back to the sign-in form and the player
+must submit credentials explicitly.
+
+The connector defaults to `http://127.0.0.1:8080`. A player can choose another
+endpoint in the connection screen or pass `--server-url=<origin>` to `qml6`.
+Only a bare HTTPS origin or loopback HTTP origin is accepted: userinfo, paths,
+queries, fragments, invalid ports, and remote plaintext HTTP fail before any
+credential request. Each operation uses one bounded XHR generation, rejects
+stale completions and unexpected redirects, and validates exact success shapes
+before changing client authority.
+
+Passwords, TOTP/recovery input, bearer tokens, and MFA challenge tokens are not
+written to QML `Settings`, LocalStorage, files, URLs, logs, or visible status
+text. Secret fields are masked and cleared synchronously after submission. The
+raw bearer is held only by the in-memory API client and appears only in the
+`Authorization` header on authenticated persona requests. Local logout clears
+the process state but does not claim remote session revocation; device-session
+inventory/revocation and OS-keyring persistence remain later settings work.
+An authenticated `401 invalid_session`, endpoint change, or authenticated
+protocol-shape failure clears bearer, MFA, inventory, and selected persona and
+returns to sign-in.
+
 ## Request a persona connection
 
 `PUT /v1/personas/{persona_id}/connection-requests/{other_persona_id}`

@@ -43,12 +43,19 @@ The current gates are:
     workspace format, Clippy, tests, binary build, rustdoc, signed package,
     broker/provider exchange, privacy assertions, and trusted QML smoke path
 15. PostgreSQL integration tests (DIFF/FULL only)
-16. The real PostgreSQL migration → Rust health API → QML health-client smoke
-    path (DIFF/FULL only)
+16. The real PostgreSQL migration → Rust API → keyboard-first QML client smoke
+    path, including deterministic hostile-fixture tests plus live registration,
+    password/MFA session creation, persona creation/selection, local logout,
+    and health recovery (DIFF/FULL only)
 17. The production remote-provider security foundation, including PostgreSQL
     registry/lifecycle races and a separately spawned TLS provider proving
     signed grants/messages, durable replay, expected revisions, bounded
     faults, outage recovery, event deduplication, and reconciliation
+    (DIFF/FULL only)
+18. The first-party Door Legends remote-authority pilot, built from a clean
+    clone and exercised through the real broker/player API against an
+    independent provider database, including replay, conflict, callback,
+    projection, outage, reconciliation, lifecycle, privacy, and restore proof
     (DIFF/FULL only)
 
 Repository-local CodeGraph and OpenWiki are workflow instruments, not CI

@@ -3,6 +3,10 @@ type: "Reference"
 title: "Runtime foundation"
 openwiki_generated: true
 sources:
+  - id: openwiki-source-a0d638052213a4621aa5ab44
+    resource: repo://client/qml/ApiClient.qml
+  - id: openwiki-source-f73ad44f40942d16dc369861
+    resource: repo://client/qml/OnboardingController.qml
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
@@ -63,7 +67,7 @@ sources:
     resource: repo://migrations/0012_game_challenges.sql
   - id: openwiki-source-926664a4167297129df76802
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
-generated: {by: "codex", at: "2026-08-25T22:05:16.359Z"}
+generated: {by: "codex", at: "2026-08-25T23:22:56.525Z"}
 ---
 
 # Runtime foundation
@@ -232,6 +236,32 @@ DTO containing only ID, handle, display name, bio, status message, and created/
 updated timestamps. Account IDs and authentication data are not fields in
 either response model. Successful authenticated persona responses carry
 `Cache-Control: no-store`; public lookup is intentionally enumerable by handle.
+
+## QML onboarding client flow
+
+`client/qml/Main.qml` is now a keyboard-first onboarding shell rather than a
+health-only connector. Its controller moves through connection, account access,
+optional MFA, persona inventory or creation, and an authenticated home. Account
+registration deliberately returns to sign-in; session creation immediately
+loads the owned persona inventory; and either an owned selection or successful
+persona creation establishes the active persona for the home screen.
+
+`ApiClient.qml` accepts only a bare HTTP or HTTPS origin. HTTP is limited to
+`localhost`, `127.0.0.1`, and `[::1]`; every remote host requires HTTPS. Each
+request cancels and supersedes the prior generation, has a ten-second timeout
+and a 256 KiB response limit, and rejects a final response URL outside the exact
+selected origin and path. The controller parses only nonempty JSON objects and
+accepts exact bounded response shapes, including the OmarchyGS health identity,
+token formats, future session and MFA expiry, public persona fields, and a small
+allowlist of stable public error codes.
+
+Bearer tokens and MFA challenge values live only in the QML process. Changing
+the server, logging out, canceling or expiring MFA, receiving a terminal MFA
+failure, receiving `invalid_session`, or rejecting an authenticated success
+clears the applicable authority before returning to account access. A
+superseded request generation cannot update current state. This is a local
+client boundary, not a substitute for TLS certificate policy, server-side
+authentication and authorization, or public-edge rate limiting.
 
 ## Persona connection and block flow
 

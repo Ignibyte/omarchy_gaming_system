@@ -37,8 +37,9 @@ PostgreSQL
 The executable connects to PostgreSQL, applies embedded migrations, and exposes
 the first identity HTTP surfaces:
 
-- `GET /health` proves database readiness; the QML connector consumes it and
-  displays a connected, offline, or protocol-error state.
+- `GET /health` proves database readiness; the QML connector consumes its exact
+  identity before enabling account access and distinguishes connecting,
+  ready, offline, configuration-error, and protocol-error states.
 - `POST /v1/accounts` delegates to the account domain, which canonicalizes the
   private account username, bounds the password, hashes it with salted Argon2id
   off the async executor, and relies on PostgreSQL for unique insertion.
@@ -66,6 +67,16 @@ the first identity HTTP surfaces:
   account-scoped SQL for inventory and mutation.
 - public `GET /v1/personas/by-handle/{handle}` performs exact canonical handle
   lookup and returns only the explicit public profile fields.
+- the keyboard-first QML access shell composes those unchanged REST endpoints
+  through one finite connection/access/MFA/persona/home state machine. Its API
+  object serializes one bounded request generation, rejects stale completions,
+  validates exact response shapes, and is the only client object that retains
+  a raw bearer. Password and factor fields clear on submission; bearer and MFA
+  challenge values remain in process memory only and are cleared with every
+  terminal authority transition. Remote endpoints require HTTPS while
+  loopback HTTP remains the explicit development exception. Standard controls,
+  visible focus, accessible names, Enter/Escape behavior, and scrollable
+  minimum-size layouts provide keyboard-only onboarding at 640×420 and above.
 - authenticated persona-scoped connection routes create and inventory pending
   requests, let only the addressee accept, list the resulting mutual
   connection, and let either participant idempotently remove pending or
