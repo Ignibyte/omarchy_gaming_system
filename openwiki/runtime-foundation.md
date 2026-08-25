@@ -5,6 +5,8 @@ openwiki_generated: true
 sources:
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
+  - id: openwiki-source-df8490db5b51be8096630e7e
+    resource: repo://crates/game-signal-siege/src/lib.rs
   - id: openwiki-source-66facc66e34ad7f2a74321e1
     resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
@@ -33,6 +35,8 @@ sources:
     resource: repo://crates/server/src/personas.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
+  - id: openwiki-source-76060b846b9222af2c790243
+    resource: repo://crates/server/src/signal_siege_api_tests.rs
   - id: openwiki-source-46fb4135d6a71efad1062c0d
     resource: repo://crates/server/src/sync_api_tests.rs
   - id: openwiki-source-e7a72df5b89c1ac350ffe062
@@ -57,10 +61,12 @@ sources:
     resource: repo://migrations/0011_idempotent_revision_checked_game_commands.sql
   - id: openwiki-source-cb6494f7cbf0d5d23ffe082a
     resource: repo://migrations/0012_game_challenges.sql
-generated: {by: "codex", at: "2026-08-25T15:17:54.717Z"}
+  - id: openwiki-source-926664a4167297129df76802
+    resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
+generated: {by: "codex", at: "2026-08-25T18:10:29.411Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-25T15:17:54.717Z
+    at: 2026-08-25T18:10:29.411Z
 ---
 
 # Runtime foundation
@@ -70,8 +76,8 @@ verified:
 `crates/server/src/main.rs` owns process startup. It initializes tracing, loads
 environment-backed configuration, connects a PostgreSQL pool, applies embedded
 SQLx migrations, starts the PostgreSQL-backed synchronization listener and
-in-process notification hub, injects the deliberately empty production game
-registry, binds the configured listener, and serves the Axum router with
+in-process notification hub, constructs the production registry containing
+Signal Siege v1, binds the configured listener, and serves the Axum router with
 graceful shutdown. A failure to connect, migrate, subscribe, bind, or serve
 carries context and stops startup instead of exposing a partially ready
 process. Shutdown also aborts the listener task.
@@ -376,9 +382,10 @@ definitions. A manifest uses one canonical key, a positive exact version, a
 bounded control-free display name, and human-player limits within the global
 eight-seat cap. Registry construction rejects invalid manifests and duplicate
 `(key, version)` definitions and stores them in deterministic key/version
-order. Production currently injects a valid empty registry; tests inject
-compiled fixture versions. The public `GET /v1/games` route projects only that
-manifest metadata.
+order. Production constructs a registry containing exactly Signal Siege v1;
+tests may inject fixture versions or an empty registry to prove retained
+history and replay. The public `GET /v1/games` route projects only manifest
+metadata.
 
 A definition receives only the human-player count when initializing and only
 the current object state, actor seat, and object command when transitioning. It
@@ -388,49 +395,71 @@ that the count fits its manifest, and rejects initialization errors, non-object
 JSON, or serialized initial state above 64 KiB. Command execution also rejects
 state above 64 KiB, command input above 16 KiB, an out-of-range actor seat,
 trusted-rules rejection, and non-object or over-64-KiB output through stable
-typed errors. Identical initialization or command inputs are expected to be
-deterministic.
+typed errors. A successful definition returns a bounded next snapshot and a
+closed `active|completed` lifecycle; identical initialization or command
+inputs are expected to be deterministic.
 
-`games::create_session` is a crate-private transaction primitive currently
-invoked by challenge acceptance. It rejects empty, duplicate, or over-eight
-participant sets before persistence; initializes the exact rules version;
+`games::create_session` is a crate-private transaction primitive invoked by
+challenge acceptance and the owner-scoped solo-start transaction. It rejects
+empty, duplicate, or over-eight participant sets before persistence;
+initializes the exact rules version;
 locks all existing persona roots in canonical UUID order; then stores the
 immutable game key/version, revision-zero active object snapshot, and
 caller-ordered seats. It appends one `game_session_changed` event for every
 participant inside the same caller-owned transaction. Any error must be
-propagated so state, seats, and invalidations roll back together. There is no
-direct arbitrary session-creation route; challenge acceptance owns the public
-authorization policy.
+propagated so state, seats, and invalidations roll back together.
+
+`POST /v1/personas/{persona_id}/game-sessions` is the narrow public solo-start
+policy. It accepts a UUID idempotency key and exact game key/version, then
+authenticates and owner-scopes the persona before locking its root. A matching
+durable receipt is returned before current registry or inventory admission, so
+replay survives completion and registry removal; a changed identity conflicts.
+New work must resolve to a manifest requiring exactly one human, and at most 25
+receipt-backed solo sessions for that persona may remain active. Session,
+seat-zero participant, receipt, and one minimal sync invalidation commit
+together. The server inserts no bot account, persona, or participant.
+
+Signal Siege v1 is that production one-human definition. Human and bot begin
+with eight core and two energy, choose among strike, guard, and charge, and
+resolve each round simultaneously. The bot chooses from pre-command durable
+state only. Cross-field state validation rejects inconsistent round, phase,
+combatant, last-round, and outcome shapes. Core destruction or round 12
+produces an explicit bounded winner/reason/final-state outcome and the compiled
+`completed` lifecycle.
 
 Authenticated inventory and detail routes first validate the Bearer session,
 then require the acting persona to belong to its derived account and to each
 returned game session. Inventory defaults to 50, caps at 100, and orders newest
-first. Responses expose the durable key, version, revision, status, state,
-timestamps, seats, and the existing public persona shape; they contain no
-account ownership or registry internals. Foreign, malformed, and absent session
-IDs share the same not-found result. Reads come directly from PostgreSQL, so a
-process registry that has gained, lost, or replaced versions cannot silently
-reinterpret an old session.
+first. Responses expose the durable key, version, revision, active/completed
+status, state, optional completion time, timestamps, seats, and the existing
+public persona shape; they contain no account ownership or registry internals.
+Foreign, malformed, and absent session IDs share the same not-found result.
+Reads come directly from PostgreSQL, so a process registry that has gained,
+lost, or replaced versions cannot silently reinterpret an old session.
 
 `POST /v1/personas/{persona_id}/game-sessions/{game_session_id}/commands`
 accepts a body-capped object containing a UUID idempotency key, nonnegative
 expected revision, and object command. The handler returns only the game
-session ID, committed revision, and state with `Cache-Control: no-store`.
-Authentication owner-scopes the acting persona; the transaction then locks the
-active session only through that persona's participant row, keeping malformed,
-absent, and non-participant sessions indistinguishable.
+session ID, committed revision, lifecycle, and state with
+`Cache-Control: no-store`. Authentication owner-scopes the acting persona; the
+transaction then locks the session only through that persona's participant
+row, keeping malformed, absent, and non-participant sessions
+indistinguishable.
 
 While holding the session lock, the domain checks the session-wide replay
-receipt before enforcing the current revision. A receipt replays only when its
-actor, expected revision, and PostgreSQL-`JSONB`-semantic command match; it
-returns the stored result without rerunning rules or appending another event.
-Any identity mismatch is an idempotency conflict. A new key must carry the
-current revision, and the stored exact game version must still be compiled.
-Success atomically writes the next bounded state, increments one revision,
-preserves a monotonic `updated_at`, inserts the replay receipt, and appends one
-minimal game-session invalidation per canonically ordered participant. Rules
-rejection, malformed input, unavailable rules, revision conflict, and any later
-transaction failure leave state, receipt, and invalidations unchanged.
+receipt before enforcing lifecycle or current revision. A receipt replays only
+when its actor, expected revision, and PostgreSQL-`JSONB`-semantic command
+match; it returns stored revision, lifecycle, and state without rerunning rules
+or appending another event, including after the first application completed the
+session. Any identity mismatch is an idempotency conflict. A new key requires
+an active session at the current revision and the stored exact game version to
+remain compiled. Success atomically writes the bounded state and lifecycle,
+sets completion time when terminal, increments one revision, preserves a
+monotonic `updated_at`, inserts the lifecycle-bearing receipt, and appends one
+minimal invalidation per canonically ordered participant. Rules rejection,
+malformed input, unavailable rules, completed lifecycle, revision conflict,
+and later transaction failure leave state, receipt, and invalidations
+unchanged.
 
 ## Identity-ready schema
 
@@ -475,7 +504,10 @@ two-person challenges with immutable exact-game identity, challenger-scoped
 idempotency, one equivalent pending request, participant-history indexes, and
 status/session/resolution constraints. It also extends inbox messages with
 typed challenge/session references and retained persona events with an exact
-payload-minimal challenge variant. Add later
+payload-minimal challenge variant. Migration `0013` adds the consistent
+active/completed session and timestamp shape, stores the applied lifecycle in
+every command receipt, and adds persona/idempotency/session-linked solo-start
+receipts with exact game identity and participant integrity. Add later
 capabilities through domain modules and thin handlers rather than placing policy
 directly in SQL or transport code.
 
@@ -509,8 +541,13 @@ quotas, frame bounds, permit release, and session revocation, expiry,
 inactivity, and no-touch revalidation.
 Game-runtime changes use its five unit tests for manifest validation, stable
 exact-version lookup, and bounded deterministic initialization and commands.
-Game transport or persistence changes also use `game_api_tests.rs`: two local
-router cases and five migrated PostgreSQL cases cover the honest empty catalog,
+Signal Siege changes use its five rule tests plus
+`signal_siege_api_tests.rs`: one local catalog/body-limit case and four migrated
+PostgreSQL cases cover owner scope, exact start replay, registry drift,
+active-cap concurrency, completion/final replay/history, no bot identity,
+privacy-minimal sync, and rollback. General game transport or persistence
+changes also use `game_api_tests.rs`: two local router cases and five migrated
+PostgreSQL cases cover stable catalog projection,
 body bounds, atomic creation and command transitions, ordered seats, semantic
 replay and isolated collision axes, revision conflicts, rollback silence,
 minimal per-participant sync, bounded private reads, indistinguishable foreign

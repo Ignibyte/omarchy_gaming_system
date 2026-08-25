@@ -1,0 +1,10 @@
+[package]
+name = "omarchy-game-signal-siege"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+omarchy-game-runtime = { path = "../game-runtime" }
+serde.workspace = true
+serde_json.workspace = true

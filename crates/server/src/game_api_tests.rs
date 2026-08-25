@@ -11,6 +11,7 @@ use axum::{
 use http_body_util::BodyExt;
 use omarchy_game_runtime::{
     GameCommandRejection, GameDefinition, GameInitializationError, GameManifest, GameRegistry,
+    GameSessionStatus, GameTransition,
 };
 use serde_json::{Value, json};
 use sqlx::{PgPool, postgres::PgPoolOptions};
@@ -77,7 +78,7 @@ impl GameDefinition for FixtureGame {
         state: &Value,
         actor_seat: u8,
         command: &Value,
-    ) -> Result<Value, GameCommandRejection> {
+    ) -> Result<GameTransition, GameCommandRejection> {
         match command.get("kind").and_then(Value::as_str) {
             Some("advance") => {
                 let mut next_state = state.clone();
@@ -88,9 +89,15 @@ impl GameDefinition for FixtureGame {
                     .ok_or(GameCommandRejection)?;
                 object.insert("turn".to_owned(), json!(turn + 1));
                 object.insert("last_actor_seat".to_owned(), json!(actor_seat));
-                Ok(next_state)
+                Ok(GameTransition {
+                    state: next_state,
+                    status: GameSessionStatus::Active,
+                })
             }
-            Some("invalid_output") => Ok(json!([])),
+            Some("invalid_output") => Ok(GameTransition {
+                state: json!([]),
+                status: GameSessionStatus::Active,
+            }),
             _ => Err(GameCommandRejection),
         }
     }
@@ -502,6 +509,7 @@ async fn commands_commit_atomically_replay_semantic_json_and_reject_conflicts(po
         json!({
             "game_session_id": session_id.to_string(),
             "revision": 1,
+            "status": "active",
             "state": {
                 "rules_version": 1,
                 "human_players": 2,

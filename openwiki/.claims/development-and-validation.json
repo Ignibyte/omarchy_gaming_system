@@ -1,22 +1,22 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7e5190c62aac6a72565a67e5df6c2d212602a45947b1272e6d7765156026db09",
+  "pageVersion": "sha256:0e72d6eec38fc64515000c91fd318dfd43d2e9833b62a009e552651c3d747fd9",
   "claims": [
     {
       "id": "claim_e75f82f846ca444594c51ed0f48b894b",
-      "statement": "The local smoke path verifies the empty production game catalog, fail-closed challenge rejection without partial sync state, health, identity, sessions, personas, social and inbox behavior, durable cursor order and minimal invalidations, MFA and replay rejection, disablement, revocation, and rejected token reuse.",
+      "statement": "The local smoke verifies exact Signal Siege v1 production discovery, idempotent solo launch, bounded play to durable completion, final replay, history, minimal sync, and post-completion rejection alongside health, identity, social, inbox, MFA, cursor, revocation, and QML behavior.",
       "evidence": [
         {
-          "resource": "repo://scripts/dev.sh#L81-L140",
-          "version": "repo-lines-v1:sha256:37acccd479623ff9969f780da4f135bf40456254b4ff4a61d6563a970ce71443:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkODdmMDZlOWZjYTY0MGMxZjZlMjViNTMwM2U5NTFlMTVhMThlZTEwOTkwYTRmMTgyMmM2MzIwYjkyYzA2ZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0YzA1NjkyOTY2NmQ2MDAzODUwNTlmNTE1YjA2ZDFiZWM2ZmM0ZjVjYmY0NTMwZTNkMTMxMmU5MTc3N2EzMDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY2NmRlOWFhZDg5N2I3ZTU4MmY1ODhjMTI0OGRkY2RjM2RmZDhjYjk0OTMyOTFhNGI5MDdhYjMyMzY1MGI2ODAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg2OWRkMzhhMmZmMzVlMjJjOWJlZDdhYTljY2NjODQ0YTlkZDdkMjA4ZjYxYzhlMmQ3MDBiZWViOGUxOGM4YjgifQ"
+          "resource": "repo://scripts/dev.sh#L89-L114",
+          "version": "repo-lines-v1:sha256:4bc5b75362f7b5b7d543b4b5ebcc02828c6df5035a492594ff1302c9d77b14df:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4YTJjZjY3OTBjZTYyMjgyZmM0Y2E0MjBlOGYxZDI3OTg4NWY5ZGMxYTJmZDJlYTE4ODZiOWM4NGIyMDBiMzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZmM5MGZmOGE0NDE0YzU0NDFkMGY2NzdjNWNiZmRhMzhiNDc0ZTUxYmZkNTU5YTU1NTlkZTBmODc3MDU1MjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMxY2UxYWExMTY5NWQ5YjUxNTcwZGExNWYyMzlkNzBkMmY1Y2FkNThhNzg1MGQyYThkYTljZWQ1ODYxZDQ4MzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5M2U0MzM1ZGUzMzk1NmU4Y2QxYTAxOTFlYzI1ZGM1ZjVkMDUxOTU3YTE3ZWU3OWE0ZTM0YjVmYjkzNDhlNDcifQ"
         },
         {
-          "resource": "repo://scripts/dev.sh#L288-L520",
-          "version": "repo-lines-v1:sha256:5bd37e45a2bbd06df2ee2b91b62f322180e0d9fa289869e79c2578a6ab8cc913:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3NGYwNzYzMjdjZGI1MDA4MTgwYmQ4YmMwYzU4ZmFlODEzYjUxNzJkMWFmYWExODNmNGZmNGIyNGY4ZjljYmI1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzNDZlZWJkYzM3NjVmNjNmNGE5NmRkYTRiMTZhNzdjOTZjOTRiODMzMGU4NDA3NGQ1ZGYxZmViNzYxNWU3YzY3IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YWYxZDk1YjExZjc4MWIyY2UxZjY1YzFjMGU3Y2MxZjg0YzA4MGIwNDkzYjc3Y2Q1MTlhZjRhZWE4YjYyNTQ3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyZGU5MWI3ZDNmYzNjZjQwMDZlNjU0ZDQ5YmMxNmMxZmFkMjI1ZjFkZWIzNTlkMmM4ODkxYTRmNDU5NjY5MmRhIn0"
+          "resource": "repo://scripts/dev.sh#L299-L498",
+          "version": "repo-lines-v1:sha256:312a19b5b23c9c532fef4ddaaebef8d7bec01ee29adf1a476d7430fd7f61dac0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4NDlkN2E2ZmY5ZTY3MmEyZWVmN2I2MTdkYzU2OWY5ZmM5MDQ0NGY1ZmVkMjQyMmVhOTY4Mzg1MjFkYzY0MjY2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzNWZjOTBmZjhhNDQxNGM1NDQxZDBmNjc3YzVjYmZkYTM4YjQ3NGU1MWJmZDU1OWE1NTU5ZGUwZjg3NzA1NTI0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YWYxZDk1YjExZjc4MWIyY2UxZjY1YzFjMGU3Y2MxZjg0YzA4MGIwNDkzYjc3Y2Q1MTlhZjRhZWE4YjYyNTQ3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJiZDA1ZDhiMWU2NGQzNmVlYjkzZjUyMDFhN2ViNzhiYWU4MDhiNjMxMTI5YjI3NGJkNWE0MjY5YzBkNjEyNDkxIn0"
         },
         {
-          "resource": "repo://scripts/dev.sh#L642-L795",
-          "version": "repo-lines-v1:sha256:f21dd3f2749e000166f484d57c645d1fa44961d726877ff8683054f7f2fcf8ed:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmZjVmNGM4MWJkMTRlODI2ZDQ0Njk5ZjgwNWRiNmZkMGEwY2MxZGEzZGNiMmVhNTM1ZmZiMGU2Yjk5ODIxNTEwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzNWZjOTBmZjhhNDQxNGM1NDQxZDBmNjc3YzVjYmZkYTM4YjQ3NGU1MWJmZDU1OWE1NTU5ZGUwZjg3NzA1NTI0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YWYxZDk1YjExZjc4MWIyY2UxZjY1YzFjMGU3Y2MxZjg0YzA4MGIwNDkzYjc3Y2Q1MTlhZjRhZWE4YjYyNTQ3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5ZTVmMzEzZmQxNmE2ZGNmYTY2OTFmZmE5ZTc5ZGU2ODE0MmZhNjM2YWY2MmQ0ZWFlM2EyMDQ1YmJkZGI0MDUzIn0"
+          "resource": "repo://scripts/dev.sh#L500-L815",
+          "version": "repo-lines-v1:sha256:292f537dea790f95f32aa8ed55c1197cee116526dc99fd2370b940c3f3294a52:eyJzZWxlY3RlZExpbmVDb3VudCI6MzE2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3NGYwNzYzMjdjZGI1MDA4MTgwYmQ4YmMwYzU4ZmFlODEzYjUxNzJkMWFmYWExODNmNGZmNGIyNGY4ZjljYmI1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0N2RiNzU1ZmMzNGIzMDY2OGJmN2Y0YmJmZjYxZWQ0OWRkYjE1ZjI3NDM5YTE3MDEwODgxZGUyYTQ0N2Q4YjRiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YWYxZDk1YjExZjc4MWIyY2UxZjY1YzFjMGU3Y2MxZjg0YzA4MGIwNDkzYjc3Y2Q1MTlhZjRhZWE4YjYyNTQ3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI1NTc3ODA3MDM3OTI2ZWE1Y2JkOWEwNjI3Mjc4YTgzNWYzN2M1YjAzMmZjNTMwZWI4MTBlYmMzMzlhZDRlMjNmIn0"
         }
       ]
     },
@@ -40,23 +40,23 @@
     },
     {
       "id": "claim_171e3e64173941df995e2a10f63d4c51",
-      "statement": "The canonical diff gate runs production static and documentation checks, production cartridge conformance, trusted renderer and raster admission, deterministic SDK/release/catalog import, the isolated provider proof, sequential migrated PostgreSQL tests, and the live PostgreSQL-to-Rust-API-to-QML smoke before writing a worktree receipt.",
+      "statement": "The canonical diff gate runs production static and documentation checks, cartridge conformance and rendering, SDK/release/import, the isolated provider proof, sequential migrated PostgreSQL tests, and the live PostgreSQL-to-Rust-API-to-Signal-Siege-to-QML smoke before writing a worktree receipt.",
       "evidence": [
         {
           "resource": "repo://bin/gate.sh#L72-L105",
           "version": "repo-lines-v1:sha256:a862e02fa83b9c3388153bf42c9335f0e6d6dded64b0dfce14b906f6020ea33b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3YmY1ZmE0ZGMyMDc5YWUyNzRhMmVmMjBkODllMjUzMGEwZTg0NTZhMTM2ODA4NGZjNDViZjhhNjc4ZWRhYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1MjA1NzJmMGVmNWMyMzZhMWE5N2NmZDdkMWJjZmEzZTNkNzU2OGExODc1OGMxNjljMWU0N2Q5NDAzZWI0NjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1OGI4NzEwNzI3NGZiN2I2NmFkMzM1ODg4M2IyODQ2ODNiYWJjMzllNDcwM2JjY2JjM2Y0NDZmNzA5MTgxMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://scripts/test-game-cartridge-sdk.sh#L19-L125",
-          "version": "repo-lines-v1:sha256:82fbdcd7a0b4ea4bdadc34930f151292e2b4ce4dd6f93b96dbb466580f715586:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NmM1MWJhOTkxNThlYzM2M2Q0MGI3NzhlZjI3MTEyNmRhM2ZkODMxNWVlNTIzODIyNDIwNDY5YjUyOWEwYjk0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5ODIyZTRjOGFlMGZmYTc5ZjlkZDE1OTA2OTM3YTcwNWMxY2E5NTEzYTQ2YWI5MTQ3NWM3MmVhNjIxODZkOTVlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzOWY3YmIxM2IyMjZmMGFjNGZhOGRlZmQ3ODg4YTIxZWM5NWIzM2U0NjZjNDY1NTEyNjhjNzg4MjBjMmNiNWU5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
-        },
-        {
           "resource": "repo://scripts/test-database.sh",
           "version": "repo-file-v1:sha256:03d27724868472fc8837f5e0b0ec424224dc9de3a743d59d4cc20f70adfdf3a4"
         },
         {
-          "resource": "repo://scripts/dev.sh",
-          "version": "repo-file-v1:sha256:a67b790ca178b5f88c8c9354567009527f530d966d78d8e3fbb7285793786481"
+          "resource": "repo://scripts/dev.sh#L57-L114",
+          "version": "repo-lines-v1:sha256:d57fe7dfcb60d32c47702d610e9f8c7517b51c1351672346432bede0701f77c2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4MTdlNGFlNjNmZjcxM2JjMDNmMGJhNzk2NTcwOWQ1N2UyYWU0ZDg0YTcxZGY3YTlhMWY1ZmRiOTk4MGUyODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZmM5MGZmOGE0NDE0YzU0NDFkMGY2NzdjNWNiZmRhMzhiNDc0ZTUxYmZkNTU5YTU1NTlkZTBmODc3MDU1MjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNmFkMmQ1NGM2ZWEyZjJjZGRkMDM4NTgyOGQ2NDJhYTdlODc3NDQzMWYxY2NkMmIzZjBhYTMwYzJhYTIwMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5M2U0MzM1ZGUzMzk1NmU4Y2QxYTAxOTFlYzI1ZGM1ZjVkMDUxOTU3YTE3ZWU3OWE0ZTM0YjVmYjkzNDhlNDcifQ"
+        },
+        {
+          "resource": "repo://scripts/dev.sh#L299-L498",
+          "version": "repo-lines-v1:sha256:312a19b5b23c9c532fef4ddaaebef8d7bec01ee29adf1a476d7430fd7f61dac0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4NDlkN2E2ZmY5ZTY3MmEyZWVmN2I2MTdkYzU2OWY5ZmM5MDQ0NGY1ZmVkMjQyMmVhOTY4Mzg1MjFkYzY0MjY2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzNWZjOTBmZjhhNDQxNGM1NDQxZDBmNjc3YzVjYmZkYTM4YjQ3NGU1MWJmZDU1OWE1NTU5ZGUwZjg3NzA1NTI0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YWYxZDk1YjExZjc4MWIyY2UxZjY1YzFjMGU3Y2MxZjg0YzA4MGIwNDkzYjc3Y2Q1MTlhZjRhZWE4YjYyNTQ3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJiZDA1ZDhiMWU2NGQzNmVlYjkzZjUyMDFhN2ViNzhiYWU4MDhiNjMxMTI5YjI3NGJkNWE0MjY5YzBkNjEyNDkxIn0"
         }
       ]
     },
@@ -76,15 +76,15 @@
     },
     {
       "id": "claim_4fd32c9a1f524cdc9a89f6db83ab95d9",
-      "statement": "Thirty-nine database-backed tests are ignored in the ordinary unit loop and run sequentially against SQLx-managed migrated PostgreSQL databases in non-fast gates.",
+      "statement": "Forty-three database-backed tests are ignored in the ordinary unit loop and run sequentially against SQLx-managed migrated PostgreSQL databases in non-fast gates.",
       "evidence": [
         {
           "resource": "repo://scripts/test-database.sh",
           "version": "repo-file-v1:sha256:03d27724868472fc8837f5e0b0ec424224dc9de3a743d59d4cc20f70adfdf3a4"
         },
         {
-          "resource": "repo://crates/server/src/challenge_api_tests.rs#L128-L716",
-          "version": "repo-lines-v1:sha256:c85f4ba221da7b0af9410ba5f3d815f75c611102b93268aed3fb07b4994797f6:eyJzZWxlY3RlZExpbmVDb3VudCI6NTg5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxODdjMGVhMDBhMTAyNTBhOTJkMWVkNGM3N2E0NzIwYjIwMWE0NTI3MjA3ZDg2ZGRiZGIwYjFjYjAzMTI5OTExIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwOTdkYzU5NzEzOTZlMzkwZjgwOTdlOTc0YjI1NTU2NzkwMzBiMzE1ZWFlN2JjYjZjODg1NjAwZGIxMWMzODhhIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyYzBiOGI3OTkxMGVkMmZmMDU2M2JiNWY0NmUzOTc4NmUxMTVhYjM5YWMzMDQwMWQ4ZWI3NDE3NWIyM2FkMDA5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzNDMwNjFmYjM0ZWQzNGYxYTkwOTFkYjdlZjU4MGM4ZjEwZjczNDZmY2MzMmEzN2JiOGE4ZjNhZjM1NTk0NzFiIn0"
+          "resource": "repo://crates/server/src/signal_siege_api_tests.rs#L116-L534",
+          "version": "repo-lines-v1:sha256:0b18af191edcd5f9826a2bd77991f3e71a89b98845eb7d19a854dba44ff74ae6:eyJzZWxlY3RlZExpbmVDb3VudCI6NDE5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxODdjMGVhMDBhMTAyNTBhOTJkMWVkNGM3N2E0NzIwYjIwMWE0NTI3MjA3ZDg2ZGRiZGIwYjFjYjAzMTI5OTExIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwOWM0OGI1MTRlMTMzZWUxZDhkYjMxMTI3ZmM5YmJiZTg3ZjE3MmRlZjgwNzhlYTY0NThhYTk1ZTY5NTNhZjliIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0ZGZmNThmZmExYTRjZWJiMTc1MTFhODAxY2NkZDRiYWRkYmQwYzE0NzQxYjQyMTViZWYxNDNmNjFkMDA3OGRhIn0"
         }
       ]
     },
@@ -100,15 +100,15 @@
     },
     {
       "id": "claim_3899173bb52b4e22a962e0343419e509",
-      "statement": "The development stack launches the omarchy-gaming-system-server package with the OGS bind and log namespaces, asserts the omarchy-gaming-system health identity, and requires newly created smoke tokens to use ogs1_.",
+      "statement": "The development stack launches the omarchy-gaming-system-server package with OGS bind and log namespaces, binds readiness to that live child and its listening log, asserts the service health identity, and requires new smoke tokens to use ogs1_.",
       "evidence": [
         {
-          "resource": "repo://scripts/dev.sh#L45-L75",
-          "version": "repo-lines-v1:sha256:5cd91f974946a4eebb6cb784878601d7e5fce29e7865260859cc8c431ad399a8:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlMjE4N2JjODMxZmM2MGI5ZjkwZDk4ZDM5NjQ5MGMzZDliNTY5YjdhYzA0ZTMxOTBlMzgyMzMwMzVjM2JiZmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkODQyZGJhYTUxNmY0ZGU0ZTUwYzhlYmFmMzUyZTYyZjhlNTQxMjYyYmY5MDY4NzliOGRhMWM1ZTEzNDBkNDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA5NTZiZTI0ODk0MDk0MzYzZjYxOTQ5MzgyMWJiNjM2N2MxYzRhYTg1M2FmZWViYjAxNDVjYWY1NTRkMGRlYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxY2UxYWExMTY5NWQ5YjUxNTcwZGExNWYyMzlkNzBkMmY1Y2FkNThhNzg1MGQyYThkYTljZWQ1ODYxZDQ4MzIifQ"
+          "resource": "repo://scripts/dev.sh#L57-L95",
+          "version": "repo-lines-v1:sha256:36694bca6fa6df817a540007f5e1848cc29841751de4431d6517b99341bfa02d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4MTdlNGFlNjNmZjcxM2JjMDNmMGJhNzk2NTcwOWQ1N2UyYWU0ZDg0YTcxZGY3YTlhMWY1ZmRiOTk4MGUyODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNmFkMmQ1NGM2ZWEyZjJjZGRkMDM4NTgyOGQ2NDJhYTdlODc3NDQzMWYxY2NkMmIzZjBhYTMwYzJhYTIwMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4NmUzNjk2YzZlOTcwOGYzY2Q0NjZiYzkwNmQwNjExZWE1NGUyZWYyMjkyZjVjZjRlODUzZTAyOWVjZTE2NGYifQ"
         },
         {
-          "resource": "repo://scripts/dev.sh#L121-L140",
-          "version": "repo-lines-v1:sha256:198ee194f3b3c3478a7487fa74ace16d1144081bf5d2ccddd64cef8270150902:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxMDUxYzdjZGJmN2Q0MmYyNTNmNzc4NWNjOTMyMjE2ZWViMDY3NDAyMGU5ZTQzOTU2NzI5ZWM3NjcwMWZhOGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ZWIyNjA2MzM0N2JiMTUxMzU2MzQ5MjM3NTM5NDdjY2I2NDA3ZmQwZTMxOGZlMjdiN2JmNmZhZjhmMDE0YjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhZjFkOTViMTFmNzgxYjJjZTFmNjVjMWMwZTdjYzFmODRjMDgwYjA0OTNiNzdjZDUxOWFmNGFlYThiNjI1NDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1ZmFhMjUyNGIzM2Q5ZmM5YTk2ZjJhNDZmMDFiYzU3MGFmODAzODEzYWVjOTUyMTEyYTZmN2I4NGEyMTg5ZGEifQ"
+          "resource": "repo://scripts/dev.sh#L158-L190",
+          "version": "repo-lines-v1:sha256:a88373f56bc0577ba3d4995e2a66e62dd6a1cae7f410dfb343f835db95166c9f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0MTE5MmE2NTI5ODZkMjZiNjBhYzQzNjU4MmRhYmRmNzU0OGI0YzAyNzkzZmQ0NmIxMTU1YTQ0MWI5N2MzYjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3YWVmOWY1ZmI0NjkwYTVmODllNWU0ZjVlZTIwM2M0MmMxZjdjYjEwNGVkMGYyMDQ3ZmEzMGI1Yzc5YzYxZTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjczZDA4MjNhNTE3ZjBlZDVlYTY5N2E3OTAyYzdmOGM3NmEyNTg0ZGJhMWRjNWVkZWY0ZTkxM2VhNTJjN2JhYTMifQ"
         }
       ]
     },
@@ -194,29 +194,21 @@
     },
     {
       "id": "claim_2c722709e64443f8ab63a32c8685ff8c",
-      "statement": "The game test slice proves stable empty production catalog and body bounds plus exact-version creation and commands, semantic replay, collision and revision failures, rollback silence, participant privacy, atomic sync effects, and one-winner concurrency.",
+      "statement": "The game foundation test slice proves stable catalog ordering, body bounds, exact-version creation and commands, semantic replay, collision and revision failures, rollback silence, participant privacy, atomic sync effects, and one-winner concurrency.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/game_api_tests.rs#L114-L199",
-          "version": "repo-lines-v1:sha256:6b7ba9745b7d9050750274aa84ec6fad78baa105761caa3a09625ed5931a41ba:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3OGY2Yjc4ZGVmZjNlZTBhNDRjMTA2NzM1MmY5NDA3NmMzYzVlYzM5NGMxMjU3ZDhmNjJhYzNlMmNjODA4ZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA2Y2EwMTM4NWMwNGI5Yzg5MjEwOGQ4MjM2NDNhNmEyMThmNmE2NjAzMTAwOWE4NmNhOGE2ODljYzAxZGNjYTAifQ"
-        },
-        {
-          "resource": "repo://crates/server/src/game_api_tests.rs#L201-L835",
-          "version": "repo-lines-v1:sha256:0ea97b8aa44453053a84b49ff446635c7b8c959d741f41d37a8f5a5c0c5abd90:eyJzZWxlY3RlZExpbmVDb3VudCI6NjM1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxODdjMGVhMDBhMTAyNTBhOTJkMWVkNGM3N2E0NzIwYjIwMWE0NTI3MjA3ZDg2ZGRiZGIwYjFjYjAzMTI5OTExIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJjNDgwY2EyMzc4NzJkYWU5NTljODI2NTc1MGI2ZTcxZjJhZmExODQ2ZjIyYmQ3Y2YyNTJmNjlhOTMxOGQ0NjU5IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwOWM0OGI1MTRlMTMzZWUxZDhkYjMxMTI3ZmM5YmJiZTg3ZjE3MmRlZjgwNzhlYTY0NThhYTk1ZTY5NTNhZjliIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyMGNiMmZhMTRlMzI4N2M5ZTlhODIzZTMxYTkzY2ZjYjk0ZjFkYTY1MjM1ZTU2MWFiNWUyMjczNmQwZjhiYzk2In0"
+          "resource": "repo://crates/server/src/game_api_tests.rs#L114-L835",
+          "version": "repo-lines-v1:sha256:d16c1d669659509f3b2769908293a470c3e3dffe68c6ca3ce91a4125022b824c:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJjNmNiMmE3NjQ1ZDYzYWQ0M2FlOTdjMmY0ZTQ0OGYyOWQ4NDJjMjViYmI2ZDgwNTY4NzkwZmRjM2RjYTllZmEzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwODA5NmE4M2I3ZGExMDg2MTRkYTUwODc0YTBkZGQwYWJiZTE2Zjc1MmM5OGUxZmEwNDMwYTNkMTkzNzMyMzY5IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzZmU4OGM3ZDJmMmRlMTdlMTAxZjZmNDQ2Yjk4N2YwZGJkYzdhYTI3OWMzYjM1ZTVmODExYjkyZWQ4NWE4MzI2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3MzlmYTk4ZTk5ZmMxY2I1MDA0OGQ5YTU2Njc2MjU2NmVhMWEwYjFkNzhiYzMwNzZjZTQxYjQ3NGFhYzU5ZDY0In0"
         }
       ]
     },
     {
       "id": "claim_9f9d730ab7f149abad632dd8bf1af4bd",
-      "statement": "The game test slice proves stable empty production catalog and body bounds plus exact-version creation and commands, semantic replay, collision and revision failures, rollback silence, participant privacy, atomic sync effects, and one-winner concurrency.",
+      "statement": "The game foundation test slice proves stable catalog ordering, body bounds, exact-version creation and commands, semantic replay, collision and revision failures, rollback silence, participant privacy, atomic sync effects, and one-winner concurrency.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/game_api_tests.rs#L114-L199",
-          "version": "repo-lines-v1:sha256:6b7ba9745b7d9050750274aa84ec6fad78baa105761caa3a09625ed5931a41ba:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxOTQ4NGVlZGYzNjRmYjhjMTJmMWViOThmYmY2YTliNGY2NTBmNDI3ODc0YThkNzM1OTAxMGFhZGU0MzFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3OGY2Yjc4ZGVmZjNlZTBhNDRjMTA2NzM1MmY5NDA3NmMzYzVlYzM5NGMxMjU3ZDhmNjJhYzNlMmNjODA4ZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA2Y2EwMTM4NWMwNGI5Yzg5MjEwOGQ4MjM2NDNhNmEyMThmNmE2NjAzMTAwOWE4NmNhOGE2ODljYzAxZGNjYTAifQ"
-        },
-        {
-          "resource": "repo://crates/server/src/game_api_tests.rs#L201-L835",
-          "version": "repo-lines-v1:sha256:0ea97b8aa44453053a84b49ff446635c7b8c959d741f41d37a8f5a5c0c5abd90:eyJzZWxlY3RlZExpbmVDb3VudCI6NjM1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxODdjMGVhMDBhMTAyNTBhOTJkMWVkNGM3N2E0NzIwYjIwMWE0NTI3MjA3ZDg2ZGRiZGIwYjFjYjAzMTI5OTExIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJjNDgwY2EyMzc4NzJkYWU5NTljODI2NTc1MGI2ZTcxZjJhZmExODQ2ZjIyYmQ3Y2YyNTJmNjlhOTMxOGQ0NjU5IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwOWM0OGI1MTRlMTMzZWUxZDhkYjMxMTI3ZmM5YmJiZTg3ZjE3MmRlZjgwNzhlYTY0NThhYTk1ZTY5NTNhZjliIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyMGNiMmZhMTRlMzI4N2M5ZTlhODIzZTMxYTkzY2ZjYjk0ZjFkYTY1MjM1ZTU2MWFiNWUyMjczNmQwZjhiYzk2In0"
+          "resource": "repo://crates/server/src/game_api_tests.rs#L114-L835",
+          "version": "repo-lines-v1:sha256:d16c1d669659509f3b2769908293a470c3e3dffe68c6ca3ce91a4125022b824c:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJjNmNiMmE3NjQ1ZDYzYWQ0M2FlOTdjMmY0ZTQ0OGYyOWQ4NDJjMjViYmI2ZDgwNTY4NzkwZmRjM2RjYTllZmEzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwODA5NmE4M2I3ZGExMDg2MTRkYTUwODc0YTBkZGQwYWJiZTE2Zjc1MmM5OGUxZmEwNDMwYTNkMTkzNzMyMzY5IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzZmU4OGM3ZDJmMmRlMTdlMTAxZjZmNDQ2Yjk4N2YwZGJkYzdhYTI3OWMzYjM1ZTVmODExYjkyZWQ4NWE4MzI2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3MzlmYTk4ZTk5ZmMxY2I1MDA0OGQ5YTU2Njc2MjU2NmVhMWEwYjFkNzhiYzMwNzZjZTQxYjQ3NGFhYzU5ZDY0In0"
         }
       ]
     },
@@ -347,10 +339,38 @@
           "version": "repo-lines-v1:sha256:0a4545a9d2e972d9630ae45d1554109b7db31961b26669c012496e2b4f0bfc56:eyJzZWxlY3RlZExpbmVDb3VudCI6NjE2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1MTk0ODRlZWRmMzY0ZmI4YzEyZjFlYjk4ZmJmNmE5YjRmNjUwZjQyNzg3NGE4ZDczNTkwMTBhYWRlNDMxYmM4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwOTdkYzU5NzEzOTZlMzkwZjgwOTdlOTc0YjI1NTU2NzkwMzBiMzE1ZWFlN2JjYjZjODg1NjAwZGIxMWMzODhhIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJiNGI0ZGJmMzJkNmZhNThkMDJhZGQ4ODVjNGY5ZTg0MWM0ZjQzNjAzNmFjNjFjMGJlMDNiMjQ4YzFiYWNlMjE3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzNDMwNjFmYjM0ZWQzNGYxYTkwOTFkYjdlZjU4MGM4ZjEwZjczNDZmY2MzMmEzN2JiOGE4ZjNhZjM1NTk0NzFiIn0"
         }
       ]
+    },
+    {
+      "id": "claim_3ff6dd11f7b24702893885ac720190dc",
+      "statement": "Signal Siege validation adds five deterministic rule tests, one local catalog/body-limit test, and four PostgreSQL cases for owner scope, replay, active-cap races, completion, no-bot identity, history, privacy, and rollback.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-signal-siege/src/lib.rs#L344-L597",
+          "version": "repo-lines-v1:sha256:d2c12d98a77c9c2b4ae58bff66211e59cd012509db1ee06916cdad497a1b44e3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjU0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyNWNmNWZjMjNmMmE2ZDIzYzNlYTUxZTcyZjVlODk2Yzc1NTVmYmFhMDVjZDViMWVhMTgyYmY5NjE4YThlODFiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        },
+        {
+          "resource": "repo://crates/server/src/signal_siege_api_tests.rs#L75-L534",
+          "version": "repo-lines-v1:sha256:949b38a42bfaf2ec01e51db8b407fdd7d96159e1f3b5cc7f11f6f4a0b5cc0e54:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1MTk0ODRlZWRmMzY0ZmI4YzEyZjFlYjk4ZmJmNmE5YjRmNjUwZjQyNzg3NGE4ZDczNTkwMTBhYWRlNDMxYmM4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0ZGZmNThmZmExYTRjZWJiMTc1MTFhODAxY2NkZDRiYWRkYmQwYzE0NzQxYjQyMTViZWYxNDNmNjFkMDA3OGRhIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_0698bbc8aa7c4574bae5e79f79e9c855",
+      "statement": "The smoke treats its local HTTP responder as untrusted by requiring the spawned server process and listening log to remain valid and by accepting only bounded integer game values before shell arithmetic.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/dev.sh#L64-L95",
+          "version": "repo-lines-v1:sha256:54da4957bb29d9c6acb2eae67356c49098e8077164dc6e2d1f73ee05270db63a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2Nzc4ZGE3NTMwMDkwNDdlMDA2NzlmNmI2MWNkNzA2YWExMmRlMDNlMWVjMDFiZTY1MmQzNGJiNGZmM2E3NDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRjY2NjYjM3OTg3NjNmZTZlNzcyMzg5ZDcxYmRmZmQwMTNhMGIwODFiOWU0MTIyZjEzNDY5ZGQ2YzliZmYyNWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4NmUzNjk2YzZlOTcwOGYzY2Q0NjZiYzkwNmQwNjExZWE1NGUyZWYyMjkyZjVjZjRlODUzZTAyOWVjZTE2NGYifQ"
+        },
+        {
+          "resource": "repo://scripts/dev.sh#L363-L407",
+          "version": "repo-lines-v1:sha256:57bd0da554c2446742ff1e3e05cd2036c99c706e91dd2b7a247104817ad799ee:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzY2ZkMDdmOWEzMTZiNGQzYjZlZWQzZGE3MTUwOTEzY2FlMDBjMTQ4OWRhMzVhNjNiMGU3YjUyMjM2MDEzMTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzNTdlZDFjYWVmNTFkZWVlZjBiYzBjNDEwYWNiM2I5Y2I1OWE0YzA5NmViNjJhZjAyNzUwNjJkNGUzYWU3ZTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEwNzc4Mjc3ZDI2NzE3MGRkMGQ4ODdkOTU0YjhkNmE1MDllMDlmNDBmMmI1MmU4MmM0YTQ0OGNiMGExZTc0YWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwNjJlM2MwZDYwOGM1NTQ4ODFmNTA3YTg4M2YxOTJhOWIwOTNjMWVjNDMzNjFhMTkzMzI4OTk4MmEyODI5NDEifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-25T15:17:54.717Z"
+    "at": "2026-08-25T18:10:29.411Z"
   }
 }

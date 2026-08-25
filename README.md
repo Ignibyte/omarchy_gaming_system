@@ -108,21 +108,20 @@ resource endpoints. Live sockets retain no raw credentials, recheck session
 authority without extending idle expiry, reject client payloads above 1 KiB,
 and enforce persona, account, and process connection budgets.
 
-The first compiled-game foundation is also present. `GET /v1/games` exposes a
-stable public catalog, which is intentionally empty until the first playable
-game ships. The database can persist exact-version, revision-zero game sessions
-with ordered persona participants and deterministic JSON state through a
-trusted internal transaction boundary. Participating personas can list or read
-those sessions without exposing account ownership. Participant commands execute
-only through the stored exact rules version, use optimistic revisions and a
-session-wide idempotency UUID, and atomically persist the next snapshot,
-private replay receipt, and minimal participant invalidations. Connected,
-unblocked personas can now create exact-version inbox challenges; the other
-persona can accept one into exactly one session, decline it, or leave the
-challenger to cancel it. Challenge history, server-owned expiry, retry/race
-safety, typed inbox events, and reconnect-safe invalidations are durable.
-Production game rules, results, QML challenge screens, and bots remain later
-roadmap slices.
+The production catalog now includes **Signal Siege v1**, a deterministic
+asynchronous duel against a server-side bot. An owned persona can start a
+bounded, idempotent solo match, submit one human action per round, and receive
+the simultaneous bot response until the durable session records its terminal
+outcome. No bot account or persona is created. Exact start and command replays
+remain available after registry drift, while new commands cannot mutate a
+completed game. Participating personas can list or read exact-version sessions
+without exposing account ownership; every accepted transition atomically
+persists its snapshot, one-step revision, status, private replay receipt, and a
+minimal sync invalidation. Connected, unblocked personas can also create
+exact-version inbox challenges for games that admit two humans. Challenge
+history, server-owned expiry, retry/race safety, typed inbox events, and
+reconnect-safe invalidations are durable. QML gameplay/challenge screens and a
+production two-human game remain later roadmap slices.
 
 ## Development checks
 

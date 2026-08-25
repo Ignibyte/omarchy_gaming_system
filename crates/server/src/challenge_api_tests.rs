@@ -16,6 +16,7 @@ use axum::{
 use http_body_util::BodyExt;
 use omarchy_game_runtime::{
     GameCommandRejection, GameDefinition, GameInitializationError, GameManifest, GameRegistry,
+    GameTransition,
 };
 use serde_json::{Value, json};
 use sqlx::{PgPool, postgres::PgPoolOptions};
@@ -82,7 +83,7 @@ impl GameDefinition for FixtureGame {
         _state: &Value,
         _actor_seat: u8,
         _command: &Value,
-    ) -> Result<Value, GameCommandRejection> {
+    ) -> Result<GameTransition, GameCommandRejection> {
         Err(GameCommandRejection)
     }
 }

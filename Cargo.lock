@@ -1123,6 +1123,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "omarchy-game-signal-siege"
+version = "0.1.0"
+dependencies = [
+ "omarchy-game-runtime",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "omarchy-gaming-system-server"
 version = "0.1.0"
 dependencies = [
@@ -1136,6 +1145,7 @@ dependencies = [
  "hmac",
  "http-body-util",
  "omarchy-game-runtime",
+ "omarchy-game-signal-siege",
  "percent-encoding",
  "rand_core 0.6.4",
  "serde",

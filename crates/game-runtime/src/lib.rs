@@ -33,7 +33,31 @@ pub trait GameDefinition: Send + Sync {
         state: &Value,
         actor_seat: u8,
         command: &Value,
-    ) -> Result<Value, GameCommandRejection>;
+    ) -> Result<GameTransition, GameCommandRejection>;
+}
+
+/// Durable lifecycle selected by compiled game rules for an applied command.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameSessionStatus {
+    Active,
+    Completed,
+}
+
+impl GameSessionStatus {
+    /// Return the canonical PostgreSQL/API representation.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Active => "active",
+            Self::Completed => "completed",
+        }
+    }
+}
+
+/// A bounded next snapshot plus its authoritative durable lifecycle.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GameTransition {
+    pub state: Value,
+    pub status: GameSessionStatus,
 }
 
 /// Deliberately non-descriptive failure returned by trusted compiled game code.
@@ -185,7 +209,7 @@ impl GameRegistry {
         state: &Value,
         actor_seat: u8,
         command: &Value,
-    ) -> Result<Value, ApplyGameCommandError> {
+    ) -> Result<GameTransition, ApplyGameCommandError> {
         let registered = self
             .entries
             .get(&GameId {
@@ -202,14 +226,14 @@ impl GameRegistry {
         if !is_bounded_object(command, MAX_GAME_COMMAND_BYTES) {
             return Err(ApplyGameCommandError::InvalidCommand);
         }
-        let next_state = registered
+        let transition = registered
             .definition
             .apply_command(state, actor_seat, command)
             .map_err(|_| ApplyGameCommandError::CommandRejected)?;
-        if !is_bounded_object(&next_state, MAX_GAME_STATE_BYTES) {
+        if !is_bounded_object(&transition.state, MAX_GAME_STATE_BYTES) {
             return Err(ApplyGameCommandError::InvalidTransition);
         }
-        Ok(next_state)
+        Ok(transition)
     }
 }
 
@@ -276,15 +300,21 @@ mod tests {
             state: &Value,
             actor_seat: u8,
             command: &Value,
-        ) -> Result<Value, GameCommandRejection> {
+        ) -> Result<GameTransition, GameCommandRejection> {
             if command.get("kind") == Some(&json!("reject")) {
                 return Err(GameCommandRejection);
             }
             if command.get("kind") == Some(&json!("invalid_output")) {
-                return Ok(json!([]));
+                return Ok(GameTransition {
+                    state: json!([]),
+                    status: GameSessionStatus::Active,
+                });
             }
             if command.get("kind") == Some(&json!("oversized_output")) {
-                return Ok(json!({"payload": "x".repeat(MAX_GAME_STATE_BYTES)}));
+                return Ok(GameTransition {
+                    state: json!({"payload": "x".repeat(MAX_GAME_STATE_BYTES)}),
+                    status: GameSessionStatus::Active,
+                });
             }
             let mut state = state.clone();
             let state = state.as_object_mut().ok_or(GameCommandRejection)?;
@@ -294,7 +324,10 @@ mod tests {
                 .ok_or(GameCommandRejection)?;
             state.insert("turn".to_owned(), json!(turn + 1));
             state.insert("last_actor_seat".to_owned(), json!(actor_seat));
-            Ok(Value::Object(state.clone()))
+            Ok(GameTransition {
+                state: Value::Object(state.clone()),
+                status: GameSessionStatus::Active,
+            })
         }
     }
 
@@ -436,7 +469,8 @@ mod tests {
             .apply_command("fixture", 1, &state, 1, &command)
             .expect("the same inputs should apply repeatedly");
         assert_eq!(first, second);
-        assert_eq!(first, json!({"turn": 1, "last_actor_seat": 1}));
+        assert_eq!(first.status, GameSessionStatus::Active);
+        assert_eq!(first.state, json!({"turn": 1, "last_actor_seat": 1}));
         assert_eq!(
             registry.apply_command("fixture", 3, &state, 0, &command),
             Err(ApplyGameCommandError::GameUnavailable)

@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
-use omarchy_game_runtime::{ApplyGameCommandError, GameRegistry, InitializeGameError};
+use omarchy_game_runtime::{
+    ApplyGameCommandError, GameRegistry, GameSessionStatus, InitializeGameError,
+};
 use serde_json::Value;
 use sqlx::{PgPool, Postgres, Transaction, types::Json};
 use tracing::{error, info};
@@ -14,6 +16,7 @@ use crate::{
 
 pub const DEFAULT_GAME_SESSION_LIMIT: u16 = 50;
 pub const MAX_GAME_SESSION_LIMIT: u16 = 100;
+pub const MAX_ACTIVE_SOLO_SESSIONS_PER_PERSONA: i64 = 25;
 #[cfg_attr(not(test), allow(dead_code))]
 const MAX_SESSION_PARTICIPANTS: usize = 8;
 
@@ -26,6 +29,7 @@ pub struct GameSession {
     pub status: String,
     pub state: Value,
     pub participants: Vec<GameParticipant>,
+    pub completed_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -40,7 +44,20 @@ pub struct GameParticipant {
 pub struct GameCommandResult {
     pub game_session_id: Uuid,
     pub revision: i64,
+    pub status: String,
     pub state: Value,
+}
+
+pub struct StartGameSessionInput {
+    pub idempotency_key: String,
+    pub game_key: String,
+    pub game_version: u32,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum GameSessionStartOutcome {
+    Created(GameSession),
+    Existing(GameSession),
 }
 
 pub struct GameCommandInput {
@@ -56,11 +73,14 @@ pub enum GameError {
     PersonaNotFound,
     GameSessionNotFound,
     InvalidPagination,
+    InvalidStart,
     GameUnavailable,
     InvalidParticipants,
+    ActiveSessionLimit,
     InitializationFailed,
     InvalidCommand,
     CommandRejected,
+    GameCompleted,
     RevisionConflict,
     IdempotencyConflict,
     Internal,
@@ -74,6 +94,7 @@ struct GameSessionRow {
     revision: i64,
     status: String,
     state: Json<Value>,
+    completed_at: Option<String>,
     created_at: String,
     updated_at: String,
 }
@@ -96,6 +117,7 @@ struct LockedGameSessionRow {
     game_key: String,
     game_version: i64,
     revision: i64,
+    status: String,
     state: Json<Value>,
     actor_seat: i16,
 }
@@ -106,7 +128,15 @@ struct GameCommandReceiptRow {
     expected_revision: i64,
     applied_revision: i64,
     state: Json<Value>,
+    session_status: String,
     command_matches: bool,
+}
+
+#[derive(sqlx::FromRow)]
+struct GameSessionStartReceiptRow {
+    game_session_id: Uuid,
+    game_key: String,
+    game_version: i64,
 }
 
 /// Create a version-pinned session inside a trusted caller's transaction.
@@ -196,6 +226,121 @@ pub(crate) async fn create_session(
     Ok(session_id)
 }
 
+pub async fn start_solo_session(
+    pool: &PgPool,
+    registry: &GameRegistry,
+    token: &str,
+    actor_id: &str,
+    input: StartGameSessionInput,
+) -> Result<GameSessionStartOutcome, GameError> {
+    let StartGameSessionInput {
+        idempotency_key,
+        game_key,
+        game_version,
+    } = input;
+    let actor_id = authenticate_owned_persona(pool, token, actor_id).await?;
+    let idempotency_key = Uuid::try_parse(&idempotency_key).map_err(|_| GameError::InvalidStart)?;
+
+    let mut transaction = pool.begin().await.map_err(|database_error| {
+        map_database_error(database_error, "solo game start transaction")
+    })?;
+    let actor_exists =
+        sqlx::query_scalar::<_, Uuid>("SELECT id FROM personas WHERE id = $1 FOR UPDATE")
+            .bind(actor_id)
+            .fetch_optional(&mut *transaction)
+            .await
+            .map_err(|database_error| {
+                map_database_error(database_error, "solo game persona lock")
+            })?;
+    if actor_exists.is_none() {
+        return Err(GameError::PersonaNotFound);
+    }
+
+    let existing = sqlx::query_as::<_, GameSessionStartReceiptRow>(
+        r#"
+        SELECT game_session_id, game_key, game_version
+        FROM game_session_starts
+        WHERE persona_id = $1 AND idempotency_key = $2
+        "#,
+    )
+    .bind(actor_id)
+    .bind(idempotency_key)
+    .fetch_optional(&mut *transaction)
+    .await
+    .map_err(|database_error| map_database_error(database_error, "solo game replay lookup"))?;
+    if let Some(existing) = existing {
+        if existing.game_key != game_key || existing.game_version != i64::from(game_version) {
+            return Err(GameError::IdempotencyConflict);
+        }
+        transaction.commit().await.map_err(|database_error| {
+            map_database_error(database_error, "solo game replay commit")
+        })?;
+        let session =
+            load_session_for_participant(pool, actor_id, existing.game_session_id).await?;
+        return Ok(GameSessionStartOutcome::Existing(session));
+    }
+
+    let manifest = registry
+        .manifest(&game_key, game_version)
+        .ok_or(GameError::GameUnavailable)?;
+    if manifest.min_human_players != 1 || manifest.max_human_players != 1 {
+        return Err(GameError::InvalidParticipants);
+    }
+
+    let active_count = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT count(*)
+        FROM game_session_starts AS start
+        JOIN game_sessions AS session ON session.id = start.game_session_id
+        WHERE start.persona_id = $1 AND session.status = 'active'
+        "#,
+    )
+    .bind(actor_id)
+    .fetch_one(&mut *transaction)
+    .await
+    .map_err(|database_error| map_database_error(database_error, "solo game active count"))?;
+    if active_count >= MAX_ACTIVE_SOLO_SESSIONS_PER_PERSONA {
+        return Err(GameError::ActiveSessionLimit);
+    }
+
+    let game_session_id = create_session(
+        &mut transaction,
+        registry,
+        &manifest.key,
+        manifest.version,
+        &[actor_id],
+    )
+    .await?;
+    sqlx::query(
+        r#"
+        INSERT INTO game_session_starts (
+            persona_id,
+            idempotency_key,
+            game_session_id,
+            game_key,
+            game_version
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        "#,
+    )
+    .bind(actor_id)
+    .bind(idempotency_key)
+    .bind(game_session_id)
+    .bind(&manifest.key)
+    .bind(i64::from(manifest.version))
+    .execute(&mut *transaction)
+    .await
+    .map_err(|database_error| map_database_error(database_error, "solo game receipt insert"))?;
+    transaction
+        .commit()
+        .await
+        .map_err(|database_error| map_database_error(database_error, "solo game start commit"))?;
+
+    let session = load_session_for_participant(pool, actor_id, game_session_id).await?;
+    info!(%game_session_id, %actor_id, game_key = %manifest.key, game_version = manifest.version, "solo game session started");
+    Ok(GameSessionStartOutcome::Created(session))
+}
+
 pub async fn list_sessions(
     pool: &PgPool,
     token: &str,
@@ -213,6 +358,9 @@ pub async fn list_sessions(
             session.revision,
             session.status,
             session.state,
+            CASE WHEN session.completed_at IS NULL THEN NULL ELSE
+              to_char(session.completed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+            END AS completed_at,
             to_char(session.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at,
             to_char(session.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at
         FROM game_sessions AS session
@@ -238,6 +386,14 @@ pub async fn get_session(
 ) -> Result<GameSession, GameError> {
     let actor_id = authenticate_owned_persona(pool, token, actor_id).await?;
     let session_id = Uuid::try_parse(session_id).map_err(|_| GameError::GameSessionNotFound)?;
+    load_session_for_participant(pool, actor_id, session_id).await
+}
+
+async fn load_session_for_participant(
+    pool: &PgPool,
+    actor_id: Uuid,
+    session_id: Uuid,
+) -> Result<GameSession, GameError> {
     let row = sqlx::query_as::<_, GameSessionRow>(
         r#"
         SELECT
@@ -247,6 +403,9 @@ pub async fn get_session(
             session.revision,
             session.status,
             session.state,
+            CASE WHEN session.completed_at IS NULL THEN NULL ELSE
+              to_char(session.completed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+            END AS completed_at,
             to_char(session.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at,
             to_char(session.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at
         FROM game_sessions AS session
@@ -297,12 +456,13 @@ pub async fn apply_command(
             session.game_key,
             session.game_version,
             session.revision,
+            session.status,
             session.state,
             actor.seat AS actor_seat
         FROM game_sessions AS session
         JOIN game_session_participants AS actor
           ON actor.game_session_id = session.id AND actor.persona_id = $1
-        WHERE session.id = $2 AND session.status = 'active'
+        WHERE session.id = $2
         FOR UPDATE OF session
         "#,
     )
@@ -320,6 +480,7 @@ pub async fn apply_command(
             expected_revision,
             applied_revision,
             state,
+            session_status,
             command = $3 AS command_matches
         FROM game_session_commands
         WHERE game_session_id = $1 AND idempotency_key = $2
@@ -345,16 +506,23 @@ pub async fn apply_command(
         return Ok(GameCommandResult {
             game_session_id: session_id,
             revision: receipt.applied_revision,
+            status: receipt.session_status,
             state: receipt.state.0,
         });
     }
 
+    if locked.status == GameSessionStatus::Completed.as_str() {
+        return Err(GameError::GameCompleted);
+    }
+    if locked.status != GameSessionStatus::Active.as_str() {
+        return Err(GameError::Internal);
+    }
     if locked.revision != expected_revision {
         return Err(GameError::RevisionConflict);
     }
     let game_version = u32::try_from(locked.game_version).map_err(|_| GameError::Internal)?;
     let actor_seat = u8::try_from(locked.actor_seat).map_err(|_| GameError::Internal)?;
-    let next_state = registry
+    let transition = registry
         .apply_command(
             &locked.game_key,
             game_version,
@@ -367,15 +535,20 @@ pub async fn apply_command(
 
     let stored_revision = sqlx::query_scalar::<_, i64>(
         r#"
+        WITH mutation AS (SELECT clock_timestamp() AS at)
         UPDATE game_sessions
         SET state = $1,
+            status = $2,
             revision = revision + 1,
-            updated_at = GREATEST(updated_at, clock_timestamp())
-        WHERE id = $2 AND revision = $3
+            completed_at = CASE WHEN $2 = 'completed' THEN mutation.at ELSE NULL END,
+            updated_at = GREATEST(updated_at, mutation.at)
+        FROM mutation
+        WHERE id = $3 AND revision = $4 AND status = 'active'
         RETURNING revision
         "#,
     )
-    .bind(Json(&next_state))
+    .bind(Json(&transition.state))
+    .bind(transition.status.as_str())
     .bind(session_id)
     .bind(locked.revision)
     .fetch_optional(&mut *transaction)
@@ -395,9 +568,10 @@ pub async fn apply_command(
             expected_revision,
             applied_revision,
             command,
-            state
+            state,
+            session_status
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         "#,
     )
     .bind(session_id)
@@ -406,7 +580,8 @@ pub async fn apply_command(
     .bind(expected_revision)
     .bind(applied_revision)
     .bind(Json(&command))
-    .bind(Json(&next_state))
+    .bind(Json(&transition.state))
+    .bind(transition.status.as_str())
     .execute(&mut *transaction)
     .await
     .map_err(|database_error| map_database_error(database_error, "game command receipt insert"))?;
@@ -442,11 +617,12 @@ pub async fn apply_command(
     transaction.commit().await.map_err(|database_error| {
         map_database_error(database_error, "game command transaction commit")
     })?;
-    info!(%session_id, %actor_id, revision = applied_revision, "game command committed");
+    info!(%session_id, %actor_id, revision = applied_revision, status = transition.status.as_str(), "game command committed");
     Ok(GameCommandResult {
         game_session_id: session_id,
         revision: applied_revision,
-        state: next_state,
+        status: transition.status.as_str().to_owned(),
+        state: transition.state,
     })
 }
 
@@ -515,6 +691,7 @@ async fn load_session_participants(
                 status: row.status,
                 state: row.state.0,
                 participants,
+                completed_at: row.completed_at,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             })

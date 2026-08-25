@@ -46,7 +46,9 @@ result recorded.
 - Account and persona identities remain separate
 - Games are deterministic and server-authoritative
 - WebSockets are advisory; durable cursor sync recovers missed events
-- Games begin as compiled Rust crates; a sandboxed SDK is a later decision
+- Private-alpha rules run as reviewed compiled Rust crates; signed declarative
+  cartridges and the versioned conformance SDK provide the portable frontend
+  contract, while remote gameplay authority remains a later gated decision
 
 ## Definition of private-alpha done
 

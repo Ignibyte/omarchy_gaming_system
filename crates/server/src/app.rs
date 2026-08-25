@@ -25,6 +25,7 @@ use crate::connections::{
 };
 use crate::games::{
     self, GameCommandInput, GameCommandResult, GameError, GameParticipant, GameSession,
+    GameSessionStartOutcome, StartGameSessionInput,
 };
 use crate::inboxes::{
     self, ConversationSummary, InboxError, InboxMessage, InboxMessageContent, SystemMessage,
@@ -368,6 +369,14 @@ struct GameSessionQuery {
     limit: Option<u16>,
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct StartGameSessionRequest {
+    idempotency_key: String,
+    game_key: String,
+    game_version: u32,
+}
+
 #[derive(Serialize)]
 struct GameSessionListResponse {
     sessions: Vec<GameSessionResponse>,
@@ -382,6 +391,7 @@ struct GameSessionResponse {
     status: String,
     state: serde_json::Value,
     participants: Vec<GameParticipantResponse>,
+    completed_at: Option<String>,
     created_at: String,
     updated_at: String,
 }
@@ -404,6 +414,7 @@ struct GameCommandRequest {
 struct GameCommandResponse {
     game_session_id: String,
     revision: i64,
+    status: String,
     state: serde_json::Value,
 }
 
@@ -521,7 +532,9 @@ pub(crate) fn router_with_runtime(
     let game_routes = Router::new()
         .route(
             "/v1/personas/{persona_id}/game-sessions",
-            get(list_game_sessions),
+            get(list_game_sessions)
+                .post(start_game_session)
+                .layer(DefaultBodyLimit::max(8 * 1024)),
         )
         .route(
             "/v1/personas/{persona_id}/game-sessions/{game_session_id}",
@@ -1193,6 +1206,35 @@ async fn list_game_sessions(
     ))
 }
 
+async fn start_game_session(
+    State(state): State<AppState>,
+    Path(persona_id): Path<String>,
+    headers: HeaderMap,
+    Json(request): Json<StartGameSessionRequest>,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    let outcome = games::start_solo_session(
+        &state.pool,
+        &state.game_registry,
+        token,
+        &persona_id,
+        StartGameSessionInput {
+            idempotency_key: request.idempotency_key,
+            game_key: request.game_key,
+            game_version: request.game_version,
+        },
+    )
+    .await
+    .map_err(ApiError::Game)?;
+    let (status, session) = match outcome {
+        GameSessionStartOutcome::Created(session) => (StatusCode::CREATED, session),
+        GameSessionStartOutcome::Existing(session) => (StatusCode::OK, session),
+    };
+    Ok(no_store(
+        (status, Json(game_session_response(session))).into_response(),
+    ))
+}
+
 async fn get_game_session(
     State(state): State<AppState>,
     Path((persona_id, game_session_id)): Path<(String, String)>,
@@ -1562,6 +1604,7 @@ fn game_session_response(session: GameSession) -> GameSessionResponse {
             .into_iter()
             .map(game_participant_response)
             .collect(),
+        completed_at: session.completed_at,
         created_at: session.created_at,
         updated_at: session.updated_at,
     }
@@ -1578,6 +1621,7 @@ fn game_command_response(result: GameCommandResult) -> GameCommandResponse {
     GameCommandResponse {
         game_session_id: result.game_session_id.to_string(),
         revision: result.revision,
+        status: result.status,
         state: result.state,
     }
 }
@@ -1950,6 +1994,11 @@ impl IntoResponse for ApiError {
                 "invalid_pagination",
                 "game session pagination limit must be 1-100",
             ),
+            ApiError::Game(GameError::InvalidStart) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "invalid_game_start",
+                "game start idempotency key must be a UUID",
+            ),
             ApiError::Game(GameError::GameUnavailable) => (
                 StatusCode::CONFLICT,
                 "game_unavailable",
@@ -1959,6 +2008,11 @@ impl IntoResponse for ApiError {
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "invalid_game_participants",
                 "game participants are invalid",
+            ),
+            ApiError::Game(GameError::ActiveSessionLimit) => (
+                StatusCode::TOO_MANY_REQUESTS,
+                "too_many_active_game_sessions",
+                "the persona has too many active solo game sessions",
             ),
             ApiError::Game(GameError::InvalidCommand) => (
                 StatusCode::UNPROCESSABLE_ENTITY,
@@ -1970,6 +2024,11 @@ impl IntoResponse for ApiError {
                 "game_command_rejected",
                 "the game command was rejected",
             ),
+            ApiError::Game(GameError::GameCompleted) => (
+                StatusCode::CONFLICT,
+                "game_completed",
+                "the game session is already completed",
+            ),
             ApiError::Game(GameError::RevisionConflict) => (
                 StatusCode::CONFLICT,
                 "game_revision_conflict",
@@ -1978,7 +2037,7 @@ impl IntoResponse for ApiError {
             ApiError::Game(GameError::IdempotencyConflict) => (
                 StatusCode::CONFLICT,
                 "game_idempotency_conflict",
-                "the game command idempotency key was already used",
+                "the game idempotency key was already used for another request",
             ),
             ApiError::Game(GameError::InitializationFailed | GameError::Internal) => (
                 StatusCode::INTERNAL_SERVER_ERROR,

@@ -37,7 +37,7 @@ server-authoritative game runtime below.
 - [x] Trusted keyboard/accessibility-first Core and Rich-2D cartridge renderer
 - [x] Separate-repository OmarchyGS SDK and first-party cartridge release proof
 - [x] Challenges, turn notifications, history, and expiration
-- [ ] One original asynchronous game with a bot opponent
+- [x] One original asynchronous game with a bot opponent
 
 ## Private alpha
 

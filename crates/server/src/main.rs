@@ -26,11 +26,16 @@ mod persona_api_tests;
 #[cfg(test)]
 mod session_api_tests;
 #[cfg(test)]
+mod signal_siege_api_tests;
+#[cfg(test)]
 mod sync_api_tests;
 
-use anyhow::{Context, Result};
+use std::sync::Arc;
+
+use anyhow::{Context, Result, anyhow};
 use config::Config;
-use omarchy_game_runtime::GameRegistry;
+use omarchy_game_runtime::{GameDefinition, GameRegistry};
+use omarchy_game_signal_siege::SignalSiege;
 use sqlx::{PgPool, migrate::Migrator, postgres::PgPoolOptions};
 use tokio::{net::TcpListener, signal};
 use tracing::info;
@@ -43,6 +48,7 @@ async fn main() -> Result<()> {
     init_tracing();
 
     let config = Config::from_environment()?;
+    let game_registry = production_game_registry()?;
     let pool = connect_database(&config.database_url).await?;
     MIGRATOR
         .run(&pool)
@@ -62,12 +68,17 @@ async fn main() -> Result<()> {
 
     let server_result = axum::serve(
         listener,
-        app::router_with_runtime(pool, config.mfa_cipher, sync_hub, GameRegistry::empty()),
+        app::router_with_runtime(pool, config.mfa_cipher, sync_hub, game_registry),
     )
     .with_graceful_shutdown(shutdown_signal())
     .await;
     sync_listener.abort();
     server_result.context("HTTP server stopped unexpectedly")
+}
+
+pub(crate) fn production_game_registry() -> Result<GameRegistry> {
+    GameRegistry::new([Arc::new(SignalSiege) as Arc<dyn GameDefinition>])
+        .map_err(|error| anyhow!("invalid production game registry: {error:?}"))
 }
 
 fn init_tracing() {

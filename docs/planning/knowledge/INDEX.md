@@ -56,6 +56,9 @@ and in this register.
 | `PR-omarchy-gaming-system-serialize-monotonic-policy-transitions-001` | Hold one cross-process lock across the complete authenticated read, compare, and replace of monotonic policy state, then re-read beneath that lock. | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
 | `PR-omarchy-gaming-system-persist-authenticated-denial-before-enforcement-001` | Persist the highest authenticated policy before applying its allow or deny decision. | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
 | `PR-omarchy-gaming-system-charge-decoded-media-at-render-admission-001` | Charge per-instance decoded-media work against the selected render profile before publishing its node or asset, and exercise the maximum accepted decoder path. | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
+| `PR-omarchy-gaming-system-validate-shell-arithmetic-input-001` | Treat process-local HTTP as untrusted input: bind readiness to the intended child and require explicit numeric type/range before shell arithmetic. | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
+| `PR-omarchy-gaming-system-validate-game-state-cross-field-invariants-001` | At the compiled rules boundary, validate lifecycle relationships as well as JSON shape and scalar ranges before applying a command. | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
+| `PR-omarchy-gaming-system-advance-durable-phase-before-phase-tools-001` | Record the completed validation phase in the active spec before invoking a phase-gated completion tool, then read back the tool receipt. | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
 
 ## Register
 
@@ -171,3 +174,10 @@ and in this register.
 | `BF-omarchy-gaming-system-challenge-replay-current-policy-order-001` | failure | `aar/AAR-020-game-challenges-turn-notifications-history-and-expiration.md` |
 | `PR-omarchy-gaming-system-resolve-durable-replay-before-current-admission-001` | rule | `aar/AAR-020-game-challenges-turn-notifications-history-and-expiration.md` |
 | `AD-omarchy-gaming-system-durable-game-challenge-orchestration-001` | decision | `../../architecture/system-overview.md` |
+| `BF-omarchy-gaming-system-smoke-json-arithmetic-injection-001` | failure | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
+| `BF-omarchy-gaming-system-game-state-lifecycle-consistency-gap-001` | failure | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
+| `BF-omarchy-gaming-system-openwiki-phase-receipt-sequencing-001` | failure | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
+| `PR-omarchy-gaming-system-validate-shell-arithmetic-input-001` | rule | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
+| `PR-omarchy-gaming-system-validate-game-state-cross-field-invariants-001` | rule | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
+| `PR-omarchy-gaming-system-advance-durable-phase-before-phase-tools-001` | rule | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
+| `AD-omarchy-gaming-system-signal-siege-solo-game-lifecycle-001` | decision | `../../architecture/system-overview.md` |

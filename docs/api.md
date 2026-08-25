@@ -643,19 +643,65 @@ compiled production game definition:
 {
   "games": [
     {
-      "key": "example_game",
+      "key": "signal_siege",
       "version": 1,
-      "display_name": "Example Game",
+      "display_name": "Signal Siege",
       "min_human_players": 1,
-      "max_human_players": 2
+      "max_human_players": 1
     }
   ]
 }
 ```
 
-Until the first playable game is implemented, the production response is
-honestly `{"games":[]}`. Tests inject compiled fixture definitions; those
-fixtures are not production catalog entries.
+Signal Siege v1 is the exact production entry. Tests may inject other compiled
+fixture definitions; those fixtures are not production catalog entries.
+
+### Signal Siege v1 rules
+
+Signal Siege is a one-human game against an in-process deterministic bot. Both
+sides begin with eight core and two energy; energy is capped at four. Each
+human command chooses `strike`, `guard`, or `charge`. Strike and guard cost one
+energy, strike deals two damage unless the opponent guards, and charge gains
+two energy up to the cap. The server selects the bot action from the stored
+pre-command state, then resolves both actions simultaneously.
+
+A match completes when either core reaches zero or after round 12. The recorded
+outcome compares remaining core, then remaining energy, and otherwise records a
+draw. The bot has no account, persona, session, or participant row. Its policy
+has no clock, database, network, or ambient-random input, so the same pinned
+state and command always produce the same transition.
+
+## Start a solo game session
+
+`POST /v1/personas/{persona_id}/game-sessions`
+
+Use a valid device Bearer token that owns the acting persona. The request is
+limited to 8 KiB, rejects unknown fields, and selects an exact compiled game
+that admits exactly one human:
+
+```json
+{
+  "idempotency_key": "91cc0000-0000-4000-8000-000000000001",
+  "game_key": "signal_siege",
+  "game_version": 1
+}
+```
+
+A first start returns `201 Created` with the game-session representation; an
+exact retry returns `200 OK` with that same durable session and creates no
+additional state or sync event. Reusing the UUID for different game intent
+returns 409 `game_idempotency_conflict`. Replay is resolved from the stored
+receipt even when that game version is no longer in the current process
+registry.
+
+The persona becomes the sole participant at seat 0. A persona may have at most
+25 active solo-started sessions; starts are serialized on that persona so
+concurrent requests cannot exceed the boundary. A new request over the limit
+returns 429 `too_many_active_game_sessions`, while exact retries still work.
+Malformed idempotency keys return 422 `invalid_game_start`; unavailable game
+versions return 409 `game_unavailable`; and a compiled definition that does not
+admit exactly one human returns 422 `invalid_game_participants`. Every response
+is private and carries `Cache-Control: no-store`.
 
 ## Create and read game challenges
 
@@ -758,6 +804,7 @@ and extractor failures carry `Cache-Control: no-store`.
   "game_version": 1,
   "revision": 0,
   "status": "active",
+  "completed_at": null,
   "state": {},
   "participants": [
     {
@@ -783,8 +830,10 @@ positive version are immutable: reading a session never substitutes a newer
 compiled rules version. Malformed, absent, and non-participant session IDs all
 return 404 `game_session_not_found`; a foreign acting persona uses the same 404
 `persona_not_found` as an absent one. Invalid limits return 422
-`invalid_pagination`. Sessions are created only by accepted challenges; there
-is no standalone public session-creation route.
+`invalid_pagination`. Sessions are created by an accepted two-human challenge
+or the owner-scoped solo start route. Completed sessions remain in inventory
+with `status: "completed"`, a terminal `completed_at`, the final state, and
+their immutable participant history.
 
 ## Apply a game command
 
@@ -801,7 +850,8 @@ object command:
   "idempotency_key": "8f5d8f1d-48df-4f5a-b6e7-ad26eb30ae88",
   "expected_revision": 0,
   "command": {
-    "kind": "advance"
+    "kind": "play",
+    "action": "strike"
   }
 }
 ```
@@ -815,6 +865,7 @@ exactly one and returns only the authoritative committed result:
 {
   "game_session_id": "...",
   "revision": 1,
+  "status": "active",
   "state": {}
 }
 ```
@@ -831,10 +882,14 @@ An unavailable stored rules version returns 409 `game_unavailable`. Invalid
 input returns 422 `invalid_game_command`, and a stable compiled-rules rejection
 returns 422 `game_command_rejected`. Malformed, absent, and non-participant
 sessions all return 404 `game_session_not_found`. Successful commands persist
-the snapshot, revision, private replay receipt, timestamp, and one minimal
-`game_session_changed` event per participant in one PostgreSQL transaction.
-Conflicts, replays, rejections, and rollbacks append no event. All command
-responses carry `Cache-Control: no-store`.
+the snapshot, revision, active/completed status, completion timestamp, private
+replay receipt, update timestamp, and one minimal `game_session_changed` event
+per participant in one PostgreSQL transaction. The command that completes a
+game returns `status: "completed"`; its exact retry returns the original final
+receipt even if the compiled rules are unavailable. Any new command on that
+completed session returns 409 `game_completed`. Conflicts, replays, rejections,
+and rollbacks append no event. All command responses carry
+`Cache-Control: no-store`.
 
 ## Read durable persona changes
 

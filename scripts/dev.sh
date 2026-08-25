@@ -30,7 +30,7 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
-for command_name in docker mise qml6 curl jq openssl python3; do
+for command_name in docker mise qml6 curl jq openssl python3 cmp; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "Missing required command: $command_name" >&2
     exit 1
@@ -65,20 +65,23 @@ mise exec -- cargo run -p omarchy-gaming-system-server >"$ogs_log_dir/server.log
 ogs_server_pid=$!
 
 for _ in {1..90}; do
-  if curl --fail --silent "http://$OGS_BIND_ADDRESS/health" >/dev/null; then
-    break
-  fi
-
   if ! kill -0 "$ogs_server_pid" 2>/dev/null; then
     echo "The server stopped during startup:" >&2
     tail -80 "$ogs_log_dir/server.log" >&2
     exit 1
   fi
 
+  if grep -Fq "Omarchy Gaming System server listening" "$ogs_log_dir/server.log" \
+    && curl --fail --silent "http://$OGS_BIND_ADDRESS/health" >/dev/null; then
+    break
+  fi
+
   sleep 1
 done
 
-if ! curl --fail --silent "http://$OGS_BIND_ADDRESS/health" >/dev/null; then
+if ! kill -0 "$ogs_server_pid" 2>/dev/null \
+  || ! grep -Fq "Omarchy Gaming System server listening" "$ogs_log_dir/server.log" \
+  || ! curl --fail --silent "http://$OGS_BIND_ADDRESS/health" >/dev/null; then
   echo "The server did not become healthy. See $ogs_log_dir/server.log" >&2
   exit 1
 fi
@@ -96,9 +99,17 @@ if [[ "$ogs_smoke_test" == true ]]; then
     --fail \
     --silent \
     "http://$OGS_BIND_ADDRESS/v1/games")
-  if ! jq -e 'keys == ["games"] and .games == []' \
+  if ! jq -e '
+    keys == ["games"] and
+    .games == [{
+      key: "signal_siege",
+      version: 1,
+      display_name: "Signal Siege",
+      min_human_players: 1,
+      max_human_players: 1
+    }]' \
     <<<"$ogs_game_catalog" >/dev/null; then
-    echo "Game catalog smoke advertised an unexpected production game" >&2
+    echo "Game catalog smoke did not advertise exact Signal Siege v1" >&2
     exit 1
   fi
 
@@ -285,6 +296,207 @@ if [[ "$ogs_smoke_test" == true ]]; then
     exit 1
   fi
 
+  ogs_game_start_key=$(python3 -c 'import uuid; print(uuid.uuid4())')
+  ogs_game_start_payload=$(jq -nc \
+    --arg idempotency_key "$ogs_game_start_key" \
+    '{idempotency_key: $idempotency_key,
+      game_key: "signal_siege",
+      game_version: 1}')
+  ogs_game_start_status=$(curl \
+    --silent \
+    --output "$ogs_log_dir/signal-siege-start.json" \
+    --write-out '%{http_code}' \
+    --header "Authorization: Bearer $ogs_session_token" \
+    --header "Content-Type: application/json" \
+    --data "$ogs_game_start_payload" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/game-sessions")
+  if [[ "$ogs_game_start_status" != 201 ]] \
+    || ! jq -e \
+      --arg persona_id "$ogs_persona_id" \
+      '.game_key == "signal_siege" and .game_version == 1 and
+       .revision == 0 and .status == "active" and .completed_at == null and
+       .state.phase == "awaiting_human" and .state.round == 0 and
+       (.participants | length) == 1 and
+       .participants[0].seat == 0 and .participants[0].persona.id == $persona_id and
+       (tostring | contains("idempotency_key") | not) and
+       (tostring | contains("account_id") | not)' \
+      "$ogs_log_dir/signal-siege-start.json" >/dev/null; then
+    echo "Signal Siege start smoke returned an unexpected session" >&2
+    exit 1
+  fi
+  ogs_game_start=$(<"$ogs_log_dir/signal-siege-start.json")
+  ogs_game_session_id=$(jq -er '.id' <<<"$ogs_game_start")
+
+  ogs_game_start_replay_status=$(curl \
+    --silent \
+    --output "$ogs_log_dir/signal-siege-start-replay.json" \
+    --write-out '%{http_code}' \
+    --header "Authorization: Bearer $ogs_session_token" \
+    --header "Content-Type: application/json" \
+    --data "$ogs_game_start_payload" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/game-sessions")
+  if [[ "$ogs_game_start_replay_status" != 200 ]] \
+    || ! cmp -s \
+      "$ogs_log_dir/signal-siege-start.json" \
+      "$ogs_log_dir/signal-siege-start-replay.json"; then
+    echo "Signal Siege start replay was not exact" >&2
+    exit 1
+  fi
+
+  ogs_game_start_sync=$(curl \
+    --fail \
+    --silent \
+    --header "Authorization: Bearer $ogs_session_token" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/sync?after=$ogs_sync_cursor")
+  if ! jq -e \
+    --arg game_session_id "$ogs_game_session_id" \
+    '[.events[].type] == ["game_session_changed"] and
+     .events[0].game_session_id == $game_session_id and
+     (tostring | contains("signal_siege") | not) and
+     (tostring | contains("core") | not)' \
+    <<<"$ogs_game_start_sync" >/dev/null; then
+    echo "Signal Siege start sync was not payload-minimal" >&2
+    exit 1
+  fi
+  ogs_sync_cursor=$(jq -er '.next_cursor' <<<"$ogs_game_start_sync")
+
+  ogs_game_revision=0
+  ogs_game_status="active"
+  ogs_game_state=$(jq -c '.state' <<<"$ogs_game_start")
+  ogs_last_game_command_payload=""
+  ogs_last_game_command_response=""
+  while [[ "$ogs_game_status" == active ]]; do
+    if ! ogs_game_energy=$(jq -er \
+      '.human.energy | numbers | select(. >= 0 and . <= 4 and . == floor)' \
+      <<<"$ogs_game_state"); then
+      echo "Signal Siege returned invalid human energy" >&2
+      exit 1
+    fi
+    if ((ogs_game_energy == 0)); then
+      ogs_game_action="charge"
+    else
+      ogs_game_action="strike"
+    fi
+    ogs_game_command_key=$(python3 -c 'import uuid; print(uuid.uuid4())')
+    ogs_last_game_command_payload=$(jq -nc \
+      --arg idempotency_key "$ogs_game_command_key" \
+      --argjson expected_revision "$ogs_game_revision" \
+      --arg action "$ogs_game_action" \
+      '{idempotency_key: $idempotency_key,
+        expected_revision: $expected_revision,
+        command: {kind: "play", action: $action}}')
+    ogs_last_game_command_response=$(curl \
+      --fail \
+      --silent \
+      --header "Authorization: Bearer $ogs_session_token" \
+      --header "Content-Type: application/json" \
+      --data "$ogs_last_game_command_payload" \
+      "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/game-sessions/$ogs_game_session_id/commands")
+    if ! ogs_game_revision=$(jq -er \
+      '.revision | numbers | select(. >= 1 and . <= 12 and . == floor)' \
+      <<<"$ogs_last_game_command_response"); then
+      echo "Signal Siege returned an invalid revision" >&2
+      exit 1
+    fi
+    ogs_game_status=$(jq -er '.status' <<<"$ogs_last_game_command_response")
+    ogs_game_state=$(jq -c '.state' <<<"$ogs_last_game_command_response")
+    if ((ogs_game_revision > 12)); then
+      echo "Signal Siege exceeded its fixed 12-round terminal bound" >&2
+      exit 1
+    fi
+  done
+  if ! jq -e \
+    '.status == "completed" and .state.phase == "completed" and
+     (.state.outcome.winner | IN("human", "bot", "draw")) and
+     (.state.outcome.reason | IN("core_destroyed", "round_limit")) and
+     .state.outcome.rounds_played == .revision' \
+    <<<"$ogs_last_game_command_response" >/dev/null; then
+    echo "Signal Siege did not persist a bounded terminal outcome" >&2
+    exit 1
+  fi
+
+  ogs_final_game_replay=$(curl \
+    --fail \
+    --silent \
+    --header "Authorization: Bearer $ogs_session_token" \
+    --header "Content-Type: application/json" \
+    --data "$ogs_last_game_command_payload" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/game-sessions/$ogs_game_session_id/commands")
+  if [[ "$ogs_final_game_replay" != "$ogs_last_game_command_response" ]]; then
+    echo "Signal Siege final command replay was not exact" >&2
+    exit 1
+  fi
+
+  ogs_completed_game=$(curl \
+    --fail \
+    --silent \
+    --header "Authorization: Bearer $ogs_session_token" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/game-sessions/$ogs_game_session_id")
+  if ! jq -e \
+    --arg game_session_id "$ogs_game_session_id" \
+    '.id == $game_session_id and .status == "completed" and
+     (.completed_at | type) == "string" and .state.phase == "completed"' \
+    <<<"$ogs_completed_game" >/dev/null; then
+    echo "Signal Siege completed history was not readable" >&2
+    exit 1
+  fi
+
+  ogs_game_history=$(curl \
+    --fail \
+    --silent \
+    --header "Authorization: Bearer $ogs_session_token" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/game-sessions")
+  if ! jq -e \
+    --arg game_session_id "$ogs_game_session_id" \
+    '.sessions | any(.id == $game_session_id and .status == "completed")' \
+    <<<"$ogs_game_history" >/dev/null; then
+    echo "Signal Siege inventory lost the completed match" >&2
+    exit 1
+  fi
+
+  ogs_game_sync=$(curl \
+    --fail \
+    --silent \
+    --header "Authorization: Bearer $ogs_session_token" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/sync?after=$ogs_sync_cursor")
+  if ! jq -e \
+    --arg game_session_id "$ogs_game_session_id" \
+    --argjson revision "$ogs_game_revision" \
+    '(.events | length) == $revision and
+     all(.events[];
+       .type == "game_session_changed" and
+       .game_session_id == $game_session_id and
+       ((keys | sort) == ["created_at", "cursor", "game_session_id", "type"])) and
+     (tostring | contains("outcome") | not) and
+     (tostring | contains("core") | not)' \
+    <<<"$ogs_game_sync" >/dev/null; then
+    echo "Signal Siege command sync was incomplete or non-minimal" >&2
+    exit 1
+  fi
+  ogs_sync_cursor=$(jq -er '.next_cursor' <<<"$ogs_game_sync")
+
+  ogs_post_game_command_key=$(python3 -c 'import uuid; print(uuid.uuid4())')
+  ogs_post_game_command_payload=$(jq -nc \
+    --arg idempotency_key "$ogs_post_game_command_key" \
+    --argjson expected_revision "$ogs_game_revision" \
+    '{idempotency_key: $idempotency_key,
+      expected_revision: $expected_revision,
+      command: {kind: "play", action: "charge"}}')
+  ogs_post_game_status=$(curl \
+    --silent \
+    --output "$ogs_log_dir/completed-signal-siege-command.json" \
+    --write-out '%{http_code}' \
+    --header "Authorization: Bearer $ogs_session_token" \
+    --header "Content-Type: application/json" \
+    --data "$ogs_post_game_command_payload" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/game-sessions/$ogs_game_session_id/commands")
+  if [[ "$ogs_post_game_status" != 409 ]] \
+    || ! grep -Fq '"code":"game_completed"' \
+      "$ogs_log_dir/completed-signal-siege-command.json"; then
+    echo "Signal Siege accepted a new command after completion" >&2
+    exit 1
+  fi
+
   ogs_peer_username="peer_$(date +%s)_$$"
   ogs_peer_password="TEST-ONLY-peer-passphrase"
   ogs_peer_registration_payload=$(jq -nc \
@@ -425,7 +637,7 @@ if [[ "$ogs_smoke_test" == true ]]; then
   if [[ "$ogs_challenge_status" != 409 ]] \
     || ! grep -Fq '"code":"game_unavailable"' \
       "$ogs_log_dir/unavailable-game-challenge.json"; then
-    echo "Empty-registry game challenge did not fail closed" >&2
+    echo "Unavailable game challenge did not fail closed" >&2
     exit 1
   fi
   ogs_challenge_sync=$(curl \

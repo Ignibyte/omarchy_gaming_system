@@ -4,7 +4,7 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `021`**
+- **Next ticket number: `022`**
 
 ## Open queue
 
@@ -13,6 +13,7 @@ This directory is the authoritative local ticket store.
 
 ## Closed
 
+- [`TICKET-021` — Signal Siege compiled game and solo bot matches](closed/TICKET-021-signal-siege-compiled-game-and-solo-bot-matches.md)
 - [`TICKET-020` — Game challenges, turn notifications, history, and expiration](closed/TICKET-020-game-challenges-turn-notifications-history-and-expiration.md)
 - [`TICKET-017` — Separate-repository OmarchyGS SDK and first-party cartridge](closed/TICKET-017-separate-repository-omarchygs-sdk-and-first-party-cartridge.md)
 - [`TICKET-016` — Trusted cartridge renderer and previewer](closed/TICKET-016-trusted-cartridge-renderer-and-previewer.md)

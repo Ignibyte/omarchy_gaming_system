@@ -19,6 +19,8 @@ sources:
     resource: repo://crates/game-cartridge/tests/conformance.rs
   - id: openwiki-source-358b091c74e2027615ce8f4c
     resource: repo://crates/game-cartridge/tests/sdk_release.rs
+  - id: openwiki-source-df8490db5b51be8096630e7e
+    resource: repo://crates/game-signal-siege/src/lib.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
     resource: repo://crates/server/src/challenge_api_tests.rs
   - id: openwiki-source-9ba5739252220892895a7a47
@@ -29,6 +31,8 @@ sources:
     resource: repo://crates/server/src/inbox_api_tests.rs
   - id: openwiki-source-22753602a862c32d10560204
     resource: repo://crates/server/src/persona_api_tests.rs
+  - id: openwiki-source-76060b846b9222af2c790243
+    resource: repo://crates/server/src/signal_siege_api_tests.rs
   - id: openwiki-source-46fb4135d6a71efad1062c0d
     resource: repo://crates/server/src/sync_api_tests.rs
   - id: openwiki-source-d35448de763d92d5820dbaad
@@ -49,10 +53,10 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-25T15:17:54.717Z"}
+generated: {by: "codex", at: "2026-08-25T18:10:29.411Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-25T15:17:54.717Z
+    at: 2026-08-25T18:10:29.411Z
 ---
 
 # Development and validation
@@ -60,8 +64,9 @@ verified:
 ## Run the vertical slice
 
 `scripts/dev.sh` is the local orchestration entrypoint. It verifies Docker,
-mise, QML, curl, jq, OpenSSL, and Python; starts PostgreSQL; launches the Rust
-server; waits for a successful health response; and opens the QML client.
+mise, QML, curl, jq, OpenSSL, Python, and `cmp`; starts PostgreSQL; launches the
+Rust server; requires that exact child to remain alive and emit its listening
+log before accepting health; and opens the QML client.
 Closing the client stops the child server while leaving PostgreSQL running for
 subsequent work.
 
@@ -77,20 +82,25 @@ gaming-system log target. Smoke mode requires `/health.service` to equal
 `omarchy-gaming-system` and requires newly issued bearer tokens to start with
 `ogs1_` before exercising authenticated operations.
 
-In smoke mode the script first requires public `GET /v1/games` to return the
-honest empty production catalog. It then creates a uniquely named account
+In smoke mode the script first requires public `GET /v1/games` to return
+exactly Signal Siege v1. It then creates a uniquely named account
 through `POST /v1/accounts`, verifies the success response omits password-
 derived data, and repeats the request to require `username_taken` with HTTP 409.
 It then creates a device session and verifies the authenticated inventory.
 Before revocation it creates a persona, proves the exact public field set and
 private-field absence, checks owned inventory and public lookup, edits the
 persona, and proves the old handle disappears while the new handle resolves the
-updated profile. It creates a second account and persona, then exercises
+updated profile. Before creating the social peer, it starts Signal Siege for
+the owned persona, proves exact idempotent launch and payload-minimal sync,
+plays bounded integer-valued revisions to a terminal outcome, replays the final
+command exactly, recovers completed detail and inventory, verifies minimal
+command invalidations, and rejects a new post-completion command. It creates a
+second account and persona, then exercises
 request, incoming inventory, acceptance, and mutual inventory. Acceptance must
 also expose one private conversation with a typed system message. While the pair
-is connected, the smoke submits a challenge to the deliberately empty
-production registry and requires `game_unavailable` with no partial cursor
-event. The peer then sends a user message, the first persona reads ascending
+is connected, the smoke submits an unregistered game challenge and requires
+`game_unavailable` with no partial cursor event. The peer then sends a user
+message, the first persona reads ascending
 history and clears its unread state. Removal must preserve that history while
 rejecting another send.
 The flow continues through block, private blocked-request rejection, private
@@ -143,11 +153,12 @@ The gate currently covers:
 6. the isolated Game Cartridge workspace format, Clippy, tests, binaries,
    rustdoc, signed package, broker/provider/probe exchange, privacy assertions,
    trusted-QML smoke, and frame/memory/package measurements;
-7. thirty-nine ignored router tests against SQLx-managed PostgreSQL databases
+7. forty-three ignored router tests against SQLx-managed PostgreSQL databases
    in diff/full modes; and
-8. the live empty game catalog, health, registration, duplicate-conflict,
+8. the live Signal Siege catalog, idempotent launch, bounded completed match,
+   final replay/history/sync, health, registration, duplicate-conflict,
    session creation/list, persona creation/list/public lookup/edit/handle
-   movement, connection, fail-closed empty-registry challenge rejection,
+   movement, connection, fail-closed unavailable-game challenge rejection,
    private inbox, synchronization recovery, and block lifecycle, TOTP
    enrollment, challenged login, recovery replay rejection, MFA disablement,
    session revocation, rejected-token, and QML smoke.
@@ -223,14 +234,18 @@ measurement harness; it is not a production provider service, a published SDK,
 or a minimum-hardware Rich-2D benchmark. See [Game Cartridges](game-cartridges.md)
 for the boundary and remaining production work.
 
-Five game integration tests prove atomic exact-version initialization and
+Five general game integration tests prove atomic exact-version initialization and
 commands, ordered participants, semantic replay, isolated idempotency and
 revision conflicts, rollback silence, minimal participant sync events, bounded
 participant-private reads, response allowlists, version preservation after
 registry changes, indistinguishable foreign and absent sessions, monotonic
 timestamps, and one winner when two commands race at one revision. Two local
-router tests separately prove stable catalog order, the empty production
-contract, and the pre-database command body cap.
+router tests separately prove stable catalog order and the pre-database command
+body cap. Signal Siege adds five deterministic rule tests, one local exact
+production-catalog/solo-body-limit test, and four PostgreSQL cases covering
+owner scope, exact replay, registry drift, final-slot cap concurrency,
+completion, final replay, no bot identity, privacy-minimal recovery, and
+rollback.
 
 Six challenge integration tests prove participant-private creation and reads,
 exact idempotent replay and collision handling, connected/block policy,
@@ -257,7 +272,8 @@ status privacy, TOTP/recovery/challenge replay resistance, account inactivity,
 independent bounded challenge issuance, cross-challenge attempt locks, and
 dual-proof disablement with cleanup. Together with two registration and three
 session tests plus three persona tests, five game tests, six challenge tests,
-and six synchronization tests, these make thirty-nine PostgreSQL-backed tests.
+and six synchronization tests, plus four Signal Siege cases, these make
+forty-three PostgreSQL-backed tests.
 The synchronization cases
 exercise durable baseline/incremental/reset behavior, mutation-coupled event
 delivery, owner privacy, and real-TCP WebSocket authentication, hinting, frame
@@ -322,12 +338,14 @@ server, so absent or stale provenance fails closed.
   unread cursors, social lock order, history retention, or no-store handling.
 - Game-session 404 covers absent, malformed, and non-participant sessions;
   persona ownership failures use `persona_not_found`, while invalid limits use
-  422. Command rejection and malformed command input use 422; revision,
-  idempotency, and unavailable-version conflicts use 409 without returning the
-  current revision. Use the runtime unit tests and `game_api_tests.rs` before
-  changing manifests, exact-version initialization or transitions, transaction
-  ownership, participant locks, replay identity, response fields, or sync event
-  privacy.
+  422. Invalid solo identity or participants use 422; unavailable versions,
+  idempotency collisions, and new commands after completion use 409; the
+  active-solo cap uses 429. Command rejection and malformed command input use
+  422; revision conflicts use 409 without returning the current revision. Use
+  the runtime and Signal Siege unit tests plus `game_api_tests.rs` and
+  `signal_siege_api_tests.rs` before changing manifests, solo admission,
+  exact-version initialization or lifecycle, transaction ownership,
+  participant locks, replay identity, response fields, or sync privacy.
 - Game-challenge 404 covers absent, malformed, and non-participant challenges;
   409 covers unavailable relationships or games, pending limits, expired
   acceptance, idempotency collisions, and invalid terminal direction/state.

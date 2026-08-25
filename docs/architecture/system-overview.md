@@ -101,14 +101,18 @@ the first identity HTTP surfaces:
   persona, account, and process, and no-touch authority checks close sockets
   after session revocation/expiry or account deactivation.
 - a database-free compiled game runtime validates canonical, versioned public
-  manifests and resolves only exact rule versions. The production registry is
-  intentionally empty until a playable game is compiled in; test routers
-  inject deterministic fixture definitions.
+  manifests and resolves only exact rule versions. The production registry
+  contains Signal Siege v1, a deterministic one-human duel whose bot policy
+  receives only the pre-command game state. Test routers can inject additional
+  deterministic fixture definitions.
 - public `GET /v1/games` inventories only compiled manifest metadata. Durable
   game sessions pin one game key/version, revision-zero object snapshot,
-  active status, and ordered human persona seats. Creation is a crate-private
-  transaction primitive invoked by challenge acceptance;
-  participant-owned persona routes expose bounded inventory/detail only.
+  active/completed status, completion timestamp, and ordered human persona
+  seats. An owner-scoped public start route creates one-human sessions through
+  an idempotent durable receipt and caps each persona at 25 active solo starts;
+  a persona row lock serializes both duplicate and final-capacity races.
+  Challenge acceptance invokes the same crate-private creation primitive for
+  two-human games. Participant-owned routes expose bounded inventory/detail.
 - durable two-person challenges pin one exact game key/version between a
   connected, unblocked, different-account persona pair. A challenger-scoped
   UUID makes creation retry-safe, a partial uniqueness constraint prevents an
@@ -130,12 +134,17 @@ the first identity HTTP surfaces:
   old session and sync/WebSocket payloads never carry the game snapshot.
 - participant command POSTs lock the durable session and check a session-wide
   UUID receipt before optimistic revision enforcement. Matching retries return
-  the committed receipt; collisions and stale/future revisions change nothing.
+  the committed receipt, including the terminal receipt after completion or
+  compiled-registry drift; collisions and stale/future revisions change
+  nothing. New commands cannot mutate a completed session.
   A first-use command executes only the stored exact compiled rules version
   with bounded object state, actor seat, and bounded object command. Snapshot,
-  one-step revision, timestamp, receipt, and one minimal invalidation per
-  participant commit atomically. Compiled rules receive no database, network,
-  clock, account/session identity, or ambient randomness.
+  one-step revision, status/completion timestamp, receipt, and one minimal
+  invalidation per participant commit atomically. Compiled rules receive no
+  database, network, clock, account/session identity, or ambient randomness.
+  Signal Siege resolves each human action and deterministic bot response in
+  that one transition, terminates by core destruction or round 12, and stores
+  the explicit winner/draw outcome without creating a bot identity row.
 
 Registration returns only the new account ID and canonical username. It does
 not authenticate the caller or create a public persona. Session responses never
@@ -189,12 +198,15 @@ prefixes, so legacy sessions require no schema migration and still follow the
 same expiry and revocation rules. Forward-only migrations and completed
 planning records retain their historical names.
 
-## Proposed portable game direction
+## Portable game direction
 
-Ticket 014 is evaluating an [OmarchyGS Game Cartridge](game-cartridges.md)
-model: independently versioned games would ship a signed declarative
-presentation package rendered by trusted OmarchyGS QML components, while a
-future registered provider could own server-side gameplay behind an
-authenticated platform broker. This is a proposal, not current behavior. Raw
-third-party QML, JavaScript, native plugins, device tokens, account identity,
-and direct database access remain outside the boundary.
+The accepted [OmarchyGS Game Cartridge](game-cartridges.md) model lets
+independently versioned games ship a signed declarative presentation package
+rendered by trusted OmarchyGS QML components. The v1 verifier, conformance SDK,
+same-user store, render-plan compiler, and first-party separate-repository proof
+exist; Signal Siege rules remain compiled into the trusted server for the
+private alpha. A future registered provider may own server-side gameplay only
+after the broker, operational controls, ADR, and Constitution amendment defined
+by that architecture are approved. Raw third-party QML, JavaScript, native
+plugins, device tokens, account identity, and direct database access remain
+outside the boundary.

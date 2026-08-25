@@ -3,6 +3,7 @@ members = [
     "crates/game-cartridge",
     "crates/game-cartridge-renderer",
     "crates/game-runtime",
+    "crates/game-signal-siege",
     "crates/server",
 ]
 resolver = "3"

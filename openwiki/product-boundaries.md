@@ -7,6 +7,8 @@ sources:
     resource: repo://client/qml/cartridge/CartridgePreview.qml
   - id: openwiki-source-c566a55d52a9744f7b26b7c4
     resource: repo://client/qml/cartridge/TrustedCartridgeSurface.qml
+  - id: openwiki-source-d392f8f0962c50f0d66e0629
+    resource: repo://client/qml/Main.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
   - id: openwiki-source-37af4c6b51c86b62db25f85f
@@ -17,16 +19,14 @@ sources:
     resource: repo://crates/game-cartridge/Cargo.toml
   - id: openwiki-source-b4a2591d7d7f80d847ef95ed
     resource: repo://crates/game-cartridge/src/contract.rs
-  - id: openwiki-source-a1b45828c3f97dd0a06fb618
-    resource: repo://crates/game-cartridge/src/release.rs
-  - id: openwiki-source-111e4189516b7f457a68f043
-    resource: repo://crates/game-cartridge/src/sdk.rs
   - id: openwiki-source-71f8ccb7a1e293121205a368
     resource: repo://crates/game-cartridge/src/secure_store.rs
   - id: openwiki-source-07e2881dc5e4740f35a238ee
     resource: repo://crates/game-cartridge/src/store.rs
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
+  - id: openwiki-source-df8490db5b51be8096630e7e
+    resource: repo://crates/game-signal-siege/src/lib.rs
   - id: openwiki-source-66facc66e34ad7f2a74321e1
     resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
@@ -35,20 +35,20 @@ sources:
     resource: repo://crates/server/src/challenges.rs
   - id: openwiki-source-4b133589ca70bd174cf19eb9
     resource: repo://crates/server/src/connections.rs
-  - id: openwiki-source-a243b385d49ea9224173d77a
-    resource: repo://crates/server/src/game_api_tests.rs
   - id: openwiki-source-26aac996689c040c6aab6825
     resource: repo://crates/server/src/games.rs
   - id: openwiki-source-b2c7af59f511c4ed8a004fb0
     resource: repo://crates/server/src/inbox_api_tests.rs
-  - id: openwiki-source-4773699be275375a3bb0c216
-    resource: repo://crates/server/src/inboxes.rs
+  - id: openwiki-source-a13fe4db1eee073d0a7e2c4d
+    resource: repo://crates/server/src/main.rs
   - id: openwiki-source-83e16151ac88c29a31cb79d2
     resource: repo://crates/server/src/mfa.rs
   - id: openwiki-source-54f6da1456b2b76d94d11b0e
     resource: repo://crates/server/src/personas.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
+  - id: openwiki-source-76060b846b9222af2c790243
+    resource: repo://crates/server/src/signal_siege_api_tests.rs
   - id: openwiki-source-e7a72df5b89c1ac350ffe062
     resource: repo://crates/server/src/sync.rs
   - id: openwiki-source-98b4fef5bee3b5a0d880f16b
@@ -67,7 +67,10 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-8df9ad1a3495f8360740ff03
     resource: repo://scripts/test-game-cartridge-sdk.sh
-generated: {by: "codex", at: "2026-08-25T15:17:54.717Z"}
+generated: {by: "codex", at: "2026-08-25T18:10:29.411Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-25T18:20:39.585Z
 ---
 
 # Product and architecture boundaries
@@ -168,9 +171,11 @@ are also implemented on top of that boundary. The compiled registry and durable
 exact-version session foundation and revision-checked idempotent commands are
 now implemented as well. Connected-persona challenge creation, terminal
 history, and atomic acceptance into those sessions are also implemented.
-Playable rules, completed matches, and results remain later slices on top of
-the same synchronization rule without treating WebSocket delivery as durable
-truth.
+Signal Siege v1 now adds one deterministic production rules definition,
+owner-scoped solo launch, and a completed match with an explicit durable
+outcome on top of the same synchronization rule without treating WebSocket
+delivery as durable truth. QML game launch and outcome-derived achievements or
+rewards remain later slices.
 
 The current server is a local development slice. Bearer tokens require
 production TLS in transit, and public login requires distributed attempt
@@ -194,7 +199,8 @@ drives reconnect recovery.
 
 The current compiled game interface receives only a human-player count for
 initialization or the current state, actor seat, and bounded object command for
-a transition. It returns deterministic bounded object JSON and cannot query
+a transition. It returns deterministic bounded object JSON plus an
+authoritative active/completed lifecycle and cannot query
 PostgreSQL, inspect accounts or sessions, read the clock, use the network, or
 draw ambient randomness. Server orchestration owns the transaction, persona
 authorization, durable version and snapshot, ordered seats, revision and replay
@@ -202,11 +208,15 @@ identity, and participant sync events.
 Session reads expose public personas and stored state only to a participating
 owned persona and do not consult today's registry, so a newer process cannot
 silently relabel old state. The participant command route returns only session
-ID, revision, and state; receipts and conflict-side current revisions stay
-private. The transport has no direct arbitrary session-creation route:
-challenge acceptance owns the public path into an exact two-person session.
-Completed results, playable production rules, and game UI remain later
-boundaries.
+ID, revision, lifecycle, and state; receipts and conflict-side current
+revisions stay private. Challenge acceptance owns the public path into an exact
+two-person session. A separate owner-scoped route admits only an exact
+one-human definition, checks durable replay before current registry and
+active-cap policy, and creates seat zero for the owned persona. Signal Siege
+represents its opponent entirely inside deterministic rules and bounded state,
+so it creates no bot account, persona, credential, or participant row.
+Completed history and final-command replay are implemented; QML gameplay and
+result-derived platform effects remain later boundaries.
 
 Compiled Rust crates are the initial extension model. Loading user-supplied
 native code is outside the first-alpha scope and would require a separate
