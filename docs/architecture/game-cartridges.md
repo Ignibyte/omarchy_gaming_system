@@ -10,7 +10,9 @@ profiles. Ticket 017 adds the deterministic v1 SDK export, signed release
 provenance, first-party clean-room repository proof, signed catalog lifecycle,
 and descriptor-relative privileged import boundary. Public Internet publication,
 third-party onboarding, and remote-provider authority remain gated follow-up
-stages; this design never authorizes loading third-party code.
+stages. Ticket 018 adds the dormant production provider trust/protocol
+foundation, but no player route or gameplay-authority migration; this design
+never authorizes loading third-party code.
 
 ## Product model
 
@@ -580,6 +582,48 @@ First-party games use the same public contracts and conformance suite as later
 providers. They may receive a higher catalog trust tier, but not private
 database access or a different identity model.
 
+## Implemented remote-provider security foundation
+
+Ticket 018 implements `omarchy-game-provider` as a production workspace crate
+that the current player server deliberately does not instantiate. PostgreSQL
+migration 0014 provides operator-controlled providers and immutable exact
+releases; append-only message/TLS key history; lifecycle scopes; short-lived
+grant records; database quota windows and expiring concurrency leases; durable
+operation attempts and authenticated message receipts; and immutable safe
+security audit events.
+
+The protocol now uses Ed25519 grants over retained canonical claim bytes. Each
+grant lasts at most 60 seconds and binds the OmarchyGS issuer, provider
+audience, exact release/game/rules/cartridge identities, platform session, one
+scope, replay UUID, and an HMAC-derived provider/game pairwise persona subject.
+The raw persona/account identity and reusable device credentials never cross
+the provider boundary.
+
+Requests, responses, and callback-shaped events use a fixed OmarchyGS v1
+profile of RFC 9421 HTTP Message Signatures and RFC 9530 `Content-Digest`.
+Method, authority, path or status, originating request context, content type,
+provider/release/message identities, creation/expiry, nonce, algorithm, key,
+and protocol tag are signed. The strict parser rejects extra, duplicate,
+reordered, stale, future, or mismatched fields and authenticates exact body
+bytes before JSON parsing.
+
+Production egress accepts only an operator-registered HTTPS DNS origin. One
+bounded resolution must contain only public unicast destinations; the client
+pins those sockets while retaining the registered hostname for SNI. It trusts
+only registered DER roots and disables proxies, redirects, referers,
+decompression, and connection reuse while enforcing registered connect/total
+deadlines and streaming response ceilings. The conformance feature cannot
+create a general private-network allowlist: it admits only one exact generated
+loopback socket and is absent from the platform server.
+
+Every semantic operation is retained before I/O under an idempotency UUID and
+expected revision. Exact completed replay resolves from PostgreSQL; changed
+intent conflicts. A timeout remains `unknown`, so a retry uses a fresh grant
+and signed message to retrieve the provider's stable receipt. Authenticated
+callbacks are deduplicated by message/event identity and digest. Ticket 018
+records no result, achievement, notification, or gameplay projection; those
+authority and policy decisions remain Ticket 019 work.
+
 ## Staged adoption
 
 1. **Cartridge vocabulary and preview:** define the core/rich-2D DSL, package
@@ -591,9 +635,11 @@ database access or a different identity model.
    explicit publisher key, both clones produce byte-identical releases that the
    production verifier, descriptor-relative importer, and trusted previewer
    consume. Compiled server rules remain in OmarchyGS pending later game work.
-3. **First-party remote provider:** add the broker, registered endpoints,
-   scoped grants, provider-owned state, signed events, failure handling, and
-   migration path behind operator-controlled registration.
+3. **First-party remote provider — security foundation implemented:** Ticket
+   018 adds the dormant registry, scoped grants/messages, guarded egress,
+   durable failure/replay controls, and separate-process TLS conformance.
+   Ticket 019 must still amend authority, define the single-owner state
+   migration, and connect a player-facing broker adapter.
 4. **Reviewed external providers:** add publisher onboarding, catalog review,
    quotas, monitoring, suspension, support policy, and game-scoped achievement
    trust.
@@ -605,10 +651,8 @@ The challenge and first-game work should consume only seams confirmed by the
 spike. It should not implement speculative remote tables or expose provider
 endpoints before the proof and ADR are accepted.
 
-## Production decisions that remain after the renderer
+## Production decisions that remain after the security foundation
 
-- token and message-authentication profile: sender-constrained OAuth-style
-  grants, HTTP Message Signatures, mutual TLS, or a documented combination;
 - the remote transition from platform snapshots/revisions to provider-owned
   state without dual authority;
 - pairwise persona subject derivation and avatar delivery/cache policy;
@@ -621,13 +665,12 @@ endpoints before the proof and ADR are accepted.
 - public SDK hosting, transparency/CI attestation, signing-key operations, and
   third-party support policy beyond the exact local first-party release proof.
 
-The proof deliberately uses ephemeral Ed25519 keys, signed application
-envelopes, loopback HTTP, in-memory replay receipts, and fixed registered
-process configuration. This establishes identity and binding semantics but is
-not the final network profile. Production work must add TLS, durable key and
-replay state, rotation/revocation, operator registration, guarded DNS/egress,
-quotas, and either an RFC 9421 message-signature profile or an equivalently
-reviewed sender-constrained request profile.
+The original Ticket 014 proof deliberately used ephemeral Ed25519 keys,
+loopback HTTP, and in-memory replay receipts. Ticket 018 replaces those gaps
+with the production TLS, registry, rotation/revocation, durable controls,
+guarded egress, quota, and fixed RFC 9421/9530-shaped profile described above.
+The separate fixture still uses ephemeral keys because it is test evidence;
+production keys are generated and retained outside this repository.
 
 ## Evidence consulted
 

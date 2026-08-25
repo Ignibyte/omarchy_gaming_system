@@ -59,6 +59,8 @@ and in this register.
 | `PR-omarchy-gaming-system-validate-shell-arithmetic-input-001` | Treat process-local HTTP as untrusted input: bind readiness to the intended child and require explicit numeric type/range before shell arithmetic. | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
 | `PR-omarchy-gaming-system-validate-game-state-cross-field-invariants-001` | At the compiled rules boundary, validate lifecycle relationships as well as JSON shape and scalar ranges before applying a command. | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
 | `PR-omarchy-gaming-system-advance-durable-phase-before-phase-tools-001` | Record the completed validation phase in the active spec before invoking a phase-gated completion tool, then read back the tool receipt. | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
+| `PR-omarchy-gaming-system-serialize-dedupe-on-existing-root-001` | When a deduplication receipt may not exist, lock a guaranteed durable domain root before the first-read/insert decision and prove simultaneous first delivery. | `aar/AAR-018-production-remote-provider-security-foundation.md` |
+| `PR-omarchy-gaming-system-classify-provider-egress-by-global-allocation-001` | Classify provider destinations from the positively allocated global address space, then exclude current special-purpose ranges and test translation/reserved prefixes. | `aar/AAR-018-production-remote-provider-security-foundation.md` |
 
 ## Register
 
@@ -181,3 +183,8 @@ and in this register.
 | `PR-omarchy-gaming-system-validate-game-state-cross-field-invariants-001` | rule | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
 | `PR-omarchy-gaming-system-advance-durable-phase-before-phase-tools-001` | rule | `aar/AAR-021-signal-siege-compiled-game-and-solo-bot-matches.md` |
 | `AD-omarchy-gaming-system-signal-siege-solo-game-lifecycle-001` | decision | `../../architecture/system-overview.md` |
+| `BF-omarchy-gaming-system-provider-callback-absent-row-race-001` | failure | `aar/AAR-018-production-remote-provider-security-foundation.md` |
+| `BF-omarchy-gaming-system-provider-ipv6-special-use-egress-gap-001` | failure | `aar/AAR-018-production-remote-provider-security-foundation.md` |
+| `PR-omarchy-gaming-system-serialize-dedupe-on-existing-root-001` | rule | `aar/AAR-018-production-remote-provider-security-foundation.md` |
+| `PR-omarchy-gaming-system-classify-provider-egress-by-global-allocation-001` | rule | `aar/AAR-018-production-remote-provider-security-foundation.md` |
+| `AD-omarchy-gaming-system-remote-provider-security-foundation-001` | decision | `../../architecture/game-cartridges.md` |

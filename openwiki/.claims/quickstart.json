@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:438b9fa2c1e237a3d6d28ccde99b36bc49468ade3b530137b2dbe7cb2110f08f",
+  "pageVersion": "sha256:0c0c230b2e67d33bc9f3bf245d95c850f5ae489c6a8e347fbb4f375bed34ba5e",
   "claims": [
     {
       "id": "claim_cfd815337fbb4c508371651403a7fecb",
@@ -14,7 +14,7 @@
     },
     {
       "id": "claim_f39ada371a374e9a9d39ff4356f53b90",
-      "statement": "The implemented production runtime includes authentication and MFA, persona social state and inboxes, durable synchronization, exact-version sessions and two-person challenges, and a playable Signal Siege v1 solo match with durable completion; main-client game launch and remote providers remain later work.",
+      "statement": "The implemented production runtime includes authentication and MFA, persona social state and inboxes, durable synchronization, exact-version sessions and challenges, and playable Signal Siege v1; a production-grade provider security foundation exists but remains dormant, while main-client game launch and remote gameplay authority remain later work.",
       "evidence": [
         {
           "resource": "repo://crates/server/src/main.rs#L79-L82",
@@ -25,12 +25,8 @@
           "version": "repo-lines-v1:sha256:b543344a1578cd6db713d23c53affc86b45863f0355515bce08db9c9b964766d:eyJzZWxlY3RlZExpbmVDb3VudCI6OTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0YTkzZDkxMzhkMTI5MjE1Njg1NzdlYmU2MmE3ZDI0N2Q5NmE2NTkxYTQ1ODYzN2NiNGU0YzY4NTNjNGRhNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMyYzhmODNjYmQxODExNDFlZmQ2MmUzMDEyN2NhZDE3MGE5MDNmZDEwZGI3N2JjZjhlOWE1OGQ5ZTk2MzE1Y2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkxMGFmNWIzOGVlNjBmYjk2NTg0NTA5NWFkZWIwYjdiOTgwYWVmMTdjNDcyMTBlYmQ1ZDE3Mjk4YjdlOTAzNGUifQ"
         },
         {
-          "resource": "repo://crates/server/src/games.rs#L229-L341",
-          "version": "repo-lines-v1:sha256:a5ad8198b679f066ebdad89d1a5d952c3f6c8403eff06e9f540491e583de05fc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5ZTE3OTkwMWQ1NmJmODU2NDQwNTNkOTI5ZThiZjBiZTkxMjgxMzgwYTlkMzc2Y2YzZWY3ZDZhNzFkYzQ2NGJkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyNWZmOWFhODNhYjYwMDdiNjRmODJhMTAwMTc1OGE5ZGM1MWVhMTZlNGQ0ZTIxNzc0MWIyYWE5OGNhNTBhNDRiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0NzRhNzY1ZmUzZGM2ZjgwMDI4YzZkOGE3MzRhMDQwMjk2ZjVlZDdlYzA3NWQ2MDQ4OTY4Zjc5MWQ0M2YwNjNmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjZjI4NGMzYmQ4OTE2MGFmMWZmOWQ2MDhmMGZkM2I1OTEyZWY3MjdhODU1YTM5ODRhNWVkMzU0Y2IzYjUyZTI2In0"
-        },
-        {
-          "resource": "repo://crates/server/src/signal_siege_api_tests.rs#L336-L492",
-          "version": "repo-lines-v1:sha256:8e912d716d679e665ea226fc28014ed8175d43529d5ae133bbdb65f1555cab4c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0NjY2YjQ3Y2IxOTRjM2NjNzgyNmE4NjExZDhlMzlkNGU0ZWQ0N2VkNWU0NDZmYmIzZGYyZTU4M2RlZmVjZjkzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwNmNhMDEzODVjMDRiOWM4OTIxMDhkODIzNjQzYTZhMjE4ZjZhNjYwMzEwMDlhODZjYThhNjg5Y2MwMWRjY2EwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwNmNhMDEzODVjMDRiOWM4OTIxMDhkODIzNjQzYTZhMjE4ZjZhNjYwMzEwMDlhODZjYThhNjg5Y2MwMWRjY2EwIn0"
+          "resource": "repo://crates/game-provider/src/lib.rs#L1-L12",
+          "version": "repo-lines-v1:sha256:e51e7c659668d1097c8a7074d6e5ceee211739c85a81683bc7837aa2a666fc1a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5M2M2NjA2ZWU0MDdhNzE3NjdiOWJjYzRiMjY0ZGZiOTFiYzdiMTUzMDMxNmUzZWZkNzJhNWM0MGQ0ZDE4YWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyNTZjOTg3NTIzZGNiNWFiMzQ4M2ExMTRiZmFmZDRkM2MwNzI4YTUzMDU3NzI4MGI3ODkxM2VjNDAyZGMwYTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyOTZhZWMzMDU4MzExY2ZjNGUzYmI2ZjlkY2Q2YmIxNmU0ZjhhYmI5OTRiOTJjMTM1NjgyMzA1N2NjOGE1MzcifQ"
         },
         {
           "resource": "repo://client/qml/Main.qml",
@@ -324,7 +320,7 @@
     },
     {
       "id": "claim_189b33e023e342c58758edb0540387f8",
-      "statement": "Production includes local Game Cartridge pack, verification, compatibility, deterministic SDK export, signed release and catalog-policy verification, secure local import, and trusted Core/Rich-2D rendering; server catalog ingestion, main-client launch, provider networking, and remote gameplay authority remain absent.",
+      "statement": "Production includes local cartridge packaging, verification, compatibility, SDK export, signed release and catalog-policy verification, secure import, trusted Core and Rich-2D rendering, and a dormant registered-provider security crate; server catalog ingestion, main-client launch, provider networking, and remote gameplay authority remain disconnected.",
       "evidence": [
         {
           "resource": "repo://scripts/test-game-cartridge.sh",
@@ -339,6 +335,10 @@
           "version": "repo-file-v1:sha256:fd74a84420b8fb1afbd502cefa70b10e2c1b101ad24e5cafd769ad284c23cfdb"
         },
         {
+          "resource": "repo://crates/game-provider/src/lib.rs#L1-L12",
+          "version": "repo-lines-v1:sha256:e51e7c659668d1097c8a7074d6e5ceee211739c85a81683bc7837aa2a666fc1a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5M2M2NjA2ZWU0MDdhNzE3NjdiOWJjYzRiMjY0ZGZiOTFiYzdiMTUzMDMxNmUzZWZkNzJhNWM0MGQ0ZDE4YWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyNTZjOTg3NTIzZGNiNWFiMzQ4M2ExMTRiZmFmZDRkM2MwNzI4YTUzMDU3NzI4MGI3ODkxM2VjNDAyZGMwYTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyOTZhZWMzMDU4MzExY2ZjNGUzYmI2ZjlkY2Q2YmIxNmU0ZjhhYmI5OTRiOTJjMTM1NjgyMzA1N2NjOGE1MzcifQ"
+        },
+        {
           "resource": "repo://client/qml/Main.qml",
           "version": "repo-file-v1:sha256:6dda0ef3cdfc8df2c089c47cc90bcefce00c5d83e77f359f46cab59f8ce1d3c6"
         }
@@ -346,19 +346,23 @@
     },
     {
       "id": "claim_a299284d5eee440ba1c3190fa1c3affa",
-      "statement": "Developers validate packaging with scripts/test-game-cartridge.sh, trusted rendering and raster admission with scripts/test-game-cartridge-renderer.sh, and deterministic clean-room SDK/release/catalog import with scripts/test-game-cartridge-sdk.sh.",
+      "statement": "Developers validate cartridge packaging, trusted rendering, deterministic SDK and release import, and the dormant provider security boundary with the four focused cartridge and provider conformance scripts.",
       "evidence": [
         {
           "resource": "repo://scripts/test-game-cartridge.sh",
           "version": "repo-file-v1:sha256:42a79770b1d4edccb001607a5249cc467deb103a978bf8e8c327374592cb514b"
         },
         {
-          "resource": "repo://scripts/test-game-cartridge-renderer.sh#L201-L366",
-          "version": "repo-lines-v1:sha256:d7b4d952c13b0f672268a50dd348a1a8e86623da01ce639bd9365880c4e59c03:eyJzZWxlY3RlZExpbmVDb3VudCI6MTY2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhYTkyMTgxZTRlYzY4M2Q2MjhjNGQ4NTI3ODBlZDY3NjM1OWI0OWZhY2Q2YTEzOWI1ZjMwYmJmZjkyY2VhNWVkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI1Yzk2NTlkOWI4NGZjOTE0MDYyOTRmZDM2YTViZTdiMmIwYjdiZjEyZDkyMmYwMjc3ZTNiOTA2YjIxZDc3NWY0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3MTg4YzMwNmM0MzBjNzM0Y2EyMjQ0MWFhZTRjZDFkM2U0Zjg3MzYyNDFlNjg1MWU1NTgzYWE1MzQ1NDhlNDgxIn0"
+          "resource": "repo://scripts/test-game-cartridge-renderer.sh",
+          "version": "repo-file-v1:sha256:96381b6592b5414e690fb7618cce07a7b78bb590717fb1bf80dda9eb027e84b1"
         },
         {
-          "resource": "repo://scripts/test-game-cartridge-sdk.sh#L19-L125",
-          "version": "repo-lines-v1:sha256:82fbdcd7a0b4ea4bdadc34930f151292e2b4ce4dd6f93b96dbb466580f715586:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NmM1MWJhOTkxNThlYzM2M2Q0MGI3NzhlZjI3MTEyNmRhM2ZkODMxNWVlNTIzODIyNDIwNDY5YjUyOWEwYjk0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5ODIyZTRjOGFlMGZmYTc5ZjlkZDE1OTA2OTM3YTcwNWMxY2E5NTEzYTQ2YWI5MTQ3NWM3MmVhNjIxODZkOTVlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzOWY3YmIxM2IyMjZmMGFjNGZhOGRlZmQ3ODg4YTIxZWM5NWIzM2U0NjZjNDY1NTEyNjhjNzg4MjBjMmNiNWU5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://scripts/test-game-cartridge-sdk.sh",
+          "version": "repo-file-v1:sha256:fd74a84420b8fb1afbd502cefa70b10e2c1b101ad24e5cafd769ad284c23cfdb"
+        },
+        {
+          "resource": "repo://scripts/test-provider-conformance.sh#L13-L24",
+          "version": "repo-lines-v1:sha256:295dbca904758d2322a132053e4fef228a2d440a0413d4cd8d1e1497051f9883:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YzUxYmE5OTE1OGVjMzYzZDQwYjc3OGVmMjcxMTI2ZGEzZmQ4MzE1ZWU1MjM4MjI0MjA0NjliNTI5YTBiOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1Yzk0MDBmZDAyYTcxMjI3Y2M4MzM5NTViODgyZTY1YjQ3ZDRjMTBmOWVjZGVlNGRmOTM4MmQzZDU2NTVlYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhMDkzYjgxODk5MjRjOTAwMDZlZGQ1YmNkYzY5YTAwNzU4ZDQ4YzNlMTU2NGY4NmVlZGQ0OTFiMWVmNjJhZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -429,6 +433,6 @@
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-25T18:10:29.411Z"
+    "at": "2026-08-25T19:56:58.182Z"
   }
 }

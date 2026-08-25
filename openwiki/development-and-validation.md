@@ -19,6 +19,10 @@ sources:
     resource: repo://crates/game-cartridge/tests/conformance.rs
   - id: openwiki-source-358b091c74e2027615ce8f4c
     resource: repo://crates/game-cartridge/tests/sdk_release.rs
+  - id: openwiki-source-fea3ada71e31ee06122151f5
+    resource: repo://crates/game-provider/tests/conformance.rs
+  - id: openwiki-source-522c1bcb889a85d7a91b25af
+    resource: repo://crates/game-provider/tests/registry.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
@@ -53,10 +57,12 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-25T18:10:29.411Z"}
+  - id: openwiki-source-513cfb82a80f03b4b9a1484e
+    resource: repo://scripts/test-provider-conformance.sh
+generated: {by: "codex", at: "2026-08-25T19:56:58.182Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-25T18:10:29.411Z
+    at: 2026-08-25T19:56:58.182Z
 ---
 
 # Development and validation
@@ -162,6 +168,10 @@ The gate currently covers:
    private inbox, synchronization recovery, and block lifecycle, TOTP
    enrollment, challenged login, recovery replay rejection, MFA disablement,
    session revocation, rejected-token, and QML smoke.
+9. the dormant production provider boundary's operator registry, lifecycle,
+   grants, fixed signed messages, public-only pinned HTTPS egress, replay and
+   callback deduplication, quotas, concurrency leases, audit, and fail-closed
+   behavior against migrated PostgreSQL and a separate TLS provider process.
 
 ### Production Game Cartridge conformance
 
@@ -233,6 +243,23 @@ temporary material on exit. It proves architecture semantics and the
 measurement harness; it is not a production provider service, a published SDK,
 or a minimum-hardware Rich-2D benchmark. See [Game Cartridges](game-cartridges.md)
 for the boundary and remaining production work.
+
+### Remote-provider security foundation
+
+`scripts/test-provider-conformance.sh` is the Ticket 018 production security
+entrypoint and gate 17 in diff/full modes. It runs provider unit and public
+protocol tests, then serializes the ignored operator CLI, PostgreSQL registry,
+separate-process TLS egress, and end-to-end broker conformance cases against the
+migrated database. The corpus covers immutable release registration and key
+rotation; lifecycle denial; 60-second one-scope pairwise grants; exact request,
+response, and callback authentication; public-only resolution and socket
+pinning; strict body/time limits; idempotent replay and concurrent callback
+deduplication; quota and lease races; retry-after-unknown behavior; and safe
+audit records.
+
+This crate remains absent from the current player server. Passing gate 17 proves
+the dormant security/control-plane boundary, not production remote gameplay
+authority or player-route integration.
 
 Five general game integration tests prove atomic exact-version initialization and
 commands, ordered participants, semantic replay, isolated idempotency and
@@ -376,6 +403,10 @@ server, so absent or stale provenance fails closed.
   capability, privacy, replay, resource, or trusted-renderer failures as
   architecture failures; do not bypass gate 14. The binaries are loopback-only
   proof artifacts and must not be deployed.
+- Provider-security failure: run `scripts/test-provider-conformance.sh` and fix
+  the named registration, lifecycle, signature, egress, replay, callback,
+  quota/lease, audit, TLS-process, or PostgreSQL race failure; do not bypass
+  gate 17 or connect the dormant crate to player routes.
 - Pipeline structure failure: repair the ticket/spec/AAR/skill or Codex wiring
   named by `scripts/check-pipeline.sh`.
 - Pipeline-tool readiness failure: rerun `scripts/setup-pipeline-tools.sh` only

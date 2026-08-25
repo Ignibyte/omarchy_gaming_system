@@ -8,11 +8,11 @@ This directory is the authoritative local ticket store.
 
 ## Open queue
 
-- [`TICKET-018` — Production remote-provider security foundation](open/TICKET-018-production-remote-provider-security-foundation.md)
 - [`TICKET-019` — First-party remote-provider migration pilot](open/TICKET-019-first-party-remote-provider-migration-pilot.md)
 
 ## Closed
 
+- [`TICKET-018` — Production remote-provider security foundation](closed/TICKET-018-production-remote-provider-security-foundation.md)
 - [`TICKET-021` — Signal Siege compiled game and solo bot matches](closed/TICKET-021-signal-siege-compiled-game-and-solo-bot-matches.md)
 - [`TICKET-020` — Game challenges, turn notifications, history, and expiration](closed/TICKET-020-game-challenges-turn-notifications-history-and-expiration.md)
 - [`TICKET-017` — Separate-repository OmarchyGS SDK and first-party cartridge](closed/TICKET-017-separate-repository-omarchygs-sdk-and-first-party-cartridge.md)

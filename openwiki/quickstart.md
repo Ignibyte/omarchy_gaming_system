@@ -5,6 +5,8 @@ openwiki_generated: true
 sources:
   - id: openwiki-source-d392f8f0962c50f0d66e0629
     resource: repo://client/qml/Main.qml
+  - id: openwiki-source-25c2deb1d0664370b4037c40
+    resource: repo://crates/game-provider/src/lib.rs
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
@@ -43,10 +45,12 @@ sources:
     resource: repo://scripts/test-game-cartridge-sdk.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-25T18:10:29.411Z"}
+  - id: openwiki-source-513cfb82a80f03b4b9a1484e
+    resource: repo://scripts/test-provider-conformance.sh
+generated: {by: "codex", at: "2026-08-25T19:56:58.182Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-25T18:10:29.411Z
+    at: 2026-08-25T19:56:58.182Z
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -101,10 +105,12 @@ measured Core/Rich-2D profile. Ticket 017 implements a deterministic public SDK,
 signed reproducible release and five-state catalog policy, a Linux
 descriptor-relative secure importer, and a clean-clone first-party repository
 proof. No server catalog-ingestion or main-client launch route and no provider
-network are connected. Ticket 014's broker/provider/QML work remains an isolated
-proof, and the compiled Rust runtime plus OmarchyGS-owned PostgreSQL game
-snapshot remain authoritative until later provider migration, security, and
-Constitution-amendment pipelines complete.
+network are connected. Ticket 018 adds a dormant production provider security
+crate and durable schema for operator-pinned registration, signed grants and
+messages, guarded egress, replay, quotas, leases, lifecycle, and audit. The
+compiled Rust runtime plus OmarchyGS-owned PostgreSQL game snapshot remain
+authoritative until a later provider migration and Constitution-amendment
+pipeline explicitly connects that foundation.
 
 ## Task routing
 
@@ -113,7 +119,7 @@ Constitution-amendment pipelines complete.
 | Change server startup, configuration, migrations, or health behavior | [Runtime foundation](runtime-foundation.md) | `crates/server/src/main.rs`, `config.rs`, `app.rs`; `migrations/` | `cargo test -p omarchy-gaming-system-server`; health smoke |
 | Change accounts, device sessions, MFA, personas, or connections | [Runtime foundation](runtime-foundation.md) | `accounts.rs`, `credentials.rs`, `sessions.rs`, `mfa.rs`, `personas.rs`, `connections.rs`; `docs/api.md` | Domain tests plus multi-account PostgreSQL evidence |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
-| Change cartridge packaging, trusted rendering, SDK portability, or future provider integration | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `client/qml/cartridge`; ADR-0002; isolated `crates/game-cartridge-spike`; Tickets 015–019 | `scripts/test-game-cartridge.sh`; `scripts/test-game-cartridge-renderer.sh`; `scripts/test-game-cartridge-sdk.sh`; provider proof, threat/authority review, and constitutional authority check |
+| Change cartridge packaging, trusted rendering, SDK portability, or provider integration | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/game-provider`; `client/qml/cartridge`; migration `0014`; ADR-0002; Tickets 015–019 | `scripts/test-game-cartridge.sh`; `scripts/test-game-cartridge-renderer.sh`; `scripts/test-game-cartridge-sdk.sh`; `scripts/test-provider-conformance.sh`; threat/authority review and constitutional authority check |
 | Run or diagnose the local stack and quality gate | [Development and validation](development-and-validation.md) | `scripts/dev.sh`; `bin/gate.sh`; `client/qml/Main.qml` | `bin/gate.sh --fast` or `--diff` |
 | Start or resume a non-trivial change | [Codex workflow](codex-workflow.md) | `AGENTS.md`; `$omarchy-workflow`; active pipeline | Phase receipts and canonical gate |
 
@@ -174,7 +180,10 @@ release through a Linux descriptor-relative secure store. The preview CLI
 writes only read-only plan/assets into a caller-created private directory and
 reports no provider, database, or credential use. The current main QML connector
 does not browse or launch cartridges, and the server does not ingest cartridges
-or contact a provider.
+or contact a provider. The dormant `omarchy-game-provider` crate separately
+implements operator-pinned releases, signed pairwise grants and messages,
+public-only pinned HTTPS egress, and durable replay/quota/lease/audit controls;
+it is not instantiated by the server and owns no player-facing authority.
 
 Current runtime identifiers use the gaming-system namespace; see [Runtime
 foundation](runtime-foundation.md) for the narrow local compatibility window

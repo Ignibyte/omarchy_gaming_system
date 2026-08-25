@@ -87,6 +87,7 @@ run_gate 14 "Game Cartridge architecture proof" ./scripts/test-game-cartridge-sp
 if [[ "$ogs_mode" != "fast" ]]; then
   run_gate 15 "PostgreSQL integration tests" ./scripts/test-database.sh
   run_gate 16 "PostgreSQL + Rust API + QML smoke" ./scripts/dev.sh --smoke-test
+  run_gate 17 "remote provider security conformance" ./scripts/test-provider-conformance.sh
 fi
 
 if ((ogs_failures > 0)); then

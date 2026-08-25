@@ -2,6 +2,7 @@
 members = [
     "crates/game-cartridge",
     "crates/game-cartridge-renderer",
+    "crates/game-provider",
     "crates/game-runtime",
     "crates/game-signal-siege",
     "crates/server",
@@ -18,15 +19,20 @@ anyhow = "1.0"
 aes-gcm = { version = "0.11.1", features = ["zeroize"] }
 argon2 = "0.5.3"
 axum = { version = "0.8.9", features = ["ws"] }
+axum-server = { version = "0.8.0", features = ["tls-rustls-no-provider"] }
 base64 = "0.23.1"
 crc32fast = "1.5.0"
 data-encoding = "2.11.1"
 ed25519-dalek = { version = "2.2.0", features = ["rand_core"] }
 hmac = { version = "0.13.0", features = ["zeroize"] }
+http = "1.4.0"
 futures-util = "0.3.34"
 http-body-util = "0.1"
 percent-encoding = "2.3.2"
 rand_core = { version = "0.6", features = ["getrandom"] }
+rcgen = "0.14.8"
+reqwest = { version = "0.13.4", default-features = false, features = ["rustls-no-provider", "stream"] }
+rustls = { version = "0.23.43", default-features = false, features = ["ring", "std", "tls12"] }
 rustix = { version = "1.1.4", features = ["fs", "process"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -41,5 +47,6 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 thiserror = "2.0"
 uuid = "1.24.1"
+url = "2.5.7"
 zeroize = "1.9.0"
 zip = { version = "8.6.0", default-features = false }

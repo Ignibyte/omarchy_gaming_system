@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0e72d6eec38fc64515000c91fd318dfd43d2e9833b62a009e552651c3d747fd9",
+  "pageVersion": "sha256:48e55b5cb04049fa01f276d15926c882399c6ee2f5b5f30c41c519205ecce2fa",
   "claims": [
     {
       "id": "claim_e75f82f846ca444594c51ed0f48b894b",
@@ -40,11 +40,11 @@
     },
     {
       "id": "claim_171e3e64173941df995e2a10f63d4c51",
-      "statement": "The canonical diff gate runs production static and documentation checks, cartridge conformance and rendering, SDK/release/import, the isolated provider proof, sequential migrated PostgreSQL tests, and the live PostgreSQL-to-Rust-API-to-Signal-Siege-to-QML smoke before writing a worktree receipt.",
+      "statement": "The canonical diff gate runs production static and documentation checks, cartridge contract, rendering, SDK and isolated proof checks, sequential migrated PostgreSQL tests, the live PostgreSQL-to-Rust-API-to-Signal-Siege-to-QML smoke, and remote-provider security conformance before writing a worktree receipt.",
       "evidence": [
         {
-          "resource": "repo://bin/gate.sh#L72-L105",
-          "version": "repo-lines-v1:sha256:a862e02fa83b9c3388153bf42c9335f0e6d6dded64b0dfce14b906f6020ea33b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3YmY1ZmE0ZGMyMDc5YWUyNzRhMmVmMjBkODllMjUzMGEwZTg0NTZhMTM2ODA4NGZjNDViZjhhNjc4ZWRhYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1MjA1NzJmMGVmNWMyMzZhMWE5N2NmZDdkMWJjZmEzZTNkNzU2OGExODc1OGMxNjljMWU0N2Q5NDAzZWI0NjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1OGI4NzEwNzI3NGZiN2I2NmFkMzM1ODg4M2IyODQ2ODNiYWJjMzllNDcwM2JjY2JjM2Y0NDZmNzA5MTgxMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://bin/gate.sh#L72-L100",
+          "version": "repo-lines-v1:sha256:7cc0c1e96ac4ce9c34cba291a90f33e108c9020167ef2b0f0bb109846900bdcc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3YmY1ZmE0ZGMyMDc5YWUyNzRhMmVmMjBkODllMjUzMGEwZTg0NTZhMTM2ODA4NGZjNDViZjhhNjc4ZWRhYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyODc1MGZhMWRjNGFmYjVkNTRmYTdkMTIwYmI1N2M5MjM0YzE1ZDEyZTUzNDI1YzVhMTQyZTA2YTcyM2I3MjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1OGI4NzEwNzI3NGZiN2I2NmFkMzM1ODg4M2IyODQ2ODNiYWJjMzllNDcwM2JjY2JjM2Y0NDZmNzA5MTgxMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI1MGVhNGFjM2U3YzAyNTUxODUyMTM2YWQxYjA3ZTAxMGEyZGRkYzliNmQ1NjQ1ZTE4Yzc4OGNmNGJkNTlhNzgifQ"
         },
         {
           "resource": "repo://scripts/test-database.sh",
@@ -55,8 +55,8 @@
           "version": "repo-lines-v1:sha256:d57fe7dfcb60d32c47702d610e9f8c7517b51c1351672346432bede0701f77c2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4MTdlNGFlNjNmZjcxM2JjMDNmMGJhNzk2NTcwOWQ1N2UyYWU0ZDg0YTcxZGY3YTlhMWY1ZmRiOTk4MGUyODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZmM5MGZmOGE0NDE0YzU0NDFkMGY2NzdjNWNiZmRhMzhiNDc0ZTUxYmZkNTU5YTU1NTlkZTBmODc3MDU1MjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNmFkMmQ1NGM2ZWEyZjJjZGRkMDM4NTgyOGQ2NDJhYTdlODc3NDQzMWYxY2NkMmIzZjBhYTMwYzJhYTIwMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5M2U0MzM1ZGUzMzk1NmU4Y2QxYTAxOTFlYzI1ZGM1ZjVkMDUxOTU3YTE3ZWU3OWE0ZTM0YjVmYjkzNDhlNDcifQ"
         },
         {
-          "resource": "repo://scripts/dev.sh#L299-L498",
-          "version": "repo-lines-v1:sha256:312a19b5b23c9c532fef4ddaaebef8d7bec01ee29adf1a476d7430fd7f61dac0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4NDlkN2E2ZmY5ZTY3MmEyZWVmN2I2MTdkYzU2OWY5ZmM5MDQ0NGY1ZmVkMjQyMmVhOTY4Mzg1MjFkYzY0MjY2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzNWZjOTBmZjhhNDQxNGM1NDQxZDBmNjc3YzVjYmZkYTM4YjQ3NGU1MWJmZDU1OWE1NTU5ZGUwZjg3NzA1NTI0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YWYxZDk1YjExZjc4MWIyY2UxZjY1YzFjMGU3Y2MxZjg0YzA4MGIwNDkzYjc3Y2Q1MTlhZjRhZWE4YjYyNTQ3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJiZDA1ZDhiMWU2NGQzNmVlYjkzZjUyMDFhN2ViNzhiYWU4MDhiNjMxMTI5YjI3NGJkNWE0MjY5YzBkNjEyNDkxIn0"
+          "resource": "repo://scripts/test-provider-conformance.sh#L13-L24",
+          "version": "repo-lines-v1:sha256:295dbca904758d2322a132053e4fef228a2d440a0413d4cd8d1e1497051f9883:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YzUxYmE5OTE1OGVjMzYzZDQwYjc3OGVmMjcxMTI2ZGEzZmQ4MzE1ZWU1MjM4MjI0MjA0NjliNTI5YTBiOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1Yzk0MDBmZDAyYTcxMjI3Y2M4MzM5NTViODgyZTY1YjQ3ZDRjMTBmOWVjZGVlNGRmOTM4MmQzZDU2NTVlYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhMDkzYjgxODk5MjRjOTAwMDZlZGQ1YmNkYzY5YTAwNzU4ZDQ4YzNlMTU2NGY4NmVlZGQ0OTFiMWVmNjJhZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -367,10 +367,32 @@
           "version": "repo-lines-v1:sha256:57bd0da554c2446742ff1e3e05cd2036c99c706e91dd2b7a247104817ad799ee:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzY2ZkMDdmOWEzMTZiNGQzYjZlZWQzZGE3MTUwOTEzY2FlMDBjMTQ4OWRhMzVhNjNiMGU3YjUyMjM2MDEzMTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzNTdlZDFjYWVmNTFkZWVlZjBiYzBjNDEwYWNiM2I5Y2I1OWE0YzA5NmViNjJhZjAyNzUwNjJkNGUzYWU3ZTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEwNzc4Mjc3ZDI2NzE3MGRkMGQ4ODdkOTU0YjhkNmE1MDllMDlmNDBmMmI1MmU4MmM0YTQ0OGNiMGExZTc0YWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwNjJlM2MwZDYwOGM1NTQ4ODFmNTA3YTg4M2YxOTJhOWIwOTNjMWVjNDMzNjFhMTkzMzI4OTk4MmEyODI5NDEifQ"
         }
       ]
+    },
+    {
+      "id": "claim_0561f320c18d4f72a106612ea6bfa8e1",
+      "statement": "Gate 17 runs provider unit and public protocol tests plus ignored CLI, PostgreSQL registry, separate-process TLS, replay, race, quota, lifecycle, and audit conformance sequentially against migrated PostgreSQL.",
+      "evidence": [
+        {
+          "resource": "repo://bin/gate.sh#L87-L90",
+          "version": "repo-lines-v1:sha256:46164238e555777eda8c8b21b8b3606a4bb4170780637a893260f15b662f1927:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTM0N2E0ZGU3NDcxZGYxY2MxZWJhYTBlOTk2YjQ2OTk4YTlkYjA4MDNjNjExZTNiYTI1YWI5ZWIxYzA3Yjc0NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMmE1Nzc0ZDM3ZWRlZjliMTdjOGRmMzJjMDkxYmIxNzYzNjYxYjcwNWUyYTliYzVkMWY4ZGU3NDAwMTdiZWRmYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmY4MjBiYmUwMmIxN2NjZjE0M2M2YmUxMjYyNGY3ZjUwNGZkNDdhZmU4NGVkMzJjYzg3M2JjZDkwZjY0MjU3YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTMzYjFiYWE2ZmE4OTc1ZGZmM2JkMDc5ZjJkMjVjYjYxZDg0OGUyM2M1MjJmMGNiMjU0ZGRjMDZlYjYwZTQ2YyJ9"
+        },
+        {
+          "resource": "repo://scripts/test-provider-conformance.sh#L13-L24",
+          "version": "repo-lines-v1:sha256:295dbca904758d2322a132053e4fef228a2d440a0413d4cd8d1e1497051f9883:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YzUxYmE5OTE1OGVjMzYzZDQwYjc3OGVmMjcxMTI2ZGEzZmQ4MzE1ZWU1MjM4MjI0MjA0NjliNTI5YTBiOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1Yzk0MDBmZDAyYTcxMjI3Y2M4MzM5NTViODgyZTY1YjQ3ZDRjMTBmOWVjZGVlNGRmOTM4MmQzZDU2NTVlYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhMDkzYjgxODk5MjRjOTAwMDZlZGQ1YmNkYzY5YTAwNzU4ZDQ4YzNlMTU2NGY4NmVlZGQ0OTFiMWVmNjJhZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://crates/game-provider/tests/conformance.rs",
+          "version": "repo-file-v1:sha256:ef0a4c51112e8108a3356e1bc0914f8cedf5eec58b071ef22decf54f03d6d4fe"
+        },
+        {
+          "resource": "repo://crates/game-provider/tests/registry.rs",
+          "version": "repo-file-v1:sha256:463e0bc5ebdb2efb84dfa8775abaf3669d883688f41f12b9d08234fe594890ad"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-25T18:10:29.411Z"
+    "at": "2026-08-25T19:56:58.182Z"
   }
 }

@@ -31,14 +31,24 @@ sources:
     resource: repo://crates/game-cartridge/src/validate.rs
   - id: openwiki-source-358b091c74e2027615ce8f4c
     resource: repo://crates/game-cartridge/tests/sdk_release.rs
+  - id: openwiki-source-a28da20d4e4846b146ff3e2b
+    resource: repo://crates/game-provider/src/broker.rs
+  - id: openwiki-source-5e865738b8ee35e0eee853d7
+    resource: repo://crates/game-provider/src/egress.rs
+  - id: openwiki-source-25c2deb1d0664370b4037c40
+    resource: repo://crates/game-provider/src/lib.rs
+  - id: openwiki-source-a3286660bf513fa99c420af7
+    resource: repo://crates/game-provider/src/protocol.rs
+  - id: openwiki-source-183d71a1a996865fb003e694
+    resource: repo://crates/game-provider/src/registry.rs
   - id: openwiki-source-408aa68caebee417a5a319b8
     resource: repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
     resource: repo://docs/architecture/game-cartridges.md
-  - id: openwiki-source-4ab9cb9784f211e865cabf2a
-    resource: repo://docs/planning/pipeline/active/separate-repository-sdk-and-first-party-cartridge.notes.md
-  - id: openwiki-source-c3d1d450d3a3561b368e5307
-    resource: repo://docs/planning/ROADMAP.md
+  - id: openwiki-source-ff39fa8dfffbd1a097ab5e16
+    resource: repo://docs/planning/pipeline/completed/separate-repository-sdk-and-first-party-cartridge.notes.md
+  - id: openwiki-source-047cb62ee1741c598c0f11a5
+    resource: repo://migrations/0014_provider_security_foundation.sql
   - id: openwiki-source-d69dbacb0ae7fe382ee46161
     resource: repo://scripts/test-game-cartridge-renderer.sh
   - id: openwiki-source-8df9ad1a3495f8360740ff03
@@ -47,7 +57,10 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-25T14:08:06.805Z"}
+generated: {by: "codex", at: "2026-08-25T19:56:58.182Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-25T20:01:00.857Z
 ---
 
 # Game Cartridges and portable provider direction
@@ -60,15 +73,18 @@ and inert store. Ticket 016 supplies the production render-plan compiler, fixed
 trusted QML vocabulary, and isolated preview CLI. Ticket 017 adds the
 deterministic public SDK export, signed release and catalog-policy verification,
 separate-repository first-party proof, and secure local importer. The main QML
-connector does not launch cartridges yet, and production rendering does not
-authorize remote gameplay authority. The compiled Rust runtime and OmarchyGS
-PostgreSQL snapshot/revision remain authoritative under Constitution §10;
-[Runtime foundation](runtime-foundation.md) maps that path.
+connector does not launch cartridges yet. Ticket 018 adds a production-grade,
+but deliberately dormant, provider registration, protocol, guarded-egress,
+replay, quota, and audit foundation. It is not instantiated by the player
+server and does not authorize remote gameplay authority. The compiled Rust
+runtime and OmarchyGS PostgreSQL snapshot/revision remain authoritative under
+Constitution §10; [Runtime foundation](runtime-foundation.md) maps that path.
 
 Ticket 014 contributes an isolated executable architecture proof. Its broker,
-provider, and QML surface are not a public SDK or deployed runtime. Remote
-authority still needs a later protocol, migration, and explicit Constitution
-amendment before it can leave operator-controlled proof work.
+provider, and QML surface are not a public SDK or deployed runtime. Ticket 018
+replaces that proof's security assumptions with a production workspace crate
+and durable schema, but remote authority still needs a player-server integration
+pipeline and explicit Constitution amendment.
 
 ## Product and system model
 
@@ -93,16 +109,17 @@ game repository
        trusted OmarchyGS QML components
                   │ unconfirmed declared action
                   ▼
-       authenticated OmarchyGS broker (future)
+       authenticated OmarchyGS broker (dormant foundation)
                   │ scoped, short-lived pairwise grant
                   ▼
-       registered provider in a future mode
+       registered provider (not connected to players)
 ```
 
 The cartridge supplies signed presentation data. OmarchyGS supplies all
 executable QML, focus/navigation, accessibility, themes, platform dialogs,
-networking, and security policy. A future provider supplies game rules and
-private gameplay state; it never supplies the trusted frontend.
+networking, and security policy. After a separately authorized authority
+migration, a provider may supply game rules and private gameplay state; it
+never supplies the trusted frontend.
 
 ## Package and presentation trust
 
@@ -195,12 +212,13 @@ not make the publisher trusted for memory, CPU, action shape, or UI authority.
 OmarchyGS retains every executable QML component, trusted preference,
 origin/failure surface, and future action dispatcher.
 
-In the proposed remote flow, the client always calls authenticated OmarchyGS
-APIs. OmarchyGS resolves an operator-registered destination and sends a
-short-lived grant bound to provider audience, game and release versions,
-platform session, one scope, a pairwise provider/game persona subject, expiry,
-and replay ID. Account identity, credentials, reusable device-session tokens,
-and database access never cross the boundary.
+The dormant remote-provider foundation preserves the intended flow: the client
+calls authenticated OmarchyGS APIs, and an OmarchyGS-only broker resolves an
+operator-registered destination and sends a short-lived grant bound to provider
+audience, exact release/game/rules/cartridge identities, platform session, one
+scope, a pairwise provider/game persona subject, expiry, and replay ID. Account
+identity, raw persona identity, reusable device-session credentials, and
+database access never cross the boundary.
 
 A player action carries one durable idempotency key and expected provider
 revision. A timeout means unknown outcome, so retries retain both values while
@@ -209,6 +227,18 @@ an explicit refresh rather than a silent rebase. Signed provider events use
 stable IDs and are deduplicated before achievements, results, notifications,
 or sync projections are applied. Provider outage may expose the last validated
 view as stale/read-only, but OmarchyGS never invents a move or result.
+
+Ticket 018 persists immutable registered releases, lifecycle scopes,
+append-only message-signing and TLS keys, grants, quota windows, concurrency
+leases, operation attempts, authenticated callback receipts, and safe audit
+events in PostgreSQL. Requests, responses, and callbacks use a fixed signed
+message profile over the exact body and context. Production egress accepts only
+an operator-pinned HTTPS DNS origin resolving entirely to public unicast
+addresses, pins the resolved sockets while retaining hostname verification,
+trusts only registered roots, and disables proxies, redirects, decompression,
+and unbounded responses. The compile-time conformance mode admits one exact
+generated loopback socket; it cannot create a production private-network
+allowlist.
 
 ## Graphics envelope
 
@@ -257,7 +287,7 @@ The implemented v1 profile ceilings are:
 | Surface RSS soft / hard | 256 / 384 MiB | 384 / 512 MiB |
 | Software frame average | 16.67 ms target; 33.3 ms gate ceiling | Same |
 
-## Renderer evidence and isolated provider proof
+## Renderer and provider evidence
 
 `scripts/test-game-cartridge-renderer.sh` generates real signed base, Core, and
 Rich-2D packages and prepares them through the production CLI under unusable
@@ -308,9 +338,16 @@ scripts/test-game-cartridge-spike.sh
 ```
 
 The production renderer is gate 12, the SDK/release/import proof is gate 13,
-and this isolated provider proof is gate 14 in every `bin/gate.sh` mode. See
-[Development and validation](development-and-validation.md) for the full gate
-and failure routing.
+and this isolated provider proof is gate 14 in every `bin/gate.sh` mode. In
+diff/full modes, gate 17 additionally exercises the dormant production provider
+boundary against migrated PostgreSQL and a separate TLS provider process:
+
+```bash
+scripts/test-provider-conformance.sh
+```
+
+See [Development and validation](development-and-validation.md) for the full
+gate and failure routing.
 
 ## Staged SDK and rollout
 
@@ -324,9 +361,9 @@ and failure routing.
    platform-authoritative.
 4. Challenges and the first playable use those stable seams without waiting
    for remote hosting.
-5. Ticket 018, after private-alpha need justifies it, builds production provider
-   registration, grants/message security, guarded egress, quotas, replay state,
-   audit, and revocation.
+5. Ticket 018 implements dormant production provider registration,
+   grants/message security, guarded egress, quotas, replay state, audit, and
+   revocation without connecting it to player routes.
 6. Ticket 019 pilots one first-party remote authority migration and proposes
    the required Constitution §10 amendment. External providers wait until
    operations, recovery, suspension, and support policy are proven.
@@ -352,5 +389,5 @@ decisions and monotonic policy versions.
 | Package, signing, and capability contract | `crates/game-cartridge`; ADR-0002; `docs/architecture/game-cartridges.md`; Ticket 015 | `scripts/test-game-cartridge.sh`; deterministic fixtures, malformed package and resource-limit matrix, signature/capability/revocation checks |
 | Trusted renderer and graphics profile | `crates/game-cartridge-renderer`; `client/qml/cartridge`; Ticket 016 | `scripts/test-game-cartridge-renderer.sh`; schema/action/resource rejection, keyboard/accessibility/fixed states, and constrained Core/Rich-2D measurements |
 | Separate-repository SDK/release | `crates/game-cartridge/src/sdk.rs`, `release.rs`, `lifecycle.rs`, `secure_store.rs`; Ticket 017 | `scripts/test-game-cartridge-sdk.sh`; deterministic export, clean-clone reproducibility, signed provenance/policy, lifecycle matrix, descriptor-relative import, rollback/race/permission rejection |
-| Provider security foundation | authority/threat model; Ticket 018 | TLS and sender authentication, registered egress, grant/replay/key/quotas/audit/failure tests |
+| Provider security foundation | `crates/game-provider`; migration `0014_provider_security_foundation.sql`; `docs/operators/provider-security.md`; Ticket 018 | `scripts/test-provider-conformance.sh`; TLS and sender authentication, public-only pinned egress, grant/replay/key/quota/lease/audit, lifecycle, race, and failure tests |
 | Remote authority migration | Constitution §10; ADR-0002; Ticket 019 | One durable gameplay owner, explicit migration/rollback/reconciliation, accepted constitutional change |

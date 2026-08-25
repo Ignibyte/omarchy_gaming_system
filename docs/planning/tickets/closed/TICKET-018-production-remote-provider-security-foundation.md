@@ -1,12 +1,12 @@
 ---
 title: TICKET-018-production-remote-provider-security-foundation
-status: open
+status: closed
 ticket_number: 018
 type: infrastructure
 created: 2026-08-24
-closed:
+closed: 2026-08-25
 intake:
-pipeline_spec:
+pipeline_spec: docs/planning/pipeline/completed/production-remote-provider-security-foundation.spec.md
 ---
 
 # TICKET-018-production-remote-provider-security-foundation
@@ -36,7 +36,19 @@ foundation without yet migrating gameplay authority.
   self-service provider registration, provider-hosted UI, constitution changes,
   and Git delivery.
 
+## Outcome
+
+Implemented a dormant production provider security boundary in the
+`omarchy-game-provider` workspace crate and migration 0014. It includes
+operator-pinned immutable releases, key and lifecycle controls, pairwise
+short-lived grants, fixed signed messages, guarded public-only HTTPS egress,
+durable replay/callback receipts, quotas, concurrency leases, audit, an
+operator CLI, and a separate-process TLS/PostgreSQL conformance environment.
+Gate 17 enforces the provider suite in diff/full deliveries. No player-facing
+route or remote gameplay authority was enabled.
+
 ## Links
 
-- Deferred until after the private-alpha cartridge/first-game milestones.
 - Architecture: [ADR-0002](../../../architecture/adr-0002-game-cartridge-and-provider-boundary.md)
+- Security architecture: [Game Cartridges](../../../architecture/game-cartridges.md)
+- Operations: [Provider security runbook](../../../operators/provider-security.md)

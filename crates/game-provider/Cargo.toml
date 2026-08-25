@@ -1,0 +1,46 @@
+[package]
+name = "omarchy-game-provider"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[features]
+default = []
+provider-conformance = ["dep:axum", "dep:axum-server", "dep:rcgen", "dep:tempfile"]
+
+[dependencies]
+axum = { workspace = true, optional = true }
+axum-server = { workspace = true, optional = true }
+base64.workspace = true
+data-encoding.workspace = true
+ed25519-dalek.workspace = true
+futures-util.workspace = true
+hmac.workspace = true
+http.workspace = true
+rand_core.workspace = true
+rcgen = { workspace = true, optional = true }
+reqwest.workspace = true
+rustls.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+sqlx.workspace = true
+tempfile = { version = "3.23.0", optional = true }
+thiserror.workspace = true
+tokio = { workspace = true, features = ["fs", "process"] }
+tracing.workspace = true
+url.workspace = true
+uuid = { workspace = true, features = ["serde", "v4"] }
+zeroize.workspace = true
+
+[dev-dependencies]
+tempfile = "3.23.0"
+
+[[bin]]
+name = "omarchygs-provider-admin"
+path = "src/bin/omarchygs-provider-admin.rs"
+
+[[bin]]
+name = "omarchygs-provider-fixture"
+path = "src/bin/omarchygs-provider-fixture.rs"
+required-features = ["provider-conformance"]

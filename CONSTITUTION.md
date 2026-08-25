@@ -45,6 +45,11 @@ The current gates are:
 15. PostgreSQL integration tests (DIFF/FULL only)
 16. The real PostgreSQL migration → Rust health API → QML health-client smoke
     path (DIFF/FULL only)
+17. The production remote-provider security foundation, including PostgreSQL
+    registry/lifecycle races and a separately spawned TLS provider proving
+    signed grants/messages, durable replay, expected revisions, bounded
+    faults, outage recovery, event deduplication, and reconciliation
+    (DIFF/FULL only)
 
 Repository-local CodeGraph and OpenWiki are workflow instruments, not CI
 dependencies. `scripts/setup-pipeline-tools.sh` prepares their pinned generated
