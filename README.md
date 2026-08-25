@@ -116,8 +116,13 @@ trusted internal transaction boundary. Participating personas can list or read
 those sessions without exposing account ownership. Participant commands execute
 only through the stored exact rules version, use optimistic revisions and a
 session-wide idempotency UUID, and atomically persist the next snapshot,
-private replay receipt, and minimal participant invalidations. Public creation,
-challenges, production game rules, and bots remain later roadmap slices.
+private replay receipt, and minimal participant invalidations. Connected,
+unblocked personas can now create exact-version inbox challenges; the other
+persona can accept one into exactly one session, decline it, or leave the
+challenger to cancel it. Challenge history, server-owned expiry, retry/race
+safety, typed inbox events, and reconnect-safe invalidations are durable.
+Production game rules, results, QML challenge screens, and bots remain later
+roadmap slices.
 
 ## Development checks
 

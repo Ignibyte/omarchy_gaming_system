@@ -1,0 +1,50 @@
+{
+  "format_version": 1,
+  "game_key": "renderer-demo",
+  "publisher_id": "ignibyte",
+  "rules_version": 1,
+  "cartridge_version": 1,
+  "sdk": { "min": 1, "max": 1 },
+  "presentation_protocol": { "min": 1, "max": 1 },
+  "display_name": "Renderer Demo",
+  "entry_screen": "main",
+  "required_capabilities": [
+    "presentation.button.v1",
+    "presentation.grid.v1",
+    "presentation.image.v1",
+    "presentation.meter.v1",
+    "presentation.status.v1",
+    "presentation.terminal.v1"
+  ],
+  "optional_capabilities": [
+    { "capability": "audio.effects.v1", "fallback": { "kind": "muted" } },
+    { "capability": "presentation.particles.v1", "fallback": { "kind": "reduced_motion" } },
+    {
+      "capability": "presentation.sprite.v1",
+      "fallback": {
+        "kind": "simpler_capability",
+        "capability": "presentation.image.v1"
+      }
+    }
+  ],
+  "schemas": ["schemas/view.schema.json"],
+  "locales": [],
+  "assets": [
+    {
+      "path": "assets/pixel.png",
+      "media_type": "image_png",
+      "decoded_bytes": 4,
+      "width": 1,
+      "height": 1,
+      "duration_ms": null
+    },
+    {
+      "path": "assets/tick.wav",
+      "media_type": "audio_wav",
+      "decoded_bytes": 1,
+      "width": null,
+      "height": null,
+      "duration_ms": 0
+    }
+  ]
+}

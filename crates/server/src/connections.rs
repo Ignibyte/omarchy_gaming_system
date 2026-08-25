@@ -716,6 +716,18 @@ async fn lock_pair(
     Ok(LockedPair { low_id, high_id })
 }
 
+/// Lock a cross-account persona pair in canonical order and prove actor ownership.
+pub(crate) async fn lock_persona_pair(
+    transaction: &mut Transaction<'_, Postgres>,
+    account_id: Uuid,
+    actor_id: Uuid,
+    target_id: Uuid,
+) -> Result<(), ConnectionError> {
+    lock_pair(transaction, account_id, actor_id, target_id)
+        .await
+        .map(|_| ())
+}
+
 async fn lock_persona(
     transaction: &mut Transaction<'_, Postgres>,
     persona_id: Uuid,

@@ -1,5 +1,6 @@
 mod accounts;
 mod app;
+mod challenges;
 mod config;
 mod connections;
 mod credentials;
@@ -10,6 +11,8 @@ mod personas;
 mod sessions;
 mod sync;
 
+#[cfg(test)]
+mod challenge_api_tests;
 #[cfg(test)]
 mod connection_api_tests;
 #[cfg(test)]

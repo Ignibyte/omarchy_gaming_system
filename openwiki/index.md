@@ -6,6 +6,7 @@ okf_version: "0.2"
 
 - [Codex work pipeline](codex-workflow.md)
 - [Development and validation](development-and-validation.md)
+- [Game Cartridges and portable provider direction](game-cartridges.md)
 - [Product and architecture boundaries](product-boundaries.md)
 - [Omarchy Gaming System engineering quickstart](quickstart.md)
 - [Runtime foundation](runtime-foundation.md)

@@ -19,14 +19,32 @@ client.
 The current gates are:
 
 1. `cargo fmt --all --check`
-2. Clippy across the workspace and all targets with warnings denied
-3. Workspace tests
+2. Clippy across the production workspace and all targets with warnings denied
+3. Production-workspace tests
 4. Rust documentation with warnings denied
 5. Docker Compose validation
 6. Bash syntax validation for project and Codex hook scripts
-7. Whitespace validation across tracked, staged, and untracked files
-8. The real PostgreSQL migration → Rust health API → QML health-client smoke
-   path (DIFF/FULL only)
+7. Pipeline-structure validation
+8. Changed-file secret scanning
+9. Codex hook self-tests
+10. Whitespace validation across tracked, staged, and untracked files
+11. The production Game Cartridge contract, including deterministic packing,
+    hostile archive and content verification, compatibility reporting,
+    database/network/credential-isolated conformance, and atomic local
+    install/revocation checks
+12. The production trusted Game Cartridge renderer, including authenticated
+    schema/view compilation, profile and fallback bounds, private preview
+    output, allowlisted QML components, keyboard/accessibility behavior, every
+    fixed failure state, and software-rendered frame/RSS profile measurements
+13. The production Game Cartridge SDK/release boundary, including deterministic
+    SDK export, fresh-repository reproducibility, signed provenance, public-only
+    verification/import, lifecycle policy, and descriptor-relative store tests
+14. The isolated Game Cartridge architecture proof, including its nested
+    workspace format, Clippy, tests, binary build, rustdoc, signed package,
+    broker/provider exchange, privacy assertions, and trusted QML smoke path
+15. PostgreSQL integration tests (DIFF/FULL only)
+16. The real PostgreSQL migration → Rust health API → QML health-client smoke
+    path (DIFF/FULL only)
 
 Repository-local CodeGraph and OpenWiki are workflow instruments, not CI
 dependencies. `scripts/setup-pipeline-tools.sh` prepares their pinned generated
@@ -79,9 +97,13 @@ check. Phase 4 must run the tests; writing them is not proof.
   cursor-based synchronization remains the recovery source of truth.
 - Transport handlers remain thin. Domain and game logic live in testable Rust
   modules without direct UI coupling.
-- Games start as compiled Rust crates. Loading third-party native code is out of
-  scope; any future extension runtime requires an explicit sandbox decision.
-- The QML connector is keyboard-first and consumes only public API contracts.
+- First-party server game rules start as compiled Rust crates. Portable Game
+  Cartridges are signed inert data rendered only through bounded,
+  platform-owned components. Loading publisher native/QML/JavaScript code is
+  out of scope; any future executable extension runtime requires an explicit
+  sandbox decision.
+- The QML connector is keyboard-first and consumes only public API or trusted
+  render-plan contracts.
 
 ## §14 — Code conventions
 

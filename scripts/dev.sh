@@ -406,6 +406,40 @@ if [[ "$ogs_smoke_test" == true ]]; then
     exit 1
   fi
 
+  ogs_challenge_key=$(python3 -c 'import uuid; print(uuid.uuid4())')
+  ogs_challenge_payload=$(jq -nc \
+    --arg idempotency_key "$ogs_challenge_key" \
+    --arg challenged_persona_id "$ogs_peer_persona_id" \
+    '{idempotency_key: $idempotency_key,
+      challenged_persona_id: $challenged_persona_id,
+      game_key: "smoke_game",
+      game_version: 1}')
+  ogs_challenge_status=$(curl \
+    --silent \
+    --output "$ogs_log_dir/unavailable-game-challenge.json" \
+    --write-out '%{http_code}' \
+    --header "Authorization: Bearer $ogs_session_token" \
+    --header "Content-Type: application/json" \
+    --data "$ogs_challenge_payload" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/game-challenges")
+  if [[ "$ogs_challenge_status" != 409 ]] \
+    || ! grep -Fq '"code":"game_unavailable"' \
+      "$ogs_log_dir/unavailable-game-challenge.json"; then
+    echo "Empty-registry game challenge did not fail closed" >&2
+    exit 1
+  fi
+  ogs_challenge_sync=$(curl \
+    --fail \
+    --silent \
+    --header "Authorization: Bearer $ogs_session_token" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/sync?after=$ogs_sync_cursor")
+  if ! jq -e \
+    '.events == [] and .has_more == false and .reset_required == false' \
+    <<<"$ogs_challenge_sync" >/dev/null; then
+    echo "Rejected game challenge emitted a partial sync event" >&2
+    exit 1
+  fi
+
   ogs_conversations=$(curl \
     --fail \
     --silent \

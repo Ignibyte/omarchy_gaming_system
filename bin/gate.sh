@@ -79,10 +79,14 @@ run_gate 7 "pipeline structure" ./scripts/check-pipeline.sh
 run_gate 8 "changed-file secret scan" check_changed_secrets
 run_gate 9 "Codex hook self-tests" ./scripts/selftest-hooks.sh
 run_gate 10 "whitespace errors" check_whitespace
+run_gate 11 "production Game Cartridge contract" ./scripts/test-game-cartridge.sh
+run_gate 12 "trusted Game Cartridge renderer" ./scripts/test-game-cartridge-renderer.sh
+run_gate 13 "Game Cartridge SDK release" ./scripts/test-game-cartridge-sdk.sh
+run_gate 14 "Game Cartridge architecture proof" ./scripts/test-game-cartridge-spike.sh
 
 if [[ "$ogs_mode" != "fast" ]]; then
-  run_gate 11 "PostgreSQL integration tests" ./scripts/test-database.sh
-  run_gate 12 "PostgreSQL + Rust API + QML smoke" ./scripts/dev.sh --smoke-test
+  run_gate 15 "PostgreSQL integration tests" ./scripts/test-database.sh
+  run_gate 16 "PostgreSQL + Rust API + QML smoke" ./scripts/dev.sh --smoke-test
 fi
 
 if ((ogs_failures > 0)); then

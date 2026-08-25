@@ -1,0 +1,7 @@
+{
+  "board": { "cells": ["A", "B", "C", "D"] },
+  "button": { "label": "End turn" },
+  "log": { "text": "Welcome, operator." },
+  "meter": { "value": 75 },
+  "status": { "text": "Your move" }
+}

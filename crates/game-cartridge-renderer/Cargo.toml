@@ -1,0 +1,24 @@
+[package]
+name = "omarchygs-game-cartridge-renderer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "omarchygs-cartridge-preview"
+path = "src/bin/omarchygs-cartridge-preview.rs"
+
+[dependencies]
+omarchygs-game-cartridge = { path = "../game-cartridge" }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+base64.workspace = true
+tempfile = "3.23"

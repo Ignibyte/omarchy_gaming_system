@@ -106,9 +106,24 @@ the first identity HTTP surfaces:
   inject deterministic fixture definitions.
 - public `GET /v1/games` inventories only compiled manifest metadata. Durable
   game sessions pin one game key/version, revision-zero object snapshot,
-  active status, and ordered human persona seats. Creation is currently a
-  crate-private transaction primitive reserved for the challenge workflow;
+  active status, and ordered human persona seats. Creation is a crate-private
+  transaction primitive invoked by challenge acceptance;
   participant-owned persona routes expose bounded inventory/detail only.
+- durable two-person challenges pin one exact game key/version between a
+  connected, unblocked, different-account persona pair. A challenger-scoped
+  UUID makes creation retry-safe, a partial uniqueness constraint prevents an
+  equivalent pending request, and canonical persona-root locks serialize the
+  100-incoming/100-outgoing limits and every lifecycle race.
+- challenge state is monotonic from `pending` to `accepted`, `declined`,
+  `cancelled`, or `expired`. The server owns a seven-day expiry and resolves it
+  under persona locks on reads and mutations. Terminal history is retained;
+  accepted rows alone link one exact session.
+- challenge creation and first terminal transitions append one typed message
+  to the pair's durable conversation plus minimal challenge/conversation sync
+  invalidations for both personas. Acceptance calls the session primitive in
+  the same transaction, so the exact initial snapshot, ordered seats, accepted
+  link, inbox record, and all invalidations either commit together or not at
+  all. WebSocket hints carry none of those resource details.
 - creating a session appends a minimal `game_session_changed` invalidation for
   every participant in the same transaction. Reads use the stored game version
   and state directly, so a changed process registry cannot silently relabel an
@@ -129,8 +144,9 @@ creation. Persona responses are built from a public model that does not contain
 `account_id` or authentication material. Accounts may own multiple personas;
 public handle enumeration never reveals that ownership relationship.
 
-Social, inbox, and game-session queries identify the acting persona in the path, but it is
-always constrained to the account derived from the Bearer session. A canonical
+Social, inbox, challenge, and game-session queries identify the acting persona
+in the path, but it is always constrained to the account derived from the
+Bearer session. A canonical
 unordered pair owns at most one pending or accepted relationship row, while
 blocks remain directional and one conversation persists independently of live
 relationship state. Same-account personas cannot manufacture social edges.
@@ -138,9 +154,11 @@ Idempotent `PUT` and `DELETE` commands are safe for client retry. The inbox
 persists typed local messages and read state, while the persona sync feed makes
 those and social changes reconnect-safe without exposing private resource data
 on WebSockets. The same feed identifies changed game sessions by UUID, while
-the participant-authorized REST resource remains the only state source. Game
-command POSTs use explicit session-wide idempotency keys and expected revisions;
-WebSockets never accept durable game mutations.
+the participant-authorized REST resource remains the only state source.
+Challenge events likewise carry only the participant-authorized challenge
+UUID; challenge REST is the status source. Game command POSTs use explicit
+session-wide idempotency keys and expected revisions; WebSockets never accept
+durable game mutations.
 
 Credential hashing and verification share a four-job limit so memory-hard work
 cannot grow with request concurrency. This is not distributed login throttling,
@@ -170,3 +188,13 @@ local pre-alpha transition, the server continues to accept structurally valid
 prefixes, so legacy sessions require no schema migration and still follow the
 same expiry and revocation rules. Forward-only migrations and completed
 planning records retain their historical names.
+
+## Proposed portable game direction
+
+Ticket 014 is evaluating an [OmarchyGS Game Cartridge](game-cartridges.md)
+model: independently versioned games would ship a signed declarative
+presentation package rendered by trusted OmarchyGS QML components, while a
+future registered provider could own server-side gameplay behind an
+authenticated platform broker. This is a proposal, not current behavior. Raw
+third-party QML, JavaScript, native plugins, device tokens, account identity,
+and direct database access remain outside the boundary.

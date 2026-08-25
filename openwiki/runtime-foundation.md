@@ -9,6 +9,10 @@ sources:
     resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
+  - id: openwiki-source-2c054a2481343f8aacaf65ae
+    resource: repo://crates/server/src/challenge_api_tests.rs
+  - id: openwiki-source-a3892e0554790e3efc606fe1
+    resource: repo://crates/server/src/challenges.rs
   - id: openwiki-source-b691fa90e62f9509a0c1869a
     resource: repo://crates/server/src/config.rs
   - id: openwiki-source-4b133589ca70bd174cf19eb9
@@ -19,8 +23,6 @@ sources:
     resource: repo://crates/server/src/game_api_tests.rs
   - id: openwiki-source-26aac996689c040c6aab6825
     resource: repo://crates/server/src/games.rs
-  - id: openwiki-source-4773699be275375a3bb0c216
-    resource: repo://crates/server/src/inboxes.rs
   - id: openwiki-source-a13fe4db1eee073d0a7e2c4d
     resource: repo://crates/server/src/main.rs
   - id: openwiki-source-1f3bbf6debbcae2e3b3c3b61
@@ -53,10 +55,12 @@ sources:
     resource: repo://migrations/0010_game_registry_and_sessions.sql
   - id: openwiki-source-c79a682b6a5bf55579dee651
     resource: repo://migrations/0011_idempotent_revision_checked_game_commands.sql
-generated: {by: "codex", at: "2026-08-25T01:37:12.518Z"}
+  - id: openwiki-source-cb6494f7cbf0d5d23ffe082a
+    resource: repo://migrations/0012_game_challenges.sql
+generated: {by: "codex", at: "2026-08-25T15:17:54.717Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-25T01:37:12.518Z
+    at: 2026-08-25T15:17:54.717Z
 ---
 
 # Runtime foundation
@@ -289,15 +293,65 @@ read acknowledgement uses `GREATEST`, so older retries cannot move a cursor
 backward. This sequence is a conversation history cursor only, not the
 cross-resource persona synchronization cursor.
 
+## Game challenge flow
+
+The authenticated challenge routes are nested below an owned acting persona.
+Creation accepts a UUID idempotency key, another persona, and one exact game
+key/version. A new challenge requires a different-account peer whose connection
+is still accepted and unblocked, and the selected compiled manifest must admit
+the two people in this v1 flow. Canonical persona-root locks serialize
+relationship policy, equivalent pending requests, lazy expiry, and the fixed
+limits of 100 unexpired outgoing plus 100 unexpired incoming challenges per
+persona. The server fixes expiry at seven days.
+
+The challenger-scoped idempotency identity is durable. Reusing it for another
+target, key, or version conflicts; an exact retry returns the retained
+participant-authorized representation without another challenge, inbox
+message, or synchronization event. Because this is recovery of a committed
+write rather than a new interaction, it remains replayable after the pair's
+relationship changes or that version leaves the current process registry.
+Concurrent first requests that miss the initial lookup still converge under
+the pair locks and a second transaction-local replay check.
+
+Inventory and detail authenticate ownership and return only rows in which the
+acting persona is challenger or challenged. Pages are newest-first, default to
+50, cap at 100, and include both pending and terminal history. Reads and
+mutations resolve due pending rows to `expired` inside their transaction.
+Responses contain the exact game identity, incoming/outgoing direction,
+status, both public persona projections, optional accepted session ID, and
+timestamps; they omit account IDs, the idempotency key, relationship/block
+state, registry internals, and game state.
+
+Only the challenged persona may accept or decline; only the challenger may
+cancel. Decline and cancellation create terminal history without a session.
+Acceptance additionally rechecks that the pair is connected and unblocked,
+then invokes `games::create_session` with challenger seat 0 and challenged seat
+1 in the same PostgreSQL transaction. The session snapshot and seats, accepted
+challenge link, typed inbox event, and challenge, conversation, and session
+invalidations therefore commit together or roll back together. A retry of the
+same terminal operation is effect-free, and competing terminal transitions
+have one winner.
+
+Creation and first terminal transitions append one server-authored message to
+the pair's existing private conversation. The variants are
+`game_challenge_created`, `game_challenge_accepted`,
+`game_challenge_declined`, and `game_challenge_cancelled`; every variant names
+the public actor and challenge ID, while acceptance alone also names the game
+session. Challenge synchronization similarly carries only
+`game_challenge_changed` plus the challenge UUID. The inbox record is immutable
+history, REST challenge state is current truth, and WebSockets remain generic
+wakeup hints.
+
 ## Durable persona synchronization and live hints
 
-Every committed social, inbox, or game-session mutation that changes visible
-state appends a typed row to each affected persona's monotonic synchronization
-stream in the same transaction as the domain write. It then emits a PostgreSQL
-notification carrying only the persona ID; the durable cursor remains in REST.
-No-op retries append nothing. Retention pruning is transactional too, so the
-oldest retained cursor defines the recovery boundary. A game invalidation
-carries only the session UUID, never its state or participant list.
+Every committed social, inbox, game-challenge, game-session, or game-command
+mutation that changes visible state appends a typed row to each affected
+persona's monotonic synchronization stream in the same transaction as the
+domain write. It then emits a PostgreSQL notification carrying only the persona
+ID; the durable cursor remains in REST. No-op retries append nothing. Retention
+pruning is transactional too, so the oldest retained cursor defines the
+recovery boundary. Game invalidations carry only the challenge or session UUID,
+never state, participants, or conversation details.
 
 `GET /v1/personas/{persona_id}/sync` is the durable source of truth. Without an
 `after` cursor it returns a bounded baseline; with one it returns strictly newer
@@ -337,15 +391,16 @@ trusted-rules rejection, and non-object or over-64-KiB output through stable
 typed errors. Identical initialization or command inputs are expected to be
 deterministic.
 
-`games::create_session` is a crate-private transaction primitive for trusted
-future orchestration. It rejects empty, duplicate, or over-eight participant
-sets before persistence; initializes the exact rules version; locks all
-existing persona roots in canonical UUID order; then stores the immutable game
-key/version, revision-zero active object snapshot, and caller-ordered seats. It
-appends one `game_session_changed` event for every participant inside the same
-caller-owned transaction. Any error must be propagated so state, seats, and
-invalidations roll back together. No public creation route exists yet because
-challenge acceptance will own that authorization policy.
+`games::create_session` is a crate-private transaction primitive currently
+invoked by challenge acceptance. It rejects empty, duplicate, or over-eight
+participant sets before persistence; initializes the exact rules version;
+locks all existing persona roots in canonical UUID order; then stores the
+immutable game key/version, revision-zero active object snapshot, and
+caller-ordered seats. It appends one `game_session_changed` event for every
+participant inside the same caller-owned transaction. Any error must be
+propagated so state, seats, and invalidations roll back together. There is no
+direct arbitrary session-creation route; challenge acceptance owns the public
+authorization policy.
 
 Authenticated inventory and detail routes first validate the Bearer session,
 then require the acting persona to belong to its derived account and to each
@@ -415,7 +470,12 @@ durable participant, allows one receipt per applied revision, requires the
 applied revision to be exactly one beyond its nonnegative expected revision,
 and enforces object command and state shapes. The database enforces object
 shape and canonical identity; the compiled runtime applies the serialized
-state and command bounds before persistence. Add later
+state and command bounds before persistence. Migration `0012` adds durable
+two-person challenges with immutable exact-game identity, challenger-scoped
+idempotency, one equivalent pending request, participant-history indexes, and
+status/session/resolution constraints. It also extends inbox messages with
+typed challenge/session references and retained persona events with an exact
+payload-minimal challenge variant. Add later
 capabilities through domain modules and thin handlers rather than placing policy
 directly in SQL or transport code.
 
@@ -456,3 +516,8 @@ replay and isolated collision axes, revision conflicts, rollback silence,
 minimal per-participant sync, bounded private reads, indistinguishable foreign
 and absent objects, registry-independent stored history, and one-winner command
 concurrency.
+Challenge changes use `challenge_api_tests.rs`: one local body-limit case and
+six migrated PostgreSQL cases cover participant privacy, exact creation replay
+and collisions, typed inbox and minimal sync payloads, exact-version acceptance
+and seat order, terminal history and lazy expiry, pending limits, initializer
+and block rollback, and one-winner terminal races.

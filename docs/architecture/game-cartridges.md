@@ -1,0 +1,664 @@
+# OmarchyGS Game Cartridges — architecture and delivery plan
+
+Status: the data-only cartridge/provider boundary was accepted by
+[`ADR-0002`](adr-0002-game-cartridge-and-provider-boundary.md) after the
+[`TICKET-014`](../planning/tickets/closed/TICKET-014-portable-games-sdk-and-remote-hosting-spike.md)
+proof. Ticket 015 implements the local v1 package, verifier, conformance CLI,
+and same-user store. Ticket 016 adds the production render-plan compiler, trusted QML
+vocabulary, isolated preview command, and measured Core/Rich-2D reference
+profiles. Ticket 017 adds the deterministic v1 SDK export, signed release
+provenance, first-party clean-room repository proof, signed catalog lifecycle,
+and descriptor-relative privileged import boundary. Public Internet publication,
+third-party onboarding, and remote-provider authority remain gated follow-up
+stages; this design never authorizes loading third-party code.
+
+## Product model
+
+An **OmarchyGS Game Cartridge** is the retro-styled, immutable presentation and
+integration package for one exact game release. A player browses the trusted
+OmarchyGS catalog, selects a cartridge, and plays inside the consistent
+keyboard-first OmarchyGS shell.
+
+The cartridge supplies the game's identity, declared capabilities, schemas,
+screen templates, and static assets. OmarchyGS supplies the executable QML
+renderer, navigation, theme, accessibility, platform dialogs, network broker,
+and security boundary. The game provider supplies the server-side rules and
+gameplay state in the future remote-provider mode.
+
+The central rule is:
+
+> Games provide signed presentation data, validated view models, declared
+> actions, and assets. OmarchyGS provides the executable frontend.
+
+The cartridge behaves like a ROM from the player's point of view: the catalog
+shows cover art and compatibility, selection mounts one exact signed release,
+and the same release can move between compatible OmarchyGS installations.
+Unlike a historical ROM, it does not contain a machine-code game engine. Saved
+games, identity, avatars, achievements, social state, and launch permission live
+outside the cartridge, so replacing or uninstalling presentation bytes never
+silently replaces or deletes authoritative player state.
+
+Raw game-supplied QML, JavaScript, native libraries, shell commands, and direct
+network clients are not cartridges. Qt explicitly assumes QML and JavaScript
+are trusted application code and recommends a custom domain-specific language
+when content is untrusted.
+
+## System shape
+
+```text
+game repository
+  ├─ provider server and rules
+  ├─ SDK schemas and conformance tests
+  └─ signed immutable Game Cartridge
+       ├─ manifest and capability requirements
+       ├─ declarative screen templates
+       ├─ command and view-model schemas
+       ├─ localizations
+       └─ bounded static assets
+                    │ publish
+                    ▼
+          OmarchyGS trusted catalog
+                    │ select exact version
+                    ▼
+          OmarchyGS QML shell/renderer
+                    │ declared action
+                    ▼
+          OmarchyGS authenticated broker
+                    │ short-lived provider-scoped grant
+                    ▼
+             remote game provider
+                    │ signed result/event
+                    ▼
+       OmarchyGS achievements, history, inbox, and sync
+```
+
+For the first-party transition, a game may remain a compiled Rust definition
+while its source lives in a separate repository and its cartridge already uses
+the public presentation contract. A later provider adapter moves gameplay
+authority across the network without replacing the player-facing cartridge.
+
+## Execution-model decision
+
+| Model | Gameplay authority | Isolation | Release and compatibility | Latency/offline | Operational cost | Decision |
+|---|---|---|---|---|---|---|
+| Current compiled Rust definition | OmarchyGS process and PostgreSQL | Strong capability boundary in the Rust trait, but no process boundary | Platform release pins exact compiled key/version | Lowest latency; platform can resume locally | Lowest initially; every game change releases the platform | Retain for the private alpha and deterministic first-game rules |
+| Separate-repository compiled first-party artifact | OmarchyGS process after reviewed build/import | Same runtime boundary; source and release provenance improve | Independent source version, but platform still rebuilds to consume it | Same as current | Moderate CI/supply-chain work; no provider operations | First migration step for proving repository and SDK portability |
+| Sandboxed local executable/Wasm rules | Local platform client or server sandbox | Depends on a narrow host ABI, quotas, and a maintained runtime | Portable artifact can release independently | Low latency and stronger offline behavior | New sandbox, determinism, resource, patch, and ABI burden | Defer; evaluate later for offline/local rules, never as a frontend escape hatch |
+| Registered remote provider | Provider owns rules and durable gameplay revision; OmarchyGS owns the platform envelope | Separate process/network/failure domain with least-privilege grants | Provider and cartridge deploy independently; sessions pin exact identities | Network-dependent; cached views are read-only during outage | Highest: registry, egress, keys, quotas, audit, reconciliation, support | Long-term target after cartridge/SDK stages and a constitution amendment |
+
+The staged recommendation is therefore **compiled now, portable cartridge and
+conformance contract next, separate first-party repository after that, and a
+brokered remote provider only after the authority migration is explicitly
+approved**. This avoids forcing the private alpha to operate a distributed
+game platform while keeping today's APIs from becoming the permanent SDK.
+
+## Authority and data ownership
+
+| Surface | Authority |
+|---|---|
+| Account authentication, sessions, MFA, suspension | OmarchyGS only |
+| Persona profile and avatar projection | OmarchyGS only |
+| Connections, inbox, challenge policy, catalog, launch permission | OmarchyGS only |
+| Cartridge approval, publisher trust, signing keys, revocation | OmarchyGS only |
+| Game rules, private gameplay state, turns, game clock, and game randomness in remote mode | Registered game provider |
+| Platform session envelope, participants, pinned provider/rules/cartridge identities, status, and accepted result receipt | OmarchyGS |
+| Game-scoped result and achievement claim | Provider proposes; OmarchyGS authenticates, validates policy/idempotency, and records |
+| Rendering, input, accessibility, theme, and local cosmetic animation | Trusted OmarchyGS client |
+| Durable recovery notification | OmarchyGS cursor feed; WebSockets remain hints |
+
+The platform and provider must not both claim authority over the same gameplay
+snapshot or revision. The spike must decide the exact migration from today's
+platform-owned compiled snapshot to a provider-owned remote state. Until a
+later ADR and constitution amendment are accepted, the current local authority
+model remains binding.
+
+## Cartridge identity and contents
+
+The production v1 artifact is a canonical, stored-entry ZIP archive with the
+`.ogsc` extension, a canonical Ed25519-signed integrity envelope, and this
+bounded shape:
+
+```text
+manifest.json
+presentation.json
+schemas/
+  <name>.schema.json
+locales/
+  <locale>.json
+assets/
+  <name>.png
+  <name>.wav
+integrity.signed.json
+```
+
+The manifest identifies, at minimum:
+
+- canonical game key, publisher/provider registration, rules version, and
+  cartridge version;
+- compatible OmarchyGS SDK and presentation-protocol ranges;
+- player and mode metadata plus catalog display information;
+- one entry screen and all required/optional presentation capabilities;
+- registered backend identity, never an arbitrary runtime URL;
+- requested platform scopes and persona projection fields;
+- hashes, media types, decoded-size metadata, and integrity identity for every
+  packaged file;
+- localization inventory and accessibility metadata; and
+- signing key identity and release/retirement metadata.
+
+A game session pins the exact game rules version, provider identity,
+presentation protocol, and cartridge content digest. A publisher may release a
+new cartridge without silently changing an active session.
+
+## Catalog and installation lifecycle
+
+1. A game repository's CI runs SDK conformance tests and produces an immutable
+   cartridge plus independently deployable provider artifact.
+2. A registered publisher signs a canonical integrity index covering the
+   manifest and every package file.
+3. OmarchyGS accepts packages only through its catalog/administrative boundary,
+   streams them under compressed and expanded size limits, and verifies the
+   publisher, signature, digest, protocol range, and declared capabilities
+   before extraction.
+4. Extraction rejects absolute paths, parent traversal, links, duplicate or
+   non-canonical names, unexpected file types, excessive file counts,
+   compression bombs, and undeclared content.
+5. Schemas and assets are parsed under strict byte, dimension, duration, node,
+   and complexity limits. Only allowlisted decoders and media formats ship.
+6. A verified cartridge is installed atomically into a content-addressed,
+   read-only location. It receives no executable permission.
+7. Catalog approval controls whether a cartridge is visible and launchable.
+   Publisher, provider, release, or signing-key revocation can prevent new
+   launches independently. Existing sessions follow an explicit suspend,
+   migrate, or finish policy rather than silently changing versions.
+
+The Ticket 015 filesystem store is a same-user local-development boundary, not
+a privileged or multi-user installer. It rejects direct links and unexpected
+file types, bounds every read, and treats revocation lookup errors as denial.
+Any later service that writes into a root an untrusted local user can rename or
+replace must use descriptor-relative containment (or an equivalent OS sandbox)
+and an authoritative catalog revocation check; pathname checks alone are not a
+sufficient privilege boundary.
+
+Ticket 017 implements that stronger Linux boundary as
+`SecureCartridgeStore::open_existing`. An operator provisions one root; the
+store opens it without following a symlink and retains descriptors for every
+fixed child. Blob, release, conformance, policy, and activation reads/writes use
+`openat`/`mkdirat`/descriptor-relative rename with no-follow, exclusive
+temporary creation, bounded reads, read-only publication, and directory sync.
+The root and every fixed child must be owned by the opening process's effective
+user and cannot be writable by group or other. Each policy transition acquires
+an exclusive lock through a fresh descriptor-relative open of the retained
+policy directory, then performs its read/compare/replace under that lock. The
+highest authenticated policy is cached before its allow/deny decision, so a
+denied update survives restart and concurrent imports cannot roll state back.
+Renaming or replacing the path-visible root after it opens cannot redirect the
+operation. The compatibility `install`/`revoke` path remains explicitly
+same-user only.
+
+## Trusted presentation contract
+
+The cartridge uses a versioned declarative screen language interpreted by
+trusted OmarchyGS components. It is a data model, not a general programming
+language.
+
+Initial node families should cover:
+
+- terminal/ANSI-inspired text with an allowlisted style model;
+- rows, columns, panels, overlays, tabs, scroll areas, lists, and grids;
+- menus, buttons, forms, dialogs, focus order, shortcuts, and help text;
+- board cells, card stacks, meters, charts, maps, tile layers, and sprite
+  layers;
+- raster images, sprite sheets, platform vector primitives, and platform-owned
+  effects;
+- local cosmetic transitions, tweens, timelines, particles, and sound cues;
+- loading, offline, stale, empty, error, and reconnect states; and
+- semantic labels, roles, reading order, reduced-motion alternatives, scalable
+  text, and high-contrast metadata.
+
+Bindings may select and format fields from a schema-validated view model. They
+may not evaluate expressions, import modules, construct URLs, access global
+objects, or execute scripts. An input gesture emits only a declared action ID
+and schema-validated arguments. The trusted client sends that action to
+OmarchyGS; the cartridge cannot open its own socket or HTTP request.
+
+The v1 action shapes are intentionally exact: a Grid action declares sorted
+`column` and `row` fields and emits exactly those integer coordinates; a Button
+action declares and emits an empty object. A package whose action declaration
+does not match its node's platform-owned emitter is non-conformant. Future node
+families must add a new reviewed action contract rather than treating declared
+field names as an open-ended permission.
+
+Screen templates live in the reviewed cartridge, while the provider returns
+only view-model data conforming to the pinned schema. A compromised provider
+therefore cannot replace a reviewed screen with a credential prompt or inject
+new executable UI.
+
+### Implemented v1 renderer contract
+
+Each screen pins one manifest-declared view schema. The production verifier
+retains the exact authenticated payload bytes behind read-only accessors, so
+the renderer never reopens a publisher-controlled path and callers cannot
+mutate a `VerifiedCartridge` after verification. The renderer then:
+
+1. validates a bounded JSON view against the signed restricted schema;
+2. resolves only dotted object bindings and signed action/asset references;
+3. applies host capabilities, the cartridge's typed fallbacks, trusted scale,
+   high-contrast, reduced-motion, and audio-mute preferences;
+4. incrementally enforces the selected Core or Rich-2D node, effect,
+   per-raster, referenced decoded-raster, and retained-plan-byte budgets before
+   keeping each node;
+5. authenticates each referenced asset path once, publishes an accepted asset
+   once, and converts it into a SHA-256 filename with only `.png` or `.wav`
+   extensions; and
+6. emits `omarchygs.render-plan/v1`, which contains inert allowlisted tags and
+   never QML, JavaScript, markup, arbitrary URLs, or cartridge paths.
+
+The implemented Core nodes are `terminal`, `grid`, `status`, `button`, `image`,
+and `meter`. Rich-2D adds `sprite`, `particle_field`, and `audio_cue`. QML maps
+those tags through an explicit switch to repository-owned components. All text
+uses `Text.PlainText`; Grid and Button share their keyboard, pointer, and
+accessibility press paths; sprites and particles honor reduced motion; audio
+honors mute; and the origin strip remains platform-owned. The QML boundary
+independently recounts aggregate grid cells, images, sprites, particles, audio
+cues, and animations against the plan's claimed profile before instantiating
+any component. Trusted Image nodes request a host-bounded source size and load
+asynchronously; the renderer refuses oversized raster references before it
+publishes plan or asset bytes.
+
+`loading`, `offline`, `stale`, `empty`, `protocol_error`,
+`unsupported_capability`, and `revoked` are fixed platform states. They render
+the signed origin plus a platform message and instantiate zero cartridge
+nodes. The vocabulary has no editable or password component, so a cartridge
+cannot construct an OmarchyGS authentication or MFA prompt.
+
+The developer preview command verifies the real `.ogsc`, compiles the same
+production plan, and writes a canonical plan plus digest-named assets into an
+explicit empty `0700` directory. Its files are `0444`; it reads no platform
+credentials and has no database, provider, or network dependency. This is a
+same-user developer boundary. A future privileged or multi-user launcher still
+requires descriptor-relative directory containment and stronger process
+isolation.
+
+### Frontend option decision
+
+| Frontend family | Keyboard/accessibility and platform fit | Isolation and bridge risk | Version/update shape | Decision |
+|---|---|---|---|---|
+| Signed declarative cartridge rendered by trusted QML | Native focus, shortcuts, themes, semantic roles, reduced-motion behavior, and consistent platform chrome | Small allowlisted data vocabulary; no game network, filesystem, script, import, process, or credential bridge | Cartridge pins schemas/capabilities; trusted renderer updates with OmarchyGS | Baseline |
+| Raw publisher QML/JavaScript | Native-looking UI is possible but accessibility quality is publisher-controlled | Rejected: Qt treats QML/JS as trusted code and does not provide an untrusted-code sandbox | Publisher code would execute on every update | Prohibited |
+| Provider-hosted WebEngine page | Familiar web tooling; keyboard/accessibility and visual integration vary | Separate renderer helps, but Chromium, origins, navigation, downloads, permissions, and bridge APIs create a much larger attack surface | Independently deployed pages can change after review unless content is pinned | Future isolated compatibility profile only |
+| Wasm computation with trusted cartridge rendering | Can preserve native presentation if Wasm supplies only bounded deterministic rules | Requires a versioned capability ABI, fuel/memory limits, and deterministic host calls; Wasm alone does not render safely | Independently versioned module plus renderer contract | Future local-rules experiment |
+| Native publisher plugin | Maximum graphics/runtime freedom | Shares the process or needs a full OS sandbox; compromise approaches arbitrary code execution | ABI and operating-system coupling | Prohibited for third-party cartridges |
+
+## Launch and command flow
+
+1. The client reads the platform catalog and selects an approved exact
+   cartridge release.
+2. OmarchyGS authenticates the device session, derives the owned acting
+   persona, enforces social/challenge policy, and creates or resumes the
+   platform session envelope.
+3. The OmarchyGS server contacts only the endpoint stored in the provider
+   registry. A cartridge cannot choose the destination.
+4. OmarchyGS issues a short-lived, audience-restricted grant containing a
+   pairwise provider/game persona subject, platform game-session ID, pinned
+   provider/rules/cartridge identities, minimal scopes, issued/expiry times,
+   and a unique replay identifier. The reusable device-session token and
+   private account ID never cross the boundary.
+5. The provider creates or resumes its durable gameplay session and returns a
+   provider revision plus a schema-validated view model.
+6. The trusted renderer displays that view model through the pinned cartridge.
+7. A player action travels client → OmarchyGS → provider with one idempotency
+   key and expected provider revision. The provider commits or rejects it and
+   returns the resulting revision/view data.
+8. Provider-initiated result, turn, or achievement events return through an
+   authenticated, replay-protected callback. OmarchyGS records the platform
+   envelope/event once and wakes affected personas through the existing cursor
+   sync boundary.
+
+### Failure, retry, and reconciliation contract
+
+- A platform command receives one durable idempotency key and expected
+  provider revision before the outbound request. A timeout is **unknown**, not
+  failure; OmarchyGS retries the same command and idempotency key with a fresh
+  short-lived grant until it retrieves the provider's original receipt or a
+  bounded retry policy expires.
+- A reused idempotency key with different session, action, arguments, or
+  expected revision is a conflict. A stale revision causes the client to fetch
+  the latest validated view and explicitly reissue user intent; it is never
+  silently rebased.
+- Provider results and events carry stable event IDs and monotonic provider
+  revisions. OmarchyGS records an event receipt before applying platform-side
+  results, achievements, or notifications; duplicate deliveries return the
+  stored disposition.
+- Provider unavailability leaves the platform session pending or unavailable.
+  A last validated view may render as stale/read-only, but OmarchyGS does not
+  invent an accepted move, advance a provider revision, or award a result.
+- Reconciliation queries the authenticated provider by pinned platform session
+  and compares signed provider identity, terminal status, revision, and event
+  receipts. Operator-visible mismatches suspend commands; they do not choose a
+  winner by timestamp.
+- WebSockets may reduce wake-up latency only. Durable provider events enter the
+  OmarchyGS cursor feed, and clients recover through REST/cursor state after a
+  disconnect.
+
+The initial remote model should use OmarchyGS as the network broker. That adds
+one hop but keeps device credentials, provider grants, endpoint policy, rate
+limits, audit, retries, and privacy enforcement out of the cartridge and QML
+runtime. Direct client-to-provider access can be reconsidered only as a
+separately threat-modeled capability.
+
+## Provider protocol security
+
+- Use TLS end to end and asymmetric provider authentication. The spike will
+  evaluate sender-constrained OAuth-style access tokens and/or HTTP Message
+  Signatures rather than inventing an unauthenticated callback scheme.
+- Restrict grants by audience, exact game/provider/version, persona subject,
+  session, scope, expiry, and unique identifier. Providers cannot refresh or
+  exchange a grant for broader platform access.
+- Use pairwise persona subjects per provider or game. Supply only the public
+  display/avatar projection required by the declared capability.
+- Sign callbacks over the method, authority, target, content digest, timestamp,
+  nonce, provider, session, event ID, and revision. Store replay/idempotency
+  receipts before applying a result or achievement claim.
+- Resolve provider endpoints through an operator registry and guarded egress
+  policy. Reject loopback, link-local, private, metadata-service, DNS-rebinding,
+  redirect, and unregistered destinations according to deployment policy.
+- Bound request bodies, response bodies, redirects, duration, concurrency,
+  commands, callbacks, events, and per-provider resource use. Use timeouts,
+  circuit breakers, backoff, and a kill switch.
+- A provider outage yields an explicit unavailable/stale state. A cached last
+  validated view may be shown read-only; commands are not reported as accepted
+  until the authoritative provider confirms their idempotency key.
+- Achievements are game-scoped manifest definitions. A provider submits a
+  signed claim; OmarchyGS validates publisher/game/version, participant,
+  definition, bounds, and replay state before writing the platform ledger.
+  A provider never directly writes global achievement state.
+
+## Frontend and package threat model
+
+| Threat | Required control |
+|---|---|
+| Arbitrary QML/JavaScript or native-code execution | Custom declarative DSL rendered only by trusted built-in components; no cartridge imports, loaders, plugins, eval, shell, or FFI |
+| Package substitution or publisher compromise | Asymmetric publisher signature, canonical integrity index, content digest pinning, transparent version identity, key rotation, revocation, and audit |
+| Archive traversal, links, duplicates, or decompression bomb | Streaming byte/file/ratio limits; canonical paths; reject absolute/parent/link entries and duplicate normalized names; atomic read-only install |
+| Image/audio/parser resource exhaustion | Allowlisted current decoders, compressed and decoded limits, dimension/duration caps, asynchronous parsing, and preferably a disposable low-privilege validation worker |
+| Credential phishing inside a game | Unspoofable platform chrome; authentication/MFA never rendered by cartridge nodes; reserved platform dialogs and visual origin indicator |
+| Data exfiltration | No cartridge network, filesystem, clipboard, camera, microphone, process, environment, or arbitrary URL capability; provider sees only scoped platform data |
+| UI or GPU denial of service | Incremental plan-byte and scene-node admission; unique authenticated-asset hashing/publication; independent QML aggregate recounting; texture, decoded-pixel, particle, animation, audio, frame-time, and memory budgets; suspend the game surface without killing the shell |
+| Malicious shaders | No cartridge-supplied shaders in the baseline; expose only platform-owned named effects. Any future custom shader tier requires separate review and containment. |
+| Provider request forgery or token replay | Registered egress destination, asymmetric authentication, audience/scope/expiry checks, nonce/jti replay cache, idempotency keys, expected revisions, and TLS |
+| Provider compromise or abuse | Per-provider isolation and quotas, minimal pairwise identity, signed audit trail, scoped achievements, suspension/revocation, and no database or reusable session access |
+
+Renderer crash containment should eventually place cartridge parsing and the
+game surface behind a constrained process boundary. Even before that exists,
+the custom DSL materially reduces risk because it never enters the QML compiler
+or JavaScript engine.
+
+## Graphics capability envelope
+
+The graphics ceiling is primarily a product and security choice, not a basic Qt
+Quick limitation. Qt Quick uses a retained scene graph rendered through modern
+graphics APIs and supports animation, sprites, particles, effects, shapes, and
+custom shaders. Rendering remains local, so remote-provider latency need not
+drive every animation frame.
+
+The practical answer to “how far can it go?” is **well beyond a text BBS and up
+through polished, animated 2D games**, provided the game fits the reviewed
+presentation vocabulary. The system can make a terminal door game feel
+authentically retro, but it can also render card tables, tactical maps,
+tile-based worlds, sprite characters, particle accents, charts, dialog-heavy
+RPG screens, and local 60 FPS cosmetic animation. The boundary is closer to a
+safe, portable 2D console UI than to an unrestricted PC game engine.
+
+The proposed profiles are:
+
+| Profile | Intended capability | Good fits | Deliberate limits |
+|---|---|---|---|
+| Cartridge Core | Styled terminal text, panels, menus, forms, lists, grids, board cells, images, focus/navigation, loading/offline/error states, and simple transitions | Classic BBS games, interactive fiction, trivia, menus, scoreboards | No code, arbitrary markup, remote assets, custom drawing, video, shaders, or 3D |
+| Rich 2D | Tile maps, sprite sheets, cards, tactical boards, vector primitives, meters/charts, local animation timelines, particles, platform effects, and bounded sound/music | Roguelikes, card/board games, asynchronous RPGs, strategy, management, puzzles, visual novels, polished retro games | Provider updates are state/action paced rather than per-frame; only host-defined nodes/effects |
+| Advanced 2D/2.5D | Larger scrolling scenes, custom host-implemented render primitives, bounded video, richer post-processing, and approved capability extensions | Isometric tactics, animated maps, elaborate arcade-like presentation, cut scenes | Opt-in hardware/profile checks; no arbitrary JavaScript, QML, shader, or network access |
+| Future 3D | Trusted renderer support for a constrained scene schema and validated 3D assets through an optional Qt Quick 3D module | Turn-based 3D boards, simple dungeon scenes, model viewers, lightweight tactical games | Separate dependency/license/security review, GPU baselines, asset and scene budgets; not part of the initial cartridge contract |
+| Isolated Web experience | Provider-hosted HTML in a locked, separately profiled WebEngine surface | A compatibility escape hatch for games that cannot fit the DSL | Larger Chromium attack/patch surface, weaker native consistency, stricter origin/permission controls; never the default cartridge path |
+
+This is enough for visually rich retro and modern 2D games. It can plausibly
+support experiences comparable in presentation complexity to polished card
+games, tactical maps, turn-based RPGs, roguelikes, and animated BBS successors.
+It is not intended for a Halo-class first-person game, high-frequency physics,
+competitive twitch networking, a general Unity/Unreal runtime, or arbitrary
+publisher rendering code.
+
+### Capability by delivery stage
+
+| Stage | What a cartridge can do | What remains unavailable |
+|---|---|---|
+| Ticket 015 local contract | Carry signed `terminal`, `grid`, and `status` screens, schemas, localization, strict 8-bit PNG assets, and PCM WAV assets; prove host compatibility and install as inert bytes | No rendering in the Ticket 015 slice; no provider network |
+| Ticket 016 trusted renderer | Compile schema-valid views into Core `terminal/grid/status/button/image/meter` or Rich-2D `sprite/particle_field/audio_cue` plans; render through platform-owned QML with measured bounds, keyboard/accessibility states, fallbacks, and an isolated production previewer | No publisher QML/JS, expression language, Canvas, shader code, WebEngine, video, 3D, provider network, or confirmed game mutation |
+| Later reviewed profiles | Add Advanced 2D/2.5D host primitives and possibly constrained 3D assets/scenes when separate hardware, decoder, dependency, and threat reviews pass | No promise of a general engine or arbitrary third-party execution |
+
+This staging makes graphics additive. A new renderer primitive becomes a
+versioned capability; older hosts reject it when required or use the cartridge's
+declared fallback when optional. A game never receives extra execution,
+filesystem, credential, or network authority merely because its graphics tier
+is richer.
+
+The hard practical limits are:
+
+1. **Vocabulary:** a cartridge can use only renderer capabilities supported by
+   the player's OmarchyGS version. New visual primitives require a reviewed host
+   update and SDK capability version.
+2. **Authority latency:** local cosmetic animation can run at display rate, but
+   meaningful game-state transitions wait for the authoritative provider.
+3. **Resource budgets:** package size, decoded pixels, texture dimensions,
+   scene nodes, active sprites, particles, simultaneous animations, audio,
+   state payloads, and frame time are bounded.
+4. **Portability:** a required capability launches only on clients that support
+   it. Optional effects must have a declared fallback, including reduced motion
+   and software-rendering behavior.
+5. **Safety:** custom shaders, scripts, native extensions, dynamic remote assets,
+   and unreviewed media formats stay outside the baseline even when the hardware
+   could execute them.
+
+The first renderer budgets are calibrated on the exact local software-rendered
+reference guest. They are a reproducible compatibility floor for that host,
+not evidence for an untested low-end physical GPU. The host publishes a
+presentation profile containing its limits; a cartridge declares requirements;
+launch fails clearly when a required limit or capability cannot be satisfied.
+
+Qt's own performance guidance treats 60 frames per second as a common target,
+leaving roughly 16 milliseconds for a frame. The renderer should use scene
+graph primitives and local animations, keep provider/network work asynchronous,
+avoid large frequently updated Canvas textures, and profile particles/effects
+on the supported hardware.
+
+### Reference measurements and ratified v1 renderer ceilings
+
+The Ticket 014 loopback proof exercised one screen with three trusted node
+types, a 3×3 board, one local scan-line animation, and no audio or decoded
+image. On the development host with Qt 6.11.2's software backend, its captured
+sample was:
+
+| Measure | Observed proof value |
+|---|---:|
+| Signed expanded fixture | 4 files / 2,436 bytes |
+| Rendered frame sample | 120 frames / 15.99 ms average / 17.00 ms maximum |
+| QML process peak resident memory | 88,184 KiB |
+| Provider command/view | one action / 64 KiB maximum validated view / 128 KiB HTTP-body ceiling |
+| Proof package enforcement | 32 files / 256 KiB each / 1 MiB total |
+| Proof scene enforcement | 8 screens / 128 nodes / 16×16 maximum grid |
+
+Ticket 016 runs the production compiler and QML components at 920×600 with
+Qt 6.11.2, `QT_QUICK_BACKEND=software`, and the offscreen platform plugin. The
+reference environment is a KVM guest with six exposed Intel i9-12900K vCPUs,
+11 GiB RAM, Virtio GPU, and Linux 7.1.8. The focused gate includes a 60-frame
+warm-up and measures the next 120 frames; it enforces a 33.3 ms average ceiling
+and each profile's hard RSS ceiling while retaining the sample maximum as a
+diagnostic.
+
+The implemented **v1 ceilings** are:
+
+| Resource | Cartridge Core v1 | Rich-2D v1 | Required fallback/failure |
+|---|---:|---:|---|
+| Archive / expanded / entries / entry | 8 MiB / 32 MiB / 256 / 8 MiB | Same v1 cartridge envelope | Verifier rejects before renderer |
+| Signed package decoded envelope / raster | 128 MiB total / 4,096 px side / 32 MP | Same strict 8-bit PNG and PCM-WAV envelope | Verifier rejects undeclared, malformed, or over-envelope media |
+| Rendered raster / referenced scene raster | 1,024 px side, 1 MP, 4 MiB each / 16 MiB scene | 2,048 px side, 4 MP, 16 MiB each / 64 MiB scene | Required node rejects; optional decoration drops before plan/asset publication |
+| View JSON / render plan | 256 KiB / 1 MiB | 512 KiB / 2 MiB | Reject before QML publication |
+| Active nodes / grid cells | 256 / 1,024 | 512 / 4,096 | Required content rejects; optional decoration drops deterministically |
+| Images / sprites / particles / audio cues | 32 / 0 / 0 / 0 | 64 / 128 / 2,048 / 16 | Apply signed fallback before instantiation; then enforce profile |
+| Simultaneous local animations | 32 | 128 | Reduced motion disables nonessential animation |
+| Surface RSS | 256 MiB soft / 384 MiB hard | 384 MiB soft / 512 MiB hard | Focused gate fails above hard ceiling |
+| Software frame sample | 16.67 ms target / 33.3 ms average ceiling | Same | Preserve input; lower optional effects if repeatable evidence misses ceiling |
+
+The stress fixtures intentionally exercise Core at 256 nodes, including a
+32×32 grid and 32 images, and Rich-2D at 213 nodes, including 64 images, 127
+simultaneous sprites, 2,048 particles, 16 audio cues, and 128 animations. A
+post-remediation single-CPU-affinity run measured Core at 15.996 ms average /
+16.699 ms maximum and 133,336 KiB peak RSS, and Rich-2D at 16.000 ms average /
+17.820 ms maximum and 244,764 KiB peak RSS. The accepted 2,048 px / 16 MiB
+Rich-2D raster remained responsive at 15.992 ms average / 16.807 ms maximum and
+257,848 KiB peak RSS; the former 4,096 px trigger was rejected before plan
+publication. A 2× scale, high-contrast, reduced-motion, muted-audio run measured
+16.003 ms average / 17.273 ms maximum and 237,596 KiB peak RSS. Every fixed
+failure state instantiated zero game nodes and remained within the same frame
+and hard-memory gates.
+
+These figures are local evidence, not a promise that every Omarchy device or
+every future scene will hit the same numbers. Required capabilities fail
+clearly on an insufficient client; optional capabilities must declare an omit,
+static, reduced-motion, muted, placeholder, or simpler-node fallback supported
+for that node family.
+
+## Separate-repository SDK model
+
+The production v1 OmarchyGS Cartridge SDK is protocol-first and
+language-neutral. `omarchygs-cartridge sdk-export` deterministically emits an
+exact lock, compatibility/retirement policy, README, and JSON Schemas for the
+manifest, presentation, restricted view schema, release attestation, catalog
+policy, and lock itself. The production Rust verifier remains authoritative;
+the schemas are pinned developer artifacts, not an alternate permissive parser.
+
+The SDK surface includes:
+
+- canonical JSON or binary schemas for manifests, views, actions, launch
+  grants, commands, results, achievements, and callbacks;
+- a conformance runner that a game repository executes without the OmarchyGS
+  database;
+- generated or hand-written provider adapters for supported languages;
+- a trusted cartridge previewer using the same renderer and limits as the
+  production client;
+- fixtures for replay, revision conflict, expiry, invalid signatures, unknown
+  capabilities, malformed views, resource limits, outage, and revocation;
+- deterministic packaging, integrity indexing, signing, and local developer
+  registration; and
+- compatibility rules separating SDK/protocol version, rules version,
+  cartridge presentation version, and provider deployment version.
+
+A release directory contains exactly `cartridge.ogsc`, `conformance.json`, and
+`release.signed.json`. Its domain-separated publisher attestation binds the
+source Git revision, builder name/version/binary digest, SDK lock digest,
+publisher/key IDs, game/rules/cartridge versions, canonical archive and signed
+content identities, and the exact conformance-report digest. Platform
+consumption re-runs the production archive verifier and reconstructs the report
+before trusting those provenance fields.
+
+Publisher trust and catalog authority are separate. The platform catalog signs
+an exact game/publisher/archive policy with a monotonically nonzero version and
+one of five states:
+
+| State | New launch | Active session |
+|---|---|---|
+| active | allow | continue |
+| deprecated | allow with warning | continue |
+| suspended | deny | suspend |
+| revoked | deny | terminate |
+| retired | deny | continue the pinned release |
+
+Every secure import and resolution requires an explicitly supplied valid policy
+matching the installed digest. A cached higher version prevents downgrade; an
+uncertain, mismatched, or invalid policy fails closed and never substitutes a
+different installed cartridge.
+
+First-party games use the same public contracts and conformance suite as later
+providers. They may receive a higher catalog trust tier, but not private
+database access or a different identity model.
+
+## Staged adoption
+
+1. **Cartridge vocabulary and preview:** define the core/rich-2D DSL, package
+   verification, capabilities, fixtures, and a trusted previewer while current
+   gameplay remains compiled into OmarchyGS.
+2. **Separate first-party game repository — implemented for the cartridge:**
+   the Door Legends repository fixture is materialized as a fresh Git repository
+   and cloned twice. With only copied CLI binaries, an exported SDK, and an
+   explicit publisher key, both clones produce byte-identical releases that the
+   production verifier, descriptor-relative importer, and trusted previewer
+   consume. Compiled server rules remain in OmarchyGS pending later game work.
+3. **First-party remote provider:** add the broker, registered endpoints,
+   scoped grants, provider-owned state, signed events, failure handling, and
+   migration path behind operator-controlled registration.
+4. **Reviewed external providers:** add publisher onboarding, catalog review,
+   quotas, monitoring, suspension, support policy, and game-scoped achievement
+   trust.
+5. **Optional advanced presentation tiers:** add capabilities such as isolated
+   web content, approved custom rendering, or constrained 3D only through
+   separate threat models and compatibility profiles.
+
+The challenge and first-game work should consume only seams confirmed by the
+spike. It should not implement speculative remote tables or expose provider
+endpoints before the proof and ADR are accepted.
+
+## Production decisions that remain after the renderer
+
+- token and message-authentication profile: sender-constrained OAuth-style
+  grants, HTTP Message Signatures, mutual TLS, or a documented combination;
+- the remote transition from platform snapshots/revisions to provider-owned
+  state without dual authority;
+- pairwise persona subject derivation and avatar delivery/cache policy;
+- how later media formats or profile budgets are added without weakening v1;
+- whether the production renderer is a new constrained process or a hardened
+  surface inside the OmarchyGS client;
+- provider event pull versus callback reconciliation and disaster recovery;
+- Qt Quick 3D/WebEngine packaging, licensing, update, and containment policy;
+  and
+- public SDK hosting, transparency/CI attestation, signing-key operations, and
+  third-party support policy beyond the exact local first-party release proof.
+
+The proof deliberately uses ephemeral Ed25519 keys, signed application
+envelopes, loopback HTTP, in-memory replay receipts, and fixed registered
+process configuration. This establishes identity and binding semantics but is
+not the final network profile. Production work must add TLS, durable key and
+replay state, rotation/revocation, operator registration, guarded DNS/egress,
+quotas, and either an RFC 9421 message-signature profile or an equivalently
+reviewed sender-constrained request profile.
+
+## Evidence consulted
+
+- Local QML runtime is Qt 6.11.2 with Qt Base, Declarative, Multimedia, and
+  WebEngine installed; Qt Quick 3D is not currently installed.
+- [Qt Quick](https://doc.qt.io/qt-6/qtquick-index.html) documents the visual
+  canvas, animation, particles, effects, input, and scene primitives.
+- [Qt Quick Scene Graph](https://doc.qt.io/qt-6/qtquick-visualcanvas-scenegraph.html)
+  documents retained, graphics-API-backed rendering and batching.
+- [Qt Quick graphical effects](https://doc.qt.io/qt-6/qtquick-effects-topic.html)
+  documents transforms, shaders, particles, and sprites.
+- [Qt Quick performance guidance](https://doc.qt.io/qt-6/qtquick-performance.html)
+  documents frame budgets, profiling, asynchronous work, and particle/effect
+  constraints.
+- [Qt Quick Canvas](https://doc.qt.io/qt-6/qml-qtquick-canvas.html) warns that
+  large, frequently updated Canvas images incur texture-upload cost.
+- [Qt Quick 3D](https://doc.qt.io/qt-6/qtquick3d-index.html) confirms that Qt
+  can mix 2D and 3D content, while remaining a separate optional module.
+- [Qt QML network transparency](https://doc.qt.io/qt-6/qtqml-documents-networktransparency.html),
+  [Qt's shared security model](https://doc.qt.io/qt-6/shared-security-model.html),
+  and [handling untrusted data](https://doc.qt.io/qt-6/untrusteddata.html)
+  explicitly treat QML/JavaScript as trusted code and recommend a custom DSL or
+  other sandbox for untrusted content.
+- [Qt WebEngine security considerations](https://doc.qt.io/qt-6/qtwebengine-security.html)
+  document its separate security controls and ongoing Chromium patch surface.
+- [RFC 9700](https://www.rfc-editor.org/rfc/rfc9700.html) recommends asymmetric
+  client authentication, audience/privilege restriction, sender-constrained
+  tokens, replay defenses, and TLS.
+- [RFC 9068](https://www.rfc-editor.org/rfc/rfc9068.html) defines relevant
+  audience, expiry, token ID, client, and scope validation for JWT access-token
+  profiles.
+- [RFC 9421](https://www.rfc-editor.org/rfc/rfc9421.html) defines HTTP Message
+  Signatures and discusses component coverage, timestamps, expiry, nonce, TLS,
+  and replay prevention.

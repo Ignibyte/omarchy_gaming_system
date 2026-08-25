@@ -1,0 +1,374 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:4457abf4a9d2310234a6c7077c92c7619207bbea852203c7a2580af50ae1bcd3",
+  "claims": [
+    {
+      "id": "claim_c3d3ba6c62e34b5d90ee8cc7649b3c6e",
+      "statement": "ADR-0002 accepts Game Cartridges for staged adoption but does not authorize production remote gameplay authority.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md#L1-L5",
+          "version": "repo-lines-v1:sha256:ebb9e4d63a1a4b36a0394bd882caa3cee0307c65567607cebf902b335d67feef:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGIyMWI2YzZlZDU4ZWM0YTRkMDQzYjFkMmI5ZDc4YjBjOGY1YzhkM2Q2ZDVkZDIzODM0ZGFiYjM0NWNiOTUyMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTA5MDliYTYyOTllZDI4NzJhZTczZGY4MWQ5OTkyZTBkOWEyMDY1Y2M0NTUyZWI0NWMyMWUxOGM5OWQyZDIxNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWZjYjBhZDZhZWJjMjU4OTdhYzY4OTA5NGFkNTQ5NmFmN2U0ZTY2OTA0YTA2ZWI3ZmRmMDMwNWM4Nzk4Y2UxZiJ9"
+        },
+        {
+          "resource": "repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md#L80-L96",
+          "version": "repo-lines-v1:sha256:9a6a15f7367bde55b03b8d085b77d3f592e74c9dceadfe191260c50890606312:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4MDU3MzQxZGQ1MjlhYmVkZTJhNjg2MTQ2ZmNjNGI3N2Q5NjYxOGMwYTVmYzYxNzE2NWFmZDNhMTAxNDhmOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkMzI1NTRjYWNkYjhkNDgxZTJkMzhmODdlNzM5Zjk1NzJjNDIyN2Y0ZDA0NTRmYjM4MjY1MzJiNmIyN2YwMTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0YTk0MDNhYTNiOWI4NjM5YzMxZDllZmI3MTIyYmVmYTM2NTA0MGY5OWUzYjdhZTM3YTgyN2UxMTRiMzc5MmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2YTk2MDEzYmRlY2YzNDBhOWE1NmFhZGIzNzE4MWRjMWYxMWY0YzAxNmI4ODU2OGY3NmUwNjM1NWFlYzU5YmUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ee7ecf33e5ed4ca1afe1c99ede2b90a0",
+      "statement": "A Game Cartridge is an immutable publisher-signed package of manifest data, declarative screens, pinned view schemas, localization, and bounded assets that only trusted OmarchyGS renderer code can interpret.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md#L30-L42",
+          "version": "repo-lines-v1:sha256:7203a548f635cac0ba93d38cc863255215513439734db21db332fda1ac6244e9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkM2RiYzRlN2U3Y2JlNWRkYzg5MWIwODA3MTJmNjM1MWM5NGI3MjhlYzhiZDg1NTZmNDYxMmIwNzBkMjdiNDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM4NWE1ZDE4ZTI4YzlhOTlmZDcxY2UyMjE1ZGZiMjk0ZGUwYWFhZTVmOGZkNTY3YjRhNTFmMzc2MzQ5MWM1Y2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ1M2M0YWMyNTY0ZTYzYjQ0NWI2ZGNhYzVkYjgwMGEzZmFmZDA5ZmNmNjlmZGMyNTNlN2Q3YzMzMmY0MGFlMTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM5ZjUwZTVhYjM5OTRiMWI3OWYwNzhjODNiNzJiOWYwYTc5MGUyNjQ2MWRjNmQ3MDUyMGFmY2ZhNjE0ZWQ4ZDcifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge/src/contract.rs#L110-L230",
+          "version": "repo-lines-v1:sha256:3dd47444cb9e338963009468090ef0e12747399a7b2429a8c9736bbb7fef0408:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiNGMxZGFkZTg2MWI0ZGEwNzZhMjI4MTRjODRkMDg5YTU3OTBkNTY1NTc2NTllODdhZmE4M2Q4Y2MzODY3MDVjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI4YzcwNzhkYWNkMGZjMjUwNzhhNDAzZmNhNTkwNmIwZTkzYTk5MzY0MjI0ZWUwNGE1OTJiYjcyZThjZDA1ZWRlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4YzcwNzhkYWNkMGZjMjUwNzhhNDAzZmNhNTkwNmIwZTkzYTk5MzY0MjI0ZWUwNGE1OTJiYjcyZThjZDA1ZWRlIn0"
+        },
+        {
+          "resource": "repo://crates/game-cartridge-renderer/src/lib.rs#L349-L461",
+          "version": "repo-lines-v1:sha256:d137d9e91088af9d7d8e884931c18554c8eee754e58503bf1d6267bfa3b5ec65:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmMGE0Zjk0MWVhODlkMTBlZjM3ZTczMjBiZTc0MzY1NTVlYmM5OWQ4NzA4ZjNlOGZlYjM0Mzk0YzJlNzI5MGFhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzMGMxZjE4OGYxNDJlZDdhODI0NjgwYjIwNzE3MmM1NTE5YmM2MTRhNDhmZGE3Y2YxNjdlZGI4ZGRmNzk5NTZjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyMGEzMjA3ZjQyNTZhNjMyMzUzOWJlMmFlYTBkM2UzYWQ5NzFkZjkzNzY2NjAwYjQ1NjBkYWRjZjUzYWRjZDY4In0"
+        }
+      ]
+    },
+    {
+      "id": "claim_60dcc74bacef4aa68481ac0f13d81d57",
+      "statement": "Cartridges cannot contain or invoke publisher QML, JavaScript, native code, shell commands, arbitrary shaders, imports, dynamic remote assets, filesystem paths, or network clients.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md#L38-L42",
+          "version": "repo-lines-v1:sha256:68902090ae5289f0d26ba295b5ee575ed176063c8c34af6edf81b52a4bc8aa74:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmY0ZDk2MTE4ODRiNzc4NWM4NjcyYjliZDc5OGVlODk5ZjAxMjQzNDgzNzJjODU3ZDUyMDU3MjM0NWMxNDljZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzg1YTVkMThlMjhjOWE5OWZkNzFjZTIyMTVkZmIyOTRkZTBhYWFlNWY4ZmQ1NjdiNGE1MWYzNzYzNDkxYzVjYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzMyMzUzYzc3OTkyNDFkYjg1ZGRmYzVkODZmM2MwYWVhYTQ3YmEzZDE3NjQ1YmU5NTZjMTlmMjhiNzYyMzA4NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzlmNTBlNWFiMzk5NGIxYjc5ZjA3OGM4M2I3MmI5ZjBhNzkwZTI2NDYxZGM2ZDcwNTIwYWZjZmE2MTRlZDhkNyJ9"
+        },
+        {
+          "resource": "repo://client/qml/cartridge/TrustedCartridgeSurface.qml#L137-L192",
+          "version": "repo-lines-v1:sha256:1f4af94dfc9bfb54be1aada5275d880f8530e36c624f845858340b22dfc9b43d:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3OWE5ODBhNGU2ZGMxZjllMWEwNjhlNTMzMzZkZTk2N2QwMmIzNmNlMTE4Y2MyNzQ4Nzc0MjZhNWFmMDg1ZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3ZTllNzA0NTc5NDY0MjZkZGFmNGFiMTAyODQ0NDZkNWY0OTQ0MDJmNWQ1MTJkMTk2M2Q1ZmE1YjFhNTk1ZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMxNGIzNWJjOTkxYWJkMGExYThmY2Y3Yjg5ZTUwZjhjOWU1OGVhYzFmNmNlYmMxYWZkZDJmYjNjMzY4MGM3NmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5OWJkZWZlZWFjYTYzNDBlMDI5MGRjODZlODg5Yzg5ZDVlMTg5YWE1YmE0NGI1ODViM2I3MDczNGY0YTYyZDgifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge-renderer/src/lib.rs#L349-L461",
+          "version": "repo-lines-v1:sha256:d137d9e91088af9d7d8e884931c18554c8eee754e58503bf1d6267bfa3b5ec65:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmMGE0Zjk0MWVhODlkMTBlZjM3ZTczMjBiZTc0MzY1NTVlYmM5OWQ4NzA4ZjNlOGZlYjM0Mzk0YzJlNzI5MGFhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzMGMxZjE4OGYxNDJlZDdhODI0NjgwYjIwNzE3MmM1NTE5YmM2MTRhNDhmZGE3Y2YxNjdlZGI4ZGRmNzk5NTZjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyMGEzMjA3ZjQyNTZhNjMyMzUzOWJlMmFlYTBkM2UzYWQ5NzFkZjkzNzY2NjAwYjQ1NjBkYWRjZjUzYWRjZDY4In0"
+        }
+      ]
+    },
+    {
+      "id": "claim_b51027efc18047ddacf8c0faa0949ab1",
+      "statement": "The isolated Ticket 014 proof verifies Ed25519-signed package contents and bounded declarative nodes, then runs a loopback broker and separate provider process without changing production routes, migrations, registry injection, or the production QML entrypoint.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge-spike/README.md#L1-L17",
+          "version": "repo-lines-v1:sha256:2b2ef6691c6c511b31bee426bb7914322f16e0c3c10221795cc838d2014b26a3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzYzFlZDI5NmI2NTI5NGE5YzUxMTM1M2FhYzFhZDI3ZTAzYWZjZTk1YzlhYWM4MDNmZjI4MzNlZGQ3NjFmYTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4Mjc4NzY4M2U5MzE4MDgzNGJlN2RkYWQyNmIyODA1NDBkYWY2NGFlNmMxYjRlYzUxZWU4ZDg5OWY1MDgzYWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI5YWJjODdjYTgwMjE5ZTk4MTM0NTU4Y2E0ODllMmJhODc1ODhiYThlODc4NDk3NzY5ZDE4ZmZlMTNhY2U1MWIifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge-spike/src/lib.rs#L25-L39",
+          "version": "repo-lines-v1:sha256:1aa336bae5e907fd199fee4e2ca298dad3abf81a3585d42f5c010fcc736adfd4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiZDAwYzI3NjRjMmNkODAyNmFiNjhjMjE2OGFlNjMwMTc5YWJmMDNlMWUxMDA4NGRmYjVkZjI0YjI1NWUwY2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhYWI5ZmQ4M2I1MWIzOWEyNzNiZTk3NWVhOTI2ZmQ5MGRiNjViYWEzOGZjYTg3ZjkxMjE5MTA3OTQ5NjdmNTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVhYzdhMmFkZWRmZmViMGYzZjAyY2Q3OTMyOTgwNDI4MGQ5MmNmYjAwYjFiNmFmN2ExYzMzOGY5ZjI0MGUwMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY2NTA4MTk5MGI2MzUxZDNiZTg3YmUwNDRjMmY5YzU0ZDg5ZjUzOWI0ODljZWZhNjY1MWFjMTg0OGY5NGE1ZjAifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge-spike/src/lib.rs#L419-L517",
+          "version": "repo-lines-v1:sha256:057cf4c4a259f1f513f745d7674835aba47ae07209e75db81f6bace6167ad069:eyJzZWxlY3RlZExpbmVDb3VudCI6OTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4YTU2OTliZDY5YjVlMTY1ZDEwZTZhZjA1YzI2ZjkwYjFlODYxMGVjMjlkNGEwOWFmZWU1ODRkOGVhMjJiYjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU2N2E5ZTQ2MTVlZjFiNDcyNjg1MDVmMTI5ZjkxM2RlNmE2MDQ1ZmNlZTA1ZDA2Y2Q3YWVmOGY0YmU4NTM2ODciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE4NDc1OTQ4N2FjZWYyZDBiNWU2OGYyYjg0ZWQwZmFiODE4MmYyZGU3NGYzY2RmZjY5NzZjYjg4ZjlmNDVjYWUifQ"
+        },
+        {
+          "resource": "repo://scripts/test-game-cartridge-spike.sh#L43-L116",
+          "version": "repo-lines-v1:sha256:8929391f0e7ff10c80df8215f181acc076eec6fe58c303db28be3eab007dc5d5:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhhZWNiMDUzYWY1ZTVkY2JlMmVhMTcxNDc0MmFhOTAyMWNiM2YxMDNlMTAwNmZiNGUyZTc4NjZhNjkxYWQ1NTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0NzkzODViYzJmOWE0ODE5NWJjNWM3MTIxODQ0YzViMjE3M2I4ZDcxMGE0MjhjOTlmYWMzYTBlMTU4NzU0MWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhN2FhMTQzNmQ2NTc0YWQwMjcwYjc5NjRlN2I5ODlkZTBjNDZkY2Y2YmE4NDIyOTg1MWZhMTU0MjZkOTc2YjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjYjlhNjQ5YWUyZTJjNmIwYjlmMWY3ZDQ3NjMzODc0YzQwMTBiMDYzYzI5MWI1MWY2N2UwZjdmNzAwM2FiYmIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1fc0e6e576f540c5865987341a59d889",
+      "statement": "The proof's provider owns one gameplay revision and returns signed idempotent results, while the broker binds calls to registered identities and short-lived one-scope pairwise grants and returns a sanitized presentation response.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge-spike/src/lib.rs#L182-L252",
+          "version": "repo-lines-v1:sha256:988500fb7e7cee42c091a1b19d841cdf331772b59b849638eaa5eee2ae88e88c:eyJzZWxlY3RlZExpbmVDb3VudCI6NzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkNjU0NjA2OTZlOTVlNTNkZDg2ODgzYjdlNTljNzYyZjdlZDQ5MDY3ZDBmNzA1ZjhjZTQ0ZjQ0ZjBjMWI4YjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRiOTVmMDQ5ZTE0M2E5ZmRjOTc5OGIyNjYwOTY0MzVhNzZkMmIyMjg1YjhkZDljNjU5YTg4ZGY0YjExOTIyMDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjNzA3OGRhY2QwZmMyNTA3OGE0MDNmY2E1OTA2YjBlOTNhOTkzNjQyMjRlZTA0YTU5MmJiNzJlOGNkMDVlZGUifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge-spike/README.md#L6-L17",
+          "version": "repo-lines-v1:sha256:8317a613041feafd2198b81f0995dfdc78870d0ce6ba33935ee9c045e2b0920d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxNmE3ZWM1ZDNlMjYxNzA0Y2YyOGQyOWIyMjYzYTcyNzJmZTkzMDY5OTY4MDY5YWM3MWRjMDhmNGY0MjdhMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4Mjc4NzY4M2U5MzE4MDgzNGJlN2RkYWQyNmIyODA1NDBkYWY2NGFlNmMxYjRlYzUxZWU4ZDg5OWY1MDgzYWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0MDZhYjgzNzE3ODAzYjkzNGRkMzQ2ZGZmMjk3ZTY1MDU1YzgxZDFhNDJhMjM0MzE5NjA2MGY5OWM3ZmRjYjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI5YWJjODdjYTgwMjE5ZTk4MTM0NTU4Y2E0ODllMmJhODc1ODhiYThlODc4NDk3NzY5ZDE4ZmZlMTNhY2U1MWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f5a77c44add44f2a9e4267772239a29a",
+      "statement": "The proposed remote contract keeps device credentials and account IDs inside OmarchyGS, retries uncertain commands with the same idempotency key and expected provider revision, deduplicates signed events, and retains REST/cursor recovery with WebSockets as advisory hints.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture/game-cartridges.md#L202-L257",
+          "version": "repo-lines-v1:sha256:e9d2918a725ba4cabf399824507dab654731d35b17711907cfb9195357de5f33:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2ZWEyM2QzYWU3MzYxNGQ0ZjRiNDBmZGRiMjJhNjgyMGE2NzE1OGNiZTg4YTZiMWM4OWM5MWU4YmFkOWU5NzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1MGM5NDBkYWY0NGI4YTc0MDllY2EzNzI1YTA3N2VlOTM1MWMwMjJmNThkOGMwODc0NWU5ZDVkZGU0MmMxY2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI4YTFkNDE2MWQ3ZmRiMTA1YjdkOTc4MGQxZTllZDBkZGY5NzIwOGY4OWM1MTY4YzU4MjhkMzZhYzY0NTlmZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjN2RmMzExYmFhNTNlNzVkMDIyZWQxYTI5ZmZlMDEzYmNhZDk4M2FjM2YzNGE0NWJhY2I3NDZmOWVmY2Y2YmYifQ"
+        },
+        {
+          "resource": "repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md#L65-L71",
+          "version": "repo-lines-v1:sha256:3f920760962dfa48b97a38f268d907559e7e7524328dbd9f0fa00775f16699b9:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDU3MGJmY2Y3YTI2MGU4NjZhMmQzYWM5NTY3MjI4ZDBhZTVmMzE1MGViMWIxNGU1YjU5OTI1MjdmZDI5ZDA2YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdlMjdjYzljM2MyOGI1YTFmMzNkNTNmYmM3NTVkOTNlNmMwNDczYTJkNWMzNWI1NTk3N2IwNTg0M2VlNzY2NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjQ3ZjE3MTIzZGMzNTI3NWNhNGMwNDYwYTZhZGRiODgwYTJiY2E3NGZkMTU4OGRlMmMwYmI3MDk3MDJjNWU4NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzc0NTI2NDljNTc2YjA1YjBhZmY5MmY5YTBjYjI5ZjJjYTZkMzJiMDVjZjg0NzZkMjk5MDk4NzhlOTFlYTdiNiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_944072378c004cd9b3f3bfbec76991e7",
+      "statement": "Production Cartridge Core supports Terminal, Grid, Status, Button, Image, and Meter, while Rich-2D adds Sprite, ParticleField, and AudioCue; advanced 2D/2.5D, constrained 3D, and isolated Web profiles remain separate future reviews.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge/src/contract.rs#L125-L213",
+          "version": "repo-lines-v1:sha256:1f785665cb4f08e8f42b1527fd4290ffd93b25e6132c0290d26d2100cf16ba5f:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkNjU0NjA2OTZlOTVlNTNkZDg2ODgzYjdlNTljNzYyZjdlZDQ5MDY3ZDBmNzA1ZjhjZTQ0ZjQ0ZjBjMWI4YjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUxNzZkNDg2ZGIzNzM2MzJmY2ZhMDhjMzZkYTNjY2RhZGZjODc4NWQ1OGNkMWZiYzk5MDNkNjYyYTc5YjZiYTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge-renderer/src/lib.rs#L120-L176",
+          "version": "repo-lines-v1:sha256:e09b1350e905089775317b1ea6d0c51dcca6ecfb3468cc077fe47a2a4d2ec531:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MTZhZjcwOWZlZDM0OWNiNzdjYjRkYTYyZjk2ZjI3NTEyMmE4MzEzMTRlNGM1NmNkZjdlOGI4ZmZhNDFjZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUifQ"
+        },
+        {
+          "resource": "repo://docs/architecture/game-cartridges.md#L389-L428",
+          "version": "repo-lines-v1:sha256:82bb5d4d50d95ed60ee33a268c205e416a9660eed5d429263b233b15ec73c826:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiOGMyMTg0M2M1NTI2YjEzZWY3NjJmNmM2YjZhMTMzYWZhNGU0ZmRlZWMyODk5NWJmOGIyNDg0MzlkZWI3OGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA5MzI1ZmYxMzUwYTM4Y2E3OWMxNTQ0ZmFkYzk3NDk0OTJlNDAzOGZjMDk5NDZhZGVmZWY0N2RlNDAyMzgyMjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZmODcxOWUzM2UwYjJmNTEwNGQwMzRkYTAxNDBkZjZjZjk2NzExOTA3YWU2YmI1Y2FmMGFkNzdkNzQ1OWRhY2EifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f4e76a1825534b50a86a654420edba81",
+      "statement": "The intended graphics envelope extends from terminal games through polished animated card, board, tactical, tile, sprite, RPG, strategy, puzzle, and visual-novel experiences, but excludes Halo-class first-person rendering, high-frequency physics, twitch networking, arbitrary publisher rendering code, and a general Unity or Unreal runtime.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture/game-cartridges.md#L378-L414",
+          "version": "repo-lines-v1:sha256:323de7081badf9c6cf8092cabef35f16dd1c9f73dddb2713f6f20de426fb2204:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwNjY2NTBkNDU4OTQ4YTlkZWE0ZDQ2ZTI4MGFiN2E1YWYwNzM2N2M5MTQ0OTE5ZTFiYjZkN2Y5MTIyMTQ3MjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU1ZTI0YjY4NzRlMjI4NTNhZWU5OTdkZGY1MDU5N2M5ZWE1YzAwZDg1MzgxMmQwMGY3OWMzMGEwNTNhYjMzNTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJmZmI3MGI4YzdhZTdkMDRkZjljYmExZThhMGRmOTEzMDc0NTAzMWE5NTU5NDBiOTJhYTI1OGNmM2ExYWNjOWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1fdb713141d04faca2629f140f7ccb9e",
+      "statement": "Ticket 016 ratifies Core and Rich-2D software-rendering profiles through signed stress fixtures, 60 warm-up frames, 120 measured frames, a 33.3 ms average ceiling, profile RSS caps, and explicit rendered-raster admission ceilings.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge-renderer/src/lib.rs#L120-L176",
+          "version": "repo-lines-v1:sha256:e09b1350e905089775317b1ea6d0c51dcca6ecfb3468cc077fe47a2a4d2ec531:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MTZhZjcwOWZlZDM0OWNiNzdjYjRkYTYyZjk2ZjI3NTEyMmE4MzEzMTRlNGM1NmNkZjdlOGI4ZmZhNDFjZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUifQ"
+        },
+        {
+          "resource": "repo://scripts/test-game-cartridge-renderer.sh#L201-L366",
+          "version": "repo-lines-v1:sha256:d7b4d952c13b0f672268a50dd348a1a8e86623da01ce639bd9365880c4e59c03:eyJzZWxlY3RlZExpbmVDb3VudCI6MTY2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhYTkyMTgxZTRlYzY4M2Q2MjhjNGQ4NTI3ODBlZDY3NjM1OWI0OWZhY2Q2YTEzOWI1ZjMwYmJmZjkyY2VhNWVkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI1Yzk2NTlkOWI4NGZjOTE0MDYyOTRmZDM2YTViZTdiMmIwYjdiZjEyZDkyMmYwMjc3ZTNiOTA2YjIxZDc3NWY0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3MTg4YzMwNmM0MzBjNzM0Y2EyMjQ0MWFhZTRjZDFkM2U0Zjg3MzYyNDFlNjg1MWU1NTgzYWE1MzQ1NDhlNDgxIn0"
+        },
+        {
+          "resource": "repo://docs/architecture/game-cartridges.md#L497-L521",
+          "version": "repo-lines-v1:sha256:79282eeefd8d30035b7deea303251d5503c51843e3ef6d5f22f23681228056e0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiNmI1ZTc4M2YzZGI1YTgzMWE4ZGM1NjQwMmNhMjc4MWUzMjI5ODVmOTQyZDA0ZDY4MWQyZTc1ZjdjMGU4YWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1NDRmZTRjMGEzZTc1NTJkMDlmNTlhYmZmZTBkYTllZjEwNWQ1NjM2MjE4OGJiNDE1YjY0Zjk4Nzc2MzlhZTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFkMjY2M2NjODhjYjYzNjk0MzRmNTdmY2U5NzQzMmM4MmE4N2FjYmM0ZGVkZTc5ZGU1Nzk5MzFjM2I5ZWU4MjEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_10803358874245c2b075d50becfe56c8",
+      "statement": "The staged path now provides the production cartridge contract, trusted previewer, deterministic public SDK, separate-repository first-party release proof, signed catalog lifecycle policy, and secure local importer; challenges come next, while provider security and remote gameplay authority remain later reviews.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture/game-cartridges.md#L526-L600",
+          "version": "repo-lines-v1:sha256:9193ce120b70e6c6e248b21811a486a0ebeb356a2fbb279318bfe4de2c7f55c0:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhOGNjYzI4YWEzNzE5YWQwM2VhN2FjMWNhZGM5MDRmYjI4NWM1MGIyZTE4MmY0ZTUwNTI1Mzk5OWZjMTQ2YTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmNjgzNDI1OTlkMGZkZmM1ZmYyYTgzYzhiYjYyYTdlYTRhMDc0YjkxNmEzNmY1MjBiMjg4NmFlZWI5YTJmYzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxNGNmMWNkNDk2ZjUxNTZjNzYxYTFmZjNjYTMzMGI1YTY2YmU2ZWNkYzZmNDljYzczMGRhMGQzNzYyOGRlNWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3ZmNlMDUxYmFjOGQ5YmEwMDM4M2FmNTVlOTMyYjdkNmVmNWI3OGRlNmQ0ZmMxMzk4OTMyYjAxODVmNTc4N2YifQ"
+        },
+        {
+          "resource": "repo://docs/planning/ROADMAP.md",
+          "version": "repo-file-v1:sha256:39f1c8ece5f0485754c8d9ebd96c5a32a5be5faaa4cd25cb8bb67c7471e39aa6"
+        },
+        {
+          "resource": "repo://scripts/test-game-cartridge-sdk.sh#L32-L124",
+          "version": "repo-lines-v1:sha256:31a7a34dc7274bf5f3ba60ab79a2e040f6aeb9862ea2f395c658809ddc0c0e07:eyJzZWxlY3RlZExpbmVDb3VudCI6OTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5YjBiZjU5N2MyM2YyMDgwNmFhYzY1NTVhMjYxYTI4NDIzNjM4MjAwN2NkMjUzYTgyNmI4YTUwNjkyNTQyYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjZTNjNmY0YjdmM2FkOGNlOGU3NWY0YzA1ZjFhZDBjN2QxMzkyMmNmODg0MWNkMWIyOWVlNGU5NmUyYWU4MWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3YTk3MDI0OTI4MmU3ZmU5MjRiZGIxYjI1NWYzZjBjNTViMWNmZjkyNjczZGE2M2ZjMGI1YWFlZWRhNTYxYjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4MjJlNGM4YWUwZmZhNzlmOWRkMTU5MDY5MzdhNzA1YzFjYTk1MTNhNDZhYjkxNDc1YzcyZWE2MjE4NmQ5NWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0ef2e5ec5fe742e7a2a73e9ca7446701",
+      "statement": "The production cartridge library and CLI deterministically pack canonical stored-only ZIP archives, verify a domain-separated Ed25519 integrity index over every payload byte, reconstruct the canonical archive, and return immutable authenticated content plus explicit compatibility and provenance without contacting a provider.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge/src/archive.rs#L63-L207",
+          "version": "repo-lines-v1:sha256:f91b3c40e4055eee5530a8728face1971f222429e23c1a1a02b3e21b528cec6b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3MTY5ZjdmZDkzYWE1NmJiMGQzYzU5MjNhNWQ4MjMwYjdmZTU2NWY0OTg5NzM4YzBlZTc0ODk4ZjljMTNkNzlhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI2NDc1ZTk0YTkwNGFjNDliMzE1NGQ0NjcyYTY2ZTg2MjliODZkYWM3NGUzZTI5MzdiZTY5MjdhZTNkYTExYzUzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJmNGE4YjhhNmEwMmRjZTU0MDA3N2M1MWY0ODE5MmNjYzg3NjA0ZDIyYjI4MzFhNjk4Y2UyZTZhMWRhNzBlODI2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwMzJlODBiNGI0OWNhNTg5Nzg1ZDE2Zjg2OTZiZDM3NTA2NGNjZDk1ZTkwOWZlMTM2YTM0ZDBmMTQ3YWU5MTY3In0"
+        },
+        {
+          "resource": "repo://crates/game-cartridge/src/contract.rs#L328-L390",
+          "version": "repo-lines-v1:sha256:d907eefb5799ca1752e3530ba30e947732344e83957e84337dc3304c0034d31b:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwN2RlNzNjMjY2MmNjZjJhZTU0NmE3N2Y3ZjIyNDk2ZTcwYmUzYjkzNTI5ZDY0NWYzNzI2YzIzNTE1MmYzNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2MDE3YTFlM2FhMTc3YmRmOTg2MmZhNzNjM2IwYzUwOGQwMjYzMTlhYzUyMTNhNzkzNmUxYjIwZTFhMjhiY2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJhNDlmN2M3ODlmZTY0M2I3YzdmZWRmYjdmNDA1MGUxZTlmYTlmY2M1YTQ1Y2M0MTNjZmFkNjFmNmRkODc5YTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZkNWQ5OTg2MzY3ODc4NWM3NTcwYzI0MGFjOWU0Njk0OTE3MWY0MWFjZmI3NTk5YmMyM2Q0NTI5NjcxZGYzMjIifQ"
+        },
+        {
+          "resource": "repo://scripts/test-game-cartridge.sh",
+          "version": "repo-file-v1:sha256:42a79770b1d4edccb001607a5249cc467deb103a978bf8e8c327374592cb514b"
+        }
+      ]
+    },
+    {
+      "id": "claim_85a46783453e4c5d92172abbc219e6ca",
+      "statement": "Game Cartridge v1 bounds archives, entries, expanded bytes, schemas, presentation nodes, strict 8-bit PNG, and PCM WAV; every screen pins a declared schema and every typed node binds to an exact host capability and node-specific action or asset contract.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge/src/contract.rs#L5-L28",
+          "version": "repo-lines-v1:sha256:38a9b53b70a881451ea0a9b588d373845d6fdab3100a343ba24ff4faa0b7030b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMjlhYmFiNjMzMDAyNWU3Y2I5NjQzM2YyNjExZGQ4Y2FkOTU2MTAxMDRiOWVmMjVmY2VmMzI0ZTVjZDMwYTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4ZGViZThhNWJiY2M4NzE2YjAyYTUzNmI1OTgzODQ3MWI1MDM5YWMyN2E2M2FmYzhjYTc0Y2JhMGRmMjI3N2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcyNzVhZjI5NTk0ODM4MTFjZjk5NzI3Yzc4MjZiNmY4MTIwMzkzNWI0MjFkZDhmNThiYzc4YWRhZTBlYjBhM2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjNzA3OGRhY2QwZmMyNTA3OGE0MDNmY2E1OTA2YjBlOTNhOTkzNjQyMjRlZTA0YTU5MmJiNzJlOGNkMDVlZGUifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge/src/contract.rs#L110-L230",
+          "version": "repo-lines-v1:sha256:3dd47444cb9e338963009468090ef0e12747399a7b2429a8c9736bbb7fef0408:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiNGMxZGFkZTg2MWI0ZGEwNzZhMjI4MTRjODRkMDg5YTU3OTBkNTY1NTc2NTllODdhZmE4M2Q4Y2MzODY3MDVjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI4YzcwNzhkYWNkMGZjMjUwNzhhNDAzZmNhNTkwNmIwZTkzYTk5MzY0MjI0ZWUwNGE1OTJiYjcyZThjZDA1ZWRlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4YzcwNzhkYWNkMGZjMjUwNzhhNDAzZmNhNTkwNmIwZTkzYTk5MzY0MjI0ZWUwNGE1OTJiYjcyZThjZDA1ZWRlIn0"
+        },
+        {
+          "resource": "repo://crates/game-cartridge/src/validate.rs#L128-L347",
+          "version": "repo-lines-v1:sha256:462defaac816f745dfa1287db59c83459a316245920a75e7c9f62dea724b9657:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2OWJlNjUxM2U5ZGQ3MzI1MTJkMjIyNWIzNmIzMTk3YjYwYWIwNDA4YmJhYWZiY2IyYTQ4OWFlYjRhMTBiYjUyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzNWY2ZjQ2NmU1OWNmYzMwNzAzYzQ1ZjcyYWY2NWRlNTRhYzM2M2QzNTRjYzFhMzMzMDM1MGFjZDQ1MjQzNGM0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhYTg4MjIwMTIzMTFhNGU1MzVkNDdhMzk3ODU2NjA3MDU3OWMxYTQ2ODNhODljYmJmNjdkOWI1NTYxMWVkMjljIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_e49bea947f4c4451ad2d42774615e8fa",
+      "statement": "The Ticket 015 store installs exact verified archives as read-only content-addressed blobs with atomic activation and revocation records, re-verifies active blobs, fails closed on malformed revocation paths, and is supported only as a same-user local boundary rather than a privileged multi-user installer.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge/src/store.rs#L22-L117",
+          "version": "repo-lines-v1:sha256:adcf008cb32d501b803a82aa9c4cb220fe086a652f197efcd893fb95d85a9696:eyJzZWxlY3RlZExpbmVDb3VudCI6OTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlNTZlYWNhODBhYjI3OWI4ZWQxMjRlYmMxM2Q2YmQyZGMxYTBiNzVhNDMyYzQwZDc1OGM4NmRkZjBkMDMzM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5ZDM5OGU4NGI2ZDVjNDdlNTJhZjA2MzE4MTdkY2Q2MmUyNDAyMDg0MWUwYTE2ZDBiMDhjNmRmOGQzOTYzMDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYzZTNhZDJiMzI0ZTMzODg4ZDMzZDVhMjJmOTY5NjdkOGFlMzQzY2I0NmNmZWIxODk5NWZiNjBmNzQyMDMyZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBmZGRkNTFjMjA2OTM0NWM2MmZiYjUyYjhlMDVjMzg2MzhhNDAxMmNjYjliMTc3NzQ1YmQyYmFiYjI2ZWRjYTQifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge/src/store.rs#L120-L205",
+          "version": "repo-lines-v1:sha256:2ddc8f0ae163b9c1ef8d34b120e943d287db7b4722abc526739e7c700802f51a:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjNmM2ZGE1MDEwNzlhNGU4MTA2YmMzYzYzYmYwMTkxZDk0ODYwMThhMGViMjg3ZDE3MjhkYjZhYmJlMjVjM2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZDc0MjU3YWNkMTBhNTJhY2NhMDE1ZDg5MGU1MmJjMDAzNmFhN2E2ZTFjYTNhNjI4ZjJmZjAwYjBjNDRmYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhMjUxZGI2MzU0ZDAyY2NmMTEwM2RlNmE5ZTQ4OTY3NmZjOWY1YWJjOTgwZjNhODk0ZTg4NDdjYzExMWFjNTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJmYTMwNjBhYTZhOWRmMGM1YmVjMzZiYmMzZTQ3YjI1NDA5NWNmMzY5MzIyN2FmMjVjYzk3NWEzZjhjZmRmYTgifQ"
+        },
+        {
+          "resource": "repo://docs/architecture/game-cartridges.md#L151-L179",
+          "version": "repo-lines-v1:sha256:37808d10c3915698dcab97c8094d063d83d532b6995cd7bbcf5fedb4315915e9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2ODc2ODU0ZDc5ODhlNGVjMzFkODM3NDRkYjA3OTY0MTc1YTZjZmJhMDc0NGI2MGJkMTUxMGYwZDdkY2YwMmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzODZiNjBhY2E0YmRmMGJlODA5YjhmYjE5N2UyOTczOTUxYzEzMDk4YzBlNjk0YzkwMjZhN2UwYmRjNDNhZWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkZDU3NTVlNjVkMmFjMzk1NjBhMWQ4MTRhNTU3MGFmZDUyNzQyZmZjZTExZDg5YTRjYWY1ZjVhZWYxNGVkYzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5MGM3MGI1YmM2NWM4Y2IzZDNkNWViNjdjNWQyNzUxM2VhZTk3Mjc0YzRhZGFhY2I3MDQ5MjY4YTQ1ZDJhMDEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_754e4c3969ea4d3a8f44dfaeea727d25",
+      "statement": "The production renderer accepts only an immutable VerifiedCartridge, validates a bounded view against the screen's authenticated restricted schema, applies signed capability fallbacks and trusted preferences, and emits an inert omarchygs.render-plan/v1 document.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge/src/contract.rs#L328-L370",
+          "version": "repo-lines-v1:sha256:a443a99e258f1e61c525e344143eff715b3981d8c967d4e036867e777836c8f3:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwN2RlNzNjMjY2MmNjZjJhZTU0NmE3N2Y3ZjIyNDk2ZTcwYmUzYjkzNTI5ZDY0NWYzNzI2YzIzNTE1MmYzNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4YzY3MjAwZDcyMzEzNzg5OGU1MDQ0OTI3MzliNjUxMDliNGE1ZGE3ZWQyZDNjN2I5ZTU0ZTU2ZTY4ZmQ5NGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJhNDlmN2M3ODlmZTY0M2I3YzdmZWRmYjdmNDA1MGUxZTlmYTlmY2M1YTQ1Y2M0MTNjZmFkNjFmNmRkODc5YTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjczMTNjNmZlMTU3YTFkNmNmOTY4ZDQ2YTZkNzU5ZjM2ODg0NGExYzMzOWRmNzc5YjViMTUxMTNmZDYxM2I1MWUifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge-renderer/src/lib.rs#L349-L461",
+          "version": "repo-lines-v1:sha256:d137d9e91088af9d7d8e884931c18554c8eee754e58503bf1d6267bfa3b5ec65:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmMGE0Zjk0MWVhODlkMTBlZjM3ZTczMjBiZTc0MzY1NTVlYmM5OWQ4NzA4ZjNlOGZlYjM0Mzk0YzJlNzI5MGFhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzMGMxZjE4OGYxNDJlZDdhODI0NjgwYjIwNzE3MmM1NTE5YmM2MTRhNDhmZGE3Y2YxNjdlZGI4ZGRmNzk5NTZjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyMGEzMjA3ZjQyNTZhNjMyMzUzOWJlMmFlYTBkM2UzYWQ5NzFkZjkzNzY2NjAwYjQ1NjBkYWRjZjUzYWRjZDY4In0"
+        }
+      ]
+    },
+    {
+      "id": "claim_128a6c26c7064a42945d189f1eec306e",
+      "statement": "Core and Rich-2D enforce incremental plan, node, effect, per-raster, and scene-decoded-raster budgets before publishing any admitted node or asset.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge-renderer/src/lib.rs#L120-L176",
+          "version": "repo-lines-v1:sha256:e09b1350e905089775317b1ea6d0c51dcca6ecfb3468cc077fe47a2a4d2ec531:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MTZhZjcwOWZlZDM0OWNiNzdjYjRkYTYyZjk2ZjI3NTEyMmE4MzEzMTRlNGM1NmNkZjdlOGI4ZmZhNDFjZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge-renderer/src/lib.rs#L409-L461",
+          "version": "repo-lines-v1:sha256:ed645b1c1a391d209243f98b33fbed636744c013237f54cee86da713fadf5f00:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MmE0MjliY2RkODdlMDI4OWJiY2JkMzZjMDY4MTYxZjdkMTk1ODg0YTNiMGE0MGNmNmY0NWY1MDkwZTljNDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwYzFmMTg4ZjE0MmVkN2E4MjQ2ODBiMjA3MTcyYzU1MTliYzYxNGE0OGZkYTdjZjE2N2VkYjhkZGY3OTk1NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMwN2YxOGZjNGI4ZjgxYTIwNjZlOTAwNWY4MDY1ZWFhZWQ5MGJkOTJmODA4YTA1NjI4MjczZjE0ZWYxODJhZmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwYTMyMDdmNDI1NmE2MzIzNTM5YmUyYWVhMGQzZTNhZDk3MWRmOTM3NjY2MDBiNDU2MGRhZGNmNTNhZGNkNjgifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge-renderer/src/lib.rs#L766-L864",
+          "version": "repo-lines-v1:sha256:cc567fea5d3970a300fc485a1c464b9d8f665560f940088519844cd4f74e3cda:eyJzZWxlY3RlZExpbmVDb3VudCI6OTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5NWIyNzgyZmNkMWZlOTJiNjAxY2YxYmZlNmYxZjBkNmQ2MDZhMzRmZTUwN2RlZGEzMWNkM2Q4Zjk5NmIxYjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUxMzcwZDhkOTYzOTM5YmFkNTYwY2M2OWUwNDAxNGJjODBjNjc4ZDNmZmRjM2M5N2E1NzJiYTI2MzM5ZWZjMWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4621b2fc8e64400caddfa2017b66ab7e",
+      "statement": "The trusted QML surface accepts only exact plan keys and fixed node kinds, independently recounts aggregate profile budgets, maps kinds to repository-owned Components, and renders cartridge strings as plain text.",
+      "evidence": [
+        {
+          "resource": "repo://client/qml/cartridge/TrustedCartridgeSurface.qml#L1-L192",
+          "version": "repo-lines-v1:sha256:d15d7d63a151dc60a4ac91d7164a676354ff394f65f86622944f94308e309e23:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwN2RmOWU2MzhjMDYzYTVhNDdlZmRmNTYyMTkxNGQyMjI4NDliYmZhNGY3Y2U5ZjA3YzhhZGQwYzhmYjY3OWI1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJjN2U5ZTcwNDU3OTQ2NDI2ZGRhZjRhYjEwMjg0NDQ2ZDVmNDk0NDAyZjVkNTEyZDE5NjNkNWZhNWIxYTU5NWY2IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5OTliZGVmZWVhY2E2MzQwZTAyOTBkYzg2ZTg4OWM4OWQ1ZTE4OWFhNWJhNDRiNTg1YjNiNzA3MzRmNGE2MmQ4In0"
+        },
+        {
+          "resource": "repo://client/qml/cartridge/TrustedCartridgeSurface.qml#L224-L305",
+          "version": "repo-lines-v1:sha256:3323cec7e60e8075df14e4ae674379ccf0af502a9c180eea84111bf0ff67dba4:eyJzZWxlY3RlZExpbmVDb3VudCI6ODIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmYzVhZjEwNzMyMGU1YTliZGE5MDI0YjE2YTg3M2JiMDdiNjk2YzZmYjRjYjA2MjZjOGM5ZTVjYTJiMGRlZGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRjYTM5MjlhNzc2N2RiZTMwOTEwODFlYjBjN2IyMDZjZGZmYzAzNWQ4NzUzZDRjYmVkN2QwMTc1YmU5ZDlhZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fd01ff6507544c369fcf5da75c8f9d79",
+      "statement": "The preview CLI verifies the real signed archive, reads bounded regular view and preference files, compiles the production plan, and writes read-only plan and digest-named assets only into an existing empty private directory.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge-renderer/src/bin/omarchygs-cartridge-preview.rs#L65-L89",
+          "version": "repo-lines-v1:sha256:59acb0a268633856ab2e0c8c6cb874ec96d0f42bcb7f37bd9c294a0f9a297f40:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhYWVhZTcyNjg4OWQzMGY2NTg3MWIzZjRhNDQyMWNiOGNhZWExMjFlMWQyMzAxNTkwM2JhNmNkN2ZhM2E1N2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4OTc3MWZlMWI2NjI4ODc1YWEyM2U3ZGJlNGFhNzE0NjFkMDBjZGZiNjZkZGYxMWI5ZDgyMGFjNTg5N2ZkZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg5MDc1NTUxODA1MDUxMDEzY2ExNmNiMDg5NjE3NjVjMzI5NjZhMTU3Mjg0ZjYwM2NjNjljZTNhNThmYWRjMDIifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge-renderer/src/lib.rs#L954-L1022",
+          "version": "repo-lines-v1:sha256:1ef0dcf805bd8eef6761b5749c1eb5a2dd0302e15c23bd8b5a05f139d8d145ce:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4N2JlNzk0NzFlMmUxN2RhMWExODc3MDIyMzYwNjc0MDY0MzE1ODA4MmQ4MmExMGFkNzk5MGExZmU4YTUzNjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4OTc3MWZlMWI2NjI4ODc1YWEyM2U3ZGJlNGFhNzE0NjFkMDBjZGZiNjZkZGYxMWI5ZDgyMGFjNTg5N2ZkZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhOTFlMzI5YWNlZmFiMDM0N2QyYTUxNjkwZGI5ZmExYjc5ZDUwOWUwMmY1ZTMzOTlhMzEyMTA5Zjk4MjkwZDYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4a92a2eb9c2144f39cdfcfa2c3a751fb",
+      "statement": "On the final one-CPU software-rendering gate, Core averaged 15.998 ms at 132,688 KiB peak RSS, Rich-2D averaged 16.000 ms at 244,664 KiB, the maximum accepted 2,048-pixel Rich-2D raster averaged 16.006 ms at 250,312 KiB, and the accessibility scene averaged 16.001 ms at 237,864 KiB.",
+      "evidence": [
+        {
+          "resource": "repo://docs/planning/pipeline/active/separate-repository-sdk-and-first-party-cartridge.notes.md",
+          "version": "repo-file-v1:sha256:b5b94d48fc51107e3a89088e1e168e6958f50cf5e8de17e9936a9e0f49314ee8"
+        },
+        {
+          "resource": "repo://scripts/test-game-cartridge-renderer.sh#L201-L366",
+          "version": "repo-lines-v1:sha256:d7b4d952c13b0f672268a50dd348a1a8e86623da01ce639bd9365880c4e59c03:eyJzZWxlY3RlZExpbmVDb3VudCI6MTY2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhYTkyMTgxZTRlYzY4M2Q2MjhjNGQ4NTI3ODBlZDY3NjM1OWI0OWZhY2Q2YTEzOWI1ZjMwYmJmZjkyY2VhNWVkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI1Yzk2NTlkOWI4NGZjOTE0MDYyOTRmZDM2YTViZTdiMmIwYjdiZjEyZDkyMmYwMjc3ZTNiOTA2YjIxZDc3NWY0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3MTg4YzMwNmM0MzBjNzM0Y2EyMjQ0MWFhZTRjZDFkM2U0Zjg3MzYyNDFlNjg1MWU1NTgzYWE1MzQ1NDhlNDgxIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_a20f1cd4c34b4676b27ba7a382e6c8ec",
+      "statement": "The v1 SDK export is deterministic, read-only, language-neutral, self-verifying, and pins exact schema, tool, protocol, compatibility, deprecation, and retirement identities.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge/src/sdk.rs#L17-L51",
+          "version": "repo-lines-v1:sha256:8ac7cd15dae57917ecba37eb873168ea0970b3508e3390bed56cdd08a6680904:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmYjg4MTZlZDk0NTNmNzA5ODc3ZDZkNmI1YmFhMTZlOWE4OTYxOGNjNjY2MDY0NzMwZDg4ZmFmNzc4MWUxNTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMmQyYzBkNmRjNWU3NGQ5MmZhMTRiOTFkYmVhMjY0MDkwYmViMzVmZGI5MTg4ZDliMzQxMTgxZGNlOWY0Y2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZlZGQ4MjJlOGM5ZjM0MjU5YTM5ZmJjYmVjMjUwYTk3MDM0ZTgzZGQyMDM1ODMxMTM4NTU0ZWViNzA1YzFlMjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjNzA3OGRhY2QwZmMyNTA3OGE0MDNmY2E1OTA2YjBlOTNhOTkzNjQyMjRlZTA0YTU5MmJiNzJlOGNkMDVlZGUifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge/src/sdk.rs#L101-L176",
+          "version": "repo-lines-v1:sha256:dc8e04ab4a690c7dcc14374bb749526dbd301e98bd1c9e9c4d96558f0681ba0c:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlZWUzZjNjZmQ1NTY4NTczYTAzNmVjMTJlNjFkYTc0Nzk3MjcwNzc2ZmQ4MDhjODNiMmJkODNmNzAyMDMwYWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUxNWU0Njk2YTZlZmE0YjlkYjdkMTM2NTNkNTlmY2E1NjJkZGU2ZGMzZGNmZmFhMzQ4YjU4YjJmMGJjMzM2MzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk1NTZiOGIwMDQyNTU4YmQyOWNiMTljOGQ3MzNlN2VjYmYzYTJlNjE3YTEyMGUyZjg0OGFkOTkxZmIwYWFkY2IifQ"
+        },
+        {
+          "resource": "repo://scripts/test-game-cartridge-sdk.sh#L32-L39",
+          "version": "repo-lines-v1:sha256:2ad76fc421cc36925e11e2de59421dc957ee094402084c9c3fac31cb00f8a19f:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDliMGJmNTk3YzIzZjIwODA2YWFjNjU1NWEyNjFhMjg0MjM2MzgyMDA3Y2QyNTNhODI2YjhhNTA2OTI1NDJhNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDY5Y2Y0Y2ZmM2NiZmEyZDJjNzFjODU2YWY5ZTRhMzg5NDFjN2JiMjZiMWVkNzg4MDQ3YWUyZjVjMDJlMWM5ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTdhOTcwMjQ5MjgyZTdmZTkyNGJkYjFiMjU1ZjNmMGM1NWIxY2ZmOTI2NzNkYTYzZmMwYjVhYWVlZGE1NjFiMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzUxM2YxNjdhNzQwNjBiOTFhMjIwZWJiMGE2MzljMjA5MDY4NTAzZGI5ODkzNjA2Y2JmN2M3ZjhmYTMwMWE1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_4640c8fc8062414e9f1c5811ca21f1ff",
+      "statement": "A signed release attestation binds the source revision, builder identity and binary digest, SDK identity, publisher and game identities, exact archive digest, and conformance digest.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge/src/release.rs#L30-L81",
+          "version": "repo-lines-v1:sha256:be5ab9c3450d5638a5ca19fb0d97276094f0d6f4e8376a04ec149cbcf3f7f1bc:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkNjU0NjA2OTZlOTVlNTNkZDg2ODgzYjdlNTljNzYyZjdlZDQ5MDY3ZDBmNzA1ZjhjZTQ0ZjQ0ZjBjMWI4YjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzZTc4MDNjYWM1ZWJkNDliN2UyYjIyNzM4ZjJiZmRlNzllZjJlYTkzN2UxZmUwNzNjM2M4ZTE1MzFjODBlODYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU0OWZhMjE5MTRhOWQwYWI5OTYzMmYxYTE0ZDRkZjFjNjE1M2YzMTFkYmNjNjVhNWFlZDFlZWIzZGZlMjc1ZmMifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge/src/release.rs#L129-L189",
+          "version": "repo-lines-v1:sha256:0e798029021bfe4a5ca9f7f2bda511ffb572e032cb073553c47eaaa59421669a:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzZDEyMTM0YmJhNTZiOGY5YjlhYWVkNTA4NjliNzNhY2VmNmVlNTcyNGZkZjZiOTAzODgwMTQ1NDhhMGQ5MGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4MzEyMzNkMjhkOTUzNWQ3YjM3NjFkMjFhM2U5YWU0M2Q4MTYwZmQ1MTAzNWExNTM3ZDAxODJlODY4OGY4OWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU4M2JhYWY2MTc0MDlkYTg3ZGVmYzFjZmI3OTE5ZDY4NTdhYTNiZTM2M2RlNjgwNDgwNjQzYWJlZDM1MjYxNzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA4ZTZmNzBlMTc2OGNiMTE3Y2U2NTk1OTA0N2I1YTA0YmZlYmE4NWQ2YjAyYWIxYWVmZWYzOGJjNWE3MDViYjkifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge/src/release.rs#L222-L295",
+          "version": "repo-lines-v1:sha256:b0b481078a0b8b1e83e6936e2729630920c5dee8361eccfaf00167e2cc773841:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxMGQ3M2FmZjI0MzQ2ZTNhNjhjOTIxOGJiNmE5NmNiODIzMTA2ZWFkYjdjZWIxMzRiZTMzNjc4NTcxMzgxMjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0NzVlOTRhOTA0YWM0OWIzMTU0ZDQ2NzJhNjZlODYyOWI4NmRhYzc0ZTNlMjkzN2JlNjkyN2FlM2RhMTFjNTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5NmY4Y2IwODNmYTgwMGE0ZGNkMjk2OTcyMmQ3YjkyNjg2YWRkOWViZTM2NTU0OTJmYTY3MmIxYTdjZWQyNDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxOWE3Nzg3MGFiNTg2ODY2MmRkZmI3NTI3ZDJiYmNmYzBkOTI4OThiYmVkZjI1N2I5ZTQ2M2Y0YzJkZGQ1NTYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_db9d1ac8c9e14aa29a0165ecc67b09ca",
+      "statement": "The catalog lifecycle has active, deprecated, suspended, revoked, and retired states with explicit new-launch and active-session decisions; signed policy identity and monotonic versions prevent silent release substitution.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge/src/lifecycle.rs#L39-L113",
+          "version": "repo-lines-v1:sha256:5dacc8fbedcad41a145c15d4ebb1a48434123b7f03ea27a37302e87497acf7e8:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4MjZiYTE0YTRhZTliMmM1N2FiNTZlNTY4MTc1MWUxYTcwMzAwZmI2ZmZhY2YwYzc0Yjg2ZDRlYTg0Yzc5MTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA0ZjJkNmI2OTg2YTY3MGJlNjE4ZjJiODM3ZWNiZjk4ODFhZTRmYWZhZTEzMjk1Mzg4MGU5MGUyNjNlNWU5NWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzODMxOTdiZGFlM2Q4MzgzNzU3Nzg5YzQ0YjRkM2NjZTM0ZWU1MzkxZjc4MThlMWU5MWNjYjUxNDQwZTZlZDEifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge/src/lifecycle.rs#L210-L320",
+          "version": "repo-lines-v1:sha256:7f64c6eb1ed2c5b55e22b55ca85b38d5467a702c5a213d405f0cd274a8926f1c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTExLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlMWI2ZDc5ZTMzNzNjYzU3YThlNzdhMDVmNzJhODNkN2NhNjgzNDk1MDQ2MjMzY2Q0ZTE4YmE5ZTAzODAwZDBjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI1MTM2YjdlODgwOWE3MWU0ZTEwYjIyYjg0MTFhNDRkYzdjMzA1NWQ3YTk5MTViODRkZDMwOWQzZWY3YzBmZjA0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkODhjODA2MGJlOGYyNTMwN2E4ZDEyYTZlYzA5NmU4ZThkOGY3ZGI1ODAxYWM0ZjQ3MmIyMjk2YTZjYTBkYWYxIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjOGI2NTcwMzY2NmYwMGRkOTg4ZjJkZjYyYjgxNjBhMjUyZmRiOWRiNzcwZmI5NDMyM2NhM2JmYmI1NTY5OWUwIn0"
+        },
+        {
+          "resource": "repo://docs/architecture/game-cartridges.md#L563-L578",
+          "version": "repo-lines-v1:sha256:2f0d500a9679dfc3a51b181ace8c080400a5280cd65264fab985c64ad0052016:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiNTRiZWZlMDU3ZjBmOTBmMzZmYzViMDFlY2Q2ZDM2OWQ0MTBiOTQ2NzBlNTQxNThkMDJmZmY5YzE1ZjI5ODAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM1NGQ2MDY1YjBjNWI0ZGQwZWRjMmIxNmFiZjZjMWUzM2Q4MDhkNmQ2ZGNjOGRjNGY3ZTk0YzdlNzBjMjYwOWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE0ODRjYzU4OTQ2MmIwNjQxNzE0ZmMyMTVhMDRkZTRmMjQ4NGEzNDczZGVkMDY1YTIxZjRmYjJkYTc2ZWZhZTIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6cb561a1ec5d4c219afedd13a01ec4ed",
+      "statement": "The Linux secure importer retains no-follow directory descriptors, validates effective-UID ownership and writable modes, serializes policy transitions under an exclusive descriptor-relative lock, and persists authenticated denial policy before enforcing it.",
+      "evidence": [
+        {
+          "resource": "repo://crates/game-cartridge/src/secure_store.rs#L95-L144",
+          "version": "repo-lines-v1:sha256:4e966fc5535d0c07ab21920087fb482afa93363b155992e77d58ddd2ff30893b:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1YTYwOGJjODY2NjMyNTIwNjJmNDJlNjgyMjA4ZGMyNmI0MzdmMDc5Y2FhZWFmZjk4ZTg1ODU2NTY5ZjJmZmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNiNjkxZGViODQ2Yjc3MGQwNWI4NjkwYzI4N2Q5YjFiNmQ3YTE1ODI4Mjg5NDAzOTBkNzNhZWY3NmNmZDVhNzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgzNTY4ZDhkZTZkMTkwYWFmY2FkNjczOWY1NTdkNmM3MWQ2OGE0ODIzODhjNThkODAyYmQwMGI1NGEwOTUxYzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5ZWQwZWJlMWJkMTc1NGFjYTA0M2VkYmJkOWVjYTFmYTk3YzAwYzNjZDdlMDllYWIwZWY2YWVlN2U0ZWU5ZWIifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge/src/secure_store.rs#L274-L338",
+          "version": "repo-lines-v1:sha256:b096cb3a84599d7d9e3d09874f7316071b66a7672bf7cfd6f104cc88b2cf9964:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5YTE3NzI2Zjg3ODZjZjIxOWFmMjNhNDJkMzE5YWI0NmI1OWE3ZDI3Yzg3ZTQ0N2NlMTEzODkzZDhkMWYwZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA5ZDBlYzVjOTlhZTk5MDMxZjVjYzBhMjJmNGUzMGU0ZmM5NzUxYTMyYjMxZmVlZDViYTg1OGFmYzUxN2VmMzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4ZjU2YjhjMTY5Mjg5ZjYxZDk1NzkwMzdhYjIzMDgwOTQ0Y2IwYWEyZGViOTE5ZGI1MTNhZDkzZDVkNDU0ZmYifQ"
+        },
+        {
+          "resource": "repo://crates/game-cartridge/tests/sdk_release.rs#L340-L498",
+          "version": "repo-lines-v1:sha256:7ff601699bd08348ba97aa5bca382e236f2704aee40f6dc6e68704549675c9c3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyNjY3Mzk4MjkyYzJlM2E2MjQ1ZDUyNzc2OWQ3ODEwOTk0ZDc4ZTFmMWUwMjdmZmZkMTQ1Njc3OWVjNGMxMTg0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhZDY1OWVjODNhNzUyZjQ2YjBlZTliOGQ2MzJhZTljNzU1OTUxNzkxODM3Y2NjNzU1MWFmM2Q3MzI1MjZhYTA0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3OWFkMmRjNzY0ODJiODA1OGViNjY2ZmRmN2ZhZmY2ZTBlZjgxNWI2ZDY4NzQ1NjY1ZjRhODU5NTM0MDBiOTA5In0"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.3.3",
+    "at": "2026-08-25T14:08:06.805Z"
+  }
+}

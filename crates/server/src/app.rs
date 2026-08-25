@@ -17,6 +17,9 @@ use uuid::Uuid;
 use omarchy_game_runtime::{GameManifest, GameRegistry};
 
 use crate::accounts::{self, RegistrationError, RegistrationInput};
+use crate::challenges::{
+    self, ChallengeDirection, ChallengeError, ChallengeOutcome, CreateChallengeInput, GameChallenge,
+};
 use crate::connections::{
     self, Connection, ConnectionError, ConnectionRequest, PersonaBlock, ResourceOutcome,
 };
@@ -273,7 +276,26 @@ enum MessageResponse {
 #[derive(Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum SystemMessageResponse {
-    ConnectionAccepted { actor: PersonaResponse },
+    ConnectionAccepted {
+        actor: PersonaResponse,
+    },
+    GameChallengeCreated {
+        actor: PersonaResponse,
+        challenge_id: String,
+    },
+    GameChallengeAccepted {
+        actor: PersonaResponse,
+        challenge_id: String,
+        game_session_id: String,
+    },
+    GameChallengeDeclined {
+        actor: PersonaResponse,
+        challenge_id: String,
+    },
+    GameChallengeCancelled {
+        actor: PersonaResponse,
+        challenge_id: String,
+    },
 }
 
 #[derive(Serialize)]
@@ -316,6 +338,12 @@ enum SyncEventResponse {
     GameSession {
         cursor: i64,
         game_session_id: String,
+        created_at: String,
+    },
+    #[serde(rename = "game_challenge_changed")]
+    GameChallenge {
+        cursor: i64,
+        game_challenge_id: String,
         created_at: String,
     },
 }
@@ -379,6 +407,44 @@ struct GameCommandResponse {
     state: serde_json::Value,
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CreateGameChallengeRequest {
+    idempotency_key: String,
+    challenged_persona_id: String,
+    game_key: String,
+    game_version: u32,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GameChallengeQuery {
+    before: Option<String>,
+    limit: Option<u16>,
+}
+
+#[derive(Serialize)]
+struct GameChallengeListResponse {
+    challenges: Vec<GameChallengeResponse>,
+    next_before: Option<String>,
+}
+
+#[derive(Serialize)]
+struct GameChallengeResponse {
+    id: String,
+    game_key: String,
+    game_version: u32,
+    direction: &'static str,
+    status: String,
+    challenger: PersonaResponse,
+    challenged: PersonaResponse,
+    game_session_id: Option<String>,
+    expires_at: String,
+    resolved_at: Option<String>,
+    created_at: String,
+    updated_at: String,
+}
+
 #[derive(Debug, Serialize, PartialEq, Eq)]
 struct ErrorEnvelope {
     error: ErrorBody,
@@ -397,6 +463,7 @@ enum ApiError {
     Mfa(MfaError),
     Persona(PersonaError),
     Connection(ConnectionError),
+    Challenge(ChallengeError),
     Inbox(InboxError),
     Game(GameError),
     Sync(SyncError),
@@ -463,6 +530,26 @@ pub(crate) fn router_with_runtime(
         .route(
             "/v1/personas/{persona_id}/game-sessions/{game_session_id}/commands",
             post(apply_game_command).layer(DefaultBodyLimit::max(32 * 1024)),
+        )
+        .layer(middleware::map_response(inbox_no_store));
+    let challenge_routes = Router::new()
+        .route(
+            "/v1/personas/{persona_id}/game-challenges",
+            get(list_game_challenges)
+                .post(create_game_challenge)
+                .layer(DefaultBodyLimit::max(8 * 1024)),
+        )
+        .route(
+            "/v1/personas/{persona_id}/game-challenges/{challenge_id}",
+            get(get_game_challenge).delete(cancel_game_challenge),
+        )
+        .route(
+            "/v1/personas/{persona_id}/game-challenges/{challenge_id}/accept",
+            put(accept_game_challenge),
+        )
+        .route(
+            "/v1/personas/{persona_id}/game-challenges/{challenge_id}/decline",
+            put(decline_game_challenge),
         )
         .layer(middleware::map_response(inbox_no_store));
 
@@ -533,6 +620,7 @@ pub(crate) fn router_with_runtime(
         .merge(inbox_routes)
         .merge(sync_routes)
         .merge(game_routes)
+        .merge(challenge_routes)
         .with_state(AppState {
             pool,
             mfa_cipher,
@@ -1147,6 +1235,127 @@ async fn apply_game_command(
     ))
 }
 
+async fn create_game_challenge(
+    State(state): State<AppState>,
+    Path(persona_id): Path<String>,
+    headers: HeaderMap,
+    Json(request): Json<CreateGameChallengeRequest>,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    let outcome = challenges::create_challenge(
+        &state.pool,
+        &state.game_registry,
+        token,
+        &persona_id,
+        CreateChallengeInput {
+            idempotency_key: request.idempotency_key,
+            challenged_persona_id: request.challenged_persona_id,
+            game_key: request.game_key,
+            game_version: request.game_version,
+        },
+    )
+    .await
+    .map_err(ApiError::Challenge)?;
+    let (status, challenge) = match outcome {
+        ChallengeOutcome::Created(challenge) => (StatusCode::CREATED, challenge),
+        ChallengeOutcome::Existing(challenge) => (StatusCode::OK, challenge),
+    };
+    Ok((status, Json(game_challenge_response(challenge))).into_response())
+}
+
+async fn list_game_challenges(
+    State(state): State<AppState>,
+    Path(persona_id): Path<String>,
+    Query(query): Query<GameChallengeQuery>,
+    headers: HeaderMap,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    let page = challenges::list_challenges(
+        &state.pool,
+        token,
+        &persona_id,
+        query.before.as_deref(),
+        query.limit,
+    )
+    .await
+    .map_err(ApiError::Challenge)?;
+    Ok(Json(GameChallengeListResponse {
+        challenges: page
+            .challenges
+            .into_iter()
+            .map(game_challenge_response)
+            .collect(),
+        next_before: page.next_before.map(|id| id.to_string()),
+    })
+    .into_response())
+}
+
+async fn get_game_challenge(
+    State(state): State<AppState>,
+    Path((persona_id, challenge_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    let challenge = challenges::get_challenge(&state.pool, token, &persona_id, &challenge_id)
+        .await
+        .map_err(ApiError::Challenge)?;
+    Ok(Json(game_challenge_response(challenge)).into_response())
+}
+
+async fn accept_game_challenge(
+    State(state): State<AppState>,
+    Path((persona_id, challenge_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    let challenge = challenges::accept_challenge(
+        &state.pool,
+        &state.game_registry,
+        token,
+        &persona_id,
+        &challenge_id,
+    )
+    .await
+    .map_err(ApiError::Challenge)?;
+    Ok(Json(game_challenge_response(challenge)).into_response())
+}
+
+async fn decline_game_challenge(
+    State(state): State<AppState>,
+    Path((persona_id, challenge_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    let challenge = challenges::decline_challenge(
+        &state.pool,
+        &state.game_registry,
+        token,
+        &persona_id,
+        &challenge_id,
+    )
+    .await
+    .map_err(ApiError::Challenge)?;
+    Ok(Json(game_challenge_response(challenge)).into_response())
+}
+
+async fn cancel_game_challenge(
+    State(state): State<AppState>,
+    Path((persona_id, challenge_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    let challenge = challenges::cancel_challenge(
+        &state.pool,
+        &state.game_registry,
+        token,
+        &persona_id,
+        &challenge_id,
+    )
+    .await
+    .map_err(ApiError::Challenge)?;
+    Ok(Json(game_challenge_response(challenge)).into_response())
+}
+
 async fn list_sync_events(
     State(state): State<AppState>,
     Path(persona_id): Path<String>,
@@ -1277,6 +1486,56 @@ fn message_response(message: InboxMessage) -> MessageResponse {
                 created_at: message.created_at,
             }
         }
+        InboxMessageContent::System(SystemMessage::GameChallengeCreated {
+            actor,
+            challenge_id,
+        }) => MessageResponse::System {
+            id: message.id.to_string(),
+            sequence: message.sequence,
+            system: SystemMessageResponse::GameChallengeCreated {
+                actor: persona_response(actor),
+                challenge_id: challenge_id.to_string(),
+            },
+            created_at: message.created_at,
+        },
+        InboxMessageContent::System(SystemMessage::GameChallengeAccepted {
+            actor,
+            challenge_id,
+            game_session_id,
+        }) => MessageResponse::System {
+            id: message.id.to_string(),
+            sequence: message.sequence,
+            system: SystemMessageResponse::GameChallengeAccepted {
+                actor: persona_response(actor),
+                challenge_id: challenge_id.to_string(),
+                game_session_id: game_session_id.to_string(),
+            },
+            created_at: message.created_at,
+        },
+        InboxMessageContent::System(SystemMessage::GameChallengeDeclined {
+            actor,
+            challenge_id,
+        }) => MessageResponse::System {
+            id: message.id.to_string(),
+            sequence: message.sequence,
+            system: SystemMessageResponse::GameChallengeDeclined {
+                actor: persona_response(actor),
+                challenge_id: challenge_id.to_string(),
+            },
+            created_at: message.created_at,
+        },
+        InboxMessageContent::System(SystemMessage::GameChallengeCancelled {
+            actor,
+            challenge_id,
+        }) => MessageResponse::System {
+            id: message.id.to_string(),
+            sequence: message.sequence,
+            system: SystemMessageResponse::GameChallengeCancelled {
+                actor: persona_response(actor),
+                challenge_id: challenge_id.to_string(),
+            },
+            created_at: message.created_at,
+        },
     }
 }
 
@@ -1323,6 +1582,26 @@ fn game_command_response(result: GameCommandResult) -> GameCommandResponse {
     }
 }
 
+fn game_challenge_response(challenge: GameChallenge) -> GameChallengeResponse {
+    GameChallengeResponse {
+        id: challenge.id.to_string(),
+        game_key: challenge.game_key,
+        game_version: challenge.game_version,
+        direction: match challenge.direction {
+            ChallengeDirection::Incoming => "incoming",
+            ChallengeDirection::Outgoing => "outgoing",
+        },
+        status: challenge.status,
+        challenger: persona_response(challenge.challenger),
+        challenged: persona_response(challenge.challenged),
+        game_session_id: challenge.game_session_id.map(|id| id.to_string()),
+        expires_at: challenge.expires_at,
+        resolved_at: challenge.resolved_at,
+        created_at: challenge.created_at,
+        updated_at: challenge.updated_at,
+    }
+}
+
 fn sync_event_response(event: SyncEvent) -> SyncEventResponse {
     match event.kind {
         SyncEventKind::ConnectionRequests => SyncEventResponse::ConnectionRequests {
@@ -1345,6 +1624,11 @@ fn sync_event_response(event: SyncEvent) -> SyncEventResponse {
         SyncEventKind::GameSession(game_session_id) => SyncEventResponse::GameSession {
             cursor: event.cursor,
             game_session_id: game_session_id.to_string(),
+            created_at: event.created_at,
+        },
+        SyncEventKind::GameChallenge(game_challenge_id) => SyncEventResponse::GameChallenge {
+            cursor: event.cursor,
+            game_challenge_id: game_challenge_id.to_string(),
             created_at: event.created_at,
         },
     }
@@ -1538,6 +1822,73 @@ impl IntoResponse for ApiError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "internal_error",
                 "connection operation failed",
+            ),
+            ApiError::Challenge(ChallengeError::Unauthorized) => (
+                StatusCode::UNAUTHORIZED,
+                "invalid_session",
+                "a valid device session is required",
+            ),
+            ApiError::Challenge(ChallengeError::PersonaNotFound) => (
+                StatusCode::NOT_FOUND,
+                "persona_not_found",
+                "persona was not found",
+            ),
+            ApiError::Challenge(ChallengeError::ChallengeNotFound) => (
+                StatusCode::NOT_FOUND,
+                "game_challenge_not_found",
+                "game challenge was not found",
+            ),
+            ApiError::Challenge(ChallengeError::InvalidChallenge) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "invalid_game_challenge",
+                "game challenge input is invalid",
+            ),
+            ApiError::Challenge(ChallengeError::InvalidPagination) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "invalid_pagination",
+                "game challenge pagination is invalid",
+            ),
+            ApiError::Challenge(ChallengeError::GameUnavailable) => (
+                StatusCode::CONFLICT,
+                "game_unavailable",
+                "the requested game version is unavailable",
+            ),
+            ApiError::Challenge(ChallengeError::TargetUnavailable) => (
+                StatusCode::CONFLICT,
+                "challenge_target_unavailable",
+                "the challenge target is unavailable",
+            ),
+            ApiError::Challenge(ChallengeError::PendingLimitReached) => (
+                StatusCode::CONFLICT,
+                "game_challenge_limit_reached",
+                "the pending game challenge limit was reached",
+            ),
+            ApiError::Challenge(ChallengeError::DuplicatePending) => (
+                StatusCode::CONFLICT,
+                "game_challenge_pending",
+                "an equivalent game challenge is already pending",
+            ),
+            ApiError::Challenge(ChallengeError::IdempotencyConflict) => (
+                StatusCode::CONFLICT,
+                "game_challenge_idempotency_conflict",
+                "the game challenge idempotency key was already used",
+            ),
+            ApiError::Challenge(ChallengeError::TransitionUnavailable) => (
+                StatusCode::CONFLICT,
+                "game_challenge_transition_unavailable",
+                "the requested game challenge transition is unavailable",
+            ),
+            ApiError::Challenge(ChallengeError::ChallengeExpired) => (
+                StatusCode::CONFLICT,
+                "game_challenge_expired",
+                "the game challenge has expired",
+            ),
+            ApiError::Challenge(
+                ChallengeError::InitializationFailed | ChallengeError::Internal,
+            ) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal_error",
+                "game challenge operation failed",
             ),
             ApiError::Inbox(InboxError::Unauthorized) => (
                 StatusCode::UNAUTHORIZED,

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "board": {
+      "type": "object",
+      "properties": {
+        "cells": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 16 },
+          "minItems": 4,
+          "maxItems": 4
+        }
+      },
+      "required": ["cells"],
+      "additionalProperties": false
+    },
+    "button": {
+      "type": "object",
+      "properties": { "label": { "type": "string", "maxLength": 64 } },
+      "required": ["label"],
+      "additionalProperties": false
+    },
+    "log": {
+      "type": "object",
+      "properties": { "text": { "type": "string", "maxLength": 4096 } },
+      "required": ["text"],
+      "additionalProperties": false
+    },
+    "meter": {
+      "type": "object",
+      "properties": {
+        "value": { "type": "number", "minimum": 0, "maximum": 100 }
+      },
+      "required": ["value"],
+      "additionalProperties": false
+    },
+    "status": {
+      "type": "object",
+      "properties": { "text": { "type": "string", "maxLength": 128 } },
+      "required": ["text"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["board", "button", "log", "meter", "status"],
+  "additionalProperties": false
+}

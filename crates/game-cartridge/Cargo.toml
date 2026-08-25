@@ -1,0 +1,28 @@
+[package]
+name = "omarchygs-game-cartridge"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "omarchygs-cartridge"
+path = "src/bin/omarchygs-cartridge.rs"
+
+[dependencies]
+base64.workspace = true
+crc32fast.workspace = true
+ed25519-dalek.workspace = true
+rand_core.workspace = true
+rustix.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+zip.workspace = true
+
+[dev-dependencies]
+tempfile = "3.23"

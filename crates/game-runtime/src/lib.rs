@@ -135,6 +135,16 @@ impl GameRegistry {
             .collect()
     }
 
+    /// Return public metadata for one exact immutable rules version.
+    pub fn manifest(&self, key: &str, version: u32) -> Option<GameManifest> {
+        self.entries
+            .get(&GameId {
+                key: key.to_owned(),
+                version,
+            })
+            .map(|registered| registered.manifest.clone())
+    }
+
     /// Initialize state from exactly the requested rules version.
     pub fn initialize(
         &self,
@@ -354,6 +364,17 @@ mod tests {
             registry.initialize("alpha", 3, 2),
             Err(InitializeGameError::GameUnavailable)
         );
+        assert_eq!(
+            registry.manifest("alpha", 2),
+            Some(GameManifest {
+                key: "alpha".to_owned(),
+                version: 2,
+                display_name: "Fixture 2".to_owned(),
+                min_human_players: 1,
+                max_human_players: 2,
+            })
+        );
+        assert_eq!(registry.manifest("alpha", 3), None);
     }
 
     #[test]

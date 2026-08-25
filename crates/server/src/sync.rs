@@ -35,20 +35,27 @@ pub enum SyncEventKind {
     Blocks,
     Conversation(Uuid),
     GameSession(Uuid),
+    GameChallenge(Uuid),
 }
 
 impl SyncEventKind {
-    fn database_parts(self) -> (&'static str, Option<Uuid>, Option<Uuid>) {
+    fn database_parts(self) -> (&'static str, Option<Uuid>, Option<Uuid>, Option<Uuid>) {
         match self {
-            Self::ConnectionRequests => ("connection_requests_changed", None, None),
-            Self::Connections => ("connections_changed", None, None),
-            Self::Blocks => ("blocks_changed", None, None),
+            Self::ConnectionRequests => ("connection_requests_changed", None, None, None),
+            Self::Connections => ("connections_changed", None, None, None),
+            Self::Blocks => ("blocks_changed", None, None, None),
             Self::Conversation(conversation_id) => {
-                ("conversation_changed", Some(conversation_id), None)
+                ("conversation_changed", Some(conversation_id), None, None)
             }
             Self::GameSession(game_session_id) => {
-                ("game_session_changed", None, Some(game_session_id))
+                ("game_session_changed", None, Some(game_session_id), None)
             }
+            Self::GameChallenge(game_challenge_id) => (
+                "game_challenge_changed",
+                None,
+                None,
+                Some(game_challenge_id),
+            ),
         }
     }
 }
@@ -193,7 +200,7 @@ pub(crate) async fn append_event(
     .bind(persona_id)
     .fetch_one(&mut **transaction)
     .await?;
-    let (event_type, conversation_id, game_session_id) = kind.database_parts();
+    let (event_type, conversation_id, game_session_id, game_challenge_id) = kind.database_parts();
 
     sqlx::query(
         r#"
@@ -202,9 +209,10 @@ pub(crate) async fn append_event(
             event_sequence,
             event_type,
             conversation_id,
-            game_session_id
+            game_session_id,
+            game_challenge_id
         )
-        VALUES ($1, $2, $3, $4, $5)
+        VALUES ($1, $2, $3, $4, $5, $6)
         "#,
     )
     .bind(persona_id)
@@ -212,6 +220,7 @@ pub(crate) async fn append_event(
     .bind(event_type)
     .bind(conversation_id)
     .bind(game_session_id)
+    .bind(game_challenge_id)
     .execute(&mut **transaction)
     .await?;
 
@@ -274,13 +283,24 @@ pub async fn list_events(
         });
     }
 
-    let mut rows = sqlx::query_as::<_, (i64, String, Option<Uuid>, Option<Uuid>, String)>(
+    let mut rows = sqlx::query_as::<
+        _,
+        (
+            i64,
+            String,
+            Option<Uuid>,
+            Option<Uuid>,
+            Option<Uuid>,
+            String,
+        ),
+    >(
         r#"
         SELECT
             event_sequence,
             event_type,
             conversation_id,
             game_session_id,
+            game_challenge_id,
             to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
         FROM persona_sync_events
         WHERE persona_id = $1 AND event_sequence > $2
@@ -525,24 +545,34 @@ fn incremental_page_has_gap(after: i64, current_cursor: i64, first_cursor: Optio
 }
 
 fn event_from_row(
-    row: (i64, String, Option<Uuid>, Option<Uuid>, String),
+    row: (
+        i64,
+        String,
+        Option<Uuid>,
+        Option<Uuid>,
+        Option<Uuid>,
+        String,
+    ),
 ) -> Result<SyncEvent, SyncError> {
-    let kind = match (row.1.as_str(), row.2, row.3) {
-        ("connection_requests_changed", None, None) => SyncEventKind::ConnectionRequests,
-        ("connections_changed", None, None) => SyncEventKind::Connections,
-        ("blocks_changed", None, None) => SyncEventKind::Blocks,
-        ("conversation_changed", Some(conversation_id), None) => {
+    let kind = match (row.1.as_str(), row.2, row.3, row.4) {
+        ("connection_requests_changed", None, None, None) => SyncEventKind::ConnectionRequests,
+        ("connections_changed", None, None, None) => SyncEventKind::Connections,
+        ("blocks_changed", None, None, None) => SyncEventKind::Blocks,
+        ("conversation_changed", Some(conversation_id), None, None) => {
             SyncEventKind::Conversation(conversation_id)
         }
-        ("game_session_changed", None, Some(game_session_id)) => {
+        ("game_session_changed", None, Some(game_session_id), None) => {
             SyncEventKind::GameSession(game_session_id)
+        }
+        ("game_challenge_changed", None, None, Some(game_challenge_id)) => {
+            SyncEventKind::GameChallenge(game_challenge_id)
         }
         _ => return Err(SyncError::Internal),
     };
     Ok(SyncEvent {
         cursor: row.0,
         kind,
-        created_at: row.4,
+        created_at: row.5,
     })
 }
 

@@ -1,0 +1,38 @@
+{
+  "format_version": 1,
+  "screens": [
+    {
+      "id": "main",
+      "title": "RETRO GRID",
+      "nodes": [
+        {
+          "kind": "terminal",
+          "id": "headline",
+          "text_binding": "headline",
+          "accessible_label": "Game headline"
+        },
+        {
+          "kind": "grid",
+          "id": "board",
+          "rows": 3,
+          "columns": 3,
+          "cells_binding": "board",
+          "action": "advance",
+          "accessible_label": "Game board"
+        },
+        {
+          "kind": "status",
+          "id": "status",
+          "text_binding": "status",
+          "accessible_label": "Game status"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "advance",
+      "payload_fields": []
+    }
+  ]
+}

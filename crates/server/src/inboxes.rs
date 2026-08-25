@@ -55,7 +55,34 @@ pub enum InboxMessageContent {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SystemMessage {
-    ConnectionAccepted { actor: Persona },
+    ConnectionAccepted {
+        actor: Persona,
+    },
+    GameChallengeCreated {
+        actor: Persona,
+        challenge_id: Uuid,
+    },
+    GameChallengeAccepted {
+        actor: Persona,
+        challenge_id: Uuid,
+        game_session_id: Uuid,
+    },
+    GameChallengeDeclined {
+        actor: Persona,
+        challenge_id: Uuid,
+    },
+    GameChallengeCancelled {
+        actor: Persona,
+        challenge_id: Uuid,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum GameChallengeMessage {
+    Created,
+    Accepted { game_session_id: Uuid },
+    Declined,
+    Cancelled,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -85,6 +112,8 @@ struct MessageRow {
     sender_created_at: Option<String>,
     sender_updated_at: Option<String>,
     system_type: Option<String>,
+    system_game_challenge_id: Option<Uuid>,
+    system_game_session_id: Option<Uuid>,
     actor_id: Option<Uuid>,
     actor_handle: Option<String>,
     actor_display_name: Option<String>,
@@ -120,6 +149,8 @@ struct ConversationRow {
     sender_created_at: Option<String>,
     sender_updated_at: Option<String>,
     system_type: Option<String>,
+    system_game_challenge_id: Option<Uuid>,
+    system_game_session_id: Option<Uuid>,
     actor_id: Option<Uuid>,
     actor_handle: Option<String>,
     actor_display_name: Option<String>,
@@ -177,6 +208,8 @@ pub async fn list_conversations(
             CASE WHEN sender.id IS NULL THEN NULL ELSE to_char(sender.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') END AS sender_created_at,
             CASE WHEN sender.id IS NULL THEN NULL ELSE to_char(sender.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') END AS sender_updated_at,
             latest.system_type,
+            latest.system_game_challenge_id,
+            latest.system_game_session_id,
             actor.id AS actor_id,
             actor.handle AS actor_handle,
             actor.display_name AS actor_display_name,
@@ -244,6 +277,8 @@ pub async fn list_messages(
             CASE WHEN sender.id IS NULL THEN NULL ELSE to_char(sender.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') END AS sender_created_at,
             CASE WHEN sender.id IS NULL THEN NULL ELSE to_char(sender.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') END AS sender_updated_at,
             message.system_type,
+            message.system_game_challenge_id,
+            message.system_game_session_id,
             actor.id AS actor_id,
             actor.handle AS actor_handle,
             actor.display_name AS actor_display_name,
@@ -459,6 +494,72 @@ pub(crate) async fn record_connection_accepted(
     })?;
     update_latest_and_actor_read(transaction, conversation_id, accepting_actor_id, sequence)
         .await?;
+    Ok(conversation_id)
+}
+
+pub(crate) async fn record_game_challenge(
+    transaction: &mut Transaction<'_, Postgres>,
+    first_id: Uuid,
+    second_id: Uuid,
+    actor_id: Uuid,
+    challenge_id: Uuid,
+    message: GameChallengeMessage,
+) -> Result<Uuid, InboxError> {
+    let (low_id, high_id) = if first_id < second_id {
+        (first_id, second_id)
+    } else {
+        (second_id, first_id)
+    };
+    let conversation_id = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        SELECT id
+        FROM inbox_conversations
+        WHERE persona_low_id = $1 AND persona_high_id = $2
+        FOR UPDATE
+        "#,
+    )
+    .bind(low_id)
+    .bind(high_id)
+    .fetch_optional(&mut **transaction)
+    .await
+    .map_err(|database_error| map_database_error(database_error, "challenge conversation locking"))?
+    .ok_or(InboxError::ConversationNotFound)?;
+    let sequence =
+        lock_conversation_and_next_sequence(transaction, conversation_id, low_id, high_id).await?;
+    let (system_type, game_session_id) = match message {
+        GameChallengeMessage::Created => ("game_challenge_created", None),
+        GameChallengeMessage::Accepted { game_session_id } => {
+            ("game_challenge_accepted", Some(game_session_id))
+        }
+        GameChallengeMessage::Declined => ("game_challenge_declined", None),
+        GameChallengeMessage::Cancelled => ("game_challenge_cancelled", None),
+    };
+    sqlx::query(
+        r#"
+        INSERT INTO inbox_messages (
+            conversation_id,
+            message_sequence,
+            message_type,
+            system_type,
+            system_actor_persona_id,
+            system_game_challenge_id,
+            system_game_session_id
+        )
+        VALUES ($1, $2, 'system', $3, $4, $5, $6)
+        "#,
+    )
+    .bind(conversation_id)
+    .bind(sequence)
+    .bind(system_type)
+    .bind(actor_id)
+    .bind(challenge_id)
+    .bind(game_session_id)
+    .execute(&mut **transaction)
+    .await
+    .map_err(|database_error| {
+        map_database_error(database_error, "challenge system message insertion")
+    })?;
+    update_latest_and_actor_read(transaction, conversation_id, actor_id, sequence).await?;
     Ok(conversation_id)
 }
 
@@ -802,6 +903,8 @@ fn summary_from_row(row: ConversationRow) -> Result<ConversationSummary, InboxEr
             sender_created_at: row.sender_created_at,
             sender_updated_at: row.sender_updated_at,
             system_type: row.system_type,
+            system_game_challenge_id: row.system_game_challenge_id,
+            system_game_session_id: row.system_game_session_id,
             actor_id: row.actor_id,
             actor_handle: row.actor_handle,
             actor_display_name: row.actor_display_name,
@@ -837,18 +940,49 @@ fn message_from_row(row: MessageRow) -> Result<InboxMessage, InboxError> {
             )?,
             body: row.user_body.ok_or(InboxError::Internal)?,
         },
-        "system" if row.system_type.as_deref() == Some("connection_accepted") => {
-            InboxMessageContent::System(SystemMessage::ConnectionAccepted {
-                actor: persona_from_options(
-                    row.actor_id,
-                    row.actor_handle,
-                    row.actor_display_name,
-                    row.actor_bio,
-                    row.actor_status_message,
-                    row.actor_created_at,
-                    row.actor_updated_at,
-                )?,
-            })
+        "system" => {
+            let actor = persona_from_options(
+                row.actor_id,
+                row.actor_handle,
+                row.actor_display_name,
+                row.actor_bio,
+                row.actor_status_message,
+                row.actor_created_at,
+                row.actor_updated_at,
+            )?;
+            let system = match row.system_type.as_deref() {
+                Some("connection_accepted")
+                    if row.system_game_challenge_id.is_none()
+                        && row.system_game_session_id.is_none() =>
+                {
+                    SystemMessage::ConnectionAccepted { actor }
+                }
+                Some("game_challenge_created") if row.system_game_session_id.is_none() => {
+                    SystemMessage::GameChallengeCreated {
+                        actor,
+                        challenge_id: row.system_game_challenge_id.ok_or(InboxError::Internal)?,
+                    }
+                }
+                Some("game_challenge_accepted") => SystemMessage::GameChallengeAccepted {
+                    actor,
+                    challenge_id: row.system_game_challenge_id.ok_or(InboxError::Internal)?,
+                    game_session_id: row.system_game_session_id.ok_or(InboxError::Internal)?,
+                },
+                Some("game_challenge_declined") if row.system_game_session_id.is_none() => {
+                    SystemMessage::GameChallengeDeclined {
+                        actor,
+                        challenge_id: row.system_game_challenge_id.ok_or(InboxError::Internal)?,
+                    }
+                }
+                Some("game_challenge_cancelled") if row.system_game_session_id.is_none() => {
+                    SystemMessage::GameChallengeCancelled {
+                        actor,
+                        challenge_id: row.system_game_challenge_id.ok_or(InboxError::Internal)?,
+                    }
+                }
+                _ => return Err(InboxError::Internal),
+            };
+            InboxMessageContent::System(system)
         }
         _ => return Err(InboxError::Internal),
     };

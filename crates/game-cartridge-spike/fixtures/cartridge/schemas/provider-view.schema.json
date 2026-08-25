@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omarchygs.invalid/spike/provider-view.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["headline", "board", "turn", "status"],
+  "properties": {
+    "headline": {"type": "string", "minLength": 1, "maxLength": 256},
+    "board": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {"type": "string", "maxLength": 4}
+    },
+    "turn": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+    "status": {"type": "string", "minLength": 1, "maxLength": 64}
+  }
+}

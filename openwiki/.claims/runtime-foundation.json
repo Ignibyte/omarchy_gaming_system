@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4de73c223e78cdff385d28d3500592b49476ce1762c212184d2f073d6ee29f10",
+  "pageVersion": "sha256:eb542989f87f5efc0361ae4b4e1aac3d1a907431c8c082daa2021aa7338ccf8d",
   "claims": [
     {
       "id": "claim_d5e2f3a3ffed4330a12a21d8fb73de2d",
@@ -453,16 +453,12 @@
           "version": "repo-lines-v1:sha256:dd829dd403ca132be1a3ba2fe1bad26881de7184fd43a02ff505e1c196f28047:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3YmMyOTFlZGZiZmM4OGRmMmYyY2I3MTUwMGFhZDAxNWFkZDJhZmUxYjU0ZjkxYWQwMzM5ZTZkNDhlMTM2ODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhMDQwMzcwMmMzOTFjZjM5YTZlMWI4MDRiOTI3NGQyYjE5MDU3NzYzNWY5MDE5OWY5NmZhMDBjYTJlOWRiN2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5YTBhYjBiMjYxZTA1ZjI2ZTFmNGM1NzA2YTM5NDdhZDQyYWVlMDQ5MzE2NGE1ZjBhMWFmOThmMDUwMzNhYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://crates/server/src/connections.rs#L452-L535",
-          "version": "repo-lines-v1:sha256:451b2bf358bced8de78f8d4f33b4e65a0081506fb793f08adc5d557c3386e99a:eyJzZWxlY3RlZExpbmVDb3VudCI6ODQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlOTE3MDI0NjZiNDI2NGMxYTYxMWZmNDc5Zjc4YWEwZTk1N2YzZmNkYjM2NDY2YTEyMTAxOTlmN2Q4OTNiNTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU3YmNlYjViYmEwNzE3M2Q3ZmJjYTMxYzhmZmY0MmEyOTQyZTc3MjBlYjQ3N2M5Y2VmMmY0OGIzYWFiYzk3MzYifQ"
-        },
-        {
-          "resource": "repo://crates/server/src/connections.rs#L537-L605",
-          "version": "repo-lines-v1:sha256:56e69897b60f8104cb9bf5934e06913a03314fa3387df49ff2033ec77a05f46e:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkMDc1ZjY1ZTk0Zjc5ZjNjNGQ0NTM1Mzk2NTAzMDM2NDViZjFjZDNhMTIwZGU3NTg4ZDVhMWVkMzQzYzJmNDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc1ODIxNjcyZjBhNDZkMTJmZjQ3NmNkNGZiYzgxNmM3MjQ2NjI3NGFhN2M3ZGY4NmExNjBlMzI4M2EzZTgyNTIifQ"
+          "resource": "repo://crates/server/src/connections.rs#L453-L604",
+          "version": "repo-lines-v1:sha256:cd44a7e492209b74ce31f5047b7eafe3e9d7949f21b1e2a7f8a406903ee5164e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkODI3NjFhOGVhODE5ZWFmNjZkNGQxMmZhZGRiYzRiODkzZWE4ZDkzYzhkZGQyNjFiZWY0M2FkN2QzMTM1YWY4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkODk3NzFmZTFiNjYyODg3NWFhMjNlN2RiZTRhYTcxNDYxZDAwY2RmYjY2ZGRmMTFiOWQ4MjBhYzU4OTdmZGY2IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkYTYyNDRmZmVlMjZkYTUzODkwMGJkZTk0NmJiZmNjNjllZGRmNTM1ZTEyODhmNDQ0ZGQ0ZGYzNTlkYThlNjcwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI2ZmZiYjJlMjVlM2VlYTExZmNiOWRkOWE1YjllMjY0MGIzYjkxZTg5ZGZlMmVmNDM1NTVmZWExYjJiOWI3MzNiIn0"
         },
         {
           "resource": "repo://crates/server/src/connections.rs#L681-L728",
-          "version": "repo-lines-v1:sha256:a2534fbf55e1a8be43162effbd0ac1885f5f848c6dba36e1fa7cc83b00ecd607:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4M2I5MmYyNWQ1NGFlNjgzMDNlODUwYTkxYmJjNjg3YmQyZjNmYjRhYzFlODBiNDA1ZWFlNDgxOGI5ODBjMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZlZjY1ZDkyNTZlOGY4ZWEyYTA4Mzk2NjY4YjlkY2MxZTQ4YzA0MGM2YmQ4MDM2ZjIxMjMxYmMyYTZjYzM3OGQifQ"
+          "version": "repo-lines-v1:sha256:79c6cc480578eedbd7e2d259b34adb6f781a078ac6c216e435df22d8257f3ec1:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4M2I5MmYyNWQ1NGFlNjgzMDNlODUwYTkxYmJjNjg3YmQyZjNmYjRhYzFlODBiNDA1ZWFlNDgxOGI5ODBjMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljZWZlZjQyOTExNjgxY2UyYmU0MDc1MGFkNTdkZDQwZjRhYjk1NjdiMTgyYWQwMzQxZjA5Y2QwODM0MjIwMDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc1Zjc5MjRlNjJlODI2OWEzNzlkN2E2NDM1ZTAzYzQ0MWYxNzZjN2EzZWU5MjFiZTk1ODg5YmU3MTc0ZDhhOGQifQ"
         }
       ]
     },
@@ -490,11 +486,19 @@
     },
     {
       "id": "claim_3d5e69927f1249b2b18f92778bb2816d",
-      "statement": "A state-changing social, inbox, or game-session transaction appends each affected persona's typed retained synchronization event before the same transaction commits, while no-op and replay branches append nothing.",
+      "statement": "A state-changing social, inbox, game-challenge, game-session, or game-command transaction appends each affected persona's typed retained synchronization event before the same transaction commits, while no-op and replay branches append nothing.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/sync.rs#L169-L235",
-          "version": "repo-lines-v1:sha256:67fc1faf0fc1afb24b74a6276a0591e7a6c2a05ddef226c19cbcd521aafdb934:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2YTE1OWZmOTJmYzFkNjEwNTM0M2VjN2IxY2YwMTY0MGRmMjFmYzljNGM4YTgzN2IxNmVlNTZiZjUxZjA5MTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzMWM3ODc3YjlhMjVlZTE5ODc1MzUyN2U3NDBkZTNiYWJiY2U4ZGVmMWRiNWZlY2Y3OWY1YjdmYWJmNWEzNDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM5NmEwNTRkZjdlYTQzYjZlM2VmM2MyZWU5ZWIzNDFmYTAzYTJkYmIxYzJhMGNjODllYjdiNjlkY2ZiMTYyZGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxMGJiNmM1N2I0OTQyNjk5MjAzZDk4MWVhY2ExMTAwNGVjMzJhNmViYzA4YWY0ZGRhZTIzODY0NmMzN2I2M2UifQ"
+          "resource": "repo://crates/server/src/sync.rs#L175-L245",
+          "version": "repo-lines-v1:sha256:cc6c1e50dd864539ce0e29cd15a70194ada467e421b5f2f275e9417a9d0ab9c1:eyJzZWxlY3RlZExpbmVDb3VudCI6NzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk5MzYwM2M3ZjUyYTVmOWY0MTE2MDJiY2VlMjNlYjYxMWYwMTBiNjY1NjYwNWJlYjRlY2Y4OTc1ZjhmMDFlMTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNhOGU3MTgwYjhkY2U3MjIwZjEyOTMwMDg2ZGQwZDM0ZDkxNWVkMmFlNzUxMTZlYzI2M2E4MjI2ZTk3MGRmYjYifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/challenges.rs#L257-L279",
+          "version": "repo-lines-v1:sha256:e09e703285268a8fdc658a59cd3ec638615e883de297f099ed63c1d2b3b7d7d0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1M2ZmMTljOWQ0ZWUyNjRjN2M4ZGUyY2M0ZTQ1OGFjMTM0MDA0NDQxMWQ1OTRmNTNhNjNmYmEyZDVlNDIzM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5Y2M2NmMwYjFhNDhmYzkzZWUyZDQ2YTBiODBiMDVhMzIxNmRiYjA2NTkyMWViMWI3NzZmMDNkMzZiM2RiMTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE1YTk3NTE4YjEzMWRkMTkzNGFjY2Y5MDA5ZjVlNmFjNzdiNTc5MzE0MmJiN2E2MzhmYmY4MWZiYzc2MWYxMmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjNzUyOGJiMWY2NTM2MTVkMDBjZDIwNjk3NDRhNTJkMDBlODkxYzFiNzI5ZWRkNmMyNTliMzA4MzIxNTFjYTMifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/challenges.rs#L559-L605",
+          "version": "repo-lines-v1:sha256:6d66e465b2723f3e3f606a9ae7bec57d5669cef54bbcb99c8c47968567911086:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlNDVkN2Y1ZDcwZDIwMmJjZmJkNTY0YjU2ZGFhYzYyZmYxMzU0NTEyMDU5YzcyZTU4YzA2ZjMzMjY1MmMyNGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY1NTJmZTA4MTQzMjJjMzljMjE3YzBlYjc4NDAzMDA4ODFjMDRmOTMxYWY0YzBjNDU0ZTIwYWUyZGZhYzkwMTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdmOTg5N2Q4OGFjMGI5ODgwNDUwYmY5NzcyMTYyY2IyMmZmMzNlOWU0NDI2MDg2Y2VkMDdiMzc0ZjkxYzgyZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRkMjYyNjZlNDE3Y2IyMmFhODViMTVmODhjN2MyMjc3YzIyZWI5M2QyYjY4NzYzNzZmMWFiZTQxNTNjOWFkMDYifQ"
         },
         {
           "resource": "repo://crates/server/src/games.rs#L182-L193",
@@ -503,14 +507,6 @@
         {
           "resource": "repo://crates/server/src/games.rs#L414-L444",
           "version": "repo-lines-v1:sha256:20267ac4e6919e3cf9f1d262166776fc80dec5af48450154a0ef09ac044fd560:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4ZTBkM2UzNWE4ZWQ3OWEwNWY4MjNmZGQ0ZjY2YzcwZDQ5MGIwNTg1NzVjY2FkZmQ5Y2JlYjUxOGYzNDYzZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmMzU5NGVjY2Y3ODUzMWRkMWI2ZTY4Yjc0MWNhYWYyMjlmZmQyMzAxYjY2MDUxNDlkOTEzOTdmYmQ3N2ZhYWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzNTg5MjUyOTIwYTc4MDkxY2IyOTgyOWEwM2IzMDA0NzA2ZDkzMWZiZTFjNGIzODBhODViOTAxZjVlODkzM2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMyZTQzNDU4OWU1MThiNzJhNWUyYjlhYzU4YWFhNzhkYTRlMTk2Y2MxNjAzNGE5ZTkzNTFiMWQ1ZjY2ODc0ZmYifQ"
-        },
-        {
-          "resource": "repo://crates/server/src/connections.rs#L172-L190",
-          "version": "repo-lines-v1:sha256:810b2f11503c58741e4b49238e8ec865c78685a63855dbfe7ed8f1f8d76ffa3e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlNzY4YTA3NjhlOWQyYmRmNjg1MTQ4YWE3ZjRjYzQwYzA3Y2FhN2Y4ZjhhOTgxZjM4MzE4YzBkOWQ4ZjI5ODYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlNWNjYWE0NmU3N2QwYzk1MTRhM2I5N2YxMjUxNDkyNTFkODYwMWIyYWI0OGNmMmRiOGQxNTljOWIzODRkNTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzN2U3NGE3NDZmM2U0ZmE5OGQ3Y2I5OGRiMDdkMzBiZmY2NWNlZjY3NmYxN2FiMWVhNDkzYWM0ODQ5MDY4MTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2M2QwM2EzODBjZDVmYmNkODVkYWIxNGJlNzM0YzRjMzBiNTU5Mjg4YzIyYWI3Y2ZjMzU3Y2MxZDkzODUwOTAifQ"
-        },
-        {
-          "resource": "repo://crates/server/src/inboxes.rs#L286-L389",
-          "version": "repo-lines-v1:sha256:2419912d1c9abfe2fd47ae4813be0e94df15c142e072aa673d4a55af91762bfc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3Mzk3ZTBiNDU4NWRkNzI0NzJhNWE0NmQ4MDZjZWQzNzExOWI4Yjc4ZDhhOWUyMTdkYTY4ODg3N2ZmZjVmZDk1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4ZjM1OTRlY2NmNzg1MzFkZDFiNmU2OGI3NDFjYWFmMjI5ZmZkMjMwMWI2NjA1MTQ5ZDkxMzk3ZmJkNzdmYWFmIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2MDYzYzRkMWFmOGNkODliYjBiZGQ3NjU3ZmZjYmY2ODA2YTYxMGQ3OWQ2YzhkNGMzMDdjMjQxZGYzOTAwNTIyIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4YTdjZjljNTVmNzdiZmVlY2Q4M2FkODhmZjRjMjc4ZTljYzQyNTcyZTc5N2YyYWUzYjI3Yzg2ZjdhY2U0ZjEzIn0"
         }
       ]
     },
@@ -519,12 +515,12 @@
       "statement": "The owned-persona sync REST endpoint returns an empty baseline at the current cursor or bounded ascending retained events after a cursor and requires reset whenever retained continuity cannot be proved.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/sync.rs#L238-L321",
-          "version": "repo-lines-v1:sha256:e50d2506e174f906b19d37a96b6730c6d05a1b8343d90f85c43acb05a6f34e68:eyJzZWxlY3RlZExpbmVDb3VudCI6ODQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0NWZkNGM0NTIzMzFjYWJlNzRhNWZjMmNhMGM5ZGQzNjFiMmI3MTgyMTNmNWI2ZTUwZGU0MTkxYjIwNDI0ODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFmYWM5NTRiZDRiNGNmNTlmNTE5OWRhNzM1YTZiYjExYTQzMDYwMDJmZjk4NjJlMDJiNGM1ODA0YjgxZjRkY2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjExMzM1YjkxZDk5OTY2OTgwMWIxYjBiZDc1NzQ5MThiYjU3MzJiYWExOTM0ZmZmMGU4OTkxYjY5NGU2ZWE3YzQifQ"
+          "resource": "repo://crates/server/src/sync.rs#L247-L341",
+          "version": "repo-lines-v1:sha256:7d38dac9915a82b64078ee051c4f2d99681df5c31967c04af75c958eb65c9939:eyJzZWxlY3RlZExpbmVDb3VudCI6OTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0NWZkNGM0NTIzMzFjYWJlNzRhNWZjMmNhMGM5ZGQzNjFiMmI3MTgyMTNmNWI2ZTUwZGU0MTkxYjIwNDI0ODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFmYWM5NTRiZDRiNGNmNTlmNTE5OWRhNzM1YTZiYjExYTQzMDYwMDJmZjk4NjJlMDJiNGM1ODA0YjgxZjRkY2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjExMzM1YjkxZDk5OTY2OTgwMWIxYjBiZDc1NzQ5MThiYjU3MzJiYWExOTM0ZmZmMGU4OTkxYjY5NGU2ZWE3YzQifQ"
         },
         {
-          "resource": "repo://crates/server/src/app.rs#L1102-L1141",
-          "version": "repo-lines-v1:sha256:96c8e128a8ff5eaa36fae86de18607147c9506d3e76ef9b4e99b91fffe394cc1:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwNjI0NmZhZWMxNjJmOWRlMTAyNTUxYjBmZDU1ZjRhZjk2NTdjZGIxNTJhYzQ2NjE3MWJkY2JmNWU5ODdlYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkZTA5MmVhYzJiM2M4NTY1YTc1ZGNiOWI0NTVkMjVkM2YwYTNiZjFkMTdlNWExZDY2MjU5OWNlNDFkMWY3ZjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgzZTlkYWU1NDA4YzZhYWZjM2IzMGFjNzUwMGFjY2QzOTIxYTVhZmM4MjMyZWI3OWI2ZDY0MWNjOTBlODRmOTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEzYmFlZWM3YWYzNTE1M2U1YTNjNjA1NzI5MDg5MDU1OWQ4OWQ5MzNlNzk3MTQ1YmQ5ZWRmNThmMTdiMWI3ZTcifQ"
+          "resource": "repo://crates/server/src/app.rs#L1359-L1390",
+          "version": "repo-lines-v1:sha256:784c151b8133d95d001317df33c6f5c5b91ff266f833b7355a2a7c1e864a4c86:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwNjI0NmZhZWMxNjJmOWRlMTAyNTUxYjBmZDU1ZjRhZjk2NTdjZGIxNTJhYzQ2NjE3MWJkY2JmNWU5ODdlYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNlOTU2ZjZmOTRhMjljYWM1MzY0MTVhZTcxYWU1Y2I3MDA4ODVhNjg1N2VhYWYzZjg1YTFiM2I2Mjc5YzhkZTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYyNTVjNTY0MmIwM2QyZWM5YTQ0YzhiN2I3NzA3MWVhZjFiMzU0MmU2NWU1ZjE0ZWY2YjU0NDU0Njg5NjhhMzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFiYmM5MmRkNzVlYTBiMGFhOTlmMTJjY2I1YTZhNzcxOWIyMWRlOTBhZmI3NjhjYWMwNzVkYWMxNTZkZWZkY2IifQ"
         }
       ]
     },
@@ -593,8 +589,8 @@
           "version": "repo-lines-v1:sha256:6eb637078f061f01fa83dd7bc7a7bfd9b77614b9f1e870417c311db1b9c0bf78:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFlZjBmZGE0Y2ZkYWE5MTM0MWYyYjQ3OTVlZTk5MGE0ZTg0MWNmYzVlMzJhMTRiYmViMTU5MWUzNTJlODgxMzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIzMWMzMjcwZmE2MTNiYjczMjM5ZjNiMmU3OTY0ODAzYzUyOTE4MTVjNGZhMjM4Yjk5MTdhOTcyZjY3MTFhNWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE0N2U1Y2JkMTNjY2E2NmQ4Yzc4YjMxYTFhNjA2Zjg1YjNlODBiZmVkOWM1MTIyNTQ1NTgxNmQ0NjUxZWNlM2QifQ"
         },
         {
-          "resource": "repo://crates/game-runtime/src/lib.rs#L94-L203",
-          "version": "repo-lines-v1:sha256:988c2eec060aafb9f075f8f13624bd281c35cf79681da1b8a869d76ef6df3c00:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhYzc3NmE1MzM0ZDY1MDg0N2Q3MzFkYTA5OWUwNjU0MWQ1MjNjOTFiYTVjNTI3YzEyZWViMmYyODk4ODFjZWU0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2OWNlNGEyZTEwZjQwYjQxMTBkMDhhZTcxMWY4NTU2N2MyYjM3ZDIwMGE3ZmM4ODczMzM4NGQ0NWNlNmFhNWViIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4NTU4MGJjNGI3Yjk5NzEzYjk0YjY3YWNiNzNlNTQzNmVlNmZjZWQwMTkwMjVmNDRhMGExOTc1ZjY3NDhkNTg3In0"
+          "resource": "repo://crates/game-runtime/src/lib.rs#L94-L214",
+          "version": "repo-lines-v1:sha256:f424f1016de2d14f325ecdb748417ee30dae03f13450efa91c80fa7f42dc32ca:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhYzc3NmE1MzM0ZDY1MDg0N2Q3MzFkYTA5OWUwNjU0MWQ1MjNjOTFiYTVjNTI3YzEyZWViMmYyODk4ODFjZWU0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2OWNlNGEyZTEwZjQwYjQxMTBkMDhhZTcxMWY4NTU2N2MyYjM3ZDIwMGE3ZmM4ODczMzM4NGQ0NWNlNmFhNWViIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJkMTNiMzIyM2M0ZDU2NDZiMjVlZGYwNzMyNDY4ZWRhNDkwZDM3YzIwN2FhZjk5Yjc5ZTY3OGQyMzYxYTQ0OTEwIn0"
         }
       ]
     },
@@ -607,8 +603,8 @@
           "version": "repo-lines-v1:sha256:61af8dffc97b0bbd02edfb24ff233f168653501d908bf3d552a726fbcd5d76b0:eyJzZWxlY3RlZExpbmVDb3VudCI6ODQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhZjJkMTJjM2M5NDAwMTE0MDIwYzUxNzFkNTNlYmY5NjZmZTA1YzI1Nzg1OGFhOGYyYzZmYjRiNTIwNThkNWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4ODY0YWNjOTU3YjQ1MzdlZWNjY2NjOTc1ZmQwZTYxMWNmYjNmZGUzY2Q0ZTk2Mzg1MGM4ZmM2N2I5ZWViNzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVlYTAwZTU1MTM2ZGVmZjU2Yjk2NTI5ZDQ4OGI1ZTBhYTYxZTE2NDY2NjcxNGIzZDU2ZDVjNGUzODgyMTY4OWIifQ"
         },
         {
-          "resource": "repo://crates/server/src/sync.rs#L31-L53",
-          "version": "repo-lines-v1:sha256:d8e597c21c43345eaa16ace5b62ef4f11788a9c5c8899f8dda230f385d64d29a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MTZhZjcwOWZlZDM0OWNiNzdjYjRkYTYyZjk2ZjI3NTEyMmE4MzEzMTRlNGM1NmNkZjdlOGI4ZmZhNDFjZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJjOTFiY2I1NGQ0NDdjMDgyOTQ2ZjJkNTMxYzMzNDU2MzRiYzM1YzJkMWVkODZmZTc5NDc3MDY0ODMyZDg1M2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIyYTY0MThmMDBjM2Y4Yjc3ZTBiMmQwNTYwYmU3NzFhM2Q2YTkwNjM3MzJiYjQ3ZGQ2NDA1YTYxMGQ3YWRlMGUifQ"
+          "resource": "repo://crates/server/src/sync.rs#L31-L59",
+          "version": "repo-lines-v1:sha256:38027493070b92be41d2a53f71250fa6ba534fb834c69b23b25917204b237baa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MTZhZjcwOWZlZDM0OWNiNzdjYjRkYTYyZjk2ZjI3NTEyMmE4MzEzMTRlNGM1NmNkZjdlOGI4ZmZhNDFjZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJjOTFiY2I1NGQ0NDdjMDgyOTQ2ZjJkNTMxYzMzNDU2MzRiYzM1YzJkMWVkODZmZTc5NDc3MDY0ODMyZDg1M2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUifQ"
         }
       ]
     },
@@ -641,8 +637,8 @@
       "statement": "Game validation combines five runtime unit tests, two local router tests, and five migrated PostgreSQL cases covering catalog and body bounds, exact-version creation and commands, replay and rollback, participant privacy, sync effects, and one-winner concurrency.",
       "evidence": [
         {
-          "resource": "repo://crates/game-runtime/src/lib.rs#L236-L482",
-          "version": "repo-lines-v1:sha256:420b672ec615a99eab23bd86537fe3ffa40b81c63b7b33460bed0bee513b121d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQ3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyNWNmNWZjMjNmMmE2ZDIzYzNlYTUxZTcyZjVlODk2Yzc1NTVmYmFhMDVjZDViMWVhMTgyYmY5NjE4YThlODFiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://crates/game-runtime/src/lib.rs#L246-L500",
+          "version": "repo-lines-v1:sha256:e5e1a82b4659aa2165a87e490a95e3e3700815148a107ce8f4415659f233ddaf:eyJzZWxlY3RlZExpbmVDb3VudCI6MjU1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyNWNmNWZjMjNmMmE2ZDIzYzNlYTUxZTcyZjVlODk2Yzc1NTVmYmFhMDVjZDViMWVhMTgyYmY5NjE4YThlODFiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwYTI4NzhlNzkxMmE0ZWYyZDVmNGQwMGJmZWU1ODUwNTNlODkzODdiZGI4M2ZkM2E2MzZmMTY1NTBjODFhN2FmIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0MTZjZTYwNGY0M2E0MWViZTMxNjQ2YzY2Mzk5OTk2YzdjZjNiMjZjNDVmZWRhYTUxNjk3NWFiYTU4MGQ0N2UwIn0"
         },
         {
           "resource": "repo://crates/server/src/game_api_tests.rs#L114-L199",
@@ -721,10 +717,72 @@
           "version": "repo-lines-v1:sha256:81b9eda619ccde42a8757b5d4796809e868ec313b991c585fe75462bb923e325:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0ODdhNzQ3YzBiZTVhOTAxNTRhYTJmYzMwOWU3NWFkMjNmMWFjYjBkYjM0OTU4N2NhNjg5MjM4MzdkMjExYmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTY3ZWMxZWQzODM2ZjhlYjE3YWZmMTcyYjViZmVmN2RlNjA0ODVhNDM5YzZjYTExYzU5MWUxNzU1NzM5YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_3faa9d6527cb49f48b6498f31a4a07e7",
+      "statement": "Challenge creation authenticates and owner-scopes the challenger, accepts only an exact registered game version that admits two people, locks the connected pair, applies seven-day expiry and 100-per-direction pending limits, and persists the challenge, inbox message, and participant invalidations in one transaction.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/challenges.rs#L114-L280",
+          "version": "repo-lines-v1:sha256:593be38b445427080c8be8f344d58c817c68ea1d8269a9b71bce6a7214407d6e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTY3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1ZWE1YjA0ODMwZDI3YzVkYmI0ZTc5ODk1MDQyOWY3ODZmNzdiNWJhMDc4NzQzZWJiMWM0NmVlZjAxZDZiMjgxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJjMjRiY2Y2ZWY2YzVhMjg0OTllNDFjNzA5OGRmMTFiZDc3ZGVhN2RmYWVkOGMzMTY0NWMwZDUwNmIwZDM0YzMxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzOTkxODhiOTBlYmMxZWFmMmU0MmM4MDY0MmQ3MTFiMTRjMDc5YTdmN2E4NTNjZjEwNDJjZjRiN2M2NGQ0ZGU2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0Y2JjYzFmZDk1ZmZkZjk2MDRlZDA4Mjg4ZTZmMzUzN2JiYWZjNWY5M2Q3OTRlNWJhZTBiOTUyOWRjNmI0MDQ3In0"
+        }
+      ]
+    },
+    {
+      "id": "claim_584a433cde0e4ab9a832546c5db3d81f",
+      "statement": "A challenger-scoped idempotency UUID replays only the same immutable target and game identity, and exact retries return retained participant-authorized history without requiring the relationship or registry policy that applied to the first write.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/challenges.rs#L121-L187",
+          "version": "repo-lines-v1:sha256:f8573ae46debd42214f2e8655a5e6ccc789fba71d4e6a700eeec158e684d26f3:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlY2I4MjFhZWRiNzQyNDY2NGY4ZjM5Y2QyMzRjNzQ0MzVkZGFmZjFhNDE5ZmYxZTdkNDdkNzQ0ZmI4ZmM1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczOTRkYzM4MjdhODZmYzAyNDFiZWZjNTMzMzQ3YmZiOGUzYTFjYmIwMjljZDU2YjE1MjU4NTIxNWZkODA3NTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIzY2Y2ZmJlMmNkYThiYWEwNmZlMjVhMjNiZDU1M2VmMWYwOThkMDcxYjA3NTZjNjhlYzMwMDY4OGQxOWM1NmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjNWU0MzE2OTUzZjY0NjQ0ZDhiZGU1N2Y2ZmEzZTMwYjA0NjY0ZDAxYmE5YTE1OTg2OWUwOWNhMWRlOTFkMzQifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/challenge_api_tests.rs#L130-L283",
+          "version": "repo-lines-v1:sha256:33ec69be9c2bdc7931131e016be0038c8df55a0c80b78ceb984d43cb4e82e2ea:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhZDlkZjg1ZGI4Yzc4NzVmYTk3Mjg5YTMwNWRiODk3NDY4YmYwZDVmY2I3Y2I4NTlhMjU0ZGQxMzVkYWU3NWNhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwNmNhMDEzODVjMDRiOWM4OTIxMDhkODIzNjQzYTZhMjE4ZjZhNjYwMzEwMDlhODZjYThhNjg5Y2MwMWRjY2EwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwNmNhMDEzODVjMDRiOWM4OTIxMDhkODIzNjQzYTZhMjE4ZjZhNjYwMzEwMDlhODZjYThhNjg5Y2MwMWRjY2EwIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_7cdc588fbecd44d0b190674ca5fd1ec4",
+      "statement": "Challenge inventory and detail expose only participant-visible public persona projections and resolve due pending rows into retained expired history before returning them.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/challenges.rs#L283-L411",
+          "version": "repo-lines-v1:sha256:404667edb285c861aa6ead5fcc6117722c49b95e03c4821b9567830b6c056007:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0ZDlhY2ZjZmM3MmJiZmUyNmUxYTY4NGIxYThjYmZlMGRkMTgwMWYwMTc2YTZiOGY0NDM1OWQxOTJhNWYyZDUxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJhY2U0YjUzODE5MGI0OWZlY2ZhOTU2OTY0YmRiNWM2Yzk3YzQzZDI0NGNiMWMxN2E3NjQ0ZWEyMDU4NmVjZjIyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzYzc1MjhiYjFmNjUzNjE1ZDAwY2QyMDY5NzQ0YTUyZDAwZTg5MWMxYjcyOWVkZDZjMjU5YjMwODMyMTUxY2EzIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3MTgxMTIwNzAxOWVlNmExYzJiZWU2OGJmZjIyMTBkMzg4Yzg0NTQ1NzIxNGY4ZjgzNTExNzBmNWE4ZjU0ZjBkIn0"
+        },
+        {
+          "resource": "repo://crates/server/src/challenges.rs#L685-L733",
+          "version": "repo-lines-v1:sha256:2ffc65316801580f86ef17258d8fda199c7a7a8e1b79b108b402e71bc5a722b0:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmMGQyMTA3Yjg2OWU0MzVmNzc1ZjM1OTk0MTUzOWJhYWM2YjkzOWIzYjUzZTQwZWU2OGFjZWQ1OTZhNmJkNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5Y2FiYTA2ZmIwYTZmYWE5ZWJkZjdjYTJjMjk1MTczN2YzNmMzZGFiMmQxMGNhNWNmN2YxZTJmYzIyZTBiZWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlZjI2NTFlYTYzM2RlMDgwZTZjOTNlMWFkNDRmNjZmOTI5MWE3NTY1MWZhN2FhYmY4YTA5MWFkNjRjNGFkMDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjODZiYjlmZWEzNmEzZTcxNDhhNzVkNTIwYTZmN2QzYzIyMWUzODYxMTc2MDA0ZmU3MDFhYjdlOTMxMDg0Y2UifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c09acbdedd1442b49a01a9ebe7d2634b",
+      "statement": "Only the challenged persona may accept or decline and only the challenger may cancel; acceptance rechecks the connected pair and commits exact session creation, the accepted link, typed inbox history, and challenge, conversation, and session invalidations atomically.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/challenges.rs#L468-L605",
+          "version": "repo-lines-v1:sha256:3dd9968c1073f3c946be8514670a732ab21acc37e71762cd3eaacf8382bc8a1d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmOGIzZGRmY2IzNzNmMjcwZjdlYThjMzkyNWVjN2EyMzM3NjkxOGFhM2NmMGJhZjhiZTk5ZGY4Mzk5NmIzOTVlIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI2NTUyZmUwODE0MzIyYzM5YzIxN2MwZWI3ODQwMzAwODgxYzA0ZjkzMWFmNGMwYzQ1NGUyMGFlMmRmYWM5MDE4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlZmYzYzYzNzFjZjAwOTIzNTQwMjZiNGRlYTUzNTFlYjZkYWZiNzY2YzM4OTM4N2NhMWY5ODNhZDBhOTZhN2U2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJkZDI2MjY2ZTQxN2NiMjJhYTg1YjE1Zjg4YzdjMjI3N2MyMmViOTNkMmI2ODc2Mzc2ZjFhYmU0MTUzYzlhZDA2In0"
+        },
+        {
+          "resource": "repo://crates/server/src/games.rs#L114-L197",
+          "version": "repo-lines-v1:sha256:61af8dffc97b0bbd02edfb24ff233f168653501d908bf3d552a726fbcd5d76b0:eyJzZWxlY3RlZExpbmVDb3VudCI6ODQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhZjJkMTJjM2M5NDAwMTE0MDIwYzUxNzFkNTNlYmY5NjZmZTA1YzI1Nzg1OGFhOGYyYzZmYjRiNTIwNThkNWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4ODY0YWNjOTU3YjQ1MzdlZWNjY2NjOTc1ZmQwZTYxMWNmYjNmZGUzY2Q0ZTk2Mzg1MGM4ZmM2N2I5ZWViNzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVlYTAwZTU1MTM2ZGVmZjU2Yjk2NTI5ZDQ4OGI1ZTBhYTYxZTE2NDY2NjcxNGIzZDU2ZDVjNGUzODgyMTY4OWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0d6e214e8c1a4e92890a1c9ebff9558f",
+      "statement": "Migration 0012 constrains challenge participants, identity, monotonic status/session/resolution shape, challenger-scoped idempotency, one equivalent pending request, typed inbox challenge references, and payload-minimal challenge synchronization events.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0012_game_challenges.sql#L1-L111",
+          "version": "repo-lines-v1:sha256:3a8601038c4cbe7420bd29bc2a61caec69d7852727fc79b572ae712b61707799:eyJzZWxlY3RlZExpbmVDb3VudCI6MTExLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJjODQ0NTk5YjcwZTlhYmEyMTRhNDRiMmE4YmIzOWU2MmJiNTBkNzY3MWVmNmY2OTk5Zjk0YWY3ZTgxZGFlMmE5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmMzI4MzMzNzllZTY4ODk1ODliNzViMzZlMWQ3ZmU2MDg3NzlkMmY5NzAzOTliYTY0OGQ2OGEzYTZjM2U5ZmRjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3YWIxNTQ2MDVmNTY4ZjI5MDM3NmVkZGYyOWE4ZTU0YjBlMGZlNmVjYWVkMTM2YmZlYzg0MWM2Mzk2NTIwZmMyIn0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-25T01:37:12.518Z"
+    "at": "2026-08-25T15:17:54.717Z"
   }
 }

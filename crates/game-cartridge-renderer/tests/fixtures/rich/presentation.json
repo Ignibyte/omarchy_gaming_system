@@ -1,0 +1,25 @@
+{
+  "format_version": 1,
+  "screens": [
+    {
+      "id": "main",
+      "title": "Renderer Demo",
+      "view_schema": "schemas/view.schema.json",
+      "nodes": [
+        { "kind": "terminal", "id": "log", "text_binding": "log.text", "accessible_label": "Game log" },
+        { "kind": "grid", "id": "board", "rows": 2, "columns": 2, "cells_binding": "board.cells", "action": "move", "accessible_label": "Game board" },
+        { "kind": "status", "id": "status", "text_binding": "status.text", "accessible_label": "Game status" },
+        { "kind": "button", "id": "end-turn", "label_binding": "button.label", "action": "end_turn", "accessible_label": "End turn" },
+        { "kind": "image", "id": "portrait", "asset": "assets/pixel.png", "accessible_label": "Player portrait" },
+        { "kind": "meter", "id": "health", "value_binding": "meter.value", "minimum": 0, "maximum": 100, "accessible_label": "Health" },
+        { "kind": "sprite", "id": "hero", "asset": "assets/pixel.png", "frame_width": 1, "frame_height": 1, "frame_count": 1, "frames_per_second": 12, "accessible_label": "Hero" },
+        { "kind": "particle_field", "id": "stars", "particle_count": 2048, "preset": "stars", "accessible_label": "Star field" },
+        { "kind": "audio_cue", "id": "tick", "asset": "assets/tick.wav", "looped": false, "accessible_label": "Turn sound" }
+      ]
+    }
+  ],
+  "actions": [
+    { "id": "end_turn", "payload_fields": [] },
+    { "id": "move", "payload_fields": ["column", "row"] }
+  ]
+}

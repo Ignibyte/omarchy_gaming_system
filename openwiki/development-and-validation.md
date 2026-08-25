@@ -5,10 +5,22 @@ openwiki_generated: true
 sources:
   - id: openwiki-source-0bb8016edf4f4744d3a09cf4
     resource: repo://bin/gate.sh
+  - id: openwiki-source-cfb5585994628fc6aaff1dd4
+    resource: repo://client/qml/cartridge/nodes/TrustedImageNode.qml
   - id: openwiki-source-d392f8f0962c50f0d66e0629
     resource: repo://client/qml/Main.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
+  - id: openwiki-source-fdf115002c4aabad0babec70
+    resource: repo://crates/game-cartridge-renderer/src/lib.rs
+  - id: openwiki-source-305772806daa653bb2bc0a61
+    resource: repo://crates/game-cartridge-renderer/tests/rendering.rs
+  - id: openwiki-source-9eb807576928ef92a7b8b32a
+    resource: repo://crates/game-cartridge/tests/conformance.rs
+  - id: openwiki-source-358b091c74e2027615ce8f4c
+    resource: repo://crates/game-cartridge/tests/sdk_release.rs
+  - id: openwiki-source-2c054a2481343f8aacaf65ae
+    resource: repo://crates/server/src/challenge_api_tests.rs
   - id: openwiki-source-9ba5739252220892895a7a47
     resource: repo://crates/server/src/connection_api_tests.rs
   - id: openwiki-source-a243b385d49ea9224173d77a
@@ -29,10 +41,18 @@ sources:
     resource: repo://scripts/setup-pipeline-tools.sh
   - id: openwiki-source-77975b35449f204d64ad5930
     resource: repo://scripts/test-database.sh
-generated: {by: "codex", at: "2026-08-25T01:37:12.518Z"}
+  - id: openwiki-source-d69dbacb0ae7fe382ee46161
+    resource: repo://scripts/test-game-cartridge-renderer.sh
+  - id: openwiki-source-8df9ad1a3495f8360740ff03
+    resource: repo://scripts/test-game-cartridge-sdk.sh
+  - id: openwiki-source-4e51428e90d3c7db3949b09b
+    resource: repo://scripts/test-game-cartridge-spike.sh
+  - id: openwiki-source-68106a790eb8acc94f8d3540
+    resource: repo://scripts/test-game-cartridge.sh
+generated: {by: "codex", at: "2026-08-25T15:17:54.717Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-25T01:37:12.518Z
+    at: 2026-08-25T15:17:54.717Z
 ---
 
 # Development and validation
@@ -67,9 +87,12 @@ private-field absence, checks owned inventory and public lookup, edits the
 persona, and proves the old handle disappears while the new handle resolves the
 updated profile. It creates a second account and persona, then exercises
 request, incoming inventory, acceptance, and mutual inventory. Acceptance must
-also expose one private conversation with a typed system message; the peer then
-sends a user message, the first persona reads ascending history and clears its
-unread state. Removal must preserve that history while rejecting another send.
+also expose one private conversation with a typed system message. While the pair
+is connected, the smoke submits a challenge to the deliberately empty
+production registry and requires `game_unavailable` with no partial cursor
+event. The peer then sends a user message, the first persona reads ascending
+history and clears its unread state. Removal must preserve that history while
+rejecting another send.
 The flow continues through block, private blocked-request rejection, private
 block inventory, unblock, re-request, and pending cancellation. It then enrolls
 and confirms TOTP, proves primary login creates no premature session, completes
@@ -98,22 +121,107 @@ docker compose down
 
 `bin/gate.sh --fast` runs the static development loop without writing a receipt.
 `bin/gate.sh --diff` adds isolated migrated PostgreSQL tests plus the live
-PostgreSQL → Rust game-catalog/health/account/session/persona/social/inbox/sync/
-MFA API → QML smoke and writes a receipt for the exact gated worktree at
+PostgreSQL → Rust game-catalog/health/account/session/persona/social/inbox/
+challenge/sync/MFA API → QML smoke and writes a receipt for the exact gated worktree at
 `.git/omarchy-gaming-system-gate-receipt`.
 
 The gate currently covers:
 
-1. Rust formatting and warning-denied Clippy;
-2. workspace tests and warning-denied rustdoc;
-3. Compose, shell, pipeline, secret, hook, and whitespace checks;
-4. thirty-three ignored router tests against SQLx-managed PostgreSQL databases in
-   diff/full modes;
-5. the live empty game catalog, health, registration, duplicate-conflict,
+1. production-workspace Rust formatting, warning-denied Clippy, tests, and
+   warning-denied rustdoc;
+2. Compose, shell, pipeline, secret, hook, and whitespace checks;
+3. the production Game Cartridge's twenty-test hostile conformance corpus,
+   deterministic CLI pack/conform/install/revoke lifecycle, and isolation
+   assertions;
+4. the trusted production renderer's two unit and nine integration tests,
+   signed Core/Rich-2D preparation, private output, QML state/input/accessibility
+   smoke, aggregate-plan rejection, raster admission, and frame/RSS profile
+   enforcement;
+5. deterministic SDK export, two clean-clone first-party builds, byte-identical
+   signed release verification, signed five-state catalog policy, secure local
+   import, and permission/rollback/concurrency regressions;
+6. the isolated Game Cartridge workspace format, Clippy, tests, binaries,
+   rustdoc, signed package, broker/provider/probe exchange, privacy assertions,
+   trusted-QML smoke, and frame/memory/package measurements;
+7. thirty-nine ignored router tests against SQLx-managed PostgreSQL databases
+   in diff/full modes; and
+8. the live empty game catalog, health, registration, duplicate-conflict,
    session creation/list, persona creation/list/public lookup/edit/handle
-   movement, connection, private inbox, synchronization recovery, and block
-   lifecycle, TOTP enrollment, challenged login, recovery replay rejection,
-   MFA disablement, session revocation, rejected-token, and QML smoke.
+   movement, connection, fail-closed empty-registry challenge rejection,
+   private inbox, synchronization recovery, and block lifecycle, TOTP
+   enrollment, challenged login, recovery replay rejection, MFA disablement,
+   session revocation, rejected-token, and QML smoke.
+
+### Production Game Cartridge conformance
+
+`scripts/test-game-cartridge.sh` is the focused entrypoint for the production
+data-only v1 contract. It runs twenty tests spanning canonical identity,
+signature and content tampering, archive/path/resource attacks, strict schema
+and media handling, node-to-capability binding, compatibility fallbacks,
+bounded regular-file input, content-addressed installation, and fail-closed
+revocation.
+
+The script then packs the same fixture after changing source mtimes and modes
+and requires byte-identical output. It conforms under unusable network,
+database, and credential environment values, installs only the exact read-only
+archive, and denies resolution after revocation. This is gate 11. It validates
+inert packaging and local storage, not production rendering or provider access.
+
+### Trusted Game Cartridge renderer
+
+`scripts/test-game-cartridge-renderer.sh` is the focused production renderer
+entrypoint and gate 12. It runs the renderer unit/integration corpus, builds the
+production package and preview CLIs, creates ephemeral signing keys, and packs
+real base, Core, and Rich-2D cartridges. Preview runs with deliberately unusable
+database, device-token, and proxy environment values and must report that it
+contacted no provider, needed no database, and read no platform credential.
+
+The QML matrix uses Qt's offscreen software backend at 920×600 and one CPU when
+affinity is available. It warms 60 frames, samples 120, enforces a 33.3 ms
+average ceiling and the profile hard RSS cap, exercises Grid/Button focus and
+actions, covers 2× scale/high contrast/reduced motion/mute, and instantiates
+zero cartridge nodes for loading, offline, stale, empty, protocol-error,
+unsupported-capability, and revoked states. A substituted per-node-valid Core
+plan containing a particle must fail the QML aggregate-profile recount. A real
+2,048-pixel Rich-2D raster must render inside the performance envelope, while a
+4,096-pixel raster must fail before any prepared plan is published.
+
+### Game Cartridge SDK and first-party release
+
+`scripts/test-game-cartridge-sdk.sh` is the Ticket 017 production portability
+entrypoint and gate 13. It runs eight release/lifecycle/secure-store tests,
+exports the SDK twice and requires byte-identical files, then copies only the
+public cartridge and preview binaries plus SDK and publisher key into two clean
+Git clones of the first-party example repository. Both clones must produce
+byte-identical read-only archives, conformance reports, and signed release
+attestations bound to the source revision, builder binary, SDK lock, and exact
+artifact digests.
+
+The same gate verifies a signed five-state catalog policy, imports the release
+through the descriptor-relative Linux store, compares the installed blob with
+the release artifact, and prepares it through the production previewer. The
+test environment supplies unusable database, provider-proxy, device-token, and
+MFA-key values and rejects any platform source-tree path in the release proof.
+Focused regressions cover unsafe directory permissions and symlinks, policy
+rollback, denial persistence across restart, and concurrent policy versions.
+
+### Game Cartridge architecture proof
+
+`scripts/test-game-cartridge-spike.sh` is the focused entrypoint for the
+non-production Ticket 014 proof and gate 14. It runs the nested Cargo workspace
+under the shared repository target directory, creates ephemeral mode-0600 signing keys
+and a temporary signed fixture, launches the provider and broker on separate
+loopback-only ports, and drives the complete launch/command/replay flow with a
+Rust probe. The response must explicitly prove that raw persona identity, the
+device token, and database access were not disclosed.
+
+The script then runs the trusted proof QML offscreen, rejects known runtime
+contract errors, captures a 120-frame timing sample and peak resident memory,
+reports expanded package size, and removes the exact child processes and
+temporary material on exit. It proves architecture semantics and the
+measurement harness; it is not a production provider service, a published SDK,
+or a minimum-hardware Rich-2D benchmark. See [Game Cartridges](game-cartridges.md)
+for the boundary and remaining production work.
 
 Five game integration tests prove atomic exact-version initialization and
 commands, ordered participants, semantic replay, isolated idempotency and
@@ -123,6 +231,13 @@ registry changes, indistinguishable foreign and absent sessions, monotonic
 timestamps, and one winner when two commands race at one revision. Two local
 router tests separately prove stable catalog order, the empty production
 contract, and the pre-database command body cap.
+
+Six challenge integration tests prove participant-private creation and reads,
+exact idempotent replay and collision handling, connected/block policy,
+incoming/outgoing caps, typed lifecycle messages, payload-minimal sync events,
+terminal history and lazy expiry, exact-version session creation and seat
+order, initializer rollback, and one winner under competing transitions. One
+local router test separately proves the pre-database challenge body cap.
 
 The three persona integration tests use multiple accounts to prove response
 allowlists, owner-only inventory and mutation, indistinguishable foreign and
@@ -141,8 +256,9 @@ tests prove encrypted pending enrollment, confirmation and
 status privacy, TOTP/recovery/challenge replay resistance, account inactivity,
 independent bounded challenge issuance, cross-challenge attempt locks, and
 dual-proof disablement with cleanup. Together with two registration and three
-session tests plus three persona tests, five game tests, and six synchronization
-tests, these make thirty-three PostgreSQL-backed tests. The synchronization cases
+session tests plus three persona tests, five game tests, six challenge tests,
+and six synchronization tests, these make thirty-nine PostgreSQL-backed tests.
+The synchronization cases
 exercise durable baseline/incremental/reset behavior, mutation-coupled event
 delivery, owner privacy, and real-TCP WebSocket authentication, hinting, frame
 bounds, quotas, permit release, lag recovery, and no-touch session lifecycle
@@ -179,6 +295,10 @@ server, so absent or stale provenance fails closed.
 ## Failure routing
 
 - Startup failure: inspect `.dev/server.log` and PostgreSQL health.
+- Cartridge preview rejection: read the machine-readable preview error code;
+  verify signature/compatibility, pinned view schema, exact action shape,
+  private empty output directory, and selected Core/Rich-2D budget. Run
+  `scripts/test-game-cartridge-renderer.sh` for the full trusted handoff.
 - HTTP 503: verify the database and the `SELECT 1` path.
 - Registration 422: compare the request with `docs/api.md`; registration 409
   means the canonical username is already stored.
@@ -208,6 +328,12 @@ server, so absent or stale provenance fails closed.
   changing manifests, exact-version initialization or transitions, transaction
   ownership, participant locks, replay identity, response fields, or sync event
   privacy.
+- Game-challenge 404 covers absent, malformed, and non-participant challenges;
+  409 covers unavailable relationships or games, pending limits, expired
+  acceptance, idempotency collisions, and invalid terminal direction/state.
+  Use `challenge_api_tests.rs` before changing exact replay, participant
+  privacy, pair locks, expiry, lifecycle messages, acceptance transaction
+  ownership, or challenge/session/conversation invalidations.
 - Sync 404 covers an absent or foreign acting persona; 422 covers malformed
   cursors or bounds, while `reset_required` means retained continuity cannot be
   proven. WebSocket 429 means a persona, account, or process socket quota is
@@ -218,6 +344,20 @@ server, so absent or stale provenance fails closed.
   temporarily locked or ten live challenges already exist. Use
   `mfa_api_tests.rs` before changing those distinctions.
 - QML protocol error: inspect the health JSON contract.
+- Production cartridge failure: run `scripts/test-game-cartridge.sh` and fix the
+  named canonical archive, signature, schema/media, capability, bounded-input,
+  store, or revocation contract; do not bypass gate 11.
+- Trusted-renderer failure: run `scripts/test-game-cartridge-renderer.sh` and fix
+  the named schema/action/profile/raster, QML boundary, accessibility, timing, or
+  RSS failure; do not bypass gate 12.
+- SDK/release/import failure: run `scripts/test-game-cartridge-sdk.sh` and fix the
+  named export, release provenance, lifecycle, permission, rollback, concurrency,
+  or clean-room isolation failure; do not bypass gate 13.
+- Cartridge proof failure: inspect the temporary provider, broker, and QML logs
+  printed by `scripts/test-game-cartridge-spike.sh`. Treat signature, identity,
+  capability, privacy, replay, resource, or trusted-renderer failures as
+  architecture failures; do not bypass gate 14. The binaries are loopback-only
+  proof artifacts and must not be deployed.
 - Pipeline structure failure: repair the ticket/spec/AAR/skill or Codex wiring
   named by `scripts/check-pipeline.sh`.
 - Pipeline-tool readiness failure: rerun `scripts/setup-pipeline-tools.sh` only

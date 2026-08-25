@@ -599,9 +599,14 @@ Only either durable conversation participant may read history, even after the
 connection is removed or blocked. Each page is ordered by ascending
 conversation-local message sequence, defaults to 50, caps at 100, and returns
 `next_before` for an older page. Activity in another conversation does not
-create sequence gaps. User messages have the shape above. System messages use `type:
-system` and a nested tagged `system` object; currently the only system variant
-is `connection_accepted` with its public actor.
+create sequence gaps. User messages have the shape above. System messages use
+`type: system` and a nested tagged `system` object. `connection_accepted`
+contains its public actor. Challenge lifecycle variants are
+`game_challenge_created`, `game_challenge_accepted`,
+`game_challenge_declined`, and `game_challenge_cancelled`; each contains the
+public actor and `challenge_id`, while acceptance alone also contains
+`game_session_id`. These immutable references do not copy current challenge
+status into inbox history.
 
 Malformed, absent, and non-participant conversation IDs all return 404
 `conversation_not_found`. Invalid limits or non-positive `before` cursors
@@ -652,6 +657,88 @@ Until the first playable game is implemented, the production response is
 honestly `{"games":[]}`. Tests inject compiled fixture definitions; those
 fixtures are not production catalog entries.
 
+## Create and read game challenges
+
+`POST /v1/personas/{persona_id}/game-challenges`
+
+The owned acting persona may challenge a different-account persona only while
+the pair is connected and unblocked. The exact compiled game version must
+admit two human players. Request bodies are limited to 8 KiB and accept only:
+
+```json
+{
+  "idempotency_key": "91cc0000-0000-4000-8000-000000000001",
+  "challenged_persona_id": "58ee076d-0216-422c-b1e2-48ee7fa648bb",
+  "game_key": "example_game",
+  "game_version": 1
+}
+```
+
+A first request returns `201 Created`; an exact retry returns `200 OK` with the
+same durable representation and no second inbox message or sync event. Reusing
+the UUID for different intent returns `game_challenge_idempotency_conflict`.
+Only one pending challenge for a directed pair and exact game version may
+exist. Each persona is limited to 100 unexpired outgoing and 100 unexpired
+incoming challenges. Expiry is server-owned at seven days.
+
+`GET /v1/personas/{persona_id}/game-challenges?limit={1-100}&before={challenge_id}`
+
+`GET /v1/personas/{persona_id}/game-challenges/{challenge_id}`
+
+Inventory defaults to 50 records, is newest-first, retains terminal history,
+and returns `next_before` only when another page exists. Detail and pagination
+cursors are participant-authorized; malformed, missing, and foreign challenge
+IDs share `game_challenge_not_found`, while an unusable cursor returns
+`invalid_pagination`. A challenge response is allowlisted:
+
+```json
+{
+  "id": "...",
+  "game_key": "example_game",
+  "game_version": 1,
+  "direction": "incoming",
+  "status": "pending",
+  "challenger": { "id": "...", "handle": "player_one" },
+  "challenged": { "id": "...", "handle": "player_two" },
+  "game_session_id": null,
+  "expires_at": "2026-09-01T20:00:00.000Z",
+  "resolved_at": null,
+  "created_at": "2026-08-25T20:00:00.000Z",
+  "updated_at": "2026-08-25T20:00:00.000Z"
+}
+```
+
+The abbreviated personas stand for the normal seven-field public projection.
+Responses never contain the request idempotency key, account ownership,
+connection/block direction, registry internals, or game state. Any read first
+resolves a due pending row to retained `expired` history.
+
+## Resolve a game challenge
+
+`PUT /v1/personas/{persona_id}/game-challenges/{challenge_id}/accept`
+
+`PUT /v1/personas/{persona_id}/game-challenges/{challenge_id}/decline`
+
+`DELETE /v1/personas/{persona_id}/game-challenges/{challenge_id}`
+
+Only the challenged persona may accept or decline; only the challenger may
+cancel. Decline and cancel produce terminal history without a game session.
+Acceptance additionally requires the pair still be connected and unblocked,
+then creates exactly one session pinned to the invited game version with the
+challenger at seat 0 and challenged persona at seat 1. Session creation,
+challenge transition, typed inbox message, and participant invalidations
+commit in one PostgreSQL transaction. Retrying the same completed operation
+returns its existing representation without another effect; competing or
+directionally invalid transitions return `game_challenge_transition_unavailable`.
+
+Expired acceptance returns `game_challenge_expired`; unavailable targets,
+games, and pending capacity return `challenge_target_unavailable`,
+`game_unavailable`, and `game_challenge_limit_reached`. Creation or a first
+terminal transition appends `game_challenge_changed` and
+`conversation_changed` for both personas. Acceptance also receives the
+`game_session_changed` events created by the existing session primitive. All
+challenge routes and errors carry `Cache-Control: no-store`.
+
 ## Read participating game sessions
 
 `GET /v1/personas/{persona_id}/game-sessions?limit={1-100}`
@@ -696,8 +783,8 @@ positive version are immutable: reading a session never substitutes a newer
 compiled rules version. Malformed, absent, and non-participant session IDs all
 return 404 `game_session_not_found`; a foreign acting persona uses the same 404
 `persona_not_found` as an absent one. Invalid limits return 422
-`invalid_pagination`. No public session-creation route exists; challenge
-orchestration remains a separate roadmap slice.
+`invalid_pagination`. Sessions are created only by accepted challenges; there
+is no standalone public session-creation route.
 
 ## Apply a game command
 
@@ -793,20 +880,26 @@ The feed contains invalidations rather than resource data:
       "cursor": 45,
       "game_session_id": "c48edcea-24dd-46f7-9eed-786968e31fa1",
       "created_at": "2026-08-24T20:00:02.000Z"
+    },
+    {
+      "type": "game_challenge_changed",
+      "cursor": 46,
+      "game_challenge_id": "edac755e-5a0b-4c9d-a652-f20a310fd22d",
+      "created_at": "2026-08-24T20:00:03.000Z"
     }
   ],
-  "next_cursor": 45,
+  "next_cursor": 46,
   "has_more": false,
   "reset_required": false
 }
 ```
 
 The other event types are `connection_requests_changed` and `blocks_changed`.
-Game-session events carry only the participant-authorized session UUID, never
-state or participant data. Events never contain message bodies, profiles,
-account identity, read counts, block direction, or credentials. Each persona
-retains only its newest 10,000 events. If `after` is older than retained
-history, the server returns an empty
+Game-session and game-challenge events carry only their participant-authorized
+resource UUID, never state, challenge details, or participant data. Events
+never contain message bodies, profiles, account identity, read counts, block
+direction, or credentials. Each persona retains only its newest 10,000 events.
+If `after` is older than retained history, the server returns an empty
 page at the current cursor with `reset_required: true`; repeat the baseline and
 authoritative REST snapshot flow. Negative or future cursors return
 `invalid_sync_cursor` with HTTP 422. Invalid limits return `invalid_pagination`

@@ -1,0 +1,23 @@
+{
+  "format_version": 1,
+  "game_key": "retro-grid",
+  "publisher_id": "ignibyte",
+  "provider_id": "fixture-provider",
+  "rules_version": 1,
+  "cartridge_version": 1,
+  "sdk_min_version": 1,
+  "sdk_max_version": 1,
+  "display_name": "Retro Grid",
+  "entry_screen": "main",
+  "required_capabilities": [
+    "core.grid",
+    "core.terminal"
+  ],
+  "optional_capabilities": [
+    "rich2d.animation"
+  ],
+  "permissions": [
+    "game.command",
+    "persona.display_name"
+  ]
+}

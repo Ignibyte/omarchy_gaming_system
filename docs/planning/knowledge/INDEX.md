@@ -32,10 +32,30 @@ and in this register.
 | `PR-omarchy-gaming-system-terminate-options-before-repository-paths-001` | Pass an explicit option terminator before every repository-derived pathname supplied to a command-line parser. | `aar/AAR-012-game-registry-and-versioned-sessions.md` |
 | `PR-omarchy-gaming-system-treat-hook-trust-as-transitive-code-trust-001` | After branch or referenced-script changes, treat persisted project-hook trust as a grant over the transitive local code and rely independently on the worktree-bound gate for delivery proof. | `aar/AAR-012-game-registry-and-versioned-sessions.md` |
 | `PR-omarchy-gaming-system-check-replay-before-current-revision-001` | Under a serialized mutation boundary, resolve an idempotency receipt before enforcing the current revision so a genuine retry can replay after its first attempt advances durable state. | `aar/AAR-013-idempotent-revision-checked-game-commands.md` |
+| `PR-omarchy-gaming-system-resolve-durable-replay-before-current-admission-001` | After authenticating and owner-scoping the actor, resolve and validate a durable idempotency identity before current admission checks that apply only to new work; return it through the normal resource authorization path. | `aar/AAR-020-game-challenges-turn-notifications-history-and-expiration.md` |
 | `PR-omarchy-gaming-system-preserve-monotonic-persisted-timestamps-001` | When a transaction can wait on a lock, derive mutation time after lock acquisition and preserve monotonicity against the stored value. | `aar/AAR-013-idempotent-revision-checked-game-commands.md` |
 | `PR-omarchy-gaming-system-use-nul-git-path-inventories-001` | Carry repository path inventories as NUL-delimited byte records through enumeration, sorting, hashing, and enforcement. | `aar/AAR-013-idempotent-revision-checked-game-commands.md` |
 | `PR-omarchy-gaming-system-pin-executable-artifacts-before-install-001` | Authenticate every wrapper and platform artifact before installing a repository tool, then revalidate its installed tree, executable link, and provenance before use. | `aar/AAR-013-idempotent-revision-checked-game-commands.md` |
 | `PR-omarchy-gaming-system-derive-digests-with-verifier-encoding-001` | Derive reviewed aggregate digests with the exact byte-record encoding used by the verifier. | `aar/AAR-013-idempotent-revision-checked-game-commands.md` |
+| `PR-omarchy-gaming-system-parse-the-bytes-that-were-authenticated-001` | Parse security-sensitive package records from the exact byte buffers whose lengths and digests were verified. | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `PR-omarchy-gaming-system-enforce-bounds-during-streaming-001` | Enforce untrusted response and archive limits during streaming, before buffering or decoding the complete input. | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `PR-omarchy-gaming-system-make-untrusted-text-format-explicit-001` | Render untrusted text through explicit plain-text mode unless a separately sanitized markup contract is intended and tested. | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `PR-omarchy-gaming-system-bound-package-traversal-work-001` | Bound package entries, directory depth, and accepted directory names in addition to accepted-file count and bytes. | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `PR-omarchy-gaming-system-gate-every-nested-workspace-proof-001` | Make every nested workspace that supplies required ticket evidence part of the canonical gate before relying on a worktree receipt. | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `PR-omarchy-gaming-system-bind-provider-messages-to-registered-identity-001` | Bind cartridge, grant, request, receipt, and event validation to registered principal and exact game, release, session, subject, scope, and expiry context. | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `PR-omarchy-gaming-system-validate-decoder-profile-not-headers-001` | Before accepting an asset, validate the exact decoder profile and every source of decoded work, not only dimensions and magic bytes. | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `PR-omarchy-gaming-system-bind-presentation-nodes-to-capabilities-001` | Bind every presentation node and effect to the exact required host capability before compatibility evaluation. | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `PR-omarchy-gaming-system-read-bounded-input-from-checked-handle-001` | Read untrusted filesystem input through the same checked regular-file handle with an enforced streaming byte ceiling. | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `PR-omarchy-gaming-system-distinguish-not-found-from-denial-001` | Treat only an explicit `NotFound` as absence; propagate or deny every other lookup failure at an authorization or revocation boundary. | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `PR-omarchy-gaming-system-require-descriptor-relative-privileged-store-001` | Before a cartridge store crosses a user or privilege boundary, use descriptor-relative containment or an equivalent OS sandbox plus authoritative revocation. | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `PR-omarchy-gaming-system-make-expensive-authentication-unique-001` | Cache expensive authentication work by immutable authenticated identity and publish retained bytes only after the referencing object passes admission. | `aar/AAR-016-trusted-cartridge-renderer-and-previewer.md` |
+| `PR-omarchy-gaming-system-enforce-render-budgets-during-construction-001` | Charge retained render-plan bytes with checked arithmetic before keeping each node, then preserve a final exact envelope check. | `aar/AAR-016-trusted-cartridge-renderer-and-previewer.md` |
+| `PR-omarchy-gaming-system-bind-node-actions-to-exact-payloads-001` | Bind each declarative interactive node to one exact platform-emitted payload shape before a dispatcher exists. | `aar/AAR-016-trusted-cartridge-renderer-and-previewer.md` |
+| `PR-omarchy-gaming-system-recount-budgets-at-render-handoff-001` | Independently recount cheap aggregate profile budgets when a serialized plan crosses into the trusted UI runtime. | `aar/AAR-016-trusted-cartridge-renderer-and-previewer.md` |
+| `PR-omarchy-gaming-system-validate-retained-directory-authority-001` | Validate type, expected owner, and group/other write permissions on every retained directory descriptor before treating it as a security boundary. | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
+| `PR-omarchy-gaming-system-serialize-monotonic-policy-transitions-001` | Hold one cross-process lock across the complete authenticated read, compare, and replace of monotonic policy state, then re-read beneath that lock. | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
+| `PR-omarchy-gaming-system-persist-authenticated-denial-before-enforcement-001` | Persist the highest authenticated policy before applying its allow or deny decision. | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
+| `PR-omarchy-gaming-system-charge-decoded-media-at-render-admission-001` | Charge per-instance decoded-media work against the selected render profile before publishing its node or asset, and exercise the maximum accepted decoder path. | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
 
 ## Register
 
@@ -107,3 +127,47 @@ and in this register.
 | `PR-omarchy-gaming-system-pin-executable-artifacts-before-install-001` | rule | `aar/AAR-013-idempotent-revision-checked-game-commands.md` |
 | `PR-omarchy-gaming-system-derive-digests-with-verifier-encoding-001` | rule | `aar/AAR-013-idempotent-revision-checked-game-commands.md` |
 | `AD-omarchy-gaming-system-idempotent-revision-command-boundary-001` | decision | `../../architecture/system-overview.md` |
+| `BF-omarchy-gaming-system-authenticated-cartridge-reopen-001` | failure | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `BF-omarchy-gaming-system-provider-response-post-buffer-bound-001` | failure | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `BF-omarchy-gaming-system-qml-auto-text-untrusted-markup-001` | failure | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `BF-omarchy-gaming-system-cartridge-directory-budget-gap-001` | failure | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `BF-omarchy-gaming-system-nested-proof-gate-omission-001` | failure | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `BF-omarchy-gaming-system-qml-proof-log-routing-001` | failure | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `PR-omarchy-gaming-system-parse-the-bytes-that-were-authenticated-001` | rule | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `PR-omarchy-gaming-system-enforce-bounds-during-streaming-001` | rule | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `PR-omarchy-gaming-system-make-untrusted-text-format-explicit-001` | rule | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `PR-omarchy-gaming-system-bound-package-traversal-work-001` | rule | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `PR-omarchy-gaming-system-gate-every-nested-workspace-proof-001` | rule | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `PR-omarchy-gaming-system-bind-provider-messages-to-registered-identity-001` | rule | `aar/AAR-014-portable-games-sdk-and-remote-hosting-spike.md` |
+| `AD-omarchy-gaming-system-game-cartridge-provider-boundary-001` | decision | `../../architecture/adr-0002-game-cartridge-and-provider-boundary.md` |
+| `BF-omarchy-gaming-system-png-decoded-profile-underbound-001` | failure | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `BF-omarchy-gaming-system-presentation-capability-confusion-001` | failure | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `BF-omarchy-gaming-system-path-read-after-metadata-bound-gap-001` | failure | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `BF-omarchy-gaming-system-revocation-lookup-fail-open-001` | failure | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `BF-omarchy-gaming-system-pathname-store-containment-boundary-001` | failure | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `PR-omarchy-gaming-system-validate-decoder-profile-not-headers-001` | rule | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `PR-omarchy-gaming-system-bind-presentation-nodes-to-capabilities-001` | rule | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `PR-omarchy-gaming-system-read-bounded-input-from-checked-handle-001` | rule | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `PR-omarchy-gaming-system-distinguish-not-found-from-denial-001` | rule | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `PR-omarchy-gaming-system-require-descriptor-relative-privileged-store-001` | rule | `aar/AAR-015-game-cartridge-contract-verifier-and-conformance-cli.md` |
+| `AD-omarchy-gaming-system-canonical-game-cartridge-v1-001` | decision | `../../architecture/game-cartridges.md` |
+| `AD-omarchy-gaming-system-same-user-cartridge-store-001` | decision | `../../architecture/game-cartridges.md` |
+| `BF-omarchy-gaming-system-repeated-asset-authentication-amplification-001` | failure | `aar/AAR-016-trusted-cartridge-renderer-and-previewer.md` |
+| `BF-omarchy-gaming-system-late-render-plan-byte-budget-001` | failure | `aar/AAR-016-trusted-cartridge-renderer-and-previewer.md` |
+| `PR-omarchy-gaming-system-make-expensive-authentication-unique-001` | rule | `aar/AAR-016-trusted-cartridge-renderer-and-previewer.md` |
+| `PR-omarchy-gaming-system-enforce-render-budgets-during-construction-001` | rule | `aar/AAR-016-trusted-cartridge-renderer-and-previewer.md` |
+| `PR-omarchy-gaming-system-bind-node-actions-to-exact-payloads-001` | rule | `aar/AAR-016-trusted-cartridge-renderer-and-previewer.md` |
+| `PR-omarchy-gaming-system-recount-budgets-at-render-handoff-001` | rule | `aar/AAR-016-trusted-cartridge-renderer-and-previewer.md` |
+| `AD-omarchy-gaming-system-trusted-cartridge-renderer-v1-001` | decision | `../../architecture/game-cartridges.md` |
+| `BF-omarchy-gaming-system-store-directory-authority-gap-001` | failure | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
+| `BF-omarchy-gaming-system-policy-cache-rollback-race-001` | failure | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
+| `BF-omarchy-gaming-system-denied-policy-not-persisted-001` | failure | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
+| `BF-omarchy-gaming-system-render-raster-availability-gap-001` | failure | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
+| `PR-omarchy-gaming-system-validate-retained-directory-authority-001` | rule | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
+| `PR-omarchy-gaming-system-serialize-monotonic-policy-transitions-001` | rule | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
+| `PR-omarchy-gaming-system-persist-authenticated-denial-before-enforcement-001` | rule | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
+| `PR-omarchy-gaming-system-charge-decoded-media-at-render-admission-001` | rule | `aar/AAR-017-separate-repository-sdk-and-first-party-cartridge.md` |
+| `AD-omarchy-gaming-system-portable-cartridge-sdk-release-v1-001` | decision | `../../architecture/game-cartridges.md` |
+| `BF-omarchy-gaming-system-challenge-replay-current-policy-order-001` | failure | `aar/AAR-020-game-challenges-turn-notifications-history-and-expiration.md` |
+| `PR-omarchy-gaming-system-resolve-durable-replay-before-current-admission-001` | rule | `aar/AAR-020-game-challenges-turn-notifications-history-and-expiration.md` |
+| `AD-omarchy-gaming-system-durable-game-challenge-orchestration-001` | decision | `../../architecture/system-overview.md` |
