@@ -49,11 +49,40 @@ server-authoritative game runtime below.
 - Reporting, suspension, audit records, backups, and restore drill
 - Invite-only external testing
 
+## Owner-operated server ecosystem
+
+- [ ] Stable server identity and capability discovery plus saved, isolated
+  client profiles for multiple independent OmarchyGS communities
+- [ ] Server-admin marketplace synchronization, review metadata, exact release
+  import, catalog activation, lifecycle policy, and rollback controls
+- [ ] Player-facing acquisition, verification, content-addressed local cache,
+  mounting, update, and removal of the selected server's signed cartridges
+- [ ] Operator-local signing/import for inert custom cartridges that bypass the
+  marketplace while remaining visibly distinct from vetted releases
+- [ ] Server extension architecture spike comparing external-process RPC,
+  Wasm, statically compiled modules, and other isolation/upgrade models
+- [ ] Versioned server module base and capability-scoped typed hooks with
+  configuration/state namespaces, compatibility negotiation, audit,
+  disable/upgrade/rollback behavior, and conformance fixtures
+- [ ] Administrator-controlled custom server-module installation with explicit
+  operator trust, player-facing provenance, and no client executable bridge
+- [ ] Reviewed self-hosting terms, privacy/telemetry disclosures, custom-content
+  warnings, security contact expectations, and operator responsibility guide
+
+Marketplace publication and a server's local admission are separate decisions.
+The official client applies the same inert cartridge and trusted-renderer
+boundary to vetted and operator-custom content. Federation, shared global
+identity, and cross-server social/gameplay are later projects, not side effects
+of supporting more servers.
+
 ## Post-alpha provider path
 
-- Production provider registry, scoped grant/message security, guarded egress,
+- [x] Production provider registry, scoped grant/message security, guarded egress,
   quotas, replay state, audit, and revocation
-- First-party remote-provider authority migration pilot plus the required
+- [x] First-party remote-provider authority migration pilot plus the required
   Constitution §10 amendment
-- Reviewed external providers only after operations, recovery, suspension, and
-  support policy are proven
+- [ ] Public OmarchyGS Provider SDK, starter backend server, version
+  negotiation, conformance fixtures, reviewed co-located sidecar profile, and
+  deployment/operations guide
+- [ ] Reviewed external providers only after operations, recovery, suspension,
+  and support policy are proven

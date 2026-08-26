@@ -80,6 +80,10 @@ and in this register.
 | `PR-omarchy-gaming-system-restore-focus-after-qml-materialization-001` | When a routed QML focus target depends on asynchronous data or delegate creation, restore focus only after the enabled target materializes and prove that handoff through the production root. | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
 | `PR-omarchy-gaming-system-scope-style-policy-to-the-trusted-visual-boundary-001` | A centralized UI contract and its source policy must inventory every platform-owned visual surface, including trusted cartridge renderer nodes, rather than only the main application routes. | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
 | `PR-omarchy-gaming-system-require-plain-text-on-every-qml-text-object-001` | Parse every in-scope QML `Text` object and require explicit `Text.PlainText`; rejecting named rich formats alone is insufficient. | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
+| `PR-omarchy-gaming-system-assert-explicit-accessible-role-for-shell-actions-001` | Declare and production-root test the explicit accessible role for every persistent shell action, even when its shared control usually supplies one. | `aar/AAR-026-explicit-qml-application-exit-control.md` |
+| `PR-omarchy-gaming-system-wait-for-deferred-qml-focus-before-input-001` | When a QML mode change schedules a deferred focus handoff, wait for the documented target to own active focus before injecting test input. | `aar/AAR-026-explicit-qml-application-exit-control.md` |
+| `PR-omarchy-gaming-system-reconcile-foundation-docs-when-activated-001` | When a dormant foundation becomes an executable product path, reconcile every foundation architecture/current-state summary in the same delivery. | `aar/AAR-027-owner-operated-servers-cartridge-distribution-and-extension-roadmap.md` |
+| `PR-omarchy-gaming-system-separate-publisher-marketplace-server-attestations-001` | Model publisher integrity, marketplace review, and server admission as separate attestations with independent issuers, meanings, and absence states. | `aar/AAR-027-owner-operated-servers-cartridge-distribution-and-extension-roadmap.md` |
 
 ## Register
 
@@ -252,3 +256,12 @@ and in this register.
 | `PR-omarchy-gaming-system-scope-style-policy-to-the-trusted-visual-boundary-001` | rule | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
 | `PR-omarchy-gaming-system-require-plain-text-on-every-qml-text-object-001` | rule | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
 | `AD-omarchy-gaming-system-host-owned-semantic-qml-theme-001` | decision | `../../architecture/system-overview.md`; `../../architecture/game-cartridges.md` |
+| `BF-omarchy-gaming-system-qml-inherited-accessible-role-gap-001` | failure | `aar/AAR-026-explicit-qml-application-exit-control.md` |
+| `BF-omarchy-gaming-system-qml-mode-focus-test-race-001` | failure | `aar/AAR-026-explicit-qml-application-exit-control.md` |
+| `PR-omarchy-gaming-system-assert-explicit-accessible-role-for-shell-actions-001` | rule | `aar/AAR-026-explicit-qml-application-exit-control.md` |
+| `PR-omarchy-gaming-system-wait-for-deferred-qml-focus-before-input-001` | rule | `aar/AAR-026-explicit-qml-application-exit-control.md` |
+| `BF-omarchy-gaming-system-provider-activation-documentation-drift-001` | failure | `aar/AAR-027-owner-operated-servers-cartridge-distribution-and-extension-roadmap.md` |
+| `BF-omarchy-gaming-system-cartridge-distribution-trust-conflation-001` | failure | `aar/AAR-027-owner-operated-servers-cartridge-distribution-and-extension-roadmap.md` |
+| `PR-omarchy-gaming-system-reconcile-foundation-docs-when-activated-001` | rule | `aar/AAR-027-owner-operated-servers-cartridge-distribution-and-extension-roadmap.md` |
+| `PR-omarchy-gaming-system-separate-publisher-marketplace-server-attestations-001` | rule | `aar/AAR-027-owner-operated-servers-cartridge-distribution-and-extension-roadmap.md` |
+| `AD-omarchy-gaming-system-owner-operated-server-extension-boundary-001` | decision | `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md` |

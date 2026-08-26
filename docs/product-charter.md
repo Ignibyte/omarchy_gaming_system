@@ -11,6 +11,12 @@ connections, private inboxes, challenges, and persistent game history. A
 public message board may become a complementary community surface later, but
 it is not the current product identity or private-alpha focus.
 
+The long-term deployment unit is an owner-operated OmarchyGS community. An
+individual or group runs the standard server, curates its game library, and
+invites players into that server-local identity and social world. Independent
+servers may implement the same public protocol without implicitly sharing
+accounts, personas, policy, or history.
+
 ## First playable outcome
 
 A user can create an account and persona, connect with another persona, send a
@@ -55,6 +61,17 @@ result recorded.
   sole first-party remote authority pilot. Signed declarative cartridges and
   the versioned conformance SDK remain the portable frontend contract;
   external provider onboarding is still gated.
+- A Game Cartridge is a signed inert frontend release rendered through
+  platform-owned QML components. It contains no publisher QML, server rules,
+  backend executable, credential, or independent network client.
+- Each owner-operated server controls its admitted catalog. The planned vetted
+  marketplace supplies reviewed exact releases; an operator may instead
+  establish an explicitly marked local trust domain for custom cartridges and
+  future server extensions without weakening official-client validation.
+- Portable game backends use the brokered provider protocol and a future public
+  Provider SDK. General server modules and hooks are a separate, versioned,
+  capability-scoped extension family whose executable isolation must be
+  approved before implementation.
 
 ## Definition of private-alpha done
 

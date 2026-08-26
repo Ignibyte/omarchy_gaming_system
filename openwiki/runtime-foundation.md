@@ -79,10 +79,12 @@ sources:
     resource: repo://migrations/0012_game_challenges.sql
   - id: openwiki-source-926664a4167297129df76802
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
-generated: {by: "codex", at: "2026-08-26T03:43:00.059Z"}
+  - id: openwiki-source-a5928e7ee39885995efdc170
+    resource: repo://scripts/dev.sh
+generated: {by: "codex", at: "2026-08-26T13:49:04.179Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-26T03:43:00.059Z
+    at: 2026-08-26T13:49:04.179Z
 ---
 
 # Runtime foundation
@@ -265,10 +267,15 @@ The shell and all ten routed screens share `OgsTheme`, `OgsScreenHeader`, and
 `OgsStatusBanner` rather than defining independent palettes or status grammar.
 Every route exposes a semantic heading, a visible non-color-prefixed state, a
 keyboard navigation hint, and an explicit initial focus target. The shell adds
-an accessible application-state rail and persistent keyboard legend without
-moving navigation or data authority out of the existing controllers. Visual
-text explicitly selects `Text.PlainText`; layout and focus assertions cover
-both the 920×600 default and 640×420 minimum window.
+an accessible application-state rail, persistent keyboard legend, and one
+shell-owned EXIT button without moving navigation, data, or session authority
+out of the existing controllers. EXIT calls only the normal
+`ApplicationWindow.close()` lifecycle; it does not log out or revoke the
+durable device session. Under `scripts/dev.sh`, the QML process returning lets
+the launcher's existing cleanup trap stop its child Rust server while leaving
+PostgreSQL running. Visual text explicitly selects `Text.PlainText`; layout,
+focus, keyboard/pointer close, and session-preservation assertions cover both
+the 920×600 default and 640×420 minimum window.
 
 `ApiClient.qml` accepts only a bare HTTP or HTTPS origin. HTTP is limited to
 `localhost`, `127.0.0.1`, and `[::1]`; every remote host requires HTTPS. Each

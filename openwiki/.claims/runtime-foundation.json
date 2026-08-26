@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cb6dc74c8265333aef8c0d2219ddd50b67bde872a92aa57984b847a03cdec53f",
+  "pageVersion": "sha256:1367edbb139e9cef81f2d86c873c928c041bd3e8e223dd85a12c68c0d70b9e80",
   "claims": [
     {
       "id": "claim_d5e2f3a3ffed4330a12a21d8fb73de2d",
@@ -846,15 +846,15 @@
     },
     {
       "id": "claim_befa76a0ab8741d0a465ce0cec29b034",
-      "statement": "The QML shell and all ten routed screens use one repository-owned theme, semantic headings and status banners, visible non-color state labels, and explicit plain-text rendering while the existing controllers remain the authority for navigation and data.",
+      "statement": "The QML shell and all ten routed screens use one repository-owned theme, semantic headings and status banners, visible non-color state labels, explicit plain-text rendering, and a persistent accessible exit action while existing controllers remain the authority for navigation and data.",
       "evidence": [
         {
           "resource": "repo://client/qml/Main.qml#L24-L54",
           "version": "repo-lines-v1:sha256:ae99ffa723f8a22b217a850090810d01922b5858bf0c05c6f76c2240401049fe:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhMzQ0NWJhZGVkMjZkYmM2ZmRhY2M0YjYzZTA5ZGQ5ZDRjODExOGZmYWYyY2I4NmJiOWY2OGJhNzE3ZGQzZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZhYmE1MzdiNDQ3ZjhmYmMzNzMwOTQyMGNkZGMzMzg1N2I3YWJhMGU0OGMzZjZkYjRhZDA2ZDNhYzhjNDI1NTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcxNmRhZDU3NzI5ZTdiMmI0YmNiYTJhZDM2N2M5M2JmZjExZWE4OTA1Y2NlZWEyZDNkMjlhZjA0MjBmYmE1NWUifQ"
         },
         {
-          "resource": "repo://client/qml/Main.qml#L123-L199",
-          "version": "repo-lines-v1:sha256:d096bde9960b5ca5e36afa36619837c0b064e1a8b7fea8d687b2f78791767920:eyJzZWxlY3RlZExpbmVDb3VudCI6NzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxMWRiYTNkYjcxOGJmMDY4MmZhYWZlN2JlYjBjODE2MDUxZGUyMTk4YWM3Y2ZjYzdhOTVhM2IyMTRjNDBjNmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0NDU4N2Y2NTM2OTMyNTNhZjFmMDBiYmJiYTlkM2ZmMmYzNmVkMzJiZGY3MmIxY2FkNjE0ZDgzMmY4ODk1MDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3OTRkMDJhODEyMTk0NGQxNzZkMjY1ZTliYjljYzU5ZjZhYjg5MGJjYWRmOGFlZmRlYmRiYmI0ZjJlYTg0NDQifQ"
+          "resource": "repo://client/qml/Main.qml#L123-L211",
+          "version": "repo-lines-v1:sha256:92e2227e89b79bd48011ab0021e73c3338d8a2c871ae8153448a8665b8b10c8a:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxMWRiYTNkYjcxOGJmMDY4MmZhYWZlN2JlYjBjODE2MDUxZGUyMTk4YWM3Y2ZjYzdhOTVhM2IyMTRjNDBjNmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3ZjVkYWQxNjZlYTU1ZTBlMDkzMDgwNjFjY2FmY2Q3MzMxZGZkMjM0ODAzMzFlOWRlN2IyMDdjYWI2OWQ4MjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0NDU4N2Y2NTM2OTMyNTNhZjFmMDBiYmJiYTlkM2ZmMmYzNmVkMzJiZGY3MmIxY2FkNjE0ZDgzMmY4ODk1MDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZiZDYyOTdkOTJmYzI4MzNmZjc5YzNmNzM3MmRkZTc5ZjA2NWJmZDYzNTUwZWJiYTNjOGY0MGY3MTE1MjU2NTIifQ"
         },
         {
           "resource": "repo://client/qml/components/OgsTheme.qml#L3-L60",
@@ -872,21 +872,43 @@
     },
     {
       "id": "claim_dfbc66eb4730474e8b15e58404723ebd",
-      "statement": "The focused accessibility fixture proves every routed screen has a heading, status, keyboard hint, deterministic initial focus, bounded compact layout, and reversible Tab traversal, and proves Escape navigation preserves or clears authority according to the existing state transition.",
+      "statement": "The focused accessibility fixture proves every routed screen has a heading, status, keyboard hint, deterministic initial focus, bounded compact layout, reversible Tab traversal, and a persistent exit control, and proves Escape and close preserve or clear authority according to their distinct lifecycle contracts.",
       "evidence": [
         {
-          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L108-L159",
-          "version": "repo-lines-v1:sha256:fc10396786731ac93c2df49b6e4a9bd7c7be4514d5a20811d8bcfbb05180721f:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0OGYyYmQ1MGQ2MzEzMWZlMDVlMWQ3OWRiNGVkZjkzZjE5YjdhM2RkNzg0NzA5MThlMzFkMWNlMDc5ZThhYzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEyOTMxOWQ0NmRmODkwNjJiM2FhODBlNjcyMDk3ZGEwZWJjYTc0YjM3MDE1MGZmYjEwYTkyM2Y4MDVhMGM1ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5MzE1OGQwMjYwMTM4ZjcwMWZhM2U3OWNhY2Q3MjZlNjNiNzdkMTdiZjc4MjM1M2ZjZGUxOTQ4Y2ZjMjM4YjkifQ"
+          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L108-L170",
+          "version": "repo-lines-v1:sha256:aa92795abff4c032f4a88c68bc9e6597747a486cc131080294323a5e5a1b3d17:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0OGYyYmQ1MGQ2MzEzMWZlMDVlMWQ3OWRiNGVkZjkzZjE5YjdhM2RkNzg0NzA5MThlMzFkMWNlMDc5ZThhYzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlZWQ0ZjAzZjdkMTM4ZDk3YzU1Yjg0MDAwNDRhZjM4ZTgxZjM1NTljMDZmZDMwYTgzOGUyMzhkZGZlZjMyM2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEyOTMxOWQ0NmRmODkwNjJiM2FhODBlNjcyMDk3ZGEwZWJjYTc0YjM3MDE1MGZmYjEwYTkyM2Y4MDVhMGM1ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNmMTYwZjEyNjQzZjk4NDM4MTU0ZGZlYmU2Njg2OGVlMjhmYTQ4MGZlMWM2NDJjN2Y2YzQ3Mjc4NTEwMGY5MGIifQ"
         },
         {
-          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L204-L300",
-          "version": "repo-lines-v1:sha256:fe48f8d516b68bb4dfdaebd62f202de293bcac12d81d476f96efd36038e96fd4:eyJzZWxlY3RlZExpbmVDb3VudCI6OTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3ZmEyMGI1ZjcwMzBhYjE5YWY3NTNjZjg4ZWU0ZDRjNmRiNDFkMzkxMTFlMGY2YWQ3Y2Y4NTA5YzEyNmUwNmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ4ZDNmZGFjMjE1ODJjNTZjNzZjZjEwYjc0OTk3YzFjZTllMWIyMDk3ZTRhYzRmYzY0MDFiZjRjNzQ1OTc3NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L216-L332",
+          "version": "repo-lines-v1:sha256:eaf5ba90b7fcfb0295593c681596891cc5846084d85412537e4dc4e70cac452c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1Y2ExODYyYjg3M2U0ODdlY2RlMWQ3YzI3YThjZTk5NDcwNTQ5M2IwNWQ0ZTE2MDdiY2Q1MmIwYTVmZmI1ZmRmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0OGQzZmRhYzIxNTgyYzU2Yzc2Y2YxMGI3NDk5N2MxY2U5ZTFiMjA5N2U0YWM0ZmM2NDAxYmY0Yzc0NTk3NzY1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        }
+      ]
+    },
+    {
+      "id": "claim_6578987e343d4a2789a3fa91e02a098f",
+      "statement": "Closing the QML window does not log out or revoke the durable device session; under the development launcher, qml6 returning triggers the existing cleanup trap that stops only the launcher-owned Rust server.",
+      "evidence": [
+        {
+          "resource": "repo://client/qml/Main.qml#L173-L184",
+          "version": "repo-lines-v1:sha256:df2370e07e09ef8bdfc7323751133d22ed01844ce61c991180747c9c888c09f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjYzZjM2EwMzMwYzU1YTQ2ZmVhNGFmZDYzMTMzOGVjZTAzZGNhMmEzMDA1YTRmYTgxYmQyZWMyYTAyMThhMDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxN2I2MmQ0Y2FiNTE5YjNhNjEyNWM3NTk1YjU2ZWZhOWYxYmJmOWE4YWU5Yzk3N2Y4ZmZmOTBiNDM5ZDJhZDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMzYzQ5OWY3NmQ1NGM1YzBlYzM3YzcwYWNhMzk5ZWY4YjY2NGVkZTE2NDlkZjBkMmE0NDllODNmN2FjYWI2MmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRhOWY4NmQyOGU3ODRmOWZkMzFmYjcyZDE1ZjYwY2JjZWFhZmRkNjY5Y2JkNWI2ZGE3ODg4YTAyMzMyMWViYjkifQ"
+        },
+        {
+          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L216-L233",
+          "version": "repo-lines-v1:sha256:c1c36591c0775c527c8ec3f3d53d89a1a247bb2088cbdd18051dc150d9c717f4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjYTE4NjJiODczZTQ4N2VjZGUxZDdjMjdhOGNlOTk0NzA1NDkzYjA1ZDRlMTYwN2JjZDUyYjBhNWZmYjVmZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ4ZDNmZGFjMjE1ODJjNTZjNzZjZjEwYjc0OTk3YzFjZTllMWIyMDk3ZTRhYzRmYzY0MDFiZjRjNzQ1OTc3NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1ZTU0ZTI3YzgzZTAzMGM0MzE3ZWFhMzc0Mzk2YzYwNTc2NzkxMmVmZmIyMmE4ZWFkNTBmODU4NDhmZTFiNzAifQ"
+        },
+        {
+          "resource": "repo://scripts/dev.sh#L25-L33",
+          "version": "repo-lines-v1:sha256:121791421d17146effd60996c757bc70cb84291e2c258aa01002f9365935c366:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjM0MDYwOWNkNDEzMmEyZjVhNTA3M2I2ZDlkZWUzZTA3MWMwMjA1MDEzOWZmYTNjNjMxMGI5NGY1ZjU4YTc0OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDA4NjhhNmU0OWVhZjg1YWMzMjQ5MzZiMTMxMzRhOWVmZjQyMTUwYzMxYmVjNGU3M2QwYmQyMDRiYjIzNzNhNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjgzMjI2Njk5MGIxZWQxY2U0NWFjOTk4NDEzZWRiYTdiNjY0NDQ0ODllNzMwZjQ4NWJjNTdiZTNiNDlmODI1OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmY5MWU3N2U4MmI0YzEwOGM0ODEyYzY4OGEyMjBhYWQyMDA3ZjllMDVmMDVlNjdkMDJhNTM3OWE4NDk3OWE4OCJ9"
+        },
+        {
+          "resource": "repo://scripts/dev.sh#L1170-L1172",
+          "version": "repo-lines-v1:sha256:19565dcf0e5d0dceb51497e2a39837d2aef526240a199a9765ae8820ed18661a:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTE3YmY3YzVjZGVjYzNmYjI0NTUxMDMyODA1MjRjM2FiOWY0ZDE5ODcwZDk5ZmM0MGVmZWJhNGZjZWYwOWY2OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNWZjMWFmZDc0NWQzMWMyNGQ2NDJhNTUxOTg3ZmFkY2ExZmIzOWI3ZDM0MmJmOTY1ZGVmY2I5NTZiYjdkMmUwYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDEzYmE5ZmIzODRiODg0MWM2ZTU5MDNkYTFhOGYyZjc4ZjA5ZWFmNzM0M2MwNTc2YWYzMTU3ZjUxODYwOWFmYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T03:43:00.059Z"
+    "at": "2026-08-26T13:49:04.179Z"
   }
 }

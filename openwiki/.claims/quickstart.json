@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7668dd67e09e8edd84fc7ac4f56d94c6c547db40ac14452183189bba21000a5f",
+  "pageVersion": "sha256:c426478abf05d11f709bf90a80a454fc5ae84981239d158c824064959a811cbf",
   "claims": [
     {
       "id": "claim_cfd815337fbb4c508371651403a7fecb",
@@ -239,12 +239,12 @@
       "statement": "Production includes signed cartridge packaging, verification, SDK/release policy, secure import, trusted Core/Rich-2D rendering, and the Door Legends provider pilot; the main client now plays compiled Signal Siege but still does not acquire or launch signed cartridge packages.",
       "evidence": [
         {
-          "resource": "repo://client/qml/Main.qml#L30-L97",
+          "resource": "repo://client/qml/Main.qml#L42-L109",
           "version": "repo-lines-v1:sha256:e4c69367d1f6642baa5370553cd157fa263bba95cb771999f779e508b6472107:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwYzk2ZGNlM2IyMDk4YjZjNDVkNmVlYmMyNTk5OTc1ZTVkMmQyYWNkNDBmNDA1ODVjNjYwMjAwMTk1NmU4N2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2MzZhODk2MzUzMzNkNTZjZDA3NzI1YzFhYzE4ZjVkZDBkMWMzMmMyMzZlZGU5ODBiZTgyYzE0MTdmNGE2MjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkZDY2MmI4ZDU5NmFiOWYwZjkzNTQ2ZmY1MDAwOWVmNDhhYzBlZTUyZmM3ODA2MGQ1NjgyNmUzZmMzMDU1ZDUifQ"
         },
         {
-          "resource": "repo://docs/architecture/game-cartridges.md",
-          "version": "repo-file-v1:sha256:2ff6a840ff1c0c2f00ae9f13411fad26e94ee59832060949d033976d28eecaa6"
+          "resource": "repo://docs/architecture/game-cartridges.md#L1-L20",
+          "version": "repo-lines-v1:sha256:3d4763a2bdc63af1d326e2591e9832dcfc923ba6ed205ad2a8dad3964313ffc3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllY2I4Mzc5ZGZmMzExNDkzZGZkNjExODJiMzE3OWJjN2RiMjQ5MDk0NjYxMzI0Zjk1OTNkYTkyYTRlZDY5MDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4Mzk4MjA3MGNhMzExOWJmYWI2NGFjOWFjYjc3MzdlZTQ5Y2I1MDA0ZGU0YWNhMjJlMGQ2MGU4ZWUwNWY1NzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZmYjExMTMzODVkMTU4MjE3NWExMWUzOTliMzM4MmZmOWJlNDRlZDUzODc5MWU1MzhmMDJhNjFiMDViNzQxMGMifQ"
         },
         {
           "resource": "repo://crates/server/src/provider_games.rs",
@@ -372,29 +372,57 @@
     },
     {
       "id": "claim_6c4a184e484c4301b1b4feb65056c630",
-      "statement": "The flagship QML shell now applies one semantic visual system across all ten routes and the trusted cartridge renderer, with explicit plain-text presentation and focused tests for headings, status, contrast, keyboard traversal, Escape authority, and 640-by-420 containment.",
+      "statement": "The flagship QML shell applies one semantic visual system across all ten routes and the trusted cartridge renderer, with explicit plain-text presentation and focused tests for headings, state, contrast, keyboard traversal, Escape authority, a persistent close control, and 640-by-420 containment.",
       "evidence": [
         {
-          "resource": "repo://client/qml/Main.qml#L123-L199",
-          "version": "repo-lines-v1:sha256:d096bde9960b5ca5e36afa36619837c0b064e1a8b7fea8d687b2f78791767920:eyJzZWxlY3RlZExpbmVDb3VudCI6NzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxMWRiYTNkYjcxOGJmMDY4MmZhYWZlN2JlYjBjODE2MDUxZGUyMTk4YWM3Y2ZjYzdhOTVhM2IyMTRjNDBjNmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0NDU4N2Y2NTM2OTMyNTNhZjFmMDBiYmJiYTlkM2ZmMmYzNmVkMzJiZGY3MmIxY2FkNjE0ZDgzMmY4ODk1MDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3OTRkMDJhODEyMTk0NGQxNzZkMjY1ZTliYjljYzU5ZjZhYjg5MGJjYWRmOGFlZmRlYmRiYmI0ZjJlYTg0NDQifQ"
+          "resource": "repo://client/qml/Main.qml#L123-L220",
+          "version": "repo-lines-v1:sha256:1a714fcb7435cf4000f43ab329019cf85859be80ed0fa00938e664a3b8e28a52:eyJzZWxlY3RlZExpbmVDb3VudCI6OTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxMWRiYTNkYjcxOGJmMDY4MmZhYWZlN2JlYjBjODE2MDUxZGUyMTk4YWM3Y2ZjYzdhOTVhM2IyMTRjNDBjNmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0NDU4N2Y2NTM2OTMyNTNhZjFmMDBiYmJiYTlkM2ZmMmYzNmVkMzJiZGY3MmIxY2FkNjE0ZDgzMmY4ODk1MDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         },
         {
           "resource": "repo://client/qml/components/OgsTheme.qml#L3-L60",
           "version": "repo-lines-v1:sha256:0e9db745b297fbd74f5edb692a6da86e41369d5466f8746aedab84dd636853bb:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3OTg2YWI0MjM1OTRkNzFmNTBlYjBiOWQyM2YyZDRkY2Q3NWU3MjVlNmRiNWI0NmY3NjZlMGRiMTIxNTM5OGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZjNTlkNTA2ODgyZTJiY2Y2ZDYxMjA2YWZkYzFjYjAxOWFlMWYwMWM2NTU0YzA5NDhhNmYxYWJiOWI5MjhjZmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         },
         {
-          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L108-L300",
-          "version": "repo-lines-v1:sha256:a820093aad5d0a0f9f3029308fd1508610bd07b56cf9b6fcb2fd36ebba9eaa2a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlNDhmMmJkNTBkNjMxMzFmZTA1ZTFkNzlkYjRlZGY5M2YxOWI3YTNkZDc4NDcwOTE4ZTMxZDFjZTA3OWU4YWMyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMjkzMTlkNDZkZjg5MDYyYjNhYTgwZTY3MjA5N2RhMGViY2E3NGIzNzAxNTBmZmIxMGE5MjNmODA1YTBjNWU0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIn0"
+          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L108-L310",
+          "version": "repo-lines-v1:sha256:80d6fd994377855da74fc45ec7272bae7ad3e7b38567ee1e4a67b7b68da74924:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlNDhmMmJkNTBkNjMxMzFmZTA1ZTFkNzlkYjRlZGY5M2YxOWI3YTNkZDc4NDcwOTE4ZTMxZDFjZTA3OWU4YWMyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI2OGU4ZmVkMWE3Njc2YTg5MWNhZjFlMWY1M2EzZWUzNmM5ZjdhZDU0ZjNmNTE3ZDMxNGU4ODIwNzM4YThkMzQ4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMjkzMTlkNDZkZjg5MDYyYjNhYTgwZTY3MjA5N2RhMGViY2E3NGIzNzAxNTBmZmIxMGE5MjNmODA1YTBjNWU0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyMzJkMWRkYTliMzVkMTlkNzQxMTA4ZTk1YjQ4NjY0MWY3MGYxZTQzOThhNWNhNDkwN2U0NWRkMWExN2M2YWRhIn0"
         },
         {
           "resource": "repo://scripts/check-qml-style.py#L11-L38",
           "version": "repo-lines-v1:sha256:d19c849b93320daaeabb4d400356b3c3215dc22abf0086ee1ad8053fa2d846d6:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjMGNhZjQ0MWExYWFkMjI0MGU3YWFjY2JiMmE3MzkxNWZjNWNlNjJhOTBlYjg1NzgzNmQ5MDVjNjg3NjBjN2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE5MWJmM2Q5NmYxYjExOTY4OGRlZWE5YTAwNGIyYjNmZWJiMTgwYmI4ZmIyMzQ0NjI1NjE0YWRjODU5NTYzYWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0MTljZDRlZTUxNzhiZDUzZGY2NjQwY2QzMTFhMTlmYjNiMjgxMzExYmUwNWUyMGE0MGViMDlkNmQwMDRmODgifQ"
         }
       ]
+    },
+    {
+      "id": "claim_a327f8e0844545e58a675ffa71b286ab",
+      "statement": "The accepted long-term deployment unit is an independently owner-operated OmarchyGS community whose standard server owns server-local identity, policy, catalog, and history without implying federation.",
+      "evidence": [
+        {
+          "resource": "repo://docs/product-charter.md#L14-L18",
+          "version": "repo-lines-v1:sha256:04322c5becffd78c48796e8b1567a4bfe29171035a069085d1bf5fb0963ec428:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWRiMmFiMTA1OTVmNGI2ODViNmJlNDhhOTJlZjk5NjBmMTEzYzVlNTRhYTFhMjUwNWUwNzFiYzRjYWNmMTIwOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGQyODU0NzAzZjY1NDc3YTg3OWVkODdhNTQ0Y2M2YjJhNGFmYjFkZmVjYmU0NWY1ZjBmNGFmOTRkOWI3YzdjZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzg5NWMxNWVkYzJkNDExYmRiNWQ4MTdjOTE0MzM3N2U0NmM5ZTUyZjhjMGZmNzAxZTZmOGE1Mzk5MDFjOWExMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmZlMjhjMTdjZjExY2I5MWM3ZTc2ZTBmMzcyOTljMzcxM2Y4NmJjNTQzNWQ4YmVkMGZkMjA0YWM2MTQ3NGM2NSJ9"
+        },
+        {
+          "resource": "repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md#L29-L53",
+          "version": "repo-lines-v1:sha256:54ca8bcccb70b64f1ac3940d9692cad37ae528ccaae55baff7708bf80d857665:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkM2RiYzRlN2U3Y2JlNWRkYzg5MWIwODA3MTJmNjM1MWM5NGI3MjhlYzhiZDg1NTZmNDYxMmIwNzBkMjdiNDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI0ODdlY2YzZWZkYjY1NTc0NmViNmVkZWU2NDJkYzZmZjMwZmM3MWU2YzUyMTg4YmNhN2M2NGZmMGMyNzQ1NzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI0MTU2OGIzYTY1YTcyYmI1YzM4OGQ3MWVhZWNhMmQ2NTk5ZmQ4Y2I4ZjcyNDQyM2FiMDNjNDgzZmUyMWVmZTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhiZDZmNzY0YTk5MWFmNGFkNzYzNDllNGE0NjUzNzkxN2IxMmZlZGQxNTVkMzYzNjU2ZmJlYzRmNjgzYjBkZmMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_106fb9ebf1e6452ba4f55125a9a33338",
+      "statement": "Marketplace acquisition, operator-custom cartridge trust, a public Provider SDK, and a general server module runtime are planned directions and are not implemented or authorized by ADR-0003.",
+      "evidence": [
+        {
+          "resource": "repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md#L132-L140",
+          "version": "repo-lines-v1:sha256:fdf1562dafb454332bf3110898ce4c6f1c55fcded1571eb14fa74b65e58925cc:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjQ2ZTI4YTk5NmJmZmE4MjMwYzVmN2RkYzkyNjFkY2FmNmMwNGQyNjExZjIwOWE3MmUyNzI3ZWVjZWFjMGM3NyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiY2I5ODJjYjgyYmFmZWFmYTY1N2RjMDJjM2M5ZWU5ZmFkOWFiYTE3OTc4ZTBjMWEzNDVkYzNkZWFjMjgxN2VlNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWI0NDgzMTNmZWQwNGVhYjVhMjZiNDVlZWJiM2NlM2QzYzdkOTljNDI2ZjdhNTY2ODk1Njg3ZmE3MDAxNGY3NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2Q1M2E2OGI4MDJjNjNhYWE5MjdkOWVmMDc3ODA3YjY0MjQwOWI1YWExZTQzMzE1N2NiODBhOWRkM2ZiYTJjNCJ9"
+        },
+        {
+          "resource": "repo://docs/planning/ROADMAP.md#L52-L88",
+          "version": "repo-lines-v1:sha256:3582705f9141ac261b2b699541eb003fc8c6cafe258857fe59bd2b6fcc868d92:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmODA1ZWMwYTgzMzliNzc5ZjQwYTYzOThlNGNiNmMwMWMyZDA2YWI0NWExZmY0ZDc0ZjJkZGIxZTJhODk1ODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4YmEwNGViMmRlMzE0ODVhYWIxYjNjYTA0NGNiODFlMzI3ODlmN2Q4NGVjOWYzZjg3ZTM4MTc1OWNkOTk3YTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2MGFiN2UwNWI0MzlkYmFmYmJkNGYwYTg3NWJhY2IyZWI3MzY4ODg4YTU5ZmE1MmU2MWM0ZTk3YTI4MTU4OTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T03:43:00.059Z"
+    "at": "2026-08-26T15:18:17.322Z"
   }
 }

@@ -13,6 +13,8 @@ sources:
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
   - id: openwiki-source-152956378e80408d69d9dfb7
     resource: repo://client/qml/tests/fixture/tst_games.qml
+  - id: openwiki-source-93421eb71ebe4d41b6a9af26
+    resource: repo://client/qml/tests/fixture/tst_onboarding.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
@@ -73,10 +75,10 @@ sources:
     resource: repo://scripts/test-provider-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
-generated: {by: "codex", at: "2026-08-26T03:43:00.059Z"}
+generated: {by: "codex", at: "2026-08-26T13:49:04.179Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-26T03:43:00.059Z
+    at: 2026-08-26T13:49:04.179Z
 ---
 
 # Development and validation
@@ -155,16 +157,17 @@ slow, and oversized fixture responders. Before Qt starts, it runs
 `scripts/check-qml-style.py`: the 33-file visual policy centralizes six-digit
 colors in `OgsTheme`, requires every visual `Text` block to select
 `Text.PlainText`, rejects automatic/rich text modes, and verifies the shared
-theme contract. The 38-case Qt corpus covers contrast, semantic headings and
-status, deterministic initial focus and reversible traversal, Escape authority,
-keyboard behavior, field bounds, endpoint admission, exact response shapes,
-conflicts, timeouts, response limits, request supersession, MFA terminal and
-local expiry, social inventories and actions, private message history,
-pagination, send/read, plain-text rendering, game discovery and challenge
-lifecycle, authoritative solo/versus commands, exact retry identity, revision
-refetch, hostile game-envelope rejection, invalid-session cleanup, and
-fixture-observed request contracts. Social and game tests run the production
-root at the
+theme contract. The 40-case Qt corpus covers contrast, semantic headings and
+status, deterministic initial focus and reversible traversal, settled deferred
+focus before input, Escape authority, persistent keyboard and pointer exit,
+session preservation on window close, keyboard behavior, field bounds,
+endpoint admission, exact response shapes, conflicts, timeouts, response
+limits, request supersession, MFA terminal and local expiry, social inventories
+and actions, private message history, pagination, send/read, plain-text
+rendering, game discovery and challenge lifecycle, authoritative solo/versus
+commands, exact retry identity, revision refetch, hostile game-envelope
+rejection, invalid-session cleanup, and fixture-observed request contracts.
+Social and game tests run the production root at the
 640×420 minimum and reject extra private fields, oversized responses, and
 body-bearing requests to bodyless mutation endpoints.
 Temporary configuration containing credentials is mode-0600, not passed on the

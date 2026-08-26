@@ -4,6 +4,13 @@ Omarchy Gaming System is a modular Rust monolith backed by PostgreSQL. The QML
 connector is the flagship client but uses the same versioned public API as any
 future terminal, web, mobile, or embedded connector.
 
+The long-term deployment unit is an independently owner-operated community.
+An individual or group runs the standard OmarchyGS server, curates its game
+catalog, and invites players into server-local accounts, personas, social
+state, and history. Multiple processes behind one origin may implement one
+logical deployment; different server origins are separate trust and identity
+domains unless a future federation design says otherwise.
+
 ```text
 QML connector
   ├─ HTTPS/JSON commands and queries
@@ -31,6 +38,15 @@ PostgreSQL
   notifications atomically.
 - WebSockets signal that data changed. A cursor API repairs missed events after
   reconnect and remains the synchronization source of truth.
+- Portable frontend, game-backend, and general server-extension contracts are
+  distinct. Cartridges are inert data rendered by trusted QML; portable game
+  rules use the brokered provider protocol; future server modules use a
+  separately versioned capability/hook system and cannot serve as a shortcut
+  around domain authorization.
+- A server operator may eventually admit marketplace-vetted or explicitly
+  operator-custom content. Provenance and support expectations differ, but the
+  official client never accepts raw server-supplied QML, JavaScript, native
+  code, credentials, or arbitrary network destinations from either class.
 
 ## Current slices
 
@@ -80,7 +96,10 @@ the first identity HTTP surfaces:
   without color alone; visible focus, accessible names, deterministic initial
   focus, reversible traversal, Enter/Escape behavior, explicit plain text, and
   scrollable minimum-size layouts provide keyboard-only play at 640×420 and
-  above without changing controller authority.
+  above without changing controller authority. One persistent shell-owned
+  EXIT control requests the normal application-window close lifecycle on every
+  route; it does not log out, revoke the durable device session, or dispatch
+  API, social, game, or cartridge actions.
 - a dedicated QML social controller uses that same credential-owning API
   object only through a session-gated request function and completion signal;
   it never receives the bearer. Every connection, block, conversation,
@@ -145,7 +164,10 @@ the first identity HTTP surfaces:
   receives only the pre-command game state, and immutable Signal Siege v2 for
   exactly two humans with alternating visible turns. Test routers can inject
   additional deterministic fixture definitions.
-- public `GET /v1/games` inventories only compiled manifest metadata. Durable
+- public `GET /v1/games` inventories stable compiled manifest metadata and,
+  only when the optional provider runtime is fully configured and its exact
+  first-party release is active, the operator-pinned Door Legends manifest.
+  Durable
   game sessions pin one game key/version, revision-zero object snapshot,
   active/completed status, completion timestamp, and ordered human persona
   seats. An owner-scoped public start route creates one-human sessions through
@@ -253,3 +275,13 @@ after the broker, operational controls, ADR, and Constitution amendment defined
 by that architecture are approved. Raw third-party QML, JavaScript, native
 plugins, device tokens, account identity, and direct database access remain
 outside the boundary.
+
+[ADR-0003](adr-0003-owner-operated-server-and-extension-boundary.md) extends
+that direction to owner-operated communities. A vetted marketplace will
+publish exact signed releases, each server operator will choose what to import
+and activate, and players will acquire/cache the selected server's inert
+cartridges for trusted local rendering. A future Provider SDK packages the
+brokered backend contract; a separate future module base supplies typed,
+capability-scoped server hooks only after an isolation spike. Operator-custom
+server content must be visibly distinct from vetted content and remains
+subject to every official-client cartridge bound.

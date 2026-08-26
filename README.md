@@ -40,6 +40,15 @@ so later starts are quick. Stop it explicitly with:
 docker compose down
 ```
 
+The persistent **EXIT** button closes the client through the normal window
+lifecycle without signing out or revoking its durable device session. From a
+separate terminal at the repository root, the development client can also be
+closed explicitly with:
+
+```bash
+pkill -TERM -f "^qml6 $(pwd)/client/qml/Main.qml$"
+```
+
 The API can also be checked directly:
 
 ```bash

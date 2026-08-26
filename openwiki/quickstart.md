@@ -43,8 +43,12 @@ sources:
     resource: repo://crates/server/src/sync.rs
   - id: openwiki-source-408aa68caebee417a5a319b8
     resource: repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md
+  - id: openwiki-source-bfc109ee5d2c2f6c0f5c5f77
+    resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
     resource: repo://docs/architecture/game-cartridges.md
+  - id: openwiki-source-c3d1d450d3a3561b368e5307
+    resource: repo://docs/planning/ROADMAP.md
   - id: openwiki-source-85dba8f87dd5947de337aca5
     resource: repo://docs/product-charter.md
   - id: openwiki-source-cb6494f7cbf0d5d23ffe082a
@@ -59,7 +63,10 @@ sources:
     resource: repo://scripts/test-game-cartridge.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-26T03:43:00.059Z"}
+generated: {by: "codex", at: "2026-08-26T15:15:44.851Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-26T15:18:17.322Z
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -107,11 +114,21 @@ share one host-owned theme and explicit plain-text policy. Semantic headings,
 non-color status labels, accessible control names, deterministic initial focus,
 reversible Tab traversal, Escape authority, contrast, and 640×420 containment
 are exercised by the focused QML fixture before a delivery can pass.
+One persistent shell-owned EXIT button requests a normal window close from
+every route. Keyboard and pointer tests prove that it remains visible,
+accessible, and bounded and that closing does not log out, revoke the durable
+device session, or clear the selected persona through controller logic.
 
 The product is game-first: connections, private inboxes, challenges, and
 persistent game history define the intended experience. A public message board
 may complement that system later, but it is not the current identity or
 private-alpha focus.
+
+The accepted long-term deployment unit is an independently owner-operated
+OmarchyGS community. An individual or group runs the standard server, curates
+its game library, and invites players into server-local accounts, personas,
+policy, and history. Supporting multiple compatible servers therefore means
+isolated community profiles, not implicit federation or shared identity.
 
 The first playable now spans account, authentication, persona, connection,
 private inbox, durable synchronization, two-person challenge-to-session
@@ -138,6 +155,15 @@ one exact provider release as its only durable rules/state/revision authority.
 External providers, server-side cartridge ingestion, and main-client launch of
 signed cartridge packages remain later work.
 
+ADR-0003 adds the future owner-operated distribution and extension direction:
+a marketplace may vet exact cartridge releases, each server administrator
+separately decides which releases to admit, and the official client eventually
+acquires and caches that server's exact signed cartridges locally. An explicit
+operator-custom path may bypass marketplace review but cannot bypass the inert
+package or trusted-QML boundary. A public Provider SDK and a separate
+capability-scoped server module/hook system remain roadmap work; no general
+plugin runtime is authorized today.
+
 ## Task routing
 
 | Engineering intent | Read first | Primary source entrypoints | Narrow validation |
@@ -147,6 +173,7 @@ signed cartridge packages remain later work.
 | Change QML endpoint selection, appearance/accessibility, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/components/`, `client/qml/screens/`, `client/qml/game/` | `scripts/check-qml-style.py`; `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
 | Change cartridge packaging, trusted rendering, SDK portability, or provider integration | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `client/qml/cartridge`; migrations `0014`–`0015`; ADR-0002; Tickets 015–019 | `scripts/test-game-cartridge.sh`; `scripts/test-game-cartridge-renderer.sh`; `scripts/test-game-cartridge-sdk.sh`; `scripts/test-provider-conformance.sh`; `scripts/test-provider-authority-pilot.sh`; threat/authority review and constitutional authority check |
+| Change owner-operated server, marketplace, custom-content, Provider SDK, or module/hook direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | Current-versus-future audit; provenance/authority review; official-client containment; extension isolation and lifecycle evidence before executable implementation |
 | Run or diagnose the local stack and quality gate | [Development and validation](development-and-validation.md) | `scripts/dev.sh`; `bin/gate.sh`; `client/qml/Main.qml` | `bin/gate.sh --fast` or `--diff` |
 | Start or resume a non-trivial change | [Codex workflow](codex-workflow.md) | `AGENTS.md`; `$omarchy-workflow`; active pipeline | Phase receipts and canonical gate |
 

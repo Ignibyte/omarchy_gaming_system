@@ -148,27 +148,47 @@ ApplicationWindow {
             }
         }
 
-        Text {
-            id: brand
+        Item {
+            id: brandBar
             anchors.top: statusRail.bottom
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.margins: 16
-            height: 34
-            text: "OMARCHY // GAMES"
-            textFormat: Text.PlainText
-            color: theme.textMuted
-            font.family: theme.fontFamily
-            font.pixelSize: theme.sectionSize
-            font.letterSpacing: 3
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
+            height: theme.controlHeight + theme.spaceMd
+
+            Text {
+                id: brand
+                anchors.fill: parent
+                anchors.leftMargin: theme.spaceLg
+                anchors.rightMargin: exitButton.width + theme.space2Xl
+                text: "OMARCHY // GAMES"
+                textFormat: Text.PlainText
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.sectionSize
+                font.letterSpacing: 3
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+
+            Components.OgsButton {
+                id: exitButton
+                objectName: "shellExitButton"
+                anchors.right: parent.right
+                anchors.rightMargin: theme.spaceLg
+                anchors.verticalCenter: parent.verticalCenter
+                width: 88
+                text: "EXIT"
+                Accessible.role: Accessible.Button
+                accessibleName: "Close Omarchy Gaming System"
+                accessibleDescription: "Close this client without signing out or revoking the device session"
+                onClicked: root.close()
+            }
         }
 
         Loader {
             id: screenLoader
             objectName: "screenLoader"
-            anchors.top: brand.bottom
+            anchors.top: brandBar.bottom
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: footer.top

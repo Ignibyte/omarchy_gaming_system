@@ -63,10 +63,14 @@ sources:
     resource: repo://docs/api.md
   - id: openwiki-source-408aa68caebee417a5a319b8
     resource: repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md
+  - id: openwiki-source-bfc109ee5d2c2f6c0f5c5f77
+    resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
     resource: repo://docs/architecture/game-cartridges.md
   - id: openwiki-source-872141f77f71851168245852
     resource: repo://docs/architecture/system-overview.md
+  - id: openwiki-source-36d583174a7a0018316f71c7
+    resource: repo://docs/operators/owner-operated-servers.md
   - id: openwiki-source-c3d1d450d3a3561b368e5307
     resource: repo://docs/planning/ROADMAP.md
   - id: openwiki-source-85dba8f87dd5947de337aca5
@@ -75,7 +79,10 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-8df9ad1a3495f8360740ff03
     resource: repo://scripts/test-game-cartridge-sdk.sh
-generated: {by: "codex", at: "2026-08-26T02:02:30.593Z"}
+generated: {by: "codex", at: "2026-08-26T15:15:44.851Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-26T15:18:17.322Z
 ---
 
 # Product and architecture boundaries
@@ -262,6 +269,33 @@ This authorization is limited to the operator-pinned Door Legends v1
 first-party pilot. External or self-service provider registration, direct
 client-provider networking, raw provider UI, and loading user-supplied native
 code remain outside the first-alpha boundary and require separate decisions.
+
+### Owner-operated deployment and future extensions
+
+ADR-0003 accepts each independently owner-operated OmarchyGS origin as its own
+community trust domain. Its standard server owns the accounts, personas,
+social state, catalog and launch policy, platform envelopes, projections,
+audit, and recovery created there. Compatible servers do not implicitly share
+identity, moderation, or history; federation remains a separate future design.
+
+The planned marketplace is distribution and review infrastructure rather than
+a global gameplay or catalog authority. Publisher integrity, optional
+marketplace review, and the selected server's admission are separate
+attestations. The administrator imports an exact release, players see only the
+server-scoped catalog, and a future client path acquires, verifies, and caches
+the exact admitted package locally. An operator-custom cartridge has no
+marketplace-review claim, but it remains signed inert data subject to every
+official-client package, schema, media, capability, digest, and trusted-render
+check.
+
+Executable extension families stay separate. Portable game rules use the
+authenticated provider boundary and a future public Provider SDK; general
+server behavior uses a separately versioned module base. Future module hooks
+must be capability-scoped and typed, route protected mutations through core
+authorization, and define isolation, resource, failure, audit, compatibility,
+disable, upgrade, rollback, and recovery behavior. No general module runtime,
+dynamic Rust plugin ABI, marketplace service, operator-custom installer, or
+external-provider onboarding is implemented or authorized by this direction.
 
 ### Portable game direction
 

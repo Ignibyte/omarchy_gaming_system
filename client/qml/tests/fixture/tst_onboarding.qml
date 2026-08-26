@@ -78,6 +78,8 @@ TestCase {
 
         let username = object("usernameField")
         let password = object("passwordField")
+        tryVerify(function() { return username.activeFocus }, 1000,
+                  "registration mode must finish its deferred focus handoff before typing")
         verify(username.Accessible.name.length > 0)
         verify(password.Accessible.name.length > 0)
         compare(password.echoMode, TextInput.Password)

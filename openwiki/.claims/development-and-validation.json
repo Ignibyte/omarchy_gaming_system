@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0bf9b7f6745aff70c6e5b11663a10acf7a821375cc6fbe4e57790adf11fdc3d0",
+  "pageVersion": "sha256:ec2aea5656db5bef1fdb1ff6825fe0a0dac9cd61a8fd617d258acefc2845c7d7",
   "claims": [
     {
       "id": "claim_e75f82f846ca444594c51ed0f48b894b",
@@ -386,19 +386,23 @@
     },
     {
       "id": "claim_46dd32af132d418d934303b2ca56f4df",
-      "statement": "The keyboard-first QML fixture corpus runs thirty-eight Qt cases, including three end-to-end accessibility cases and eight game-flow cases for contrast, semantics, deterministic focus, reversible traversal, 640-pixel containment, Escape authority, hostile-envelope rejection, exact retry identity, revision refetch, and active-seat enforcement.",
+      "statement": "The keyboard-first QML fixture corpus runs forty Qt cases, including five production-root accessibility cases and eight game-flow cases covering contrast, semantics, deterministic and deferred focus, reversible traversal, persistent keyboard and pointer exit, 640-pixel containment, Escape authority, hostile envelopes, exact retry identity, revision refetch, and active-seat enforcement.",
       "evidence": [
         {
           "resource": "repo://scripts/test-qml-onboarding.sh#L82-L125",
           "version": "repo-lines-v1:sha256:d3a8fe059a8d8e03535177264335e8e63e254530908852065a0cecc5301293a6:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YzUxYmE5OTE1OGVjMzYzZDQwYjc3OGVmMjcxMTI2ZGEzZmQ4MzE1ZWU1MjM4MjI0MjA0NjliNTI5YTBiOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiNjRlOTgzZDk5Y2UxZGI2YmYzOWVkMjMwMjNiNjQxOTcyNDRiMTRjNTA4ODU1NDI3MjA3NTE0MTc3ZDgxMzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNlYmFhOGZiODg4M2I2YjBjOGM0ZThmZWQxNThiNmY1NzRlOTBlNWRhODk1ZDZhYmNlYWQ2ZmI0OTllMTVhMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L108-L300",
-          "version": "repo-lines-v1:sha256:a820093aad5d0a0f9f3029308fd1508610bd07b56cf9b6fcb2fd36ebba9eaa2a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlNDhmMmJkNTBkNjMxMzFmZTA1ZTFkNzlkYjRlZGY5M2YxOWI3YTNkZDc4NDcwOTE4ZTMxZDFjZTA3OWU4YWMyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMjkzMTlkNDZkZjg5MDYyYjNhYTgwZTY3MjA5N2RhMGViY2E3NGIzNzAxNTBmZmIxMGE5MjNmODA1YTBjNWU0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIn0"
+          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L108-L332",
+          "version": "repo-lines-v1:sha256:7a62246ef0d662454e8ffda464811c0579ede9209696cac41d8d24a2c26481af:eyJzZWxlY3RlZExpbmVDb3VudCI6MjI1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlNDhmMmJkNTBkNjMxMzFmZTA1ZTFkNzlkYjRlZGY5M2YxOWI3YTNkZDc4NDcwOTE4ZTMxZDFjZTA3OWU4YWMyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMjkzMTlkNDZkZjg5MDYyYjNhYTgwZTY3MjA5N2RhMGViY2E3NGIzNzAxNTBmZmIxMGE5MjNmODA1YTBjNWU0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         },
         {
-          "resource": "repo://client/qml/tests/fixture/tst_games.qml",
-          "version": "repo-file-v1:sha256:5624d07cc99f7ef87ec7ba5ecdff19537a8915a2a849c17a0fb3ebce55d1e931"
+          "resource": "repo://client/qml/tests/fixture/tst_onboarding.qml#L73-L95",
+          "version": "repo-lines-v1:sha256:760a12d5f5f12a272fb2509aa500442f4d5316d9cd7569677b1dd95525aa749b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyYTU3MWNmZmE2ZDJkY2ZlOThkMGFhNGEyYmJjNmM3M2JiNjJhOTQzODIyNzVmNGJhNjgyYTA4MGQ0MDRiYmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExZmIyZDc3MGJmNDI3N2MyNWIwMTE0N2YyOGI5YjRhOTgzNDI3M2I4Mjc1OWU5NmFjNDRjMDc3NzQ1ZjFmMjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3MmI4YzA5ZGIzMTI2ZTdiZTg4Y2QzODZiYTBiZTFkZjhkNmI4YTA2MWUzNjYxMmI1ZTUwOWJkNGVjY2U0MGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3ZWMxYWRjN2Y5ZDE5YWFkMzcwNDU0OGM3MjUxNTdiNWRhNGQwYmVjYWEwZDQxYjkwYjA4YTZmMTcwZTU3MjgifQ"
+        },
+        {
+          "resource": "repo://client/qml/tests/fixture/tst_games.qml#L1-L310",
+          "version": "repo-lines-v1:sha256:5624d07cc99f7ef87ec7ba5ecdff19537a8915a2a849c17a0fb3ebce55d1e931:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwN2RmOWU2MzhjMDYzYTVhNDdlZmRmNTYyMTkxNGQyMjI4NDliYmZhNGY3Y2U5ZjA3YzhhZGQwYzhmYjY3OWI1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -433,6 +437,6 @@
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T03:43:00.059Z"
+    "at": "2026-08-26T13:49:04.179Z"
   }
 }

@@ -55,8 +55,12 @@ sources:
     resource: repo://crates/server/src/provider_games.rs
   - id: openwiki-source-408aa68caebee417a5a319b8
     resource: repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md
+  - id: openwiki-source-bfc109ee5d2c2f6c0f5c5f77
+    resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
     resource: repo://docs/architecture/game-cartridges.md
+  - id: openwiki-source-36d583174a7a0018316f71c7
+    resource: repo://docs/operators/owner-operated-servers.md
   - id: openwiki-source-ff39fa8dfffbd1a097ab5e16
     resource: repo://docs/planning/pipeline/completed/separate-repository-sdk-and-first-party-cartridge.notes.md
   - id: openwiki-source-047cb62ee1741c598c0f11a5
@@ -71,7 +75,10 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-26T03:43:00.059Z"}
+generated: {by: "codex", at: "2026-08-26T15:15:44.851Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-26T15:18:17.322Z
 ---
 
 # Game Cartridges and portable provider direction
@@ -91,6 +98,9 @@ the operator-pinned Door Legends v1 first-party pilot and amends Constitution
 §10 to assign each session exactly one rules/state/revision authority. Compiled
 Signal Siege remains platform-authoritative; external providers remain
 unauthorized. [Runtime foundation](runtime-foundation.md) maps both paths.
+ADR-0003 additionally accepts the future owner-operated server, server-curated
+marketplace, operator-custom trust, public Provider SDK, and separately gated
+server module/hook direction. It does not authorize those runtime surfaces.
 
 Ticket 014 contributes an isolated executable architecture proof. Its broker,
 provider, and QML surface are not a public SDK or deployed runtime. Ticket 018
@@ -147,6 +157,39 @@ meter, and button components, but its view model is derived by platform code and
 it does not manufacture a signed cartridge origin, content digest, or
 `omarchygs.render-plan/v1` document. The signed renderer remains reserved for
 packages that passed the verifier and content-addressed installation lifecycle.
+
+## Accepted owner-operated distribution direction
+
+The future deployment unit is an independently owner-operated OmarchyGS
+community. A marketplace may publish a reviewed exact release, but the server
+administrator separately imports and activates it under that server's policy.
+Players see only the selected server's admitted library. The official client
+then acquires the exact `.ogsc` bytes through a bounded server-approved path,
+verifies publisher integrity, any marketplace-review attestation, server
+admission, compatibility, and digest, and stores the package in a local
+content-addressed read-only cache. Sessions pin the exact cartridge, rules,
+and authority identities; actions continue to travel only through the selected
+OmarchyGS server.
+
+Those are three distinct trust claims: a publisher signature proves origin and
+unchanged bytes, marketplace review records that marketplace's assessment, and
+server admission records the local operator's catalog decision. Marketplace
+publication cannot force admission. A server may eventually admit an
+`operator-custom` cartridge with no marketplace-review claim, but that changes
+provenance rather than containment: the package remains signed, inert, bounded,
+schema-checked, content-addressed, and rendered only through trusted QML. A
+custom server cannot turn a catalog entry into publisher QML, JavaScript,
+native client code, Web content, credentials, an arbitrary URL, or direct
+client-provider networking.
+
+Backend code is not part of the cartridge. Portable game rules use a separately
+deployed registered provider and will later gain a public Provider SDK with a
+starter service, version negotiation, signing/grant helpers, conformance/fault
+fixtures, and operations guidance. General server modules form a third
+extension family: a future module base requires versioned capability-scoped
+typed hooks, namespaced configuration/state, audit and lifecycle controls, and
+a proven process, Wasm, static, or other isolation model. No general module
+runtime or dynamic in-process Rust plugin ABI exists today.
 
 ## Package and presentation trust
 
@@ -423,6 +466,12 @@ gate and failure routing.
 6. Ticket 019 implements one first-party Door Legends remote-authority pilot
    and the required Constitution §10 amendment. External providers wait for a
    separate onboarding, operations, transparency, and support pipeline.
+7. The owner-operated ecosystem next adds stable server identity/profiles,
+   server marketplace import, and main-client exact cartridge
+   acquisition/cache/mounting.
+8. Later tickets publish the Provider SDK, add explicitly labeled
+   operator-custom cartridge trust, prove the server-module isolation model,
+   and only then implement module administration and typed hooks.
 
 First-party games use the same public schemas and conformance suite intended
 for later publishers. They may have a higher catalog trust tier, but never a
@@ -447,3 +496,4 @@ decisions and monotonic policy versions.
 | Separate-repository SDK/release | `crates/game-cartridge/src/sdk.rs`, `release.rs`, `lifecycle.rs`, `secure_store.rs`; Ticket 017 | `scripts/test-game-cartridge-sdk.sh`; deterministic export, clean-clone reproducibility, signed provenance/policy, lifecycle matrix, descriptor-relative import, rollback/race/permission rejection |
 | Provider security foundation | `crates/game-provider`; migration `0014_provider_security_foundation.sql`; `docs/operators/provider-security.md`; Ticket 018 | `scripts/test-provider-conformance.sh`; TLS and sender authentication, public-only pinned egress, grant/replay/key/quota/lease/audit, lifecycle, race, and failure tests |
 | Remote authority migration | Constitution §10; ADR-0002; migration `0015`; `crates/server/src/provider_games.rs`; Ticket 019 | `scripts/test-provider-authority-pilot.sh`; one durable gameplay owner, exact replay/reconciliation, callback projection, lifecycle, independent database and restore evidence |
+| Owner-operated distribution and extension direction | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; roadmap | Current-versus-future audit; separate publisher/marketplace/server attestations; custom-content client containment; provider/module separation; extension isolation, lifecycle, audit, and operator-responsibility review |

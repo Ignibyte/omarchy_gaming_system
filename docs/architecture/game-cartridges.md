@@ -15,6 +15,9 @@ production provider trust/protocol foundation. Ticket 019 connects Door
 Legends v1 as the sole operator-enabled remote authority pilot with an
 independent provider database, player routes, atomic projections, and tested
 recovery; this design never authorizes loading third-party code.
+[`ADR-0003`](adr-0003-owner-operated-server-and-extension-boundary.md) now
+accepts the owner-operated server, server-curated marketplace, operator-custom
+trust, future Provider SDK, and separately gated server module/hook direction.
 
 ## Product model
 
@@ -23,11 +26,19 @@ integration package for one exact game release. A player browses the trusted
 OmarchyGS catalog, selects a cartridge, and plays inside the consistent
 keyboard-first OmarchyGS shell.
 
+That catalog belongs to the owner-operated server the player selected. A
+marketplace may vet and distribute an exact release, but each administrator
+chooses what to import, activate, suspend, or remove for their community.
+Players see that server's library and cache its exact cartridge bytes locally;
+marketplace publication does not create a global account, catalog, or launch
+authority.
+
 The cartridge supplies the game's identity, declared capabilities, schemas,
 screen templates, and static assets. OmarchyGS supplies the executable QML
 renderer, navigation, theme, accessibility, platform dialogs, network broker,
-and security boundary. The game provider supplies the server-side rules and
-gameplay state in the future remote-provider mode.
+and security boundary. A separately deployed registered provider supplies the
+server-side rules and gameplay state in remote-provider mode. The cartridge
+never contains that backend.
 
 The central rule is:
 
@@ -51,29 +62,32 @@ when content is untrusted.
 
 ```text
 game repository
-  ├─ provider server and rules
+  ├─ optional provider server and rules
   ├─ SDK schemas and conformance tests
-  └─ signed immutable Game Cartridge
-       ├─ manifest and capability requirements
-       ├─ declarative screen templates
-       ├─ command and view-model schemas
-       ├─ localizations
-       └─ bounded static assets
-                    │ publish
+  └─ signed immutable Game Cartridge (frontend data only)
+                    │ publish and vet
                     ▼
-          OmarchyGS trusted catalog
-                    │ select exact version
+           OmarchyGS marketplace
+                    │ operator imports exact release
                     ▼
-          OmarchyGS QML shell/renderer
-                    │ declared action
+       owner-operated OmarchyGS server catalog
+                    │ advertise provenance and exact digest
+                    ▼
+          player local cartridge cache
+                    │ verified inert render plan
+                    ▼
+          trusted OmarchyGS QML renderer
+                    │ declared action through selected server
                     ▼
           OmarchyGS authenticated broker
-                    │ short-lived provider-scoped grant
-                    ▼
-             remote game provider
-                    │ signed result/event
-                    ▼
-       OmarchyGS achievements, history, inbox, and sync
+             ├─ compiled game runtime
+             └─ short-lived provider-scoped grant
+                              │
+                              ▼
+                     remote game provider
+                              │ signed result/event
+                              ▼
+            OmarchyGS achievements, history, inbox, and sync
 ```
 
 For the first-party transition, a game may remain a compiled Rust definition
@@ -109,7 +123,8 @@ and support gates rather than inheriting the first-party authorization.
 | Account authentication, sessions, MFA, suspension | OmarchyGS only |
 | Persona profile and avatar projection | OmarchyGS only |
 | Connections, inbox, challenge policy, catalog, launch permission | OmarchyGS only |
-| Cartridge approval, publisher trust, signing keys, revocation | OmarchyGS only |
+| Server catalog admission, local signing trust, launch, suspension, revocation | Selected OmarchyGS deployment/operator |
+| Marketplace review and publication provenance | Marketplace authority; never automatic server admission |
 | Game rules, private gameplay state, turns, game clock, and game randomness in remote mode | Registered game provider |
 | Platform session envelope, participants, pinned provider/rules/cartridge identities, status, and accepted result receipt | OmarchyGS |
 | Game-scoped result and achievement claim | Provider proposes; OmarchyGS authenticates, validates policy/idempotency, and records |
@@ -165,18 +180,31 @@ new cartridge without silently changing an active session.
    cartridge plus independently deployable provider artifact.
 2. A registered publisher signs a canonical integrity index covering the
    manifest and every package file.
-3. OmarchyGS accepts packages only through its catalog/administrative boundary,
-   streams them under compressed and expanded size limits, and verifies the
-   publisher, signature, digest, protocol range, and declared capabilities
-   before extraction.
-4. Extraction rejects absolute paths, parent traversal, links, duplicate or
+3. The vetted marketplace verifies the exact publisher release, records review
+   and provenance, and publishes lifecycle metadata without forcing any server
+   to admit it.
+4. A server administrator imports and activates an exact marketplace release
+   through the server's catalog boundary. The server records its own catalog
+   policy and advertises only admitted release identity, provenance,
+   compatibility, and content digest to players.
+5. A client acquires the exact bytes through a bounded server-approved
+   distribution path. Both server import and client acquisition stream under
+   compressed and expanded size limits and verify publisher integrity, any
+   marketplace review attestation, the selected server's admission policy,
+   digest, protocol range, and declared capabilities. The distribution
+   destination comes from trusted platform/catalog configuration, never from
+   the cartridge, and may not redirect outside that exact policy.
+6. Extraction rejects absolute paths, parent traversal, links, duplicate or
    non-canonical names, unexpected file types, excessive file counts,
    compression bombs, and undeclared content.
-5. Schemas and assets are parsed under strict byte, dimension, duration, node,
+7. Schemas and assets are parsed under strict byte, dimension, duration, node,
    and complexity limits. Only allowlisted decoders and media formats ship.
-6. A verified cartridge is installed atomically into a content-addressed,
-   read-only location. It receives no executable permission.
-7. Catalog approval controls whether a cartridge is visible and launchable.
+8. A verified cartridge is installed atomically into a content-addressed,
+   read-only client cache. The same digest may be reused across server profiles,
+   but admission/provenance policy remains scoped to each server. The package
+   receives no executable permission.
+9. Server catalog approval controls whether a cartridge is visible and
+   launchable.
    Publisher, provider, release, or signing-key revocation can prevent new
    launches independently. Existing sessions follow an explicit suspend,
    migrate, or finish policy rather than silently changing versions.
@@ -204,6 +232,29 @@ denied update survives restart and concurrent imports cannot roll state back.
 Renaming or replacing the path-visible root after it opens cannot redirect the
 operation. The compatibility `install`/`revoke` path remains explicitly
 same-user only.
+
+### Operator-custom content
+
+An owner-operated server may eventually enable a server-local signing and
+catalog authority and import a custom cartridge without marketplace review.
+The source is recorded as `operator-custom`, along with the server/operator
+identity and exact digest; it cannot reuse a marketplace-vetted provenance
+label. Custom import is an explicit administrator action and remains disabled
+until its administration, warning, revocation, and audit path is implemented.
+
+Marketplace bypass never means verifier bypass. An operator-custom cartridge
+has the same canonical inert format, signatures, bounds, media profiles,
+schema checks, trusted render-plan compilation, and lack of executable/network
+authority as a marketplace release. A server may distribute custom cartridge
+bytes to its players, but it may not turn those bytes into raw QML,
+JavaScript, native client code, WebEngine content, or a direct provider URL.
+
+Custom executable server code is not a cartridge. Game rules use the registered
+provider boundary. General behavior uses a future module base with versioned,
+capability-scoped typed hooks, configuration/state namespaces, audit, and
+lifecycle controls. The extension-runtime spike must choose and prove its
+process/Wasm/static isolation and compatibility model before modules are
+authorized; a dynamic in-process Rust ABI is not implied.
 
 ## Trusted presentation contract
 
@@ -593,10 +644,25 @@ First-party games use the same public contracts and conformance suite as later
 providers. They may receive a higher catalog trust tier, but not private
 database access or a different identity model.
 
+The current exported v1 SDK is cartridge/release focused, while the public
+surface of `omarchy-game-provider` and the Door Legends clean-clone pilot prove
+the backend protocol seam. A later **OmarchyGS Provider SDK** will turn that
+seam into a supported developer product: versioned protocol/model packages,
+starter backend service, signing and grant helpers, conformance/fault fixtures,
+deployment templates, and operational guidance. It will not bundle backend
+code into the cartridge or grant a provider direct client access.
+
+The SDK may support an operator running that provider beside their OmarchyGS
+deployment as a separate service. A co-located profile still needs exact
+provider identity, separate state/credentials, authentication, bounds, and an
+explicit local transport design; it cannot reuse the conformance-only loopback
+escape hatch or gain platform database access.
+
 ## Implemented remote-provider security foundation
 
-Ticket 018 implements `omarchy-game-provider` as a production workspace crate
-that the current player server deliberately does not instantiate. PostgreSQL
+Ticket 018 implements `omarchy-game-provider` as a production workspace crate.
+It was deliberately dormant until Ticket 019 added an optional, all-or-none
+server bridge for the sole operator-pinned Door Legends pilot. PostgreSQL
 migration 0014 provides operator-controlled providers and immutable exact
 releases; append-only message/TLS key history; lifecycle scopes; short-lived
 grant records; database quota windows and expiring concurrency leases; durable
@@ -653,10 +719,20 @@ authority and policy decisions remain Ticket 019 work.
    start/command/reconcile APIs, atomic result/achievement callbacks, explicit
    availability/lifecycle states, and a separately built Door Legends TLS
    process with its own PostgreSQL database and callback outbox.
-4. **Reviewed external providers:** add publisher onboarding, catalog review,
+4. **Owner-operated catalog and acquisition:** let an administrator synchronize
+   a vetted marketplace, import/activate exact releases, expose server-scoped
+   provenance, and let players verify/cache/mount those inert packages.
+5. **Public backend SDK:** package the provider protocol as a supported starter
+   server, versioned SDK, conformance suite, and operations contract.
+6. **Operator-custom trust:** add local cartridge signing/import, explicit
+   provenance and player warnings, and unchanged client verification.
+7. **Server modules and hooks:** run the extension isolation spike, then build
+   the selected versioned capability/lifecycle/audit model independently of the
+   provider contract.
+8. **Reviewed external providers:** add publisher onboarding, catalog review,
    quotas, monitoring, suspension, support policy, and game-scoped achievement
    trust.
-5. **Optional advanced presentation tiers:** add capabilities such as isolated
+9. **Optional advanced presentation tiers:** add capabilities such as isolated
    web content, approved custom rendering, or constrained 3D only through
    separate threat models and compatibility profiles.
 
@@ -675,7 +751,13 @@ endpoints before the proof and ADR are accepted.
 - Qt Quick 3D/WebEngine packaging, licensing, update, and containment policy;
   and
 - public SDK hosting, transparency/CI attestation, signing-key operations, and
-  third-party support policy beyond the exact local first-party release proof.
+  third-party support policy beyond the exact local first-party release proof;
+- server identity, marketplace availability, package mirroring, cache/update,
+  and server-scoped catalog-policy distribution;
+- operator-local trust enrollment, provenance UX, and reviewed self-hosting
+  terms/custom-content disclosures; and
+- server module isolation, hook ordering, capabilities, state/migration
+  ownership, upgrade/rollback, fault containment, and support policy.
 
 The original Ticket 014 proof deliberately used ephemeral Ed25519 keys,
 loopback HTTP, and in-memory replay receipts. Ticket 018 replaces those gaps

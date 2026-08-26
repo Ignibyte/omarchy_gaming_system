@@ -4,7 +4,7 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `026`**
+- **Next ticket number: `028`**
 
 ## Open queue
 
@@ -12,6 +12,8 @@ No open tickets.
 
 ## Closed
 
+- [`TICKET-027` — Owner-operated servers, cartridge distribution, and extension roadmap](closed/TICKET-027-owner-operated-servers-cartridge-distribution-and-extension-roadmap.md)
+- [`TICKET-026` — Explicit QML application exit control](closed/TICKET-026-explicit-qml-application-exit-control.md)
 - [`TICKET-025` — End-to-end QML accessibility and visual polish](closed/TICKET-025-end-to-end-qml-accessibility-and-visual-polish.md)
 - [`TICKET-024` — Signal Siege versus and keyboard-first game flow](closed/TICKET-024-signal-siege-versus-and-keyboard-first-game-flow.md)
 - [`TICKET-023` — Keyboard-first QML connections and private inbox](closed/TICKET-023-keyboard-first-qml-connections-and-private-inbox.md)

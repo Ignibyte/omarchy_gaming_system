@@ -112,11 +112,23 @@ TestCase {
                context + " exceeds the window width at " + (position.x + item.width))
     }
 
+    function assertShellExit() {
+        const exitButton = object("shellExitButton")
+        verify(exitButton.visible, "shell exit control must remain visible")
+        verify(exitButton.enabled, "shell exit control must remain enabled")
+        compare(exitButton.Accessible.role, Accessible.Button)
+        compare(exitButton.Accessible.name, "Close Omarchy Gaming System")
+        verify(exitButton.Accessible.description.indexOf("without signing out") !== -1)
+        assertHorizontalBounds(exitButton, "shell exit control")
+    }
+
     function assertScreen(key, initialFocusName, suppliedInitialFocus) {
         const heading = waitForObject(key + "Heading")
         const status = object(key + "StatusBanner")
         const navigation = object(key + "NavigationHint")
         const initialFocus = suppliedInitialFocus || waitForObject(initialFocusName)
+
+        assertShellExit()
 
         verify(heading.text.length > 0, key + " requires a visible heading")
         compare(heading.Accessible.role, Accessible.Heading)
@@ -199,6 +211,25 @@ TestCase {
         requireContrast(theme.warning, theme.background, 3.0, "warning indicator")
         requireContrast(theme.danger, theme.background, 3.0, "error indicator")
         requireContrast(theme.border, theme.surfaceRaised, 3.0, "control boundary")
+    }
+
+    function test_exit_button_keyboard_closes_without_logout() {
+        signInAndSelectActor()
+        const actorId = applicationWindow.onboardingController.selectedPersona.id
+        const exitButton = object("shellExitButton")
+        activate(exitButton)
+        tryCompare(applicationWindow, "visible", false)
+        verify(applicationWindow.onboardingController.hasSession)
+        compare(applicationWindow.onboardingController.selectedPersona.id, actorId)
+    }
+
+    function test_exit_button_pointer_closes_window() {
+        const exitButton = object("shellExitButton")
+        applicationWindow.requestActivate()
+        tryVerify(function() { return applicationWindow.active })
+        mouseClick(exitButton, exitButton.width / 2, exitButton.height / 2,
+                   Qt.LeftButton)
+        tryCompare(applicationWindow, "visible", false)
     }
 
     function test_public_flow_semantics_focus_and_compact_layout() {
