@@ -29,6 +29,7 @@ use crate::{
     connections,
     mfa::MfaCipher,
     personas::{self, CreatePersonaInput},
+    production_game_registry,
     sessions::{self, CreateSessionInput, SessionCreation},
 };
 
@@ -390,6 +391,119 @@ async fn acceptance_creates_one_exact_session_and_retry_has_no_effects(pool: PgP
         wrong_direction.json()["error"]["code"],
         "game_challenge_transition_unavailable"
     );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+async fn production_signal_siege_versus_alternates_and_completes_for_both_players(pool: PgPool) {
+    let alice = create_test_persona(&pool, "Versus_Alice", "versus_alice").await;
+    let bob = create_test_persona(&pool, "Versus_Bob", "versus_bob").await;
+    connect(&pool, &alice, &bob).await;
+    let app = router_with_game_registry(
+        pool,
+        MfaCipher::test_cipher(),
+        production_game_registry().expect("production registry should build"),
+    );
+    let challenge_id = create_challenge(&app, &alice, bob.id, "signal_siege", 2).await;
+    let accepted = request(
+        app.clone(),
+        Method::PUT,
+        &format!(
+            "/v1/personas/{}/game-challenges/{challenge_id}/accept",
+            bob.id
+        ),
+        Some(&bob.token),
+    )
+    .await;
+    assert_eq!(accepted.status, StatusCode::OK);
+    let session_id = accepted.json()["game_session_id"]
+        .as_str()
+        .expect("accepted challenge should link a session")
+        .to_owned();
+    let session_path = format!("/v1/personas/{}/game-sessions/{session_id}", alice.id);
+    let loaded = request(app.clone(), Method::GET, &session_path, Some(&alice.token)).await;
+    assert_eq!(loaded.status, StatusCode::OK);
+    let mut session = loaded.json();
+    assert_eq!(session["game_key"], "signal_siege");
+    assert_eq!(session["game_version"], 2);
+    assert_eq!(session["state"]["active_seat"], 0);
+    assert_eq!(session["participants"].as_array().map(Vec::len), Some(2));
+    assert_eq!(
+        session["participants"][0]["persona"]["id"],
+        alice.id.to_string()
+    );
+    assert_eq!(
+        session["participants"][1]["persona"]["id"],
+        bob.id.to_string()
+    );
+
+    let wrong_turn = request_json(
+        app.clone(),
+        Method::POST,
+        &format!(
+            "/v1/personas/{}/game-sessions/{session_id}/commands",
+            bob.id
+        ),
+        &bob.token,
+        json!({
+            "idempotency_key": next_test_uuid().to_string(),
+            "expected_revision": 0,
+            "command": {"kind": "play", "action": "charge"}
+        }),
+    )
+    .await;
+    assert_eq!(wrong_turn.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(wrong_turn.json()["error"]["code"], "game_command_rejected");
+
+    for _ in 0..24 {
+        if session["status"] == "completed" {
+            break;
+        }
+        let seat = session["state"]["active_seat"]
+            .as_u64()
+            .expect("active session should identify a seat");
+        let (actor, token) = if seat == 0 {
+            (alice.id, alice.token.as_str())
+        } else {
+            (bob.id, bob.token.as_str())
+        };
+        let energy = session["state"]["players"][usize::try_from(seat).unwrap()]["energy"]
+            .as_u64()
+            .expect("player energy should be numeric");
+        let action = if energy == 0 { "charge" } else { "strike" };
+        let applied = request_json(
+            app.clone(),
+            Method::POST,
+            &format!("/v1/personas/{actor}/game-sessions/{session_id}/commands"),
+            token,
+            json!({
+                "idempotency_key": next_test_uuid().to_string(),
+                "expected_revision": session["revision"],
+                "command": {"kind": "play", "action": action}
+            }),
+        )
+        .await;
+        assert_eq!(applied.status, StatusCode::OK);
+        session = applied.json();
+    }
+    assert_eq!(session["status"], "completed");
+    assert!(
+        session["state"]["turn"]
+            .as_u64()
+            .is_some_and(|turn| turn <= 24)
+    );
+    assert!(session["state"]["outcome"].is_object());
+
+    let bob_view = request(
+        app,
+        Method::GET,
+        &format!("/v1/personas/{}/game-sessions/{session_id}", bob.id),
+        Some(&bob.token),
+    )
+    .await;
+    assert_eq!(bob_view.status, StatusCode::OK);
+    assert_eq!(bob_view.json()["state"], session["state"]);
+    assert_eq!(bob_view.json()["revision"], session["revision"]);
 }
 
 #[sqlx::test(migrations = "../../migrations")]

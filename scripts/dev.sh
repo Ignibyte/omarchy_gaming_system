@@ -56,6 +56,8 @@ run_live_qml_onboarding() {
   local ogs_factor="$5"
   local ogs_peer_handle="${6:-}"
   local ogs_message_body="${7:-}"
+  local ogs_peer_username="${8:-}"
+  local ogs_peer_password="${9:-}"
   local ogs_qt_bins
   local ogs_qml_test_runner
   local ogs_live_lock_fd
@@ -71,7 +73,7 @@ run_live_qml_onboarding() {
   chmod 0700 "$(dirname "$ogs_qml_live_config")"
   exec {ogs_live_lock_fd}>"$ogs_log_dir/qml-onboarding/live.lock"
   flock "$ogs_live_lock_fd"
-  printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' \
+  printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' \
     "http://$OGS_BIND_ADDRESS" \
     "$ogs_scenario" \
     "$ogs_username" \
@@ -80,6 +82,8 @@ run_live_qml_onboarding() {
     "$ogs_factor" \
     "$ogs_peer_handle" \
     "$ogs_message_body" \
+    "$ogs_peer_username" \
+    "$ogs_peer_password" \
     | python3 "$ogs_root/client/qml/tests/fixture_server.py" \
         --write-live-config "$ogs_qml_live_config"
 
@@ -163,17 +167,28 @@ if [[ "$ogs_smoke_test" == true ]]; then
     "http://$OGS_BIND_ADDRESS/v1/games")
   if ! jq -e '
     keys == ["games"] and
-    .games == [{
-      key: "signal_siege",
-      version: 1,
-      display_name: "Signal Siege",
-      min_human_players: 1,
-      max_human_players: 1,
-      authority: "platform_compiled",
-      provider_release_id: null
-    }]' \
+    .games == [
+      {
+        key: "signal_siege",
+        version: 1,
+        display_name: "Signal Siege",
+        min_human_players: 1,
+        max_human_players: 1,
+        authority: "platform_compiled",
+        provider_release_id: null
+      },
+      {
+        key: "signal_siege",
+        version: 2,
+        display_name: "Signal Siege Versus",
+        min_human_players: 2,
+        max_human_players: 2,
+        authority: "platform_compiled",
+        provider_release_id: null
+      }
+    ]' \
     <<<"$ogs_game_catalog" >/dev/null; then
-    echo "Game catalog smoke did not advertise exact Signal Siege v1" >&2
+    echo "Game catalog smoke did not advertise exact Signal Siege v1/v2 entries" >&2
     exit 1
   fi
 
@@ -845,6 +860,56 @@ if [[ "$ogs_smoke_test" == true ]]; then
     exit 1
   fi
   ogs_sync_cursor=$(jq -er '.next_cursor' <<<"$ogs_qml_social_sync")
+
+  run_live_qml_onboarding \
+    games \
+    "$ogs_registration_username" \
+    "$ogs_registration_password" \
+    "$ogs_persona_updated_handle" \
+    "" \
+    "$ogs_peer_handle" \
+    "" \
+    "$ogs_peer_username" \
+    "$ogs_peer_password"
+
+  ogs_qml_game_sessions=$(curl \
+    --fail \
+    --silent \
+    --header "Authorization: Bearer $ogs_session_token" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/game-sessions?limit=100")
+  if ! jq -e \
+    --arg peer_id "$ogs_peer_persona_id" \
+    '.sessions | any(
+       .game_key == "signal_siege" and .game_version == 2 and
+       .status == "completed" and .revision > 0 and
+       .state.phase == "completed" and .state.outcome != null and
+       (.participants | length) == 2 and
+       .participants[0].seat == 0 and .participants[1].seat == 1 and
+       .participants[1].persona.id == $peer_id)' \
+    <<<"$ogs_qml_game_sessions" >/dev/null; then
+    echo "Live two-authority QML game smoke did not persist a terminal versus match" >&2
+    exit 1
+  fi
+  ogs_qml_game_sync=$(curl \
+    --fail \
+    --silent \
+    --header "Authorization: Bearer $ogs_session_token" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/sync?after=$ogs_sync_cursor")
+  if ! jq -e '
+    (.events | length) > 0 and
+    any(.events[]; .type == "game_challenge_changed") and
+    any(.events[]; .type == "game_session_changed") and
+    all(.events[];
+      (.type == "game_challenge_changed" or
+       .type == "game_session_changed" or
+       .type == "conversation_changed") and
+      (has("state") | not) and (has("command") | not)) and
+    .has_more == false and .reset_required == false' \
+    <<<"$ogs_qml_game_sync" >/dev/null; then
+    echo "Live QML game smoke emitted unexpected or non-minimal sync state" >&2
+    exit 1
+  fi
+  ogs_sync_cursor=$(jq -er '.next_cursor' <<<"$ogs_qml_game_sync")
 
   ogs_connection_remove_status=$(curl \
     --silent \

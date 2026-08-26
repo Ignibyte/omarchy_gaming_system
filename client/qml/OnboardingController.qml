@@ -182,11 +182,15 @@ QtObject {
     function showPlayerScreen(screen) {
         if (!hasSession || !_validPersona(selectedPersona) || busy)
             return false
-        if (screen !== "home" && screen !== "social" && screen !== "inbox")
+        if (screen !== "home" && screen !== "social" && screen !== "inbox"
+                && screen !== "games" && screen !== "challenges" && screen !== "gameplay")
             return false
         state = screen
         statusText = screen === "social" ? "Social link ready."
                    : screen === "inbox" ? "Private inbox ready."
+                   : screen === "games" ? "Game cartridge link ready."
+                   : screen === "challenges" ? "Challenge link ready."
+                   : screen === "gameplay" ? "Authoritative game link ready."
                    : "Persona link ready."
         errorText = ""
         return true
@@ -195,7 +199,8 @@ QtObject {
     function playerRequest(operation, method, path, document, authenticated) {
         if (!hasSession || !_validPersona(selectedPersona) || busy)
             return 0
-        if (state !== "home" && state !== "social" && state !== "inbox")
+        if (state !== "home" && state !== "social" && state !== "inbox"
+                && state !== "games" && state !== "challenges" && state !== "gameplay")
             return 0
         if (typeof operation !== "string" || !operation.startsWith("player_")
                 || typeof path !== "string" || !path.startsWith("/v1/"))

@@ -91,6 +91,16 @@ the first identity HTTP surfaces:
   monotonic read acknowledgements. They deliberately do not start polling or
   subscribe to `/sync/live`; concurrent live-hint lifetime and recovery remain
   a separately reviewed client transport slice.
+- a dedicated QML game controller follows the same bearer-owning session
+  boundary and derives every persona, challenge target, session revision, and
+  command from validated client authority rather than accepting raw route
+  input from a screen. Games, challenges, and gameplay use explicit REST
+  refresh with strict catalog/challenge/session/state allowlists. Transport-
+  uncertain mutations retain their exact idempotency identity for an explicit
+  retry, while revision conflicts refetch the participant-authorized session.
+  The platform-owned Signal Siege presenter receives only a derived view model
+  and can emit only `strike`, `guard`, or `charge`; it does not claim signed
+  Game Cartridge provenance or execute publisher QML/JavaScript.
 - authenticated persona-scoped connection routes create and inventory pending
   requests, let only the addressee accept, list the resulting mutual
   connection, and let either participant idempotently remove pending or
@@ -128,8 +138,9 @@ the first identity HTTP surfaces:
 - a database-free compiled game runtime validates canonical, versioned public
   manifests and resolves only exact rule versions. The production registry
   contains Signal Siege v1, a deterministic one-human duel whose bot policy
-  receives only the pre-command game state. Test routers can inject additional
-  deterministic fixture definitions.
+  receives only the pre-command game state, and immutable Signal Siege v2 for
+  exactly two humans with alternating visible turns. Test routers can inject
+  additional deterministic fixture definitions.
 - public `GET /v1/games` inventories only compiled manifest metadata. Durable
   game sessions pin one game key/version, revision-zero object snapshot,
   active/completed status, completion timestamp, and ordered human persona
@@ -170,6 +181,9 @@ the first identity HTTP surfaces:
   Signal Siege resolves each human action and deterministic bot response in
   that one transition, terminates by core destruction or round 12, and stores
   the explicit winner/draw outcome without creating a bot identity row.
+  Signal Siege v2 instead alternates seat-scoped human actions, terminates by
+  core destruction or turn 24, and records a seat-named terminal outcome while
+  retaining v1 semantics unchanged.
 
 Registration returns only the new account ID and canonical username. It does
 not authenticate the caller or create a public persona. Session responses never

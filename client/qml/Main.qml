@@ -15,6 +15,7 @@ ApplicationWindow {
 
     readonly property alias onboardingController: onboarding
     readonly property alias socialController: social
+    readonly property alias gameController: games
     property bool smokeTest: Qt.application.arguments.indexOf("--smoke-test") !== -1
 
     function argumentValue(prefix, fallback) {
@@ -34,6 +35,9 @@ ApplicationWindow {
         case "home": return homeComponent
         case "social": return socialComponent
         case "inbox": return inboxComponent
+        case "games": return gamesComponent
+        case "challenges": return challengesComponent
+        case "gameplay": return gameplayComponent
         default: return connectionComponent
         }
     }
@@ -47,11 +51,21 @@ ApplicationWindow {
                 Qt.callLater(function() { social.refreshSocial() })
             else if (state === "inbox")
                 Qt.callLater(function() { social.refreshInbox() })
+            else if (state === "games")
+                Qt.callLater(function() { games.refreshGames() })
+            else if (state === "challenges")
+                Qt.callLater(function() { games.refreshChallenges() })
         }
     }
 
     SocialController {
         id: social
+        sessionController: onboarding
+        actor: onboarding.selectedPersona
+    }
+
+    GameController {
+        id: games
         sessionController: onboarding
         actor: onboarding.selectedPersona
     }
@@ -68,6 +82,18 @@ ApplicationWindow {
     Component {
         id: inboxComponent
         Screens.InboxScreen { controller: social; sessionController: onboarding }
+    }
+    Component {
+        id: gamesComponent
+        Screens.GamesScreen { controller: games; sessionController: onboarding }
+    }
+    Component {
+        id: challengesComponent
+        Screens.ChallengesScreen { controller: games; sessionController: onboarding }
+    }
+    Component {
+        id: gameplayComponent
+        Screens.GameplayScreen { controller: games; sessionController: onboarding }
     }
 
     Component.onCompleted: {
@@ -92,9 +118,12 @@ ApplicationWindow {
             id: statusRail
             width: parent.width
             height: 6
-            color: onboarding.errorText !== "" || social.errorText !== "" ? "#ff6b7a"
+            color: onboarding.errorText !== "" || social.errorText !== ""
+                   || games.errorText !== "" ? "#ff6b7a"
                   : onboarding.state === "home" || onboarding.state === "social"
-                    || onboarding.state === "inbox" ? "#5ee6a8" : "#f4c95d"
+                    || onboarding.state === "inbox" || onboarding.state === "games"
+                    || onboarding.state === "challenges" || onboarding.state === "gameplay"
+                    ? "#5ee6a8" : "#f4c95d"
         }
 
         Text {

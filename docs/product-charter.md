@@ -24,7 +24,7 @@ result recorded.
 - Connection requests and blocking
 - Inbox threads and typed game messages
 - Game catalog, challenges, turns, and match history
-- One original asynchronous game with a bot opponent
+- One original asynchronous game with solo bot and two-person challenge modes
 - Cursor-based synchronization and live notifications
 - Keyboard-first QML connector for Omarchy
 - Sysop audit, suspension, and reporting basics

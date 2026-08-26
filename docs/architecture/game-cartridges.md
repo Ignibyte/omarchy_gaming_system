@@ -81,6 +81,13 @@ while its source lives in a separate repository and its cartridge already uses
 the public presentation contract. A later provider adapter moves gameplay
 authority across the network without replacing the player-facing cartridge.
 
+Signal Siege's private-alpha QML gameplay surface is platform-owned trusted
+application code and intentionally does not manufacture a cartridge origin,
+digest, or `omarchygs.render-plan/v1` document. It reuses inert nodes from the
+trusted component vocabulary with a platform-derived view model. The signed
+cartridge renderer remains reserved for packages that passed the verifier and
+content-addressed installation lifecycle below.
+
 ## Execution-model decision
 
 | Model | Gameplay authority | Isolation | Release and compatibility | Latency/offline | Operational cost | Decision |

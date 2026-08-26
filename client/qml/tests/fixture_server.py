@@ -25,6 +25,10 @@ SOCIAL_OUTGOING_ID = "88888888-8888-4888-8888-888888888888"
 SOCIAL_BLOCKED_ID = "99999999-9999-4999-8999-999999999999"
 SOCIAL_LOST_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 CONVERSATION_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+SOLO_GAME_SESSION_ID = "10101010-1010-4010-8010-101010101010"
+VERSUS_GAME_SESSION_ID = "20202020-2020-4020-8020-202020202020"
+INCOMING_CHALLENGE_ID = "30303030-3030-4030-8030-303030303030"
+OUTGOING_CHALLENGE_ID = "40404040-4040-4040-8040-404040404040"
 MESSAGE_1_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
 MESSAGE_2_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
 MESSAGE_3_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"
@@ -63,6 +67,12 @@ class FixtureState:
         self.block_present = True
         self.sent_body = ""
         self.read_message_id = ""
+        self.game_revision = 0
+        self.game_state = self._solo_state()
+        self.versus_revision = 1
+        self.versus_state = self._versus_state()
+        self.incoming_challenge_status = "pending"
+        self.outgoing_challenge_status = "absent"
 
     def reset_social(self) -> None:
         with self.lock:
@@ -72,6 +82,12 @@ class FixtureState:
             self.block_present = True
             self.sent_body = ""
             self.read_message_id = ""
+            self.game_revision = 0
+            self.game_state = self._solo_state()
+            self.versus_revision = 1
+            self.versus_state = self._versus_state()
+            self.incoming_challenge_status = "pending"
+            self.outgoing_challenge_status = "absent"
 
     def record_call(self, call: str) -> None:
         with self.lock:
@@ -80,6 +96,43 @@ class FixtureState:
     def violate(self, message: str) -> None:
         with self.lock:
             self.violations.append(message)
+
+    @staticmethod
+    def _solo_state() -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "rules_version": 1,
+            "round": 0,
+            "max_rounds": 12,
+            "phase": "awaiting_human",
+            "human": {"core": 8, "energy": 2},
+            "bot": {"core": 8, "energy": 2},
+            "last_round": None,
+            "outcome": None,
+        }
+
+    @staticmethod
+    def _versus_state() -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "rules_version": 2,
+            "turn": 1,
+            "max_turns": 24,
+            "phase": "awaiting_action",
+            "active_seat": 1,
+            "players": [
+                {"seat": 0, "core": 8, "energy": 4, "guard": 0},
+                {"seat": 1, "core": 8, "energy": 2, "guard": 0},
+            ],
+            "last_turn": {
+                "turn": 1,
+                "actor_seat": 0,
+                "action": "charge",
+                "damage_to_opponent": 0,
+                "blocked_damage": 0,
+            },
+            "outcome": None,
+        }
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -133,6 +186,29 @@ class Handler(BaseHTTPRequestHandler):
                     "status": "ok",
                     "database": "ok",
                 })
+            return
+        if path == "/v1/games":
+            self._require_no_authorization("game catalog")
+            self._json(200, {"games": [
+                {
+                    "key": "signal_siege",
+                    "version": 1,
+                    "display_name": "Signal Siege",
+                    "min_human_players": 1,
+                    "max_human_players": 1,
+                    "authority": "platform_compiled",
+                    "provider_release_id": None,
+                },
+                {
+                    "key": "signal_siege",
+                    "version": 2,
+                    "display_name": "Signal Siege Versus",
+                    "min_human_players": 2,
+                    "max_human_players": 2,
+                    "authority": "platform_compiled",
+                    "provider_release_id": None,
+                },
+            ]})
             return
         if path == "/v1/personas":
             token = self._bearer()
@@ -214,6 +290,42 @@ class Handler(BaseHTTPRequestHandler):
                 "created_at": CREATED_AT,
             }]
             self._json(200, {"blocks": items})
+            return
+        if path == f"/v1/personas/{SOCIAL_ACTOR_ID}/game-sessions":
+            if not self._require_social_bearer():
+                return
+            if query != {"limit": ["100"]}:
+                self.state.violate("game session inventory did not use limit=100")
+            self._json(200, {"sessions": [self._solo_session()]})
+            return
+        if path == f"/v1/personas/{SOCIAL_ACTOR_ID}/game-sessions/{SOLO_GAME_SESSION_ID}":
+            if not self._require_social_bearer():
+                return
+            self._json(200, self._solo_session())
+            return
+        if path == f"/v1/personas/{SOCIAL_ACTOR_ID}/game-sessions/{VERSUS_GAME_SESSION_ID}":
+            if not self._require_social_bearer():
+                return
+            self._json(200, self._versus_session())
+            return
+        if path == f"/v1/personas/{SOCIAL_ACTOR_ID}/game-challenges":
+            if not self._require_social_bearer():
+                return
+            expected_queries = ({"limit": ["100"]},
+                                {"limit": ["100"], "before": [OUTGOING_CHALLENGE_ID]})
+            if query not in expected_queries:
+                self.state.violate("challenge inventory did not use bounded pagination")
+            items = []
+            if self.state.outgoing_challenge_status != "absent":
+                items.append(self._challenge(
+                    OUTGOING_CHALLENGE_ID, "outgoing",
+                    self.state.outgoing_challenge_status,
+                ))
+            items.append(self._challenge(
+                INCOMING_CHALLENGE_ID, "incoming",
+                self.state.incoming_challenge_status,
+            ))
+            self._json(200, {"challenges": items, "next_before": None})
             return
         if path == f"/v1/personas/{SOCIAL_ACTOR_ID}/conversations":
             if not self._require_social_bearer():
@@ -311,6 +423,40 @@ class Handler(BaseHTTPRequestHandler):
             response["status_message"] = str(document.get("status_message", "")).strip()
             self._json(201, response)
             return
+        if self.path == f"/v1/personas/{SOCIAL_ACTOR_ID}/game-sessions":
+            if not self._require_social_bearer():
+                return
+            if set(document) != {"idempotency_key", "game_key", "game_version"}:
+                self.state.violate("solo start body did not have exact keys")
+            if document.get("game_key") != "signal_siege" or document.get("game_version") != 1:
+                self.state.violate("solo start did not select Signal Siege v1")
+            self._json(201, self._solo_session())
+            return
+        if self.path == f"/v1/personas/{SOCIAL_ACTOR_ID}/game-challenges":
+            if not self._require_social_bearer():
+                return
+            if set(document) != {"idempotency_key", "challenged_persona_id",
+                                 "game_key", "game_version"}:
+                self.state.violate("challenge body did not have exact keys")
+            if document.get("challenged_persona_id") != SOCIAL_FRIEND_ID \
+                    or document.get("game_key") != "signal_siege" \
+                    or document.get("game_version") != 2:
+                self.state.violate("challenge did not derive the connected target and versus game")
+            self.state.outgoing_challenge_status = "pending"
+            self._json(201, self._challenge(OUTGOING_CHALLENGE_ID, "outgoing", "pending"))
+            return
+        if self.path == (f"/v1/personas/{SOCIAL_ACTOR_ID}/game-sessions/"
+                         f"{SOLO_GAME_SESSION_ID}/commands"):
+            if not self._require_social_bearer():
+                return
+            self._apply_solo_command(document)
+            return
+        if self.path == (f"/v1/personas/{SOCIAL_ACTOR_ID}/game-sessions/"
+                         f"{VERSUS_GAME_SESSION_ID}/commands"):
+            if not self._require_social_bearer():
+                return
+            self._apply_versus_command(document)
+            return
         if self.path == f"/v1/personas/{SOCIAL_ACTOR_ID}/conversations/{CONVERSATION_ID}/messages":
             if not self._require_social_bearer():
                 return
@@ -328,6 +474,14 @@ class Handler(BaseHTTPRequestHandler):
         if self.headers.get("Content-Length") not in {None, "0"}:
             self.state.violate("bodyless social PUT carried a request body")
         prefix = f"/v1/personas/{SOCIAL_ACTOR_ID}"
+        if self.path == f"{prefix}/game-challenges/{INCOMING_CHALLENGE_ID}/accept":
+            self.state.incoming_challenge_status = "accepted"
+            self._json(200, self._challenge(INCOMING_CHALLENGE_ID, "incoming", "accepted"))
+            return
+        if self.path == f"{prefix}/game-challenges/{INCOMING_CHALLENGE_ID}/decline":
+            self.state.incoming_challenge_status = "declined"
+            self._json(200, self._challenge(INCOMING_CHALLENGE_ID, "incoming", "declined"))
+            return
         if self.path == f"{prefix}/connections/{SOCIAL_PEER_ID}":
             self.state.peer_accepted = True
             self._json(200, {
@@ -362,6 +516,10 @@ class Handler(BaseHTTPRequestHandler):
         if not self._require_social_bearer():
             return
         prefix = f"/v1/personas/{SOCIAL_ACTOR_ID}"
+        if self.path == f"{prefix}/game-challenges/{OUTGOING_CHALLENGE_ID}":
+            self.state.outgoing_challenge_status = "cancelled"
+            self._json(200, self._challenge(OUTGOING_CHALLENGE_ID, "outgoing", "cancelled"))
+            return
         if self.path == f"{prefix}/connections/{SOCIAL_OUTGOING_ID}":
             self.state.outgoing_present = False
             self._raw(204, b"", "application/json")
@@ -389,6 +547,168 @@ class Handler(BaseHTTPRequestHandler):
             "latest_message": self._message_three(),
             "created_at": CREATED_AT,
             "updated_at": CREATED_AT,
+        }
+
+    def _solo_session(self) -> dict[str, Any]:
+        return {
+            "id": SOLO_GAME_SESSION_ID,
+            "game_key": "signal_siege",
+            "game_version": 1,
+            "revision": self.state.game_revision,
+            "status": "active",
+            "state": self.state.game_state,
+            "authority": "platform_compiled",
+            "provider_release_id": None,
+            "availability": None,
+            "result": None,
+            "participants": [{
+                "seat": 0,
+                "persona": self._social_persona(
+                    SOCIAL_ACTOR_ID, "social_actor", "Social Actor"
+                ),
+            }],
+            "completed_at": None,
+            "created_at": CREATED_AT,
+            "updated_at": CREATED_AT,
+        }
+
+    def _versus_session(self) -> dict[str, Any]:
+        return {
+            "id": VERSUS_GAME_SESSION_ID,
+            "game_key": "signal_siege",
+            "game_version": 2,
+            "revision": self.state.versus_revision,
+            "status": "active",
+            "state": self.state.versus_state,
+            "authority": "platform_compiled",
+            "provider_release_id": None,
+            "availability": None,
+            "result": None,
+            "participants": [
+                {
+                    "seat": 0,
+                    "persona": self._social_persona(
+                        SOCIAL_FRIEND_ID, "social_friend", "Social Friend"
+                    ),
+                },
+                {
+                    "seat": 1,
+                    "persona": self._social_persona(
+                        SOCIAL_ACTOR_ID, "social_actor", "Social Actor"
+                    ),
+                },
+            ],
+            "completed_at": None,
+            "created_at": CREATED_AT,
+            "updated_at": CREATED_AT,
+        }
+
+    def _challenge(self, challenge_id: str, direction: str, status: str) -> dict[str, Any]:
+        challenger = self._social_persona(
+            SOCIAL_FRIEND_ID, "social_friend", "Social Friend"
+        ) if direction == "incoming" else self._social_persona(
+            SOCIAL_ACTOR_ID, "social_actor", "Social Actor"
+        )
+        challenged = self._social_persona(
+            SOCIAL_ACTOR_ID, "social_actor", "Social Actor"
+        ) if direction == "incoming" else self._social_persona(
+            SOCIAL_FRIEND_ID, "social_friend", "Social Friend"
+        )
+        return {
+            "id": challenge_id,
+            "game_key": "signal_siege",
+            "game_version": 2,
+            "direction": direction,
+            "status": status,
+            "challenger": challenger,
+            "challenged": challenged,
+            "game_session_id": VERSUS_GAME_SESSION_ID if status == "accepted" else None,
+            "expires_at": EXPIRES_AT,
+            "resolved_at": None if status == "pending" else CREATED_AT,
+            "created_at": CREATED_AT,
+            "updated_at": CREATED_AT,
+        }
+
+    def _apply_solo_command(self, document: dict[str, Any]) -> None:
+        if set(document) != {"idempotency_key", "expected_revision", "command"}:
+            self.state.violate("solo command body did not have exact keys")
+        command = document.get("command", {})
+        if document.get("expected_revision") != self.state.game_revision:
+            self._error(409, "game_revision_conflict", "game revision changed")
+            return
+        if not isinstance(command, dict) or set(command) != {"kind", "action"}:
+            self.state.violate("solo command did not derive the loaded revision and exact action")
+        action = str(command.get("action", ""))
+        energy = int(self.state.game_state["human"]["energy"])
+        if action in {"strike", "guard"} and energy < 1:
+            self._error(422, "game_command_rejected", "game command was rejected")
+            return
+        if action == "charge":
+            self.state.game_state["human"]["energy"] = min(4, energy + 2)
+        else:
+            self.state.game_state["human"]["energy"] = energy - 1
+        if action == "strike":
+            self.state.game_state["bot"]["core"] = max(
+                0, int(self.state.game_state["bot"]["core"]) - 2
+            )
+        self.state.game_state["bot"]["energy"] = min(
+            4, int(self.state.game_state["bot"]["energy"]) + 2
+        )
+        self.state.game_state["round"] += 1
+        self.state.game_state["last_round"] = {
+            "round": self.state.game_state["round"],
+            "human_action": action,
+            "bot_action": "charge",
+            "damage_to_human": 0,
+            "damage_to_bot": 2 if action == "strike" else 0,
+        }
+        self.state.game_revision += 1
+        self._json(200, self._command_response(
+            SOLO_GAME_SESSION_ID, self.state.game_revision, self.state.game_state
+        ))
+
+    def _apply_versus_command(self, document: dict[str, Any]) -> None:
+        if set(document) != {"idempotency_key", "expected_revision", "command"}:
+            self.state.violate("versus command body did not have exact keys")
+        command = document.get("command", {})
+        action = str(command.get("action", "")) if isinstance(command, dict) else ""
+        if document.get("expected_revision") != self.state.versus_revision \
+                or action not in {"strike", "guard", "charge"}:
+            self.state.violate("versus command did not derive loaded authority")
+        player = self.state.versus_state["players"][1]
+        if action == "charge":
+            player["energy"] = min(4, int(player["energy"]) + 2)
+        else:
+            player["energy"] = int(player["energy"]) - 1
+        if action == "strike":
+            self.state.versus_state["players"][0]["core"] -= 2
+        if action == "guard":
+            player["guard"] = 2
+        self.state.versus_state["turn"] = 2
+        self.state.versus_state["active_seat"] = 0
+        self.state.versus_state["last_turn"] = {
+            "turn": 2,
+            "actor_seat": 1,
+            "action": action,
+            "damage_to_opponent": 2 if action == "strike" else 0,
+            "blocked_damage": 0,
+        }
+        self.state.versus_revision += 1
+        self._json(200, self._command_response(
+            VERSUS_GAME_SESSION_ID, self.state.versus_revision, self.state.versus_state
+        ))
+
+    @staticmethod
+    def _command_response(session_id: str, revision: int,
+                          state: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "game_session_id": session_id,
+            "revision": revision,
+            "status": "active",
+            "state": state,
+            "authority": "platform_compiled",
+            "provider_release_id": None,
+            "availability": None,
         }
 
     def _message_one(self) -> dict[str, Any]:
@@ -558,8 +878,8 @@ def main() -> int:
         values = sys.stdin.buffer.read().split(b"\0")
         if values and values[-1] == b"":
             values.pop()
-        if len(values) != 8:
-            print("live fixture config requires eight NUL-delimited values", file=sys.stderr)
+        if len(values) != 10:
+            print("live fixture config requires ten NUL-delimited values", file=sys.stderr)
             return 2
         try:
             decoded = [value.decode("utf-8") for value in values]
@@ -568,7 +888,7 @@ def main() -> int:
             return 2
         document = dict(zip(
             ["server_url", "scenario", "username", "password", "persona_handle", "factor",
-             "peer_handle", "message_body"],
+             "peer_handle", "message_body", "peer_username", "peer_password"],
             decoded,
             strict=True,
         ))

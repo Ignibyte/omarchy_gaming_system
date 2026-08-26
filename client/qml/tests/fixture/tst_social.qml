@@ -141,7 +141,7 @@ TestCase {
 
         keyClick(Qt.Key_Escape)
         tryCompare(applicationWindow.onboardingController, "state", "home")
-        verify(object("homeSocialButton").activeFocus)
+        verify(object("homeGamesButton").activeFocus)
     }
 
     function test_keyboard_inbox_history_send_and_read() {

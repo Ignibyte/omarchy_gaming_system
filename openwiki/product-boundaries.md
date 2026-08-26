@@ -7,8 +7,16 @@ sources:
     resource: repo://client/qml/cartridge/CartridgePreview.qml
   - id: openwiki-source-c566a55d52a9744f7b26b7c4
     resource: repo://client/qml/cartridge/TrustedCartridgeSurface.qml
+  - id: openwiki-source-a046e08cc1ba7740db940ad2
+    resource: repo://client/qml/game/SignalSiegeSurface.qml
+  - id: openwiki-source-da678ac479c336e5e6fc1d04
+    resource: repo://client/qml/GameController.qml
   - id: openwiki-source-d392f8f0962c50f0d66e0629
     resource: repo://client/qml/Main.qml
+  - id: openwiki-source-f73ad44f40942d16dc369861
+    resource: repo://client/qml/OnboardingController.qml
+  - id: openwiki-source-3156e0b1532bb1d02a0118e1
+    resource: repo://client/qml/tests/live/tst_live_onboarding.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
   - id: openwiki-source-37af4c6b51c86b62db25f85f
@@ -31,8 +39,6 @@ sources:
     resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
-  - id: openwiki-source-a3892e0554790e3efc606fe1
-    resource: repo://crates/server/src/challenges.rs
   - id: openwiki-source-4b133589ca70bd174cf19eb9
     resource: repo://crates/server/src/connections.rs
   - id: openwiki-source-26aac996689c040c6aab6825
@@ -45,6 +51,8 @@ sources:
     resource: repo://crates/server/src/mfa.rs
   - id: openwiki-source-54f6da1456b2b76d94d11b0e
     resource: repo://crates/server/src/personas.rs
+  - id: openwiki-source-0e10f198b5749ecebf761185
+    resource: repo://crates/server/src/provider_games.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
   - id: openwiki-source-76060b846b9222af2c790243
@@ -67,7 +75,10 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-8df9ad1a3495f8360740ff03
     resource: repo://scripts/test-game-cartridge-sdk.sh
-generated: {by: "codex", at: "2026-08-25T22:05:16.359Z"}
+generated: {by: "codex", at: "2026-08-26T02:02:30.593Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-26T02:02:30.593Z
 ---
 
 # Product and architecture boundaries
@@ -174,12 +185,14 @@ are also implemented on top of that boundary. The compiled registry and durable
 exact-version session foundation and revision-checked idempotent commands are
 now implemented as well. Connected-persona challenge creation, terminal
 history, and atomic acceptance into those sessions are also implemented.
-Signal Siege v1 now adds one deterministic production rules definition,
-owner-scoped solo launch, and a completed match with an explicit durable
-outcome on top of the same synchronization rule without treating WebSocket
-delivery as durable truth. Door Legends v1 now adds one operator-pinned remote
-authority pilot with platform-owned result and achievement projections. QML
-game launch and external-provider onboarding remain later slices.
+Signal Siege v1 adds the immutable deterministic solo definition, while v2
+adds exact two-person alternating play without relabeling existing v1 sessions.
+The keyboard-first QML connector now covers catalog discovery, challenge
+creation and acceptance, authoritative turns, terminal result, and refetch
+recovery without treating WebSocket delivery as durable truth. Door Legends v1
+adds one operator-pinned remote authority pilot with platform-owned result and
+achievement projections. Signed-cartridge main-client launch and external-
+provider onboarding remain later slices.
 
 The current server is a local development slice. Bearer tokens require
 production TLS in transit, and public login requires distributed attempt
@@ -219,8 +232,19 @@ one-human definition, checks durable replay before current registry and
 active-cap policy, and creates seat zero for the owned persona. Signal Siege
 represents its opponent entirely inside deterministic rules and bounded state,
 so it creates no bot account, persona, credential, or participant row.
-Completed history and final-command replay are implemented; QML gameplay and
-result-derived platform effects remain later boundaries.
+Signal Siege v2 separately admits exactly two people, alternates authoritative
+seat turns, and completes on core destruction or a fixed turn bound. Completed
+history, exact replay, and QML gameplay are implemented; result-derived
+platform effects remain a later boundary.
+
+The QML authority boundary keeps the bearer in `OnboardingController` and gives
+`GameController` only the selected-persona request gateway. The game controller
+validates exact catalog, challenge, session, participant, authority, and v1/v2
+state relationships before deriving presentation. A transport timeout retains
+the exact mutation identity for explicit retry; a revision conflict triggers an
+authoritative refetch rather than silently rebasing the player's action. The
+client currently refreshes on entry and action and opens no game polling or
+WebSocket lifetime.
 
 For registered-provider sessions, migration 0015 prohibits a writable local
 gameplay snapshot: the platform envelope pins one exact release and keeps local
@@ -277,10 +301,13 @@ fixed directories not owned by the effective user or writable by group/other,
 serializes monotonic signed-policy transitions, and persists denial policy
 before enforcement. The exact store UID is still authoritative, so a later
 privileged or shared launcher needs a dedicated service identity or equivalent
-external monotonic authority. The main client still does not browse or launch
-cartridges, and the server does not ingest cartridge files into its public game
-catalog. The optional provider runtime instead lists only an operator-enabled
-manifest already pinned in the provider registry.
+external monotonic authority. The main client now browses platform catalog
+records and plays compiled Signal Siege, but it still does not acquire or launch
+signed cartridge packages, and the server does not ingest cartridge files into
+its public game catalog. Signal Siege's platform-owned presenter reuses inert
+repository components without claiming a signed origin, content digest, or
+`omarchygs.render-plan/v1` provenance. The optional provider runtime instead
+lists only an operator-enabled manifest already pinned in the provider registry.
 
 The Door Legends mode keeps OmarchyGS as the authenticated broker and platform
 authority for accounts, sessions, MFA, personas and avatar projections, social

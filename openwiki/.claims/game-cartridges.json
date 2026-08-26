@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:efe0719756dd6458ba1436ebd4dbe1e7136c1db0828c27fab14ec29384004090",
+  "pageVersion": "sha256:639d65ac89c943166b931b91e59838c07dc992942d007c542d05bdce406394cd",
   "claims": [
     {
       "id": "claim_c3d3ba6c62e34b5d90ee8cc7649b3c6e",
@@ -453,10 +453,28 @@
           "version": "repo-lines-v1:sha256:17071ff793bdd594febf82fd237b0ce5272b663fef5c2c71f9b6253be4aa6c00:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkYmZiNmIwNDU0OWQwMDNiOGI5ZmM1ODBhMmUzNDA5MjVjYTQ5MjJhMDI1MWVlNThiMmZkZTA0YjM2YmRkMTFiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJhZDFmZGY5MDVlOGM5ZTgxODMxMDY5NGJkMGI5OTBhOTAwODk3OGE3ZTNlYzVkZTQyNGQ4MGQzYzE3NWZkMWFjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI1ZWMyOTIxNGRmNmZjMjkyY2Q1NDA2MDExOTU5NzFhOGI4MTUxZDc2NmZjOTM4OTQzNWMwNzQ1ZmU1MGExNDVhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlMjgxNzgxNmNkNTMyNzI5OGJhMzY4YWNhNDBhMzkxZTFiYTdhNjUzNDUyMzBmMDlmMGQ3MDk3M2VhNDE3NzViIn0"
         }
       ]
+    },
+    {
+      "id": "claim_a0e7d4ba71644addb4dffab9f8e5b5f6",
+      "statement": "Signal Siege's main-client surface is platform-owned trusted application code that may reuse inert repository node components but does not mint signed cartridge origin, content digest, or omarchygs.render-plan/v1 provenance.",
+      "evidence": [
+        {
+          "resource": "repo://client/qml/game/SignalSiegeSurface.qml",
+          "version": "repo-file-v1:sha256:c18ad294f1ff9da1f753a212fd0e528e9a2bba771f9193ef79ac608d977825ae"
+        },
+        {
+          "resource": "repo://client/qml/GameController.qml#L436-L509",
+          "version": "repo-lines-v1:sha256:16ba5866c16363f18fd54df59e38e2f64e0917c9efc12e70e2bd3c2cff1f0b87:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiODYwYzlmYTliYTdiN2JhMGViZTQ2ZjE2MGUwZWVkMTExOTlkMjFhMjNhN2M3NWMxNTczZGQ3ZTc2NDRkN2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzMzEyMTcwZmIzOWI0NTVmYzZkYmZlYzMzZWZhYzNlYTVlMTBjNDhkNjE4ZTdjODlkOTIwZmIxMWU1MzI1ZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIxODMwNmEzN2FkZjczN2Y1NTY5NDEzNGEwYTA2M2FkNjRjMzQ0NmMzY2ZmMmZmYWUxYzE2OGNiNGU1MWYxZDMifQ"
+        },
+        {
+          "resource": "repo://docs/architecture/game-cartridges.md",
+          "version": "repo-file-v1:sha256:2ff6a840ff1c0c2f00ae9f13411fad26e94ee59832060949d033976d28eecaa6"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-25T22:05:16.359Z"
+    "at": "2026-08-26T02:02:30.593Z"
   }
 }

@@ -5,6 +5,10 @@ openwiki_generated: true
 sources:
   - id: openwiki-source-c566a55d52a9744f7b26b7c4
     resource: repo://client/qml/cartridge/TrustedCartridgeSurface.qml
+  - id: openwiki-source-a046e08cc1ba7740db940ad2
+    resource: repo://client/qml/game/SignalSiegeSurface.qml
+  - id: openwiki-source-da678ac479c336e5e6fc1d04
+    resource: repo://client/qml/GameController.qml
   - id: openwiki-source-f4e5b7474eca8daeac03aaab
     resource: repo://crates/game-cartridge-renderer/src/bin/omarchygs-cartridge-preview.rs
   - id: openwiki-source-fdf115002c4aabad0babec70
@@ -59,10 +63,10 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-25T22:05:16.359Z"}
+generated: {by: "codex", at: "2026-08-26T02:02:30.593Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-25T22:05:16.359Z
+    at: 2026-08-26T02:02:30.593Z
 ---
 
 # Game Cartridges and portable provider direction
@@ -124,6 +128,13 @@ executable QML, focus/navigation, accessibility, themes, platform dialogs,
 networking, and security policy. In the separately authorized Door Legends
 pilot, the provider supplies game rules and private gameplay state; it never
 supplies the trusted frontend.
+
+Signal Siege's first-playable QML surface is a separate trusted application
+path for platform-compiled rules. It may reuse repository-owned inert status,
+meter, and button components, but its view model is derived by platform code and
+it does not manufacture a signed cartridge origin, content digest, or
+`omarchygs.render-plan/v1` document. The signed renderer remains reserved for
+packages that passed the verifier and content-addressed installation lifecycle.
 
 ## Package and presentation trust
 

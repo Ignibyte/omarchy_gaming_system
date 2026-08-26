@@ -74,6 +74,9 @@ and in this register.
 | `PR-omarchy-gaming-system-own-headless-qt-test-environment-001` | Headless QML gate entrypoints must set their platform and rendering backend unconditionally. | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
 | `PR-omarchy-gaming-system-preserve-bodyless-qml-requests-001` | When a QML request has no document, call `XMLHttpRequest.send()` with no argument; assert zero request bytes and immediately reuse the connection in a stateful fixture. | `aar/AAR-023-keyboard-first-qml-connections-and-private-inbox.md` |
 | `PR-omarchy-gaming-system-observe-delivery-before-requeue-001` | Before manually requeueing a durable outbox row in a replay test, wait for the producer's original attempt to reach its committed delivered state. | `aar/AAR-023-keyboard-first-qml-connections-and-private-inbox.md` |
+| `PR-omarchy-gaming-system-bind-presentation-cardinality-before-indexing-001` | Before trusted client presentation indexes participants or state arrays, bind uniqueness, actor membership, exact game version, and exact version-specific cardinality. | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
+| `PR-omarchy-gaming-system-assert-minimum-layout-after-settle-001` | Exercise the production root at every supported minimum size and assert actual child geometry only after the asynchronous layout has settled. | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
+| `PR-omarchy-gaming-system-stage-new-paths-before-final-security-scan-001` | Run the delivery security scan against a staged snapshot so newly created paths are included in the immutable inventory, then make no repository-content changes before delivery. | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
 
 ## Register
 
@@ -231,3 +234,11 @@ and in this register.
 | `PR-omarchy-gaming-system-preserve-bodyless-qml-requests-001` | rule | `aar/AAR-023-keyboard-first-qml-connections-and-private-inbox.md` |
 | `PR-omarchy-gaming-system-observe-delivery-before-requeue-001` | rule | `aar/AAR-023-keyboard-first-qml-connections-and-private-inbox.md` |
 | `AD-omarchy-gaming-system-qml-social-inbox-authority-boundary-001` | decision | `../../architecture/system-overview.md` |
+| `BF-omarchy-gaming-system-qml-game-session-cardinality-gap-001` | failure | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
+| `BF-omarchy-gaming-system-qml-home-action-overflow-001` | failure | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
+| `BF-omarchy-gaming-system-security-scan-untracked-inventory-gap-001` | failure | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
+| `PR-omarchy-gaming-system-bind-presentation-cardinality-before-indexing-001` | rule | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
+| `PR-omarchy-gaming-system-assert-minimum-layout-after-settle-001` | rule | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
+| `PR-omarchy-gaming-system-stage-new-paths-before-final-security-scan-001` | rule | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
+| `AD-omarchy-gaming-system-signal-siege-versus-version-boundary-001` | decision | `../../architecture/system-overview.md` |
+| `AD-omarchy-gaming-system-platform-compiled-presenter-provenance-001` | decision | `../../architecture/game-cartridges.md` |

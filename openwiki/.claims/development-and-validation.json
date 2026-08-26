@@ -1,62 +1,58 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:48e55b5cb04049fa01f276d15926c882399c6ee2f5b5f30c41c519205ecce2fa",
+  "pageVersion": "sha256:30a93a747cbc8404b625c00a3a8fcb2791c0b13312cd2ec2939804b8960279be",
   "claims": [
     {
       "id": "claim_e75f82f846ca444594c51ed0f48b894b",
-      "statement": "The local smoke verifies exact Signal Siege v1 production discovery, idempotent solo launch, bounded play to durable completion, final replay, history, minimal sync, and post-completion rejection alongside health, identity, social, inbox, MFA, cursor, revocation, and QML behavior.",
+      "statement": "The local smoke verifies exact Signal Siege v1/v2 discovery, durable solo completion and recovery, the complete social and MFA slice, and a real two-authority QML challenge, alternating versus match, terminal result, refetch, and minimal synchronization evidence.",
       "evidence": [
         {
-          "resource": "repo://scripts/dev.sh#L89-L114",
-          "version": "repo-lines-v1:sha256:4bc5b75362f7b5b7d543b4b5ebcc02828c6df5035a492594ff1302c9d77b14df:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4YTJjZjY3OTBjZTYyMjgyZmM0Y2E0MjBlOGYxZDI3OTg4NWY5ZGMxYTJmZDJlYTE4ODZiOWM4NGIyMDBiMzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZmM5MGZmOGE0NDE0YzU0NDFkMGY2NzdjNWNiZmRhMzhiNDc0ZTUxYmZkNTU5YTU1NTlkZTBmODc3MDU1MjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMxY2UxYWExMTY5NWQ5YjUxNTcwZGExNWYyMzlkNzBkMmY1Y2FkNThhNzg1MGQyYThkYTljZWQ1ODYxZDQ4MzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5M2U0MzM1ZGUzMzk1NmU4Y2QxYTAxOTFlYzI1ZGM1ZjVkMDUxOTU3YTE3ZWU3OWE0ZTM0YjVmYjkzNDhlNDcifQ"
-        },
-        {
-          "resource": "repo://scripts/dev.sh#L299-L498",
-          "version": "repo-lines-v1:sha256:312a19b5b23c9c532fef4ddaaebef8d7bec01ee29adf1a476d7430fd7f61dac0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4NDlkN2E2ZmY5ZTY3MmEyZWVmN2I2MTdkYzU2OWY5ZmM5MDQ0NGY1ZmVkMjQyMmVhOTY4Mzg1MjFkYzY0MjY2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzNWZjOTBmZjhhNDQxNGM1NDQxZDBmNjc3YzVjYmZkYTM4YjQ3NGU1MWJmZDU1OWE1NTU5ZGUwZjg3NzA1NTI0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YWYxZDk1YjExZjc4MWIyY2UxZjY1YzFjMGU3Y2MxZjg0YzA4MGIwNDkzYjc3Y2Q1MTlhZjRhZWE4YjYyNTQ3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJiZDA1ZDhiMWU2NGQzNmVlYjkzZjUyMDFhN2ViNzhiYWU4MDhiNjMxMTI5YjI3NGJkNWE0MjY5YzBkNjEyNDkxIn0"
-        },
-        {
-          "resource": "repo://scripts/dev.sh#L500-L815",
-          "version": "repo-lines-v1:sha256:292f537dea790f95f32aa8ed55c1197cee116526dc99fd2370b940c3f3294a52:eyJzZWxlY3RlZExpbmVDb3VudCI6MzE2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3NGYwNzYzMjdjZGI1MDA4MTgwYmQ4YmMwYzU4ZmFlODEzYjUxNzJkMWFmYWExODNmNGZmNGIyNGY4ZjljYmI1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0N2RiNzU1ZmMzNGIzMDY2OGJmN2Y0YmJmZjYxZWQ0OWRkYjE1ZjI3NDM5YTE3MDEwODgxZGUyYTQ0N2Q4YjRiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YWYxZDk1YjExZjc4MWIyY2UxZjY1YzFjMGU3Y2MxZjg0YzA4MGIwNDkzYjc3Y2Q1MTlhZjRhZWE4YjYyNTQ3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI1NTc3ODA3MDM3OTI2ZWE1Y2JkOWEwNjI3Mjc4YTgzNWYzN2M1YjAzMmZjNTMwZWI4MTBlYmMzMzlhZDRlMjNmIn0"
+          "resource": "repo://scripts/dev.sh",
+          "version": "repo-file-v1:sha256:48b86a5ce58f10a6eb12bd884ce9319f23ee0da904ca1a527342939cf4be60ed"
         }
       ]
     },
     {
       "id": "claim_41ac20b454de427fa7108bc9ae42ba48",
-      "statement": "Smoke mode uses the offscreen Qt platform and terminates the QML client after a completed health request or a five-second timeout.",
+      "statement": "Smoke mode runs the QML connector offscreen; the shell exits after the exact health handshake while dedicated live QML scenarios exercise account, MFA, social, and two-authority game flows against the migrated server.",
       "evidence": [
         {
-          "resource": "repo://scripts/dev.sh#L10-L16",
-          "version": "repo-lines-v1:sha256:e5e7d8db0e3e0ec71702328257414d3dc6c2bbe49d780b41b05bd55de9f616bf:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjAwNTZhNjNkZmYxNGNmNTdhMGY1OTUyYjJiMTRkNWUwNDA1YWFmNTdkNjhlNTNlOGQzMmU2Y2ZjOGVlN2QxYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmYzMDQ2OGU1OWJmNzdhNWVkZDllZWMzNDM0ZDU4NTQxNTcwODVmZTQyZWJjMTEyZTM5Y2JjOTk5YWI5ZWVmOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDM5YzNlYmM1M2EyZGZjM2M4ZGRkYmE1MjRjZDE1MWNiMTE5YWMzMTNmZDk5NjczMjAxNzQzYzZkNGEwNzMyZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjZjNTRmMGQ4Y2FhN2YwOTEyNTk1ZDRjNzRlZTE0YjNiYjIwYTZmY2M4ODNlOTc4MGIzMjRjM2ExOTkyNmFiMCJ9"
+          "resource": "repo://scripts/dev.sh",
+          "version": "repo-file-v1:sha256:48b86a5ce58f10a6eb12bd884ce9319f23ee0da904ca1a527342939cf4be60ed"
         },
         {
-          "resource": "repo://client/qml/Main.qml#L19-L19",
-          "version": "repo-lines-v1:sha256:5ef42d0c210a7267fed3eb6fdca064e058312c5f7c42db5837091b8e5a50f1a0:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWVmNDJkMGMyMTBhNzI2N2ZlZDNlYjZmZGNhMDY0ZTA1ODMxMmM1ZjdjNDJkYjU4MzcwOTFiOGU1YTUwZjFhMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNWVmNDJkMGMyMTBhNzI2N2ZlZDNlYjZmZGNhMDY0ZTA1ODMxMmM1ZjdjNDJkYjU4MzcwOTFiOGU1YTUwZjFhMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjM2NDg1YWM3MjRmYWIxYmMxYTFlYmY1MjI1MDg3NWE3ZDJlNzk0OTU5ZGYwMTE4MzY0MjEzZmQ5YTU3YzIwZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjZkYTBmMDJmZDg3NDU5OGIxM2YyNzQ0ZTg2ZDE4MzZiMzg3OTFjYWY0YWE1ZGRhZmJiMDdmMWE4MTQ5MDJmMyJ9"
+          "resource": "repo://client/qml/Main.qml#L19-L58",
+          "version": "repo-lines-v1:sha256:15b407396c3639375409a9684769807dbb98bd0b1fde8a50ff5cae5b3b536abd:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZjQyZDBjMjEwYTcyNjdmZWQzZWI2ZmRjYTA2NGUwNTgzMTJjNWY3YzQyZGI1ODM3MDkxYjhlNWE1MGYxYTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA5MWU4ZDQ1MWYzODFhZjNkNGVhMDcxMmUwMDdkNjM0NmZkMjU1MjM2ZGUwNDVlNWJjM2NhNjRkNDQzNzgxNmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE3ODUxMTg1NWEyOTY3ZTJjYzAyYThlZGVhNDJlMjRkNGE2Yjk5ZTEwMDFmNTE0MmM4OTJjZmM5N2NlMDNlMzIifQ"
         },
         {
-          "resource": "repo://client/qml/Main.qml#L57-L79",
-          "version": "repo-lines-v1:sha256:5e244fca72df662aac73b8e144ad2388b29d7e40a7d5ffb4d331e75a3e11563a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2YWFiYTkyMmU5MjYwMjUwODVmNGJkZDZjZjcwYjM5Njk1ZTkwYTg4ZGQ2NDI1YjM3NjhjYjA4OWI0OWZiMjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3Y2E3NDgzMjc3NzBiNTVhZTcxZTAyYjM2MGZkNDVlYjQzZTA2OWE2OTg5NWU5MzE4ZGFkNTNjMzYyNzNjN2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhMjA2YjRlMTlmMTM3NzhhZGJkN2E4YjllOGQxYzY0ZDM0MjM5NjQ4MjdhYzJiZWFlOWQzMWRhZjlhOGFiMjQifQ"
+          "resource": "repo://client/qml/tests/live/tst_live_onboarding.qml",
+          "version": "repo-file-v1:sha256:9fcc7a9ebfeecd0cc543ae58ffcfc3cd982b6e4b86bff485b3afd55fd6e9f04a"
         }
       ]
     },
     {
       "id": "claim_171e3e64173941df995e2a10f63d4c51",
-      "statement": "The canonical diff gate runs production static and documentation checks, cartridge contract, rendering, SDK and isolated proof checks, sequential migrated PostgreSQL tests, the live PostgreSQL-to-Rust-API-to-Signal-Siege-to-QML smoke, and remote-provider security conformance before writing a worktree receipt.",
+      "statement": "The canonical diff gate runs production static and documentation checks, cartridge contract, renderer, SDK, isolated proof, sequential PostgreSQL tests, the live Rust/API/QML first-playable smoke, provider conformance, and the Door Legends authority pilot before writing a worktree receipt.",
       "evidence": [
         {
-          "resource": "repo://bin/gate.sh#L72-L100",
-          "version": "repo-lines-v1:sha256:7cc0c1e96ac4ce9c34cba291a90f33e108c9020167ef2b0f0bb109846900bdcc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3YmY1ZmE0ZGMyMDc5YWUyNzRhMmVmMjBkODllMjUzMGEwZTg0NTZhMTM2ODA4NGZjNDViZjhhNjc4ZWRhYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyODc1MGZhMWRjNGFmYjVkNTRmYTdkMTIwYmI1N2M5MjM0YzE1ZDEyZTUzNDI1YzVhMTQyZTA2YTcyM2I3MjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1OGI4NzEwNzI3NGZiN2I2NmFkMzM1ODg4M2IyODQ2ODNiYWJjMzllNDcwM2JjY2JjM2Y0NDZmNzA5MTgxMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI1MGVhNGFjM2U3YzAyNTUxODUyMTM2YWQxYjA3ZTAxMGEyZGRkYzliNmQ1NjQ1ZTE4Yzc4OGNmNGJkNTlhNzgifQ"
+          "resource": "repo://bin/gate.sh",
+          "version": "repo-file-v1:sha256:0c9edbf8c0e6832dd56acbdc837dcd4590c15a932190ec2b2d6b219907e4747a"
         },
         {
           "resource": "repo://scripts/test-database.sh",
           "version": "repo-file-v1:sha256:03d27724868472fc8837f5e0b0ec424224dc9de3a743d59d4cc20f70adfdf3a4"
         },
         {
-          "resource": "repo://scripts/dev.sh#L57-L114",
-          "version": "repo-lines-v1:sha256:d57fe7dfcb60d32c47702d610e9f8c7517b51c1351672346432bede0701f77c2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4MTdlNGFlNjNmZjcxM2JjMDNmMGJhNzk2NTcwOWQ1N2UyYWU0ZDg0YTcxZGY3YTlhMWY1ZmRiOTk4MGUyODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZmM5MGZmOGE0NDE0YzU0NDFkMGY2NzdjNWNiZmRhMzhiNDc0ZTUxYmZkNTU5YTU1NTlkZTBmODc3MDU1MjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNmFkMmQ1NGM2ZWEyZjJjZGRkMDM4NTgyOGQ2NDJhYTdlODc3NDQzMWYxY2NkMmIzZjBhYTMwYzJhYTIwMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5M2U0MzM1ZGUzMzk1NmU4Y2QxYTAxOTFlYzI1ZGM1ZjVkMDUxOTU3YTE3ZWU3OWE0ZTM0YjVmYjkzNDhlNDcifQ"
+          "resource": "repo://scripts/dev.sh",
+          "version": "repo-file-v1:sha256:48b86a5ce58f10a6eb12bd884ce9319f23ee0da904ca1a527342939cf4be60ed"
         },
         {
-          "resource": "repo://scripts/test-provider-conformance.sh#L13-L24",
-          "version": "repo-lines-v1:sha256:295dbca904758d2322a132053e4fef228a2d440a0413d4cd8d1e1497051f9883:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YzUxYmE5OTE1OGVjMzYzZDQwYjc3OGVmMjcxMTI2ZGEzZmQ4MzE1ZWU1MjM4MjI0MjA0NjliNTI5YTBiOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1Yzk0MDBmZDAyYTcxMjI3Y2M4MzM5NTViODgyZTY1YjQ3ZDRjMTBmOWVjZGVlNGRmOTM4MmQzZDU2NTVlYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhMDkzYjgxODk5MjRjOTAwMDZlZGQ1YmNkYzY5YTAwNzU4ZDQ4YzNlMTU2NGY4NmVlZGQ0OTFiMWVmNjJhZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/test-provider-conformance.sh",
+          "version": "repo-file-v1:sha256:6300d6434a11db31207b465dca8ad6e27c8f75ac8b52de692914cda20b0425c5"
+        },
+        {
+          "resource": "repo://scripts/test-provider-authority-pilot.sh",
+          "version": "repo-file-v1:sha256:93ecaa3b978bf6d9d0ce21d068b1e6346e36d4f4041271a749b3a06a849be98e"
         }
       ]
     },
@@ -76,15 +72,15 @@
     },
     {
       "id": "claim_4fd32c9a1f524cdc9a89f6db83ab95d9",
-      "statement": "Forty-three database-backed tests are ignored in the ordinary unit loop and run sequentially against SQLx-managed migrated PostgreSQL databases in non-fast gates.",
+      "statement": "Forty-five database-backed tests are ignored in the ordinary unit loop and run sequentially against SQLx-managed migrated PostgreSQL databases in non-fast gates.",
       "evidence": [
         {
           "resource": "repo://scripts/test-database.sh",
           "version": "repo-file-v1:sha256:03d27724868472fc8837f5e0b0ec424224dc9de3a743d59d4cc20f70adfdf3a4"
         },
         {
-          "resource": "repo://crates/server/src/signal_siege_api_tests.rs#L116-L534",
-          "version": "repo-lines-v1:sha256:0b18af191edcd5f9826a2bd77991f3e71a89b98845eb7d19a854dba44ff74ae6:eyJzZWxlY3RlZExpbmVDb3VudCI6NDE5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxODdjMGVhMDBhMTAyNTBhOTJkMWVkNGM3N2E0NzIwYjIwMWE0NTI3MjA3ZDg2ZGRiZGIwYjFjYjAzMTI5OTExIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwOWM0OGI1MTRlMTMzZWUxZDhkYjMxMTI3ZmM5YmJiZTg3ZjE3MmRlZjgwNzhlYTY0NThhYTk1ZTY5NTNhZjliIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0ZGZmNThmZmExYTRjZWJiMTc1MTFhODAxY2NkZDRiYWRkYmQwYzE0NzQxYjQyMTViZWYxNDNmNjFkMDA3OGRhIn0"
+          "resource": "repo://docs/planning/pipeline/completed/signal-siege-versus-and-keyboard-first-game-flow.notes.md",
+          "version": "repo-file-v1:sha256:9ef97bedaba298345bdcfee71d0c8c71c635f424e789628b48fb6bc8185a2395"
         }
       ]
     },
@@ -197,18 +193,8 @@
       "statement": "The game foundation test slice proves stable catalog ordering, body bounds, exact-version creation and commands, semantic replay, collision and revision failures, rollback silence, participant privacy, atomic sync effects, and one-winner concurrency.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/game_api_tests.rs#L114-L835",
-          "version": "repo-lines-v1:sha256:d16c1d669659509f3b2769908293a470c3e3dffe68c6ca3ce91a4125022b824c:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJjNmNiMmE3NjQ1ZDYzYWQ0M2FlOTdjMmY0ZTQ0OGYyOWQ4NDJjMjViYmI2ZDgwNTY4NzkwZmRjM2RjYTllZmEzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwODA5NmE4M2I3ZGExMDg2MTRkYTUwODc0YTBkZGQwYWJiZTE2Zjc1MmM5OGUxZmEwNDMwYTNkMTkzNzMyMzY5IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzZmU4OGM3ZDJmMmRlMTdlMTAxZjZmNDQ2Yjk4N2YwZGJkYzdhYTI3OWMzYjM1ZTVmODExYjkyZWQ4NWE4MzI2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3MzlmYTk4ZTk5ZmMxY2I1MDA0OGQ5YTU2Njc2MjU2NmVhMWEwYjFkNzhiYzMwNzZjZTQxYjQ3NGFhYzU5ZDY0In0"
-        }
-      ]
-    },
-    {
-      "id": "claim_9f9d730ab7f149abad632dd8bf1af4bd",
-      "statement": "The game foundation test slice proves stable catalog ordering, body bounds, exact-version creation and commands, semantic replay, collision and revision failures, rollback silence, participant privacy, atomic sync effects, and one-winner concurrency.",
-      "evidence": [
-        {
-          "resource": "repo://crates/server/src/game_api_tests.rs#L114-L835",
-          "version": "repo-lines-v1:sha256:d16c1d669659509f3b2769908293a470c3e3dffe68c6ca3ce91a4125022b824c:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJjNmNiMmE3NjQ1ZDYzYWQ0M2FlOTdjMmY0ZTQ0OGYyOWQ4NDJjMjViYmI2ZDgwNTY4NzkwZmRjM2RjYTllZmEzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwODA5NmE4M2I3ZGExMDg2MTRkYTUwODc0YTBkZGQwYWJiZTE2Zjc1MmM5OGUxZmEwNDMwYTNkMTkzNzMyMzY5IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzZmU4OGM3ZDJmMmRlMTdlMTAxZjZmNDQ2Yjk4N2YwZGJkYzdhYTI3OWMzYjM1ZTVmODExYjkyZWQ4NWE4MzI2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3MzlmYTk4ZTk5ZmMxY2I1MDA0OGQ5YTU2Njc2MjU2NmVhMWEwYjFkNzhiYzMwNzZjZTQxYjQ3NGFhYzU5ZDY0In0"
+          "resource": "repo://crates/server/src/game_api_tests.rs",
+          "version": "repo-file-v1:sha256:52d285cf7488fc0d06b1e6bd5abd283781a1432fb130aaa3c13d47c6a8a4bcc0"
         }
       ]
     },
@@ -332,25 +318,29 @@
     },
     {
       "id": "claim_77b3989949a340bbae538a0b3f950037",
-      "statement": "Six migrated challenge tests plus one pre-database body-limit test cover private creation and reads, exact replay and collisions, typed inbox and minimal sync payloads, exact-session acceptance, terminal history, expiry, limits, block and initializer rollback, and one-winner transition races.",
+      "statement": "Seven migrated challenge tests plus one pre-database body-limit test cover private creation and reads, exact replay and collisions, typed inbox and minimal sync payloads, production Signal Siege v2 alternation and completion, exact-session acceptance, terminal history, expiry, limits, rollback, and one-winner races.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/challenge_api_tests.rs#L101-L716",
-          "version": "repo-lines-v1:sha256:0a4545a9d2e972d9630ae45d1554109b7db31961b26669c012496e2b4f0bfc56:eyJzZWxlY3RlZExpbmVDb3VudCI6NjE2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1MTk0ODRlZWRmMzY0ZmI4YzEyZjFlYjk4ZmJmNmE5YjRmNjUwZjQyNzg3NGE4ZDczNTkwMTBhYWRlNDMxYmM4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwOTdkYzU5NzEzOTZlMzkwZjgwOTdlOTc0YjI1NTU2NzkwMzBiMzE1ZWFlN2JjYjZjODg1NjAwZGIxMWMzODhhIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJiNGI0ZGJmMzJkNmZhNThkMDJhZGQ4ODVjNGY5ZTg0MWM0ZjQzNjAzNmFjNjFjMGJlMDNiMjQ4YzFiYWNlMjE3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzNDMwNjFmYjM0ZWQzNGYxYTkwOTFkYjdlZjU4MGM4ZjEwZjczNDZmY2MzMmEzN2JiOGE4ZjNhZjM1NTk0NzFiIn0"
+          "resource": "repo://crates/server/src/challenge_api_tests.rs",
+          "version": "repo-file-v1:sha256:e26189fc593dae0495455a3ed8768111de6e284c06667afe3f5e41df639d00ea"
         }
       ]
     },
     {
       "id": "claim_3ff6dd11f7b24702893885ac720190dc",
-      "statement": "Signal Siege validation adds five deterministic rule tests, one local catalog/body-limit test, and four PostgreSQL cases for owner scope, replay, active-cap races, completion, no-bot identity, history, privacy, and rollback.",
+      "statement": "Signal Siege validation includes ten deterministic v1/v2 rule tests, one local exact production-catalog and body-limit test, four solo PostgreSQL cases, and the migrated two-person challenge-to-terminal-session case.",
       "evidence": [
         {
-          "resource": "repo://crates/game-signal-siege/src/lib.rs#L344-L597",
-          "version": "repo-lines-v1:sha256:d2c12d98a77c9c2b4ae58bff66211e59cd012509db1ee06916cdad497a1b44e3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjU0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyNWNmNWZjMjNmMmE2ZDIzYzNlYTUxZTcyZjVlODk2Yzc1NTVmYmFhMDVjZDViMWVhMTgyYmY5NjE4YThlODFiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://crates/game-signal-siege/src/lib.rs",
+          "version": "repo-file-v1:sha256:2f9aee0455c6176c3ed0d3cfeda68884a9d1547adf7f1a6c45e345756808f25f"
         },
         {
-          "resource": "repo://crates/server/src/signal_siege_api_tests.rs#L75-L534",
-          "version": "repo-lines-v1:sha256:949b38a42bfaf2ec01e51db8b407fdd7d96159e1f3b5cc7f11f6f4a0b5cc0e54:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1MTk0ODRlZWRmMzY0ZmI4YzEyZjFlYjk4ZmJmNmE5YjRmNjUwZjQyNzg3NGE4ZDczNTkwMTBhYWRlNDMxYmM4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0ZGZmNThmZmExYTRjZWJiMTc1MTFhODAxY2NkZDRiYWRkYmQwYzE0NzQxYjQyMTViZWYxNDNmNjFkMDA3OGRhIn0"
+          "resource": "repo://crates/server/src/signal_siege_api_tests.rs",
+          "version": "repo-file-v1:sha256:6a3674453c28fc94ec27aac27af4cb4775fa1394d92b3695f58ddf96a55809d1"
+        },
+        {
+          "resource": "repo://crates/server/src/challenge_api_tests.rs#L398-L509",
+          "version": "repo-lines-v1:sha256:442d5437597500e81d2ba6a1035eb4b4b788b312ef54f280315532129bb0ed1b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhZjVjZDg4NzhmYjMyY2MwOGRlODYwZTg1NjE2NTY5ZWRiYmJmYmM5ZmY0NDcxZjJkZjMzM2UwZWYxMGU2ODYyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIxODdjMGVhMDBhMTAyNTBhOTJkMWVkNGM3N2E0NzIwYjIwMWE0NTI3MjA3ZDg2ZGRiZGIwYjFjYjAzMTI5OTExIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwNmNhMDEzODVjMDRiOWM4OTIxMDhkODIzNjQzYTZhMjE4ZjZhNjYwMzEwMDlhODZjYThhNjg5Y2MwMWRjY2EwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjYjA5MjcxNWU3ZTIxM2M5ZGJkNDkyMmVlMzA4M2I3YmY5NDVmOTUwNDQ5NmFkZjdiMDhjMGIzZmIyNzE2ZDU5In0"
         }
       ]
     },
@@ -373,26 +363,54 @@
       "statement": "Gate 17 runs provider unit and public protocol tests plus ignored CLI, PostgreSQL registry, separate-process TLS, replay, race, quota, lifecycle, and audit conformance sequentially against migrated PostgreSQL.",
       "evidence": [
         {
-          "resource": "repo://bin/gate.sh#L87-L90",
-          "version": "repo-lines-v1:sha256:46164238e555777eda8c8b21b8b3606a4bb4170780637a893260f15b662f1927:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTM0N2E0ZGU3NDcxZGYxY2MxZWJhYTBlOTk2YjQ2OTk4YTlkYjA4MDNjNjExZTNiYTI1YWI5ZWIxYzA3Yjc0NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMmE1Nzc0ZDM3ZWRlZjliMTdjOGRmMzJjMDkxYmIxNzYzNjYxYjcwNWUyYTliYzVkMWY4ZGU3NDAwMTdiZWRmYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmY4MjBiYmUwMmIxN2NjZjE0M2M2YmUxMjYyNGY3ZjUwNGZkNDdhZmU4NGVkMzJjYzg3M2JjZDkwZjY0MjU3YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTMzYjFiYWE2ZmE4OTc1ZGZmM2JkMDc5ZjJkMjVjYjYxZDg0OGUyM2M1MjJmMGNiMjU0ZGRjMDZlYjYwZTQ2YyJ9"
+          "resource": "repo://bin/gate.sh",
+          "version": "repo-file-v1:sha256:0c9edbf8c0e6832dd56acbdc837dcd4590c15a932190ec2b2d6b219907e4747a"
         },
         {
-          "resource": "repo://scripts/test-provider-conformance.sh#L13-L24",
-          "version": "repo-lines-v1:sha256:295dbca904758d2322a132053e4fef228a2d440a0413d4cd8d1e1497051f9883:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YzUxYmE5OTE1OGVjMzYzZDQwYjc3OGVmMjcxMTI2ZGEzZmQ4MzE1ZWU1MjM4MjI0MjA0NjliNTI5YTBiOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1Yzk0MDBmZDAyYTcxMjI3Y2M4MzM5NTViODgyZTY1YjQ3ZDRjMTBmOWVjZGVlNGRmOTM4MmQzZDU2NTVlYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhMDkzYjgxODk5MjRjOTAwMDZlZGQ1YmNkYzY5YTAwNzU4ZDQ4YzNlMTU2NGY4NmVlZGQ0OTFiMWVmNjJhZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/test-provider-conformance.sh",
+          "version": "repo-file-v1:sha256:6300d6434a11db31207b465dca8ad6e27c8f75ac8b52de692914cda20b0425c5"
         },
         {
           "resource": "repo://crates/game-provider/tests/conformance.rs",
-          "version": "repo-file-v1:sha256:ef0a4c51112e8108a3356e1bc0914f8cedf5eec58b071ef22decf54f03d6d4fe"
+          "version": "repo-file-v1:sha256:e6345752a369ec4aac17dc08e30a1158723aeb4e000ffae4779da1d362bfeade"
         },
         {
           "resource": "repo://crates/game-provider/tests/registry.rs",
-          "version": "repo-file-v1:sha256:463e0bc5ebdb2efb84dfa8775abaf3669d883688f41f12b9d08234fe594890ad"
+          "version": "repo-file-v1:sha256:8f90dd9c6f69b0ba21b8d8ee9a28c06a7f34eb4fa140c6ed56c1a42a3ebf41d9"
+        }
+      ]
+    },
+    {
+      "id": "claim_46dd32af132d418d934303b2ca56f4df",
+      "statement": "The keyboard-first QML fixture corpus runs thirty-three cases, including eight game-flow cases for 640-pixel containment, strict hostile-envelope rejection, inert provider presentation, exact retry identity, revision-conflict refetch, invalid-session cleanup, challenge transitions, and active-seat enforcement.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/test-qml-onboarding.sh",
+          "version": "repo-file-v1:sha256:01394f027d655e80d7efd53883cc1585a27fd3cbc608b0fc2f1b09b73cbd95ee"
+        },
+        {
+          "resource": "repo://client/qml/tests/fixture/tst_games.qml",
+          "version": "repo-file-v1:sha256:5624d07cc99f7ef87ec7ba5ecdff19537a8915a2a849c17a0fb3ebce55d1e931"
+        },
+        {
+          "resource": "repo://docs/planning/pipeline/completed/signal-siege-versus-and-keyboard-first-game-flow.notes.md",
+          "version": "repo-file-v1:sha256:9ef97bedaba298345bdcfee71d0c8c71c635f424e789628b48fb6bc8185a2395"
+        }
+      ]
+    },
+    {
+      "id": "claim_014dcb0b836e4b0e87809df748493906",
+      "statement": "The live game QML scenario creates two independent authenticated authority controllers, challenges and accepts through production REST routes, alternates legal commands until completion, and proves a fresh controller recovers the exact terminal revision and state.",
+      "evidence": [
+        {
+          "resource": "repo://client/qml/tests/live/tst_live_onboarding.qml#L119-L257",
+          "version": "repo-lines-v1:sha256:2da274aff9d3ae99d07b4d5f22f804b64fbb6770f4ebb7dd899f6483b70c182a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmZDgyNjFhODZjNjBlNGI0ZWI5ZDJiZjczYzIyZjUyNWZhOWRmY2NkMDY1ZDI0NDhhMmQ4MDRlMTFmZDY4ZDQxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkMzkyYjdlODQ5YTJkYTMzYmFjNWZmZGVkYWQ1ODNmNjg5ODZlNTM0MzFjOGRiYjMwNjk2ODAwZGJiYjEzYTEwIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkYmJjMzNlZmQzM2UwOTk5ODIzZjY3NmJjZjZhYTRjMjgwY2E0Mzk5ODVlMjExNTJjODdkZGJkYzBjYTMzYjYwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwNmU4ZGQyYTUxM2E4NzRiOTBiYTk1NGRiYTMxNjJhMzQ0NjVmZDU3ODcxYjA3N2QzZDljZDM5MDFiNjU0MjFiIn0"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-25T19:56:58.182Z"
+    "at": "2026-08-26T02:20:38.948Z"
   }
 }

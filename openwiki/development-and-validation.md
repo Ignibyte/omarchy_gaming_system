@@ -9,6 +9,10 @@ sources:
     resource: repo://client/qml/cartridge/nodes/TrustedImageNode.qml
   - id: openwiki-source-d392f8f0962c50f0d66e0629
     resource: repo://client/qml/Main.qml
+  - id: openwiki-source-152956378e80408d69d9dfb7
+    resource: repo://client/qml/tests/fixture/tst_games.qml
+  - id: openwiki-source-3156e0b1532bb1d02a0118e1
+    resource: repo://client/qml/tests/live/tst_live_onboarding.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
   - id: openwiki-source-fdf115002c4aabad0babec70
@@ -39,6 +43,8 @@ sources:
     resource: repo://crates/server/src/signal_siege_api_tests.rs
   - id: openwiki-source-46fb4135d6a71efad1062c0d
     resource: repo://crates/server/src/sync_api_tests.rs
+  - id: openwiki-source-48f66dd7218861d7dccea840
+    resource: repo://docs/planning/pipeline/completed/signal-siege-versus-and-keyboard-first-game-flow.notes.md
   - id: openwiki-source-d35448de763d92d5820dbaad
     resource: repo://scripts/check-pipeline-tools.sh
   - id: openwiki-source-a5928e7ee39885995efdc170
@@ -57,9 +63,16 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
+  - id: openwiki-source-31a4e9d026860da100c233f9
+    resource: repo://scripts/test-provider-authority-pilot.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-26T00:20:22.247Z"}
+  - id: openwiki-source-121d7623408fcbcd07e6d9fc
+    resource: repo://scripts/test-qml-onboarding.sh
+generated: {by: "codex", at: "2026-08-26T02:02:30.593Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-26T02:20:38.948Z
 ---
 
 # Development and validation
@@ -86,7 +99,7 @@ gaming-system log target. Smoke mode requires `/health.service` to equal
 `ogs1_` before exercising authenticated operations.
 
 In smoke mode the script first requires public `GET /v1/games` to return
-exactly Signal Siege v1. It then creates a uniquely named account
+exactly Signal Siege v1 and v2. It then creates a uniquely named account
 through `POST /v1/accounts`, verifies the success response omits password-
 derived data, and repeats the request to require `username_taken` with HTTP 409.
 It then creates a device session and verifies the authenticated inventory.
@@ -123,33 +136,40 @@ The QML client starts from a selectable server origin and requires exact healthy
 OmarchyGS identity before exposing registration or sign-in. It then supports
 password or MFA authentication, owned-persona loading, persona creation or
 selection, and an authenticated home. The authenticated shell also exposes
-keyboard-first social and inbox routes for exact-handle connection requests,
-request/connection/private-block actions, conversation/history paging,
-plain-text message send, and unread acknowledgement. The standalone `Main.qml`
-smoke forces the offscreen software backend, exits after reaching the access
-screen, and fails after a fifteen-second watchdog.
+keyboard-first social, inbox, games, challenges, and gameplay routes for exact-
+handle connection requests, request/connection/private-block actions,
+conversation/history paging, plain-text message send, unread acknowledgement,
+compiled catalog/session history, challenge lifecycle, and authoritative Signal
+Siege actions. The standalone `Main.qml` smoke forces the offscreen software
+backend, exits after reaching the access screen, and fails after a fifteen-
+second watchdog.
 
 `scripts/test-qml-onboarding.sh` is the focused client entrypoint. It owns a
 mode-0700 test configuration directory, forces deterministic headless Qt, and
 runs the real screens and controller against normal, malformed, wrong-identity,
-slow, and oversized fixture responders. The 24-case corpus covers keyboard and
+slow, and oversized fixture responders. The 33-case corpus covers keyboard and
 focus behavior, field bounds, endpoint admission, exact response shapes,
 conflicts, timeouts, response limits, request supersession, MFA terminal and
 local expiry, social inventories and actions, private message history,
-pagination, send/read, plain-text rendering, invalid-session cleanup, and
-fixture-observed request contracts. Social tests run the production root at the
+pagination, send/read, plain-text rendering, game discovery and challenge
+lifecycle, authoritative solo/versus commands, exact retry identity, revision
+refetch, hostile game-envelope rejection, invalid-session cleanup, and
+fixture-observed request contracts. Social and game tests run the production
+root at the
 640×420 minimum and reject extra private fields, oversized responses, and
 body-bearing requests to bodyless mutation endpoints.
 Temporary configuration containing credentials is mode-0600, not passed on the
 command line, and removed after each run.
 
 The full development smoke additionally runs the QML controllers against the
-real migrated Rust API three times: registration/password login/persona
-creation; selected-persona social inventory plus private history/send; and an
-MFA recovery-code challenge with owned-persona selection. Each scenario proves
-local logout and authority cleanup. Live values cross into QML through
-NUL-delimited standard input and a locked mode-0600 short-lived JSON file,
-never command-line arguments.
+real migrated Rust API four times: registration/password login/persona
+creation; selected-persona social inventory plus private history/send; an MFA
+recovery-code challenge with owned-persona selection; and two independent game
+authorities that challenge, accept, alternate Signal Siege v2 turns, complete,
+and recover the exact terminal revision and state through a fresh controller.
+Each scenario proves local logout and authority cleanup. Live values cross into
+QML through NUL-delimited standard input and a locked mode-0600 short-lived JSON
+file, never command-line arguments.
 
 Useful commands:
 
@@ -187,7 +207,7 @@ The gate currently covers:
 6. the isolated Game Cartridge workspace format, Clippy, tests, binaries,
    rustdoc, signed package, broker/provider/probe exchange, privacy assertions,
    trusted-QML smoke, and frame/memory/package measurements;
-7. forty-four ignored router tests against SQLx-managed PostgreSQL databases
+7. forty-five ignored router tests against SQLx-managed PostgreSQL databases
    in diff/full modes; and
 8. the live Signal Siege catalog, idempotent launch, bounded completed match,
    final replay/history/sync, health, registration, duplicate-conflict,
@@ -195,9 +215,10 @@ The gate currently covers:
    movement, connection, fail-closed unavailable-game challenge rejection,
    private inbox, synchronization recovery, and block lifecycle, TOTP
    enrollment, challenged login, recovery replay rejection, MFA disablement,
-   session revocation, rejected-token, the 24-case hostile QML fixture corpus,
-   real QML registration/persona, social/inbox, and MFA/persona flows, and the
-   standalone QML shell smoke.
+   session revocation, rejected-token, the 33-case hostile QML fixture corpus,
+   real QML registration/persona, social/inbox, MFA/persona, and two-authority
+   Signal Siege challenge/versus/recovery flows, and the standalone QML shell
+   smoke.
 9. the production provider boundary's operator registry, lifecycle,
    grants, fixed signed messages, public-only pinned HTTPS egress, replay and
    callback deduplication, quotas, concurrency leases, audit, and fail-closed
@@ -321,18 +342,20 @@ participant-private reads, response allowlists, version preservation after
 registry changes, indistinguishable foreign and absent sessions, monotonic
 timestamps, and one winner when two commands race at one revision. Two local
 router tests separately prove stable catalog order and the pre-database command
-body cap. Signal Siege adds five deterministic rule tests, one local exact
+body cap. Signal Siege adds ten deterministic v1/v2 rule tests, one local exact
 production-catalog/solo-body-limit test, and four PostgreSQL cases covering
 owner scope, exact replay, registry drift, final-slot cap concurrency,
 completion, final replay, no bot identity, privacy-minimal recovery, and
-rollback.
+rollback. The challenge suite owns the production two-human alternation and
+terminal-result database case.
 
-Six challenge integration tests prove participant-private creation and reads,
+Seven challenge integration tests prove participant-private creation and reads,
 exact idempotent replay and collision handling, connected/block policy,
 incoming/outgoing caps, typed lifecycle messages, payload-minimal sync events,
 terminal history and lazy expiry, exact-version session creation and seat
-order, initializer rollback, and one winner under competing transitions. One
-local router test separately proves the pre-database challenge body cap.
+order, initializer rollback, production Signal Siege v2 alternation and
+completion, and one winner under competing transitions. One local router test
+separately proves the pre-database challenge body cap.
 
 The three persona integration tests use multiple accounts to prove response
 allowlists, owner-only inventory and mutation, indistinguishable foreign and
@@ -351,9 +374,9 @@ tests prove encrypted pending enrollment, confirmation and
 status privacy, TOTP/recovery/challenge replay resistance, account inactivity,
 independent bounded challenge issuance, cross-challenge attempt locks, and
 dual-proof disablement with cleanup. Together with two registration and three
-session tests plus three persona tests, five game tests, six challenge tests,
+session tests plus three persona tests, five game tests, seven challenge tests,
 and six synchronization tests, plus four Signal Siege cases and one Door
-Legends authority case, these make forty-four PostgreSQL-backed tests.
+Legends authority case, these make forty-five PostgreSQL-backed tests.
 The synchronization cases
 exercise durable baseline/incremental/reset behavior, mutation-coupled event
 delivery, owner privacy, and real-TCP WebSocket authentication, hinting, frame
@@ -441,11 +464,13 @@ server, so absent or stale provenance fails closed.
   the password, factor, or challenge failed. MFA 429: factor attempts are
   temporarily locked or ten live challenges already exist. Use
   `mfa_api_tests.rs` before changing those distinctions.
-- QML onboarding failure: run `scripts/test-qml-onboarding.sh`; inspect the
+- QML client failure: run `scripts/test-qml-onboarding.sh`; inspect the
   selected endpoint, exact health identity, response-size/timeout/redirect
-  outcome, exact success or error shape, and whether Bearer or MFA authority
-  was cleared on the terminal path. Use `scripts/dev.sh --smoke-test` when the
-  fixture passes but the real migrated API flow fails.
+  outcome, exact success or error shape, selected-persona gateway, game
+  participant/cardinality and state invariants, and whether Bearer, MFA, social,
+  or game authority was cleared on the terminal path. Use
+  `scripts/dev.sh --smoke-test` when the fixture passes but the real migrated
+  API flow fails.
 - Production cartridge failure: run `scripts/test-game-cartridge.sh` and fix the
   named canonical archive, signature, schema/media, capability, bounded-input,
   store, or revocation contract; do not bypass gate 11.

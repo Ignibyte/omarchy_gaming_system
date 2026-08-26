@@ -4,7 +4,7 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `024`**
+- **Next ticket number: `025`**
 
 ## Open queue
 
@@ -12,6 +12,7 @@ No open tickets.
 
 ## Closed
 
+- [`TICKET-024` — Signal Siege versus and keyboard-first game flow](closed/TICKET-024-signal-siege-versus-and-keyboard-first-game-flow.md)
 - [`TICKET-023` — Keyboard-first QML connections and private inbox](closed/TICKET-023-keyboard-first-qml-connections-and-private-inbox.md)
 - [`TICKET-022` — Keyboard-first QML account and persona onboarding](closed/TICKET-022-keyboard-first-qml-account-and-persona-onboarding.md)
 - [`TICKET-019` — First-party remote-provider migration pilot](closed/TICKET-019-first-party-remote-provider-migration-pilot.md)

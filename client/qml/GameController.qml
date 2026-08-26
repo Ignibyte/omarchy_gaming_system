@@ -1,0 +1,952 @@
+import QtQuick
+
+QtObject {
+    id: root
+
+    required property var sessionController
+    property var actor: null
+    property string statusText: ""
+    property string errorText: ""
+    property string loadState: "idle"
+    property var catalog: []
+    property var connections: []
+    property var challenges: []
+    property var nextChallengeBefore: null
+    property var sessions: []
+    property var selectedSession: null
+    property var presentation: ({
+        "supported": false,
+        "title": "",
+        "turn_label": "",
+        "actor_label": "",
+        "opponent_label": "",
+        "actor_core": 0,
+        "actor_energy": 0,
+        "actor_guard": 0,
+        "opponent_core": 0,
+        "opponent_energy": 0,
+        "opponent_guard": 0,
+        "can_act": false,
+        "can_strike": false,
+        "can_guard": false,
+        "can_charge": false,
+        "status": ""
+    })
+    readonly property bool busy: _expectedGeneration !== 0
+    readonly property bool hasRetryableMutation: _pendingMutation !== null
+
+    property int _expectedGeneration: 0
+    property string _expectedOperation: ""
+    property bool _appendChallenges: false
+    property var _pendingMutation: null
+
+    property Connections _requestConnection: Connections {
+        target: root.sessionController
+        function onPlayerRequestFinished(generation, operation, status, body, transportError) {
+            root._handleFinished(generation, operation, status, body, transportError)
+        }
+    }
+
+    onActorChanged: reset()
+
+    function reset() {
+        if (_expectedGeneration !== 0)
+            sessionController.cancelPlayerRequest()
+        _expectedGeneration = 0
+        _expectedOperation = ""
+        _appendChallenges = false
+        _pendingMutation = null
+        statusText = ""
+        errorText = ""
+        loadState = "idle"
+        catalog = []
+        connections = []
+        challenges = []
+        nextChallengeBefore = null
+        sessions = []
+        _clearSelectedSession()
+    }
+
+    function refreshGames() {
+        if (!_ready())
+            return false
+        errorText = ""
+        statusText = "Loading game cartridges..."
+        loadState = "loading"
+        return _request("player_games_catalog", "GET", "/v1/games", null, false)
+    }
+
+    function refreshChallenges() {
+        if (!_ready())
+            return false
+        _appendChallenges = false
+        errorText = ""
+        statusText = "Loading challenge cartridges..."
+        loadState = "loading"
+        return _request("player_challenges_catalog", "GET", "/v1/games", null, false)
+    }
+
+    function loadOlderChallenges() {
+        if (!_ready() || nextChallengeBefore === null || !_validUuid(nextChallengeBefore))
+            return false
+        _appendChallenges = true
+        errorText = ""
+        statusText = "Loading older challenges..."
+        return _request("player_challenges_list", "GET", _actorPath()
+                        + "/game-challenges?limit=100&before=" + nextChallengeBefore)
+    }
+
+    function startSolo(game) {
+        if (!_ready() || !_validManifest(game) || game.authority !== "platform_compiled"
+                || game.min_human_players !== 1 || game.max_human_players !== 1)
+            return false
+        return _startMutation("player_games_start", "POST", _actorPath() + "/game-sessions", {
+            "idempotency_key": _newUuid(),
+            "game_key": game.key,
+            "game_version": game.version
+        }, "Starting " + game.display_name + "...")
+    }
+
+    function createChallenge(connection, game) {
+        if (!_ready() || !_validConnection(connection) || !_validManifest(game)
+                || game.authority !== "platform_compiled"
+                || game.min_human_players !== 2 || game.max_human_players !== 2)
+            return false
+        return _startMutation("player_challenges_create", "POST",
+                              _actorPath() + "/game-challenges", {
+            "idempotency_key": _newUuid(),
+            "challenged_persona_id": connection.persona.id,
+            "game_key": game.key,
+            "game_version": game.version
+        }, "Sending game challenge...")
+    }
+
+    function acceptChallenge(challenge) {
+        return _challengeMutation("player_challenges_accept", "PUT", challenge,
+                                  "accept", "Accepting challenge...")
+    }
+
+    function declineChallenge(challenge) {
+        return _challengeMutation("player_challenges_decline", "PUT", challenge,
+                                  "decline", "Declining challenge...")
+    }
+
+    function cancelChallenge(challenge) {
+        if (!_ready() || !_validChallenge(challenge) || challenge.status !== "pending"
+                || challenge.direction !== "outgoing")
+            return false
+        return _startMutation("player_challenges_cancel", "DELETE",
+                              _actorPath() + "/game-challenges/" + challenge.id,
+                              null, "Canceling challenge...")
+    }
+
+    function openChallengeSession(challenge) {
+        if (!_validChallenge(challenge) || challenge.status !== "accepted"
+                || !_validUuid(challenge.game_session_id))
+            return false
+        sessionController.showPlayerScreen("gameplay")
+        return openSessionById(challenge.game_session_id)
+    }
+
+    function openSession(session) {
+        if (!_validSession(session))
+            return false
+        sessionController.showPlayerScreen("gameplay")
+        return openSessionById(session.id)
+    }
+
+    function openSessionById(sessionId) {
+        if (!_ready() || !_validUuid(sessionId))
+            return false
+        errorText = ""
+        statusText = "Loading authoritative game state..."
+        loadState = "loading"
+        return _request("player_game_detail", "GET", _actorPath()
+                        + "/game-sessions/" + sessionId)
+    }
+
+    function closeSession() {
+        if (busy)
+            sessionController.cancelPlayerRequest()
+        _expectedGeneration = 0
+        _expectedOperation = ""
+        _pendingMutation = null
+        _clearSelectedSession()
+        errorText = ""
+        loadState = "idle"
+        return true
+    }
+
+    function submitAction(action) {
+        const selectedAction = String(action)
+        if (!_ready() || !_validSession(selectedSession) || !presentation.supported
+                || !presentation.can_act
+                || ["strike", "guard", "charge"].indexOf(selectedAction) === -1)
+            return false
+        if ((selectedAction === "strike" && !presentation.can_strike)
+                || (selectedAction === "guard" && !presentation.can_guard))
+            return false
+        return _startMutation("player_game_command", "POST", _actorPath()
+                              + "/game-sessions/" + selectedSession.id + "/commands", {
+            "idempotency_key": _newUuid(),
+            "expected_revision": selectedSession.revision,
+            "command": {"kind": "play", "action": selectedAction}
+        }, "Sending " + selectedAction.toUpperCase() + " command...")
+    }
+
+    function retryPendingMutation() {
+        if (!_ready() || _pendingMutation === null)
+            return false
+        const pending = _pendingMutation
+        errorText = ""
+        statusText = "Retrying the same operation..."
+        return _request(pending.operation, pending.method, pending.path, pending.document)
+    }
+
+    function challengeGames() {
+        return catalog.filter(function(game) {
+            return game.authority === "platform_compiled"
+                    && game.min_human_players === 2 && game.max_human_players === 2
+        })
+    }
+
+    function soloGames() {
+        return catalog.filter(function(game) {
+            return game.authority === "platform_compiled"
+                    && game.min_human_players === 1 && game.max_human_players === 1
+        })
+    }
+
+    function gameName(gameKey, gameVersion) {
+        for (let index = 0; index < catalog.length; index++) {
+            const game = catalog[index]
+            if (game.key === gameKey && game.version === gameVersion)
+                return game.display_name
+        }
+        return gameKey + " v" + gameVersion
+    }
+
+    function otherChallengePersona(challenge) {
+        if (!_validChallenge(challenge))
+            return null
+        return challenge.direction === "incoming" ? challenge.challenger : challenge.challenged
+    }
+
+    function _challengeMutation(operation, method, challenge, transition, message) {
+        if (!_ready() || !_validChallenge(challenge) || challenge.status !== "pending"
+                || challenge.direction !== "incoming")
+            return false
+        return _startMutation(operation, method, _actorPath() + "/game-challenges/"
+                              + challenge.id + "/" + transition, null, message)
+    }
+
+    function _startMutation(operation, method, path, document, message) {
+        if (busy)
+            return false
+        _pendingMutation = {
+            "operation": operation,
+            "method": method,
+            "path": path,
+            "document": document
+        }
+        errorText = ""
+        statusText = message
+        return _request(operation, method, path, document)
+    }
+
+    function _request(operation, method, path, document, authenticated) {
+        if (busy)
+            return false
+        const generation = sessionController.playerRequest(
+                    operation, method, path, document, authenticated)
+        if (generation === 0) {
+            errorText = "The player request could not start. Try again."
+            return false
+        }
+        _expectedGeneration = generation
+        _expectedOperation = operation
+        loadState = "loading"
+        return true
+    }
+
+    function _handleFinished(generation, operation, status, body, transportError) {
+        if (generation !== _expectedGeneration || operation !== _expectedOperation)
+            return
+        _expectedGeneration = 0
+        _expectedOperation = ""
+        if (transportError !== "") {
+            loadState = "error"
+            errorText = transportError === "timeout" ? "The request timed out."
+                      : transportError === "response_too_large" ? "The response exceeded the client limit."
+                      : "The server could not complete the request."
+            statusText = _pendingMutation === null
+                    ? "Request not completed." : "Outcome unknown; retry uses the same operation ID."
+            return
+        }
+
+        const parsed = _parseDocument(body)
+        if (!parsed.ok) {
+            _pendingMutation = null
+            _protocolFailure()
+            return
+        }
+        const document = parsed.document
+        if (_invalidSession(status, document)) {
+            reset()
+            sessionController.invalidatePlayerSession("This device session is no longer valid.")
+            return
+        }
+        if (status < 200 || status >= 300) {
+            _pendingMutation = null
+            _actionFailure(operation, document)
+            return
+        }
+
+        _pendingMutation = null
+        if (operation === "player_games_catalog" || operation === "player_challenges_catalog") {
+            if (!_validCatalog(document)) { _protocolFailure(); return }
+            catalog = document.games
+            if (operation === "player_games_catalog") {
+                statusText = "Loading game sessions..."
+                _request("player_games_sessions", "GET", _actorPath() + "/game-sessions?limit=100")
+            } else {
+                statusText = "Loading accepted connections..."
+                _request("player_challenges_connections", "GET", _actorPath() + "/connections")
+            }
+        } else if (operation === "player_games_sessions") {
+            if (!_exactKeys(document, ["sessions"])
+                    || !_validBoundedArray(document.sessions, _validSession)) { _protocolFailure(); return }
+            sessions = document.sessions
+            loadState = "ready"
+            statusText = sessions.length === 0 ? "No game sessions yet." : "Game sessions are current."
+            errorText = ""
+        } else if (operation === "player_challenges_connections") {
+            if (!_exactKeys(document, ["connections"])
+                    || !_validBoundedArray(document.connections, _validConnection)) { _protocolFailure(); return }
+            connections = document.connections
+            statusText = "Loading game challenges..."
+            _request("player_challenges_list", "GET", _actorPath() + "/game-challenges?limit=100")
+        } else if (operation === "player_challenges_list") {
+            if (!_validChallengePage(document)) { _protocolFailure(); return }
+            if (_appendChallenges) {
+                const existingIds = ({})
+                for (let existingIndex = 0; existingIndex < challenges.length; existingIndex++)
+                    existingIds[challenges[existingIndex].id] = true
+                for (let pageIndex = 0; pageIndex < document.challenges.length; pageIndex++) {
+                    if (existingIds[document.challenges[pageIndex].id]) {
+                        _protocolFailure()
+                        return
+                    }
+                }
+                if (challenges.length > 0 && document.challenges.length > 0
+                        && Date.parse(challenges[challenges.length - 1].created_at)
+                           < Date.parse(document.challenges[0].created_at)) {
+                    _protocolFailure()
+                    return
+                }
+            }
+            challenges = _appendChallenges ? challenges.concat(document.challenges) : document.challenges
+            nextChallengeBefore = document.next_before
+            _appendChallenges = false
+            loadState = "ready"
+            statusText = challenges.length === 0 ? "No game challenges yet." : "Game challenges are current."
+            errorText = ""
+        } else if (operation === "player_games_start") {
+            if ((status !== 200 && status !== 201) || !_validSession(document)) { _protocolFailure(); return }
+            selectedSession = document
+            _derivePresentation()
+            sessionController.showPlayerScreen("gameplay")
+            loadState = "ready"
+            statusText = status === 201 ? "Game cartridge started." : "Existing start recovered."
+        } else if (operation.startsWith("player_challenges_")
+                   && ["player_challenges_create", "player_challenges_accept",
+                       "player_challenges_decline", "player_challenges_cancel"].indexOf(operation) !== -1) {
+            if (!_validChallenge(document)) { _protocolFailure(); return }
+            if (operation === "player_challenges_accept" && _validUuid(document.game_session_id)) {
+                sessionController.showPlayerScreen("gameplay")
+                openSessionById(document.game_session_id)
+            } else {
+                statusText = "Challenge state updated."
+                Qt.callLater(function() { root.refreshChallenges() })
+            }
+        } else if (operation === "player_game_detail") {
+            if (!_validSession(document)) { _protocolFailure(); return }
+            selectedSession = document
+            _derivePresentation()
+            loadState = "ready"
+            statusText = document.status === "completed"
+                    ? "Final authoritative result loaded." : "Authoritative turn state loaded."
+            errorText = ""
+        } else if (operation === "player_game_command") {
+            if (!_validCommandResponse(document, selectedSession)) { _protocolFailure(); return }
+            selectedSession = Object.assign({}, selectedSession, {
+                "revision": document.revision,
+                "status": document.status,
+                "state": document.state,
+                "authority": document.authority,
+                "provider_release_id": document.provider_release_id,
+                "availability": document.availability
+            })
+            _derivePresentation()
+            statusText = "Command committed; confirming session..."
+            openSessionById(document.game_session_id)
+        }
+    }
+
+    function _actionFailure(operation, document) {
+        const code = _errorCode(document)
+        if (code === "") { _protocolFailure(); return }
+        if (operation === "player_game_command" && code === "game_revision_conflict"
+                && selectedSession !== null) {
+            statusText = "Turn changed; refreshing authoritative state..."
+            openSessionById(selectedSession.id)
+            return
+        }
+        const messages = {
+            "persona_not_found": "The selected persona is unavailable.",
+            "game_session_not_found": "That game session is unavailable.",
+            "game_unavailable": "That exact game cartridge is unavailable.",
+            "invalid_game_participants": "That game does not support this player count.",
+            "too_many_active_game_sessions": "Finish an active solo game before starting another.",
+            "challenge_target_unavailable": "That connection cannot receive this challenge.",
+            "game_challenge_not_found": "That challenge is unavailable.",
+            "game_challenge_expired": "That challenge expired.",
+            "game_challenge_transition_unavailable": "That challenge was already resolved.",
+            "duplicate_pending_game_challenge": "That exact challenge is already pending.",
+            "game_challenge_limit_reached": "The pending challenge limit was reached.",
+            "game_command_rejected": "That action is not legal for the current turn.",
+            "invalid_game_command": "The game command was not accepted.",
+            "game_idempotency_conflict": "The operation identity conflicted with an earlier command.",
+            "game_challenge_idempotency_conflict": "The operation identity conflicted with an earlier challenge.",
+            "invalid_pagination": "That page is unavailable.",
+            "internal_error": "The server could not complete the request."
+        }
+        errorText = messages[code] || "The server rejected the request."
+        statusText = "Request not accepted."
+        loadState = "error"
+    }
+
+    function _protocolFailure() {
+        _appendChallenges = false
+        loadState = "error"
+        statusText = "The server response was not accepted."
+        errorText = "No game authority was changed; retry after checking the server."
+    }
+
+    function _derivePresentation() {
+        const session = selectedSession
+        if (!_validSession(session) || session.authority !== "platform_compiled"
+                || session.game_key !== "signal_siege") {
+            presentation = Object.assign({}, presentation, {
+                "supported": false, "can_act": false, "can_strike": false,
+                "can_guard": false, "can_charge": false
+            })
+            return
+        }
+        let actorSeat = -1
+        for (let index = 0; index < session.participants.length; index++) {
+            if (session.participants[index].persona.id === actor.id)
+                actorSeat = session.participants[index].seat
+        }
+        if (actorSeat < 0) {
+            presentation = Object.assign({}, presentation, {
+                "supported": false, "can_act": false, "can_strike": false,
+                "can_guard": false, "can_charge": false
+            })
+            return
+        }
+        if (session.game_version === 1) {
+            const state = session.state
+            const active = session.status === "active" && state.phase === "awaiting_human"
+            presentation = {
+                "supported": true,
+                "title": "SIGNAL SIEGE // SOLO",
+                "turn_label": "ROUND " + state.round + " / " + state.max_rounds,
+                "actor_label": actor.display_name,
+                "opponent_label": "SIEGE BOT",
+                "actor_core": state.human.core,
+                "actor_energy": state.human.energy,
+                "actor_guard": 0,
+                "opponent_core": state.bot.core,
+                "opponent_energy": state.bot.energy,
+                "opponent_guard": 0,
+                "can_act": active,
+                "can_strike": active && state.human.energy > 0,
+                "can_guard": active && state.human.energy > 0,
+                "can_charge": active,
+                "status": _gameplayStatus(session, actorSeat)
+            }
+            return
+        }
+        if (session.game_version === 2) {
+            const versus = session.state
+            const opponentSeat = 1 - actorSeat
+            const active = session.status === "active" && versus.active_seat === actorSeat
+            presentation = {
+                "supported": true,
+                "title": "SIGNAL SIEGE // VERSUS",
+                "turn_label": "TURN " + versus.turn + " / " + versus.max_turns,
+                "actor_label": session.participants[actorSeat].persona.display_name,
+                "opponent_label": session.participants[opponentSeat].persona.display_name,
+                "actor_core": versus.players[actorSeat].core,
+                "actor_energy": versus.players[actorSeat].energy,
+                "actor_guard": versus.players[actorSeat].guard,
+                "opponent_core": versus.players[opponentSeat].core,
+                "opponent_energy": versus.players[opponentSeat].energy,
+                "opponent_guard": versus.players[opponentSeat].guard,
+                "can_act": active,
+                "can_strike": active && versus.players[actorSeat].energy > 0,
+                "can_guard": active && versus.players[actorSeat].energy > 0,
+                "can_charge": active,
+                "status": _gameplayStatus(session, actorSeat)
+            }
+            return
+        }
+        presentation = Object.assign({}, presentation, {
+            "supported": false, "can_act": false, "can_strike": false,
+            "can_guard": false, "can_charge": false
+        })
+    }
+
+    function _gameplayStatus(session, actorSeat) {
+        if (session.status === "completed") {
+            const outcome = session.state.outcome
+            if (session.game_version === 1)
+                return outcome.winner === "human" ? "VICTORY // " + outcome.reason.toUpperCase()
+                     : outcome.winner === "bot" ? "DEFEAT // " + outcome.reason.toUpperCase()
+                     : "DRAW // " + outcome.reason.toUpperCase()
+            const actorWinner = actorSeat === 0 ? "seat_0" : "seat_1"
+            return outcome.winner === actorWinner ? "VICTORY // " + outcome.reason.toUpperCase()
+                 : outcome.winner === "draw" ? "DRAW // " + outcome.reason.toUpperCase()
+                 : "DEFEAT // " + outcome.reason.toUpperCase()
+        }
+        if (session.game_version === 1)
+            return "YOUR COMMAND"
+        return session.state.active_seat === actorSeat ? "YOUR TURN" : "WAITING FOR OPPONENT"
+    }
+
+    function _clearSelectedSession() {
+        selectedSession = null
+        presentation = {
+            "supported": false,
+            "title": "",
+            "turn_label": "",
+            "actor_label": "",
+            "opponent_label": "",
+            "actor_core": 0,
+            "actor_energy": 0,
+            "actor_guard": 0,
+            "opponent_core": 0,
+            "opponent_energy": 0,
+            "opponent_guard": 0,
+            "can_act": false,
+            "can_strike": false,
+            "can_guard": false,
+            "can_charge": false,
+            "status": ""
+        }
+    }
+
+    function _validCatalog(value) {
+        if (!_exactKeys(value, ["games"]) || !_validBoundedArray(value.games, _validManifest))
+            return false
+        for (let index = 1; index < value.games.length; index++) {
+            const previous = value.games[index - 1]
+            const current = value.games[index]
+            if (previous.key > current.key
+                    || (previous.key === current.key && previous.version >= current.version))
+                return false
+        }
+        return true
+    }
+
+    function _validManifest(value) {
+        return _exactKeys(value, ["key", "version", "display_name", "min_human_players",
+                                  "max_human_players", "authority", "provider_release_id"])
+                && _boundedString(value.key, 32, 3) && /^[a-z0-9][a-z0-9_-]*$/.test(value.key)
+                && Number.isSafeInteger(value.version) && value.version > 0
+                && _boundedString(value.display_name, 64, 1)
+                && Number.isSafeInteger(value.min_human_players) && value.min_human_players > 0
+                && Number.isSafeInteger(value.max_human_players)
+                && value.max_human_players >= value.min_human_players
+                && value.max_human_players <= 8
+                && (value.authority === "platform_compiled" || value.authority === "registered_provider")
+                && (value.provider_release_id === null || _validUuid(value.provider_release_id))
+                && (value.authority === "registered_provider") === (value.provider_release_id !== null)
+    }
+
+    function _validChallengePage(value) {
+        if (!_exactKeys(value, ["challenges", "next_before"])
+                || !_validBoundedArray(value.challenges, _validChallenge)
+                || !(value.next_before === null || _validUuid(value.next_before)))
+            return false
+        const seen = ({})
+        for (let index = 0; index < value.challenges.length; index++) {
+            const challenge = value.challenges[index]
+            if (seen[challenge.id])
+                return false
+            seen[challenge.id] = true
+            if (index > 0 && Date.parse(value.challenges[index - 1].created_at)
+                    < Date.parse(challenge.created_at))
+                return false
+        }
+        return true
+    }
+
+    function _validChallenge(value) {
+        if (!_exactKeys(value, ["id", "game_key", "game_version", "direction", "status",
+                                "challenger", "challenged", "game_session_id", "expires_at",
+                                "resolved_at", "created_at", "updated_at"])
+                || !_validUuid(value.id) || !_boundedString(value.game_key, 64, 1)
+                || !Number.isSafeInteger(value.game_version) || value.game_version < 1
+                || (value.direction !== "incoming" && value.direction !== "outgoing")
+                || ["pending", "accepted", "declined", "cancelled", "expired"].indexOf(value.status) === -1
+                || !_validPersona(value.challenger) || !_validPersona(value.challenged)
+                || !_validTimestamp(value.expires_at) || !_validTimestamp(value.created_at)
+                || !_validTimestamp(value.updated_at)
+                || !(value.resolved_at === null || _validTimestamp(value.resolved_at)))
+            return false
+        const accepted = value.status === "accepted"
+        return value.challenger.id !== value.challenged.id
+                && (accepted ? _validUuid(value.game_session_id) : value.game_session_id === null)
+                && (value.status === "pending" ? value.resolved_at === null : value.resolved_at !== null)
+                && (value.direction === "incoming"
+                    ? value.challenged.id === actor.id && value.challenger.id !== actor.id
+                    : value.challenger.id === actor.id && value.challenged.id !== actor.id)
+    }
+
+    function _validSession(value) {
+        if (!_exactKeys(value, ["id", "game_key", "game_version", "revision", "status", "state",
+                                "authority", "provider_release_id", "availability", "result",
+                                "participants", "completed_at", "created_at", "updated_at"])
+                || !_validUuid(value.id) || !_boundedString(value.game_key, 64, 1)
+                || !Number.isSafeInteger(value.game_version) || value.game_version < 1
+                || !Number.isSafeInteger(value.revision) || value.revision < 0
+                || (value.status !== "active" && value.status !== "completed")
+                || !Array.isArray(value.participants) || value.participants.length < 1
+                || value.participants.length > 8 || !_validTimestamp(value.created_at)
+                || !_validTimestamp(value.updated_at)
+                || !(value.completed_at === null || _validTimestamp(value.completed_at))
+                || (value.status === "completed") !== (value.completed_at !== null))
+            return false
+        let actorFound = false
+        const seenPersonas = ({})
+        for (let index = 0; index < value.participants.length; index++) {
+            const participant = value.participants[index]
+            if (!_exactKeys(participant, ["seat", "persona"]) || participant.seat !== index
+                    || !_validPersona(participant.persona))
+                return false
+            if (seenPersonas[participant.persona.id])
+                return false
+            seenPersonas[participant.persona.id] = true
+            if (participant.persona.id === actor.id)
+                actorFound = true
+        }
+        if (!actorFound)
+            return false
+        if (value.authority === "platform_compiled") {
+            if (value.game_key === "signal_siege"
+                    && ((value.game_version === 1 && value.participants.length !== 1)
+                        || (value.game_version === 2 && value.participants.length !== 2)))
+                return false
+            return value.provider_release_id === null && value.availability === null
+                    && value.result === null && value.state !== null
+                    && _validCompiledState(value.game_key, value.game_version, value.state, value.status)
+        }
+        return value.authority === "registered_provider" && _validUuid(value.provider_release_id)
+                && (value.state === null || (typeof value.state === "object" && !Array.isArray(value.state)))
+                && (value.availability === "provisioning" || value.availability === "ready"
+                    || value.availability === "reconciling" || value.availability === "unavailable"
+                    || value.availability === "suspended" || value.availability === "completed"
+                    || value.availability === "retired")
+                && (value.result === null || _validProviderResult(value.result))
+    }
+
+    function _validCommandResponse(value, session) {
+        return _exactKeys(value, ["game_session_id", "revision", "status", "state", "authority",
+                                  "provider_release_id", "availability"])
+                && _validSession(session) && value.game_session_id === session.id
+                && Number.isSafeInteger(value.revision) && value.revision === session.revision + 1
+                && (value.status === "active" || value.status === "completed")
+                && value.authority === "platform_compiled" && value.provider_release_id === null
+                && value.availability === null
+                && _validCompiledState(session.game_key, session.game_version, value.state, value.status)
+    }
+
+    function _validCompiledState(gameKey, gameVersion, state, status) {
+        if (gameKey !== "signal_siege")
+            return typeof state === "object" && state !== null && !Array.isArray(state)
+        if (gameVersion === 1)
+            return _validSoloState(state, status)
+        if (gameVersion === 2)
+            return _validVersusState(state, status)
+        return false
+    }
+
+    function _validSoloState(state, status) {
+        if (!_exactKeys(state, ["schema_version", "rules_version", "round", "max_rounds", "phase",
+                                "human", "bot", "last_round", "outcome"])
+                || state.schema_version !== 1 || state.rules_version !== 1
+                || !Number.isSafeInteger(state.round) || state.round < 0 || state.round > 12
+                || state.max_rounds !== 12 || !_validCombatant(state.human)
+                || !_validCombatant(state.bot))
+            return false
+        if (state.last_round !== null
+                && (!_exactKeys(state.last_round, ["round", "human_action", "bot_action",
+                                                   "damage_to_human", "damage_to_bot"])
+                    || state.last_round.round !== state.round
+                    || !_validAction(state.last_round.human_action)
+                    || !_validAction(state.last_round.bot_action)
+                    || !_boundedInteger(state.last_round.damage_to_human, 0, 2)
+                    || !_boundedInteger(state.last_round.damage_to_bot, 0, 2)))
+            return false
+        if (state.round === 0 && (state.last_round !== null
+                || state.human.core !== 8 || state.human.energy !== 2
+                || state.bot.core !== 8 || state.bot.energy !== 2))
+            return false
+        if (state.round > 0 && state.last_round === null)
+            return false
+        if (status === "active")
+            return state.phase === "awaiting_human" && state.outcome === null
+                    && state.round < 12 && state.human.core > 0 && state.bot.core > 0
+        return state.phase === "completed" && _validSoloOutcome(state.outcome)
+                && state.outcome.human_core === state.human.core
+                && state.outcome.bot_core === state.bot.core
+                && state.outcome.human_energy === state.human.energy
+                && state.outcome.bot_energy === state.bot.energy
+                && state.outcome.rounds_played === state.round
+                && state.outcome.reason === ((state.human.core === 0 || state.bot.core === 0)
+                                             ? "core_destroyed" : "round_limit")
+                && state.outcome.winner === _soloWinner(state)
+                && ((state.human.core === 0 || state.bot.core === 0) || state.round === 12)
+    }
+
+    function _validVersusState(state, status) {
+        if (!_exactKeys(state, ["schema_version", "rules_version", "turn", "max_turns", "phase",
+                                "active_seat", "players", "last_turn", "outcome"])
+                || state.schema_version !== 1 || state.rules_version !== 2
+                || !_boundedInteger(state.turn, 0, 24) || state.max_turns !== 24
+                || !Array.isArray(state.players) || state.players.length !== 2)
+            return false
+        for (let index = 0; index < 2; index++) {
+            const player = state.players[index]
+            if (!_exactKeys(player, ["seat", "core", "energy", "guard"])
+                    || player.seat !== index || !_boundedInteger(player.core, 0, 8)
+                    || !_boundedInteger(player.energy, 0, 4)
+                    || (player.guard !== 0 && player.guard !== 2))
+                return false
+        }
+        if (state.last_turn !== null
+                && (!_exactKeys(state.last_turn, ["turn", "actor_seat", "action",
+                                                  "damage_to_opponent", "blocked_damage"])
+                    || state.last_turn.turn !== state.turn
+                    || !_boundedInteger(state.last_turn.actor_seat, 0, 1)
+                    || !_validAction(state.last_turn.action)
+                    || !_boundedInteger(state.last_turn.damage_to_opponent, 0, 2)
+                    || !_boundedInteger(state.last_turn.blocked_damage, 0, 2)))
+            return false
+        if (state.turn === 0 && (state.last_turn !== null
+                || state.players[0].core !== 8 || state.players[0].energy !== 2
+                || state.players[0].guard !== 0 || state.players[1].core !== 8
+                || state.players[1].energy !== 2 || state.players[1].guard !== 0))
+            return false
+        if (state.turn > 0 && (state.last_turn === null
+                || state.last_turn.actor_seat !== (state.turn - 1) % 2
+                || !_validVersusTurnEvidence(state)))
+            return false
+        if (status === "active")
+            return state.phase === "awaiting_action" && state.outcome === null
+                    && state.active_seat === state.turn % 2 && state.turn < 24
+                    && state.players[0].core > 0 && state.players[1].core > 0
+        return state.phase === "completed" && state.active_seat === null
+                && _validVersusOutcome(state.outcome)
+                && state.outcome.seat_0_core === state.players[0].core
+                && state.outcome.seat_1_core === state.players[1].core
+                && state.outcome.seat_0_energy === state.players[0].energy
+                && state.outcome.seat_1_energy === state.players[1].energy
+                && state.outcome.turns_played === state.turn
+                && state.outcome.reason === ((state.players[0].core === 0
+                                               || state.players[1].core === 0)
+                                              ? "core_destroyed" : "round_limit")
+                && state.outcome.winner === _versusWinner(state)
+                && ((state.players[0].core === 0 || state.players[1].core === 0)
+                    || state.turn === 24)
+    }
+
+    function _validCombatant(value) {
+        return _exactKeys(value, ["core", "energy"])
+                && _boundedInteger(value.core, 0, 8) && _boundedInteger(value.energy, 0, 4)
+    }
+
+    function _validSoloOutcome(value) {
+        return _exactKeys(value, ["winner", "reason", "human_core", "bot_core", "human_energy",
+                                  "bot_energy", "rounds_played"])
+                && ["human", "bot", "draw"].indexOf(value.winner) !== -1
+                && _validOutcomeReason(value.reason)
+                && _boundedInteger(value.human_core, 0, 8) && _boundedInteger(value.bot_core, 0, 8)
+                && _boundedInteger(value.human_energy, 0, 4) && _boundedInteger(value.bot_energy, 0, 4)
+                && _boundedInteger(value.rounds_played, 1, 12)
+    }
+
+    function _validVersusOutcome(value) {
+        return _exactKeys(value, ["winner", "reason", "seat_0_core", "seat_1_core",
+                                  "seat_0_energy", "seat_1_energy", "turns_played"])
+                && ["seat_0", "seat_1", "draw"].indexOf(value.winner) !== -1
+                && _validOutcomeReason(value.reason)
+                && _boundedInteger(value.seat_0_core, 0, 8) && _boundedInteger(value.seat_1_core, 0, 8)
+                && _boundedInteger(value.seat_0_energy, 0, 4) && _boundedInteger(value.seat_1_energy, 0, 4)
+                && _boundedInteger(value.turns_played, 1, 24)
+    }
+
+    function _validProviderResult(value) {
+        return _exactKeys(value, ["outcome", "public_summary", "provider_revision", "projected_at"])
+                && _boundedString(value.outcome, 64, 1)
+                && typeof value.public_summary === "object" && value.public_summary !== null
+                && !Array.isArray(value.public_summary)
+                && Number.isSafeInteger(value.provider_revision) && value.provider_revision >= 0
+                && _validTimestamp(value.projected_at)
+    }
+
+    function _validConnection(value) {
+        return _exactKeys(value, ["persona", "connected_at"])
+                && _validPersona(value.persona) && value.persona.id !== actor.id
+                && _validTimestamp(value.connected_at)
+    }
+
+    function _validPersona(value) {
+        return _exactKeys(value, ["id", "handle", "display_name", "bio", "status_message",
+                                  "created_at", "updated_at"])
+                && _validUuid(value.id) && typeof value.handle === "string"
+                && /^[a-z0-9][a-z0-9_-]{2,23}$/.test(value.handle)
+                && typeof value.display_name === "string"
+                && Array.from(value.display_name).length >= 1
+                && Array.from(value.display_name).length <= 64
+                && !/[\u0000-\u001f\u007f]/.test(value.display_name)
+                && typeof value.bio === "string" && Array.from(value.bio).length <= 1000
+                && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value.bio)
+                && typeof value.status_message === "string"
+                && Array.from(value.status_message).length <= 160
+                && !/[\u0000-\u001f\u007f]/.test(value.status_message)
+                && _validTimestamp(value.created_at) && _validTimestamp(value.updated_at)
+    }
+
+    function _validVersusTurnEvidence(state) {
+        const record = state.last_turn
+        const actor = state.players[record.actor_seat]
+        const opponent = state.players[1 - record.actor_seat]
+        if (record.action === "strike")
+            return record.damage_to_opponent + record.blocked_damage === 2
+                    && (record.blocked_damage === 0 || record.blocked_damage === 2)
+                    && opponent.guard === 0
+        if (record.action === "guard")
+            return record.damage_to_opponent === 0 && record.blocked_damage === 0
+                    && actor.guard === 2
+        return record.damage_to_opponent === 0 && record.blocked_damage === 0
+                && actor.guard === 0
+    }
+
+    function _soloWinner(state) {
+        if (state.human.core > state.bot.core)
+            return "human"
+        if (state.human.core < state.bot.core)
+            return "bot"
+        if (state.human.energy > state.bot.energy)
+            return "human"
+        if (state.human.energy < state.bot.energy)
+            return "bot"
+        return "draw"
+    }
+
+    function _versusWinner(state) {
+        if (state.players[0].core > state.players[1].core)
+            return "seat_0"
+        if (state.players[0].core < state.players[1].core)
+            return "seat_1"
+        if (state.players[0].energy > state.players[1].energy)
+            return "seat_0"
+        if (state.players[0].energy < state.players[1].energy)
+            return "seat_1"
+        return "draw"
+    }
+
+    function _validBoundedArray(value, validator) {
+        if (!Array.isArray(value) || value.length > 100)
+            return false
+        for (let index = 0; index < value.length; index++)
+            if (!validator.call(root, value[index]))
+                return false
+        return true
+    }
+
+    function _parseDocument(body) {
+        if (typeof body !== "string" || body.length === 0)
+            return {"ok": false}
+        try {
+            const document = JSON.parse(body)
+            return document && typeof document === "object" && !Array.isArray(document)
+                    ? {"ok": true, "document": document} : {"ok": false}
+        } catch (error) {
+            return {"ok": false}
+        }
+    }
+
+    function _errorCode(value) {
+        return _exactKeys(value, ["error"]) && _exactKeys(value.error, ["code", "message"])
+                && _boundedString(value.error.code, 64, 1)
+                && _boundedString(value.error.message, 512, 1) ? value.error.code : ""
+    }
+
+    function _invalidSession(status, value) {
+        return status === 401 && _errorCode(value) === "invalid_session"
+    }
+
+    function _exactKeys(value, expected) {
+        if (!value || typeof value !== "object" || Array.isArray(value))
+            return false
+        return JSON.stringify(Object.keys(value).sort()) === JSON.stringify(expected.slice().sort())
+    }
+
+    function _validUuid(value) {
+        return typeof value === "string"
+                && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value)
+    }
+
+    function _newUuid() {
+        let timestamp = Date.now()
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(character) {
+            const random = (timestamp + Math.random() * 16) % 16 | 0
+            timestamp = Math.floor(timestamp / 16)
+            return (character === "x" ? random : (random & 0x3) | 0x8).toString(16)
+        })
+    }
+
+    function _validTimestamp(value) {
+        return typeof value === "string" && value.endsWith("Z") && Number.isFinite(Date.parse(value))
+    }
+
+    function _boundedString(value, maximum, minimum) {
+        return typeof value === "string" && Array.from(value).length >= (minimum || 0)
+                && Array.from(value).length <= maximum
+                && !/[\u0000-\u001f\u007f]/.test(value)
+    }
+
+    function _boundedInteger(value, minimum, maximum) {
+        return Number.isSafeInteger(value) && value >= minimum && value <= maximum
+    }
+
+    function _validAction(value) {
+        return value === "strike" || value === "guard" || value === "charge"
+    }
+
+    function _validOutcomeReason(value) {
+        return value === "core_destroyed" || value === "round_limit"
+    }
+
+    function _ready() {
+        return !busy && _validPersona(actor) && sessionController.hasSession
+    }
+
+    function _actorPath() {
+        return "/v1/personas/" + actor.id
+    }
+}

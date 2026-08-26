@@ -9,7 +9,7 @@ Item {
     required property var controller
 
     function focusInitial() {
-        socialButton.forceActiveFocus()
+        gamesButton.forceActiveFocus()
     }
 
     ScrollView {
@@ -89,7 +89,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.maximumWidth: 620
                 Layout.alignment: Qt.AlignHCenter
-                text: "Your persona can now manage connections and exchange durable private messages. Challenges and games arrive in the next client slice."
+                text: "Load a game cartridge, challenge a connection, or continue a durable match. Social and inbox links remain available."
                 textFormat: Text.PlainText
                 color: "#8aa4c0"
                 font.family: "monospace"
@@ -98,13 +98,36 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
             }
 
-            RowLayout {
+            GridLayout {
+                Layout.fillWidth: true
+                Layout.maximumWidth: 620
                 Layout.alignment: Qt.AlignHCenter
-                spacing: 12
+                columns: 3
+                columnSpacing: 12
+                rowSpacing: 12
+
+                Components.OgsButton {
+                    id: gamesButton
+                    objectName: "homeGamesButton"
+                    Layout.fillWidth: true
+                    text: "GAMES"
+                    accessibleName: "Open game cartridges and matches"
+                    onClicked: controller.showPlayerScreen("games")
+                }
+
+                Components.OgsButton {
+                    id: challengesButton
+                    objectName: "homeChallengesButton"
+                    Layout.fillWidth: true
+                    text: "CHALLENGES"
+                    accessibleName: "Open game challenges"
+                    onClicked: controller.showPlayerScreen("challenges")
+                }
 
                 Components.OgsButton {
                     id: socialButton
                     objectName: "homeSocialButton"
+                    Layout.fillWidth: true
                     text: "SOCIAL"
                     accessibleName: "Open persona social link"
                     onClicked: controller.showPlayerScreen("social")
@@ -113,6 +136,7 @@ Item {
                 Components.OgsButton {
                     id: inboxButton
                     objectName: "homeInboxButton"
+                    Layout.fillWidth: true
                     text: "INBOX"
                     accessibleName: "Open private inbox"
                     onClicked: controller.showPlayerScreen("inbox")
@@ -121,6 +145,7 @@ Item {
                 Components.OgsButton {
                     id: logoutButton
                     objectName: "homeLogoutButton"
+                    Layout.fillWidth: true
                     text: "SIGN OUT"
                     accessibleName: "Sign out of OmarchyGS"
                     onClicked: controller.logout()
@@ -129,6 +154,7 @@ Item {
                 Components.OgsButton {
                     id: changeServerButton
                     objectName: "homeChangeServerButton"
+                    Layout.fillWidth: true
                     text: "CHANGE SERVER"
                     accessibleName: "Sign out and change server"
                     onClicked: controller.showServerConfiguration()

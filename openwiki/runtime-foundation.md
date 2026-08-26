@@ -3,6 +3,10 @@ type: "Reference"
 title: "Runtime foundation"
 openwiki_generated: true
 sources:
+  - id: openwiki-source-da678ac479c336e5e6fc1d04
+    resource: repo://client/qml/GameController.qml
+  - id: openwiki-source-f73ad44f40942d16dc369861
+    resource: repo://client/qml/OnboardingController.qml
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
@@ -33,6 +37,8 @@ sources:
     resource: repo://crates/server/src/mfa.rs
   - id: openwiki-source-54f6da1456b2b76d94d11b0e
     resource: repo://crates/server/src/personas.rs
+  - id: openwiki-source-0e10f198b5749ecebf761185
+    resource: repo://crates/server/src/provider_games.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
   - id: openwiki-source-76060b846b9222af2c790243
@@ -63,7 +69,10 @@ sources:
     resource: repo://migrations/0012_game_challenges.sql
   - id: openwiki-source-926664a4167297129df76802
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
-generated: {by: "codex", at: "2026-08-26T00:20:22.247Z"}
+generated: {by: "codex", at: "2026-08-26T02:02:30.593Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-26T02:02:30.593Z
 ---
 
 # Runtime foundation
@@ -74,7 +83,7 @@ generated: {by: "codex", at: "2026-08-26T00:20:22.247Z"}
 environment-backed configuration, connects a PostgreSQL pool, applies embedded
 SQLx migrations, starts the PostgreSQL-backed synchronization listener and
 in-process notification hub, constructs the production registry containing
-Signal Siege v1, binds the configured listener, and serves the Axum router with
+Signal Siege v1 and v2, binds the configured listener, and serves the Axum router with
 graceful shutdown. A failure to connect, migrate, subscribe, bind, or serve
 carries context and stops startup instead of exposing a partially ready
 process. Shutdown also aborts the listener task.
@@ -260,12 +269,13 @@ client boundary, not a substitute for TLS certificate policy, server-side
 authentication and authorization, or public-edge rate limiting.
 
 After a valid owned persona is selected, the same authority controller
-allowlists home, social, and inbox navigation and exposes a player-prefixed
-request gateway without exposing its bearer. `SocialController` receives that
-gateway and the selected public persona, derives every authenticated actor path
-from that persona ID, and cancels and clears its state when the actor changes.
-The production root owns this one controller instance and refreshes social or
-inbox state when the corresponding screen becomes active.
+allowlists home, social, inbox, games, challenges, and gameplay navigation and
+exposes a player-prefixed request gateway without exposing its bearer.
+`SocialController` and `GameController` receive that gateway and the selected
+public persona, derive every authenticated actor path from that persona ID, and
+cancel and clear state when the actor changes. The production root owns one of
+each controller and refreshes the appropriate durable REST inventory when a
+corresponding screen becomes active.
 
 Social refresh serially loads incoming/outgoing requests, accepted
 connections, and the actor's private block inventory. Exact public-handle
@@ -292,9 +302,22 @@ oversized responses are rejected without partially accepting state. Messages
 are converted only to allowlisted plain text. Request completion must match
 both generation and operation; a valid `401 invalid_session` clears the social
 controller before the authority owner clears bearer, persona inventory, and
-selection. This first client social slice refreshes durable REST truth on
-entry, action, or user request and deliberately introduces no polling or
-WebSocket lifetime.
+selection. The social and game client slices refresh durable REST truth on
+entry, action, or user request and deliberately introduce no polling or
+WebSocket lifetime. The game controller serially loads the bounded catalog and
+session or connection/challenge inventories, keeps an uncertain mutation's
+exact idempotency identity for explicit retry, and refetches the session after
+a committed command or revision conflict. Catalog, challenge, session, command,
+and exact Signal Siege v1/v2 state documents must pass closed schemas,
+participant uniqueness/cardinality, actor-direction, lifecycle, and cross-field
+checks before presentation.
+
+The Games and Challenges screens expose keyboard-first catalog, history,
+connection, and lifecycle controls. Gameplay maps only a validated compiled
+Signal Siege view model into platform-owned plain-text, meter, status, and
+button components. That surface is trusted application UI: it does not wrap
+the state in `omarchygs.render-plan/v1`, claim an authenticated cartridge
+origin, or make provider-owned sessions executable.
 
 ## Persona connection and block flow
 
@@ -451,8 +474,8 @@ definitions. A manifest uses one canonical key, a positive exact version, a
 bounded control-free display name, and human-player limits within the global
 eight-seat cap. Registry construction rejects invalid manifests and duplicate
 `(key, version)` definitions and stores them in deterministic key/version
-order. Production constructs a compiled registry containing exactly Signal
-Siege v1; tests may inject fixture versions or an empty registry to prove
+order. Production constructs a compiled registry containing immutable Signal
+Siege v1 and v2; tests may inject fixture versions or an empty registry to prove
 retained history and replay. The public `GET /v1/games` route always projects
 that compiled metadata and, when the optional provider runtime is enabled,
 merges only active provider-pilot manifests. Every record identifies its
@@ -491,13 +514,22 @@ receipt-backed solo sessions for that persona may remain active. Session,
 seat-zero participant, receipt, and one minimal sync invalidation commit
 together. The server inserts no bot account, persona, or participant.
 
-Signal Siege v1 is that production one-human definition. Human and bot begin
+Signal Siege v1 is the production one-human definition. Human and bot begin
 with eight core and two energy, choose among strike, guard, and charge, and
 resolve each round simultaneously. The bot chooses from pre-command durable
 state only. Cross-field state validation rejects inconsistent round, phase,
 combatant, last-round, and outcome shapes. Core destruction or round 12
 produces an explicit bounded winner/reason/final-state outcome and the compiled
 `completed` lifecycle.
+
+Signal Siege v2 is the exact two-human challenge definition. It preserves v1
+unchanged, admits exactly two participants, initializes seat zero as active,
+and alternates one strike, guard, or charge command per turn. Guard persists as
+a bounded block until the opponent's strike or that player acts again; charge
+restores bounded energy. Cross-field validation binds turn parity, seats,
+last-turn evidence, guard and damage relationships, active seat, outcome, and
+lifecycle. Core destruction or turn 24 produces a bounded terminal outcome;
+otherwise authority passes to the other seat.
 
 Authenticated inventory and detail routes first validate the Bearer session,
 then require the acting persona to belong to its derived account and to each
@@ -660,11 +692,12 @@ quotas, frame bounds, permit release, and session revocation, expiry,
 inactivity, and no-touch revalidation.
 Game-runtime changes use its five unit tests for manifest validation, stable
 exact-version lookup, and bounded deterministic initialization and commands.
-Signal Siege changes use its five rule tests plus
+Signal Siege changes use its ten v1/v2 rule tests plus
 `signal_siege_api_tests.rs`: one local catalog/body-limit case and four migrated
 PostgreSQL cases cover owner scope, exact start replay, registry drift,
 active-cap concurrency, completion/final replay/history, no bot identity,
-privacy-minimal sync, and rollback. General game transport or persistence
+privacy-minimal sync, and rollback. The challenge suite adds a real v2
+alternation and terminal-outcome case. General game transport or persistence
 changes also use `game_api_tests.rs`: two local router cases and five migrated
 PostgreSQL cases cover stable catalog projection,
 body bounds, atomic creation and command transitions, ordered seats, semantic
@@ -673,10 +706,15 @@ minimal per-participant sync, bounded private reads, indistinguishable foreign
 and absent objects, registry-independent stored history, and one-winner command
 concurrency.
 Challenge changes use `challenge_api_tests.rs`: one local body-limit case and
-six migrated PostgreSQL cases cover participant privacy, exact creation replay
+seven migrated PostgreSQL cases cover participant privacy, exact creation replay
 and collisions, typed inbox and minimal sync payloads, exact-version acceptance
 and seat order, terminal history and lazy expiry, pending limits, initializer
-and block rollback, and one-winner terminal races.
+and block rollback, production Signal Siege v2 alternation/completion, and
+one-winner terminal races. QML game changes run through the thirty-three-case
+fixture corpus and the live two-authority scenario in `scripts/dev.sh`; those
+prove minimum-width containment, strict hostile-envelope rejection, retained
+retry identity, revision refetch, authority cleanup, active-seat enforcement,
+terminal completion, and fresh-controller recovery.
 Provider player-route changes use `provider_game_api_tests.rs` plus
 `scripts/test-provider-authority-pilot.sh`. The clean-clone proof covers the
 independent TLS process and database, protocol-only dependency, mixed catalog,

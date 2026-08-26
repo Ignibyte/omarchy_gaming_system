@@ -38,7 +38,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result, anyhow};
 use config::Config;
 use omarchy_game_runtime::{GameDefinition, GameRegistry};
-use omarchy_game_signal_siege::SignalSiege;
+use omarchy_game_signal_siege::{SignalSiege, SignalSiegeVersus};
 use sqlx::{PgPool, migrate::Migrator, postgres::PgPoolOptions};
 use tokio::{net::TcpListener, signal};
 use tracing::info;
@@ -91,8 +91,11 @@ async fn main() -> Result<()> {
 }
 
 pub(crate) fn production_game_registry() -> Result<GameRegistry> {
-    GameRegistry::new([Arc::new(SignalSiege) as Arc<dyn GameDefinition>])
-        .map_err(|error| anyhow!("invalid production game registry: {error:?}"))
+    GameRegistry::new([
+        Arc::new(SignalSiege) as Arc<dyn GameDefinition>,
+        Arc::new(SignalSiegeVersus) as Arc<dyn GameDefinition>,
+    ])
+    .map_err(|error| anyhow!("invalid production game registry: {error:?}"))
 }
 
 fn init_tracing() {

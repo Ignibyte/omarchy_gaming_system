@@ -393,6 +393,20 @@ An authenticated `401 invalid_session`, endpoint change, or authenticated
 protocol-shape failure clears bearer, MFA, inventory, and selected persona and
 returns to sign-in.
 
+The player shell also exposes keyboard-first Games, Challenges, and Gameplay
+screens through the same in-memory bearer authority. Their controller chains
+the public catalog with participant-owned REST inventories, validates exact
+challenge/session and Signal Siege state shapes, and derives mutation paths,
+targets, revisions, and fresh non-secret idempotency UUIDs internally. It does
+not poll or send gameplay over WebSockets. A revision conflict refetches the
+session, and an uncertain transport outcome offers an explicit retry with the
+same UUID and request intent.
+
+Signal Siege is presented by trusted platform QML through a narrow derived
+view model and the three allowlisted actions. This first-playable presenter is
+not a signed cartridge and never invents a cartridge origin or digest;
+publisher presentation remains restricted to verified installed packages.
+
 ## Request a persona connection
 
 `PUT /v1/personas/{persona_id}/connection-requests/{other_persona_id}`
@@ -679,17 +693,26 @@ available compiled game and the one optional operator-enabled remote pilot:
       "max_human_players": 1,
       "authority": "platform_compiled",
       "provider_release_id": null
+    },
+    {
+      "key": "signal_siege",
+      "version": 2,
+      "display_name": "Signal Siege Versus",
+      "min_human_players": 2,
+      "max_human_players": 2,
+      "authority": "platform_compiled",
+      "provider_release_id": null
     }
   ]
 }
 ```
 
-Signal Siege v1 is the exact compiled production entry. When the provider
-runtime and Door Legends pilot are both active, the response also includes
-`door-legends` v1 with `authority: "registered_provider"` and its immutable
-release UUID. Provider endpoints, keys, grants, subjects, and health internals
-are never serialized. Tests may inject other compiled fixture definitions;
-those fixtures are not production catalog entries.
+Signal Siege v1 and v2 are immutable compiled production entries. When the
+provider runtime and Door Legends pilot are both active, the response also
+includes `door-legends` v1 with `authority: "registered_provider"` and its
+immutable release UUID. Provider endpoints, keys, grants, subjects, and health
+internals are never serialized. Tests may inject other compiled fixture
+definitions; those fixtures are not production catalog entries.
 
 ### Signal Siege v1 rules
 
@@ -705,6 +728,22 @@ outcome compares remaining core, then remaining energy, and otherwise records a
 draw. The bot has no account, persona, session, or participant row. Its policy
 has no clock, database, network, or ambient-random input, so the same pinned
 state and command always produce the same transition.
+
+### Signal Siege v2 versus rules
+
+Signal Siege v2 is the exact two-human challenge version. The challenger is
+seat 0, the challenged persona is seat 1, and seat 0 takes the first turn.
+Both players begin with eight core and two energy. Strike, guard, and charge
+keep the v1 cost, damage, block, gain, and four-energy cap, but commands resolve
+one visible seat at a time. A guard blocks the opponent's next strike and then
+expires at the beginning of its owner's following turn.
+
+The stored `active_seat` alternates after every accepted command. Commands from
+the other participant, unaffordable actions, malformed state, or malformed
+commands are rejected without advancing the session revision. A match ends
+when either core reaches zero or after turn 24. The terminal outcome compares
+core, then energy, then records a draw, and names `seat_0`, `seat_1`, or `draw`
+without depending on clocks, networking, or ambient randomness.
 
 ## Start a solo game session
 

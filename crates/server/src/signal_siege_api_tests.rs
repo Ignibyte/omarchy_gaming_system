@@ -87,15 +87,26 @@ async fn production_catalog_and_solo_start_body_bound_are_public_and_exact() {
     assert_eq!(
         catalog.json(),
         json!({
-            "games": [{
-                "key": "signal_siege",
-                "version": 1,
-                "display_name": "Signal Siege",
-                "min_human_players": 1,
-                "max_human_players": 1,
-                "authority": "platform_compiled",
-                "provider_release_id": null
-            }]
+            "games": [
+                {
+                    "key": "signal_siege",
+                    "version": 1,
+                    "display_name": "Signal Siege",
+                    "min_human_players": 1,
+                    "max_human_players": 1,
+                    "authority": "platform_compiled",
+                    "provider_release_id": null
+                },
+                {
+                    "key": "signal_siege",
+                    "version": 2,
+                    "display_name": "Signal Siege Versus",
+                    "min_human_players": 2,
+                    "max_human_players": 2,
+                    "authority": "platform_compiled",
+                    "provider_release_id": null
+                }
+            ]
         })
     );
 
