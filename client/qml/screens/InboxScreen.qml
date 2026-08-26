@@ -9,6 +9,8 @@ Item {
     required property var controller
     required property var sessionController
 
+    Components.OgsTheme { id: theme }
+
     function focusInitial() {
         if (controller.selectedConversation)
             composer.forceActiveFocus()
@@ -26,25 +28,25 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 18
-        spacing: 10
+        anchors.margins: theme.spaceLg
+        spacing: theme.spaceSm
+
+        Components.OgsScreenHeader {
+            Layout.fillWidth: true
+            screenKey: "inbox"
+            title: controller.selectedConversation
+                   ? "PRIVATE LINK // @" + controller.selectedConversation.other_persona.handle
+                   : "PRIVATE INBOX"
+            statusText: controller.statusText
+            statusTone: controller.busy || controller.loadState === "loading"
+                        ? "working" : "success"
+            errorText: controller.errorText
+            navigationHint: controller.selectedConversation ? "ESC INBOX // TAB MESSAGE ACTIONS"
+                                                            : "ESC HOME // ENTER OPEN THREAD"
+        }
 
         RowLayout {
-            Layout.fillWidth: true
-
-            Text {
-                Layout.fillWidth: true
-                text: controller.selectedConversation
-                      ? "PRIVATE LINK // @" + controller.selectedConversation.other_persona.handle
-                      : "PRIVATE INBOX"
-                textFormat: Text.PlainText
-                color: "#5ee6a8"
-                font.family: "monospace"
-                font.bold: true
-                font.pixelSize: 22
-                elide: Text.ElideRight
-            }
-
+            Layout.alignment: Qt.AlignRight
             Components.OgsButton {
                 id: inboxRefreshButton
                 objectName: "inboxRefreshButton"
@@ -67,16 +69,6 @@ Item {
                 enabled: !controller.busy
                 onClicked: sessionController.showPlayerScreen("home")
             }
-        }
-
-        Text {
-            Layout.fillWidth: true
-            text: controller.errorText !== "" ? controller.errorText : controller.statusText
-            textFormat: Text.PlainText
-            color: controller.errorText !== "" ? "#ff6b7a" : "#8aa4c0"
-            font.family: "monospace"
-            font.pixelSize: 12
-            wrapMode: Text.Wrap
         }
 
         ListView {
@@ -108,9 +100,9 @@ Item {
                 visible: controller.loadState !== "loading" && controller.conversations.length === 0
                 text: "No private conversations. Accept a connection to create one."
                 textFormat: Text.PlainText
-                color: "#607890"
-                font.family: "monospace"
-                font.pixelSize: 14
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.bodySize
                 wrapMode: Text.Wrap
                 horizontalAlignment: Text.AlignHCenter
             }
@@ -140,13 +132,12 @@ Item {
                 clip: true
                 model: controller.messages
 
-                delegate: Rectangle {
+                delegate: Components.OgsCard {
                     required property var modelData
                     width: ListView.view.width
                     height: messageText.implicitHeight + 18
-                    radius: 3
-                    color: modelData.type === "system" ? "#172333" : "#0c1825"
-                    border.color: "#29445e"
+                    tone: modelData.type === "system" ? "warning" : "info"
+                    highlighted: modelData.type === "system"
 
                     Text {
                         id: messageText
@@ -154,9 +145,9 @@ Item {
                         anchors.margins: 9
                         text: controller.messageText(modelData)
                         textFormat: Text.PlainText
-                        color: modelData.type === "system" ? "#f4c95d" : "#eef7ff"
-                        font.family: "monospace"
-                        font.pixelSize: 13
+                        color: modelData.type === "system" ? theme.warning : theme.textPrimary
+                        font.family: theme.fontFamily
+                        font.pixelSize: theme.bodySize
                         wrapMode: Text.Wrap
                     }
                 }

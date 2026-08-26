@@ -9,6 +9,14 @@ Item {
     required property var controller
     property bool createMode: controller.personas.length === 0
 
+    Components.OgsTheme { id: theme }
+
+    Timer {
+        interval: 50
+        running: root.visible && !root.createMode && personaList.count > 0
+        onTriggered: root.focusInitial()
+    }
+
     function focusInitial() {
         if (createMode || controller.personas.length === 0) {
             handleField.forceActiveFocus()
@@ -36,45 +44,22 @@ Item {
     ScrollView {
         id: scroll
         anchors.fill: parent
-        anchors.margins: 24
+        anchors.margins: theme.spaceXl
         contentWidth: availableWidth
 
         ColumnLayout {
             width: scroll.availableWidth
-            spacing: 12
+            spacing: theme.spaceMd
 
-            Text {
+            Components.OgsScreenHeader {
                 Layout.fillWidth: true
-                text: createMode ? "CREATE PERSONA" : "CHOOSE PERSONA"
-                textFormat: Text.PlainText
-                color: "#5ee6a8"
-                font.family: "monospace"
-                font.bold: true
-                font.pixelSize: 28
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            Text {
-                Layout.fillWidth: true
-                text: controller.statusText
-                textFormat: Text.PlainText
-                color: "#d5e2ef"
-                font.family: "monospace"
-                font.pixelSize: 14
-                wrapMode: Text.Wrap
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            Text {
-                Layout.fillWidth: true
-                visible: controller.errorText !== ""
-                text: controller.errorText
-                textFormat: Text.PlainText
-                color: "#ff8b98"
-                font.family: "monospace"
-                font.pixelSize: 14
-                wrapMode: Text.Wrap
-                horizontalAlignment: Text.AlignHCenter
+                screenKey: "personas"
+                title: createMode ? "CREATE PERSONA" : "CHOOSE PERSONA"
+                statusText: controller.statusText
+                statusTone: controller.busy ? "working" : "success"
+                errorText: controller.errorText
+                navigationHint: createMode && controller.personas.length > 0
+                                ? "ESC PERSONA LIST" : "ENTER SELECT // TAB MOVE"
             }
 
             ListView {
@@ -85,9 +70,14 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.preferredHeight: Math.min(contentHeight, 190)
                 visible: !root.createMode && controller.personas.length > 0
-                spacing: 8
+                spacing: theme.spaceSm
                 clip: true
                 model: controller.personas
+                currentIndex: count > 0 ? 0 : -1
+                onCurrentItemChanged: {
+                    if (currentItem && !root.createMode)
+                        Qt.callLater(root.focusInitial)
+                }
 
                 delegate: Components.OgsButton {
                     required property int index
@@ -97,6 +87,10 @@ Item {
                     text: modelData.display_name + "  //  @" + modelData.handle
                     accessibleName: "Select persona " + modelData.display_name
                     onClicked: controller.selectPersona(modelData)
+                    Component.onCompleted: {
+                        if (index === 0 && !root.createMode)
+                            Qt.callLater(root.focusInitial)
+                    }
                 }
             }
 
@@ -122,12 +116,9 @@ Item {
                 visible: root.createMode
                 spacing: 8
 
-                Text {
+                Components.OgsSectionLabel {
                     text: "HANDLE"
-                    textFormat: Text.PlainText
-                    color: "#8aa4c0"
-                    font.family: "monospace"
-                    font.pixelSize: 12
+                    tone: "info"
                 }
 
                 Components.OgsTextField {
@@ -141,12 +132,9 @@ Item {
                     onAccepted: displayNameField.forceActiveFocus()
                 }
 
-                Text {
+                Components.OgsSectionLabel {
                     text: "DISPLAY NAME"
-                    textFormat: Text.PlainText
-                    color: "#8aa4c0"
-                    font.family: "monospace"
-                    font.pixelSize: 12
+                    tone: "info"
                 }
 
                 Components.OgsTextField {
@@ -160,12 +148,9 @@ Item {
                     onAccepted: statusField.forceActiveFocus()
                 }
 
-                Text {
+                Components.OgsSectionLabel {
                     text: "STATUS"
-                    textFormat: Text.PlainText
-                    color: "#8aa4c0"
-                    font.family: "monospace"
-                    font.pixelSize: 12
+                    tone: "info"
                 }
 
                 Components.OgsTextField {
@@ -178,12 +163,9 @@ Item {
                     enabled: !controller.busy
                 }
 
-                Text {
+                Components.OgsSectionLabel {
                     text: "BIO"
-                    textFormat: Text.PlainText
-                    color: "#8aa4c0"
-                    font.family: "monospace"
-                    font.pixelSize: 12
+                    tone: "info"
                 }
 
                 Components.OgsTextArea {

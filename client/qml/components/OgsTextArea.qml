@@ -5,23 +5,28 @@ TextArea {
     id: root
 
     required property string accessibleName
+    property string accessibleDescription: ""
     property int maximumLength: 32767
 
     Accessible.name: accessibleName
+    Accessible.description: accessibleDescription
     activeFocusOnTab: true
     focusPolicy: Qt.StrongFocus
     selectByMouse: true
     wrapMode: TextEdit.Wrap
-    color: "#eef7ff"
-    placeholderTextColor: "#667f98"
-    selectionColor: "#2b6c72"
-    selectedTextColor: "#ffffff"
-    font.family: "monospace"
-    font.pixelSize: 15
+    implicitHeight: theme.textAreaHeight
+    color: theme.textPrimary
+    placeholderTextColor: theme.textMuted
+    selectionColor: theme.surfacePressed
+    selectedTextColor: theme.focus
+    font.family: theme.fontFamily
+    font.pixelSize: theme.bodySize
     leftPadding: 12
     rightPadding: 12
     topPadding: 10
     bottomPadding: 10
+
+    OgsTheme { id: theme }
 
     onTextChanged: {
         if (text.length > maximumLength)
@@ -29,9 +34,9 @@ TextArea {
     }
 
     background: Rectangle {
-        radius: 3
-        color: "#0c1825"
-        border.color: root.activeFocus ? "#ffffff" : "#36516b"
-        border.width: root.activeFocus ? 2 : 1
+        radius: theme.radius
+        color: theme.surface
+        border.color: root.activeFocus ? theme.focus : theme.border
+        border.width: root.activeFocus ? theme.focusWidth : theme.borderWidth
     }
 }

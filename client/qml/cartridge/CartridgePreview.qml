@@ -1,12 +1,15 @@
 import QtQuick
+import "../components" as Components
 
 Window {
     id: root
 
+    Components.OgsTheme { id: theme }
+
     width: 920
     height: 600
     visible: true
-    color: "#070b12"
+    color: theme.background
     title: "OmarchyGS Cartridge Preview"
 
     property bool smokeTest: Qt.application.arguments.indexOf("--smoke-test") !== -1

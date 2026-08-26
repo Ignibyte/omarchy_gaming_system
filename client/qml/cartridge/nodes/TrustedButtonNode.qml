@@ -1,4 +1,5 @@
 import QtQuick
+import "../../components" as Components
 
 Rectangle {
     id: root
@@ -11,13 +12,16 @@ Rectangle {
     property bool mutedAudio: false
     signal actionRequested(string action, var payload)
 
+    Components.OgsTheme { id: theme }
+
     width: parent ? parent.width : 640
     height: 46 * scaleFactor
-    radius: 3
-    color: activeFocus || pointer.containsMouse ? (highContrast ? "#ffffff" : "#1d3348")
-        : (highContrast ? "#000000" : "#132537")
-    border.color: highContrast ? "#ffffff" : "#f4c95d"
-    border.width: activeFocus ? 3 : 1
+    radius: theme.radius
+    color: activeFocus || pointer.containsMouse
+           ? (highContrast ? theme.highContrastForeground : theme.surfaceHover)
+           : (highContrast ? theme.highContrastBackground : theme.surfaceRaised)
+    border.color: highContrast ? theme.highContrastForeground : theme.warning
+    border.width: activeFocus ? theme.focusWidth : theme.borderWidth
     activeFocusOnTab: true
     Accessible.role: Accessible.Button
     Accessible.name: nodeData.accessible_label
@@ -35,10 +39,13 @@ Rectangle {
         anchors.centerIn: parent
         text: root.nodeData.label
         textFormat: Text.PlainText
-        color: root.highContrast && root.activeFocus ? "#000000" : "#eef7ff"
-        font.family: "monospace"
+        color: root.highContrast
+               ? (root.activeFocus ? theme.highContrastBackground
+                                   : theme.highContrastForeground)
+               : theme.textPrimary
+        font.family: theme.fontFamily
         font.bold: true
-        font.pixelSize: 14 * root.scaleFactor
+        font.pixelSize: theme.controlSize * root.scaleFactor
         elide: Text.ElideRight
     }
 

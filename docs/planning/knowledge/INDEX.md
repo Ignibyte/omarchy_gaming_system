@@ -77,6 +77,9 @@ and in this register.
 | `PR-omarchy-gaming-system-bind-presentation-cardinality-before-indexing-001` | Before trusted client presentation indexes participants or state arrays, bind uniqueness, actor membership, exact game version, and exact version-specific cardinality. | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
 | `PR-omarchy-gaming-system-assert-minimum-layout-after-settle-001` | Exercise the production root at every supported minimum size and assert actual child geometry only after the asynchronous layout has settled. | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
 | `PR-omarchy-gaming-system-stage-new-paths-before-final-security-scan-001` | Run the delivery security scan against a staged snapshot so newly created paths are included in the immutable inventory, then make no repository-content changes before delivery. | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
+| `PR-omarchy-gaming-system-restore-focus-after-qml-materialization-001` | When a routed QML focus target depends on asynchronous data or delegate creation, restore focus only after the enabled target materializes and prove that handoff through the production root. | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
+| `PR-omarchy-gaming-system-scope-style-policy-to-the-trusted-visual-boundary-001` | A centralized UI contract and its source policy must inventory every platform-owned visual surface, including trusted cartridge renderer nodes, rather than only the main application routes. | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
+| `PR-omarchy-gaming-system-require-plain-text-on-every-qml-text-object-001` | Parse every in-scope QML `Text` object and require explicit `Text.PlainText`; rejecting named rich formats alone is insufficient. | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
 
 ## Register
 
@@ -242,3 +245,10 @@ and in this register.
 | `PR-omarchy-gaming-system-stage-new-paths-before-final-security-scan-001` | rule | `aar/AAR-024-signal-siege-versus-and-keyboard-first-game-flow.md` |
 | `AD-omarchy-gaming-system-signal-siege-versus-version-boundary-001` | decision | `../../architecture/system-overview.md` |
 | `AD-omarchy-gaming-system-platform-compiled-presenter-provenance-001` | decision | `../../architecture/game-cartridges.md` |
+| `BF-omarchy-gaming-system-asynchronous-qml-focus-handoff-001` | failure | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
+| `BF-omarchy-gaming-system-partial-trusted-visual-policy-scope-001` | failure | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
+| `BF-omarchy-gaming-system-qml-plain-text-policy-default-gap-001` | failure | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
+| `PR-omarchy-gaming-system-restore-focus-after-qml-materialization-001` | rule | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
+| `PR-omarchy-gaming-system-scope-style-policy-to-the-trusted-visual-boundary-001` | rule | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
+| `PR-omarchy-gaming-system-require-plain-text-on-every-qml-text-object-001` | rule | `aar/AAR-025-end-to-end-qml-accessibility-and-visual-polish.md` |
+| `AD-omarchy-gaming-system-host-owned-semantic-qml-theme-001` | decision | `../../architecture/system-overview.md`; `../../architecture/game-cartridges.md` |

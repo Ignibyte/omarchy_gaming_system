@@ -80,6 +80,7 @@ start_fixture() {
 }
 
 cd "$ogs_root"
+python3 "$ogs_root/scripts/check-qml-style.py"
 mkdir -p "$ogs_config_dir"
 chmod 0700 "$ogs_config_dir"
 exec 9>"$ogs_config_dir/fixture.lock"

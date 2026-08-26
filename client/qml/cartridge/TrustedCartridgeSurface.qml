@@ -1,5 +1,6 @@
 import QtQuick
 import "nodes" as Nodes
+import "../components" as Components
 
 Rectangle {
     id: root
@@ -11,9 +12,13 @@ Rectangle {
     property int instantiatedNodeCount: nodeRepeater.count
     signal actionRequested(string action, var payload)
 
-    color: renderPlan && renderPlan.preferences.high_contrast ? "#000000" : "#070b12"
-    border.color: renderPlan && renderPlan.preferences.high_contrast ? "#ffffff" : "#263950"
-    border.width: 1
+    Components.OgsTheme { id: theme }
+
+    color: renderPlan && renderPlan.preferences.high_contrast
+           ? theme.highContrastBackground : theme.background
+    border.color: renderPlan && renderPlan.preferences.high_contrast
+                  ? theme.highContrastForeground : theme.borderMuted
+    border.width: theme.borderWidth
 
     readonly property var allowedKinds: [
         "terminal", "grid", "status", "button", "image", "meter",
@@ -243,9 +248,11 @@ Rectangle {
                     + " // " + root.renderPlan.origin.archive_sha256.slice(0, 12)
                 : "OMARCHYGS // UNTRUSTED PLAN REJECTED"
             textFormat: Text.PlainText
-            color: root.renderPlan && root.renderPlan.preferences.high_contrast ? "#ffffff" : "#8aa4c0"
-            font.family: "monospace"
-            font.pixelSize: 12 * (root.renderPlan ? root.renderPlan.preferences.scale : 1)
+            color: root.renderPlan && root.renderPlan.preferences.high_contrast
+                   ? theme.highContrastForeground : theme.textMuted
+            font.family: theme.fontFamily
+            font.pixelSize: theme.captionSize
+                            * (root.renderPlan ? root.renderPlan.preferences.scale : 1)
             elide: Text.ElideRight
         }
 
@@ -253,10 +260,12 @@ Rectangle {
             width: parent.width
             text: root.renderPlan ? root.renderPlan.state_message : root.validationError
             textFormat: Text.PlainText
-            color: root.renderPlan && root.renderPlan.state === "ready" ? "#5ee6a8" : "#f4c95d"
-            font.family: "monospace"
+            color: root.renderPlan && root.renderPlan.state === "ready"
+                   ? theme.accent : theme.warning
+            font.family: theme.fontFamily
             font.bold: true
-            font.pixelSize: 18 * (root.renderPlan ? root.renderPlan.preferences.scale : 1)
+            font.pixelSize: theme.sectionSize
+                            * (root.renderPlan ? root.renderPlan.preferences.scale : 1)
             wrapMode: Text.Wrap
         }
 

@@ -9,6 +9,8 @@ Item {
     required property var controller
     required property var sessionController
 
+    Components.OgsTheme { id: theme }
+
     function focusInitial() {
         handleField.forceActiveFocus()
     }
@@ -21,26 +23,26 @@ Item {
     ScrollView {
         id: scroll
         anchors.fill: parent
-        anchors.margins: 18
+        anchors.margins: theme.spaceLg
         contentWidth: availableWidth
 
         ColumnLayout {
             width: scroll.availableWidth
-            spacing: 12
+            spacing: theme.spaceMd
+
+            Components.OgsScreenHeader {
+                Layout.fillWidth: true
+                screenKey: "social"
+                title: "SOCIAL LINK"
+                statusText: controller.statusText
+                statusTone: controller.busy || controller.loadState === "loading"
+                            ? "working" : "success"
+                errorText: controller.errorText
+                navigationHint: "ENTER CONNECT // ESC HOME"
+            }
 
             RowLayout {
-                Layout.fillWidth: true
-
-                Text {
-                    Layout.fillWidth: true
-                    text: "SOCIAL LINK"
-                    textFormat: Text.PlainText
-                    color: "#5ee6a8"
-                    font.family: "monospace"
-                    font.bold: true
-                    font.pixelSize: 24
-                }
-
+                Layout.alignment: Qt.AlignRight
                 Components.OgsButton {
                     objectName: "socialRefreshButton"
                     text: "REFRESH"
@@ -86,32 +88,18 @@ Item {
                 }
             }
 
-            Text {
-                Layout.fillWidth: true
-                text: controller.errorText !== "" ? controller.errorText : controller.statusText
-                textFormat: Text.PlainText
-                color: controller.errorText !== "" ? "#ff6b7a" : "#8aa4c0"
-                font.family: "monospace"
-                font.pixelSize: 12
-                wrapMode: Text.Wrap
-            }
-
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 text: "INCOMING REQUESTS (" + controller.incomingRequests.length + ")"
-                textFormat: Text.PlainText
-                color: "#f4c95d"
-                font.family: "monospace"
-                font.bold: true
-                font.pixelSize: 14
             }
             Text {
                 Layout.fillWidth: true
                 visible: controller.loadState !== "loading" && controller.incomingRequests.length === 0
                 text: "No incoming requests."
                 textFormat: Text.PlainText
-                color: "#607890"
-                font.family: "monospace"
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.bodySize
             }
             ListView {
                 id: incomingList
@@ -136,22 +124,18 @@ Item {
                 }
             }
 
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 text: "OUTGOING REQUESTS (" + controller.outgoingRequests.length + ")"
-                textFormat: Text.PlainText
-                color: "#f4c95d"
-                font.family: "monospace"
-                font.bold: true
-                font.pixelSize: 14
             }
             Text {
                 Layout.fillWidth: true
                 visible: controller.loadState !== "loading" && controller.outgoingRequests.length === 0
                 text: "No outgoing requests."
                 textFormat: Text.PlainText
-                color: "#607890"
-                font.family: "monospace"
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.bodySize
             }
             ListView {
                 id: outgoingList
@@ -174,22 +158,18 @@ Item {
                 }
             }
 
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 text: "CONNECTIONS (" + controller.connections.length + ")"
-                textFormat: Text.PlainText
-                color: "#f4c95d"
-                font.family: "monospace"
-                font.bold: true
-                font.pixelSize: 14
             }
             Text {
                 Layout.fillWidth: true
                 visible: controller.loadState !== "loading" && controller.connections.length === 0
                 text: "No accepted connections."
                 textFormat: Text.PlainText
-                color: "#607890"
-                font.family: "monospace"
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.bodySize
             }
             ListView {
                 id: connectionList
@@ -214,22 +194,18 @@ Item {
                 }
             }
 
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 text: "PRIVATE BLOCKS (" + controller.blocks.length + ")"
-                textFormat: Text.PlainText
-                color: "#f4c95d"
-                font.family: "monospace"
-                font.bold: true
-                font.pixelSize: 14
             }
             Text {
                 Layout.fillWidth: true
                 visible: controller.loadState !== "loading" && controller.blocks.length === 0
                 text: "No personas blocked by this persona."
                 textFormat: Text.PlainText
-                color: "#607890"
-                font.family: "monospace"
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.bodySize
             }
             ListView {
                 id: blockList

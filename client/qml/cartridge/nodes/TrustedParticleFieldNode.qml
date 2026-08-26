@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Particles
+import "../../components" as Components
 
 Rectangle {
     id: root
@@ -13,10 +14,12 @@ Rectangle {
     property bool reducedMotion: false
     property bool mutedAudio: false
 
+    Components.OgsTheme { id: theme }
+
     width: parent ? parent.width : 640
     height: 140 * scaleFactor
-    color: highContrast ? "#000000" : "#081320"
-    border.color: highContrast ? "#ffffff" : "#263950"
+    color: highContrast ? theme.highContrastBackground : theme.background
+    border.color: highContrast ? theme.highContrastForeground : theme.borderMuted
     Accessible.role: Accessible.Animation
     Accessible.name: nodeData.accessible_label
 
@@ -27,9 +30,9 @@ Rectangle {
 
     ImageParticle {
         system: system
-        color: root.highContrast ? "#ffffff"
-            : root.nodeData.preset === "sparks" ? "#f4c95d"
-            : root.nodeData.preset === "snow" ? "#d5e2ef" : "#5ee6a8"
+        color: root.highContrast ? theme.highContrastForeground
+            : root.nodeData.preset === "sparks" ? theme.warning
+            : root.nodeData.preset === "snow" ? theme.textSecondary : theme.accent
         alpha: 0.8
     }
 

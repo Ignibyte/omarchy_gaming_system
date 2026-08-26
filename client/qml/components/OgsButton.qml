@@ -5,17 +5,24 @@ Button {
     id: root
 
     property string accessibleName: text
+    property string accessibleDescription: ""
 
     Accessible.name: accessibleName
+    Accessible.description: accessibleDescription
     activeFocusOnTab: true
     focusPolicy: Qt.StrongFocus
-    font.family: "monospace"
+    hoverEnabled: true
+    opacity: enabled ? 1 : 0.68
+    implicitHeight: theme.controlHeight
+    font.family: theme.fontFamily
     font.bold: true
-    font.pixelSize: 14
+    font.pixelSize: theme.controlSize
     leftPadding: 18
     rightPadding: 18
-    topPadding: 11
-    bottomPadding: 11
+    topPadding: theme.spaceSm
+    bottomPadding: theme.spaceSm
+
+    OgsTheme { id: theme }
 
     Keys.onReturnPressed: function(event) {
         if (root.enabled)
@@ -29,9 +36,9 @@ Button {
     }
 
     contentItem: Text {
-        text: root.text
+        text: (root.checkable && root.checked ? "● " : "") + root.text
         textFormat: Text.PlainText
-        color: root.enabled ? "#eef7ff" : "#728397"
+        color: root.enabled ? theme.textPrimary : theme.textMuted
         font: root.font
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
@@ -39,11 +46,12 @@ Button {
     }
 
     background: Rectangle {
-        radius: 3
-        color: root.down ? "#294966"
-                         : root.hovered ? "#1d3348" : "#132537"
-        border.color: root.activeFocus ? "#ffffff"
-                                       : root.enabled ? "#5ee6a8" : "#415066"
-        border.width: root.activeFocus ? 2 : 1
+        radius: theme.radius
+        color: root.down ? theme.surfacePressed
+                         : root.hovered ? theme.surfaceHover : theme.surfaceRaised
+        border.color: root.activeFocus ? theme.focus
+                                       : root.checked ? theme.accent
+                                       : root.enabled ? theme.border : theme.borderMuted
+        border.width: root.activeFocus ? theme.focusWidth : theme.borderWidth
     }
 }

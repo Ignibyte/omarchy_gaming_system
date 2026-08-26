@@ -1,12 +1,15 @@
 import QtQuick
 import QtQuick.Layouts
 import "../cartridge/nodes" as Nodes
+import "../components" as Components
 
 Item {
     id: root
 
     required property var presentation
     signal actionRequested(string action)
+
+    Components.OgsTheme { id: theme }
 
     implicitHeight: battlefield.implicitHeight
 
@@ -20,16 +23,13 @@ Item {
     ColumnLayout {
         id: battlefield
         width: parent.width
-        spacing: 10
+        spacing: theme.spaceMd
 
-        Text {
+        Components.OgsSectionLabel {
             Layout.fillWidth: true
             text: root.presentation.title
-            textFormat: Text.PlainText
-            color: "#5ee6a8"
-            font.family: "monospace"
-            font.bold: true
-            font.pixelSize: 24
+            tone: "success"
+            font.pixelSize: theme.titleSize
             horizontalAlignment: Text.AlignHCenter
         }
 
@@ -37,9 +37,9 @@ Item {
             Layout.fillWidth: true
             text: root.presentation.turn_label
             textFormat: Text.PlainText
-            color: "#8aa4c0"
-            font.family: "monospace"
-            font.pixelSize: 13
+            color: theme.textMuted
+            font.family: theme.fontFamily
+            font.pixelSize: theme.bodySize
             horizontalAlignment: Text.AlignHCenter
         }
 
@@ -57,8 +57,9 @@ Item {
                   + " // ENERGY " + root.presentation.actor_energy
                   + (root.presentation.actor_guard > 0 ? " // GUARD " + root.presentation.actor_guard : "")
             textFormat: Text.PlainText
-            color: "#eef7ff"
-            font.family: "monospace"
+            color: theme.textPrimary
+            font.family: theme.fontFamily
+            font.pixelSize: theme.bodySize
             font.bold: true
             wrapMode: Text.Wrap
         }
@@ -86,7 +87,7 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: "#36516b"
+            color: theme.borderMuted
         }
 
         Text {
@@ -95,8 +96,9 @@ Item {
                   + " // ENERGY " + root.presentation.opponent_energy
                   + (root.presentation.opponent_guard > 0 ? " // GUARD " + root.presentation.opponent_guard : "")
             textFormat: Text.PlainText
-            color: "#f4c95d"
-            font.family: "monospace"
+            color: theme.warning
+            font.family: theme.fontFamily
+            font.pixelSize: theme.bodySize
             font.bold: true
             wrapMode: Text.Wrap
         }

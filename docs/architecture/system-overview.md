@@ -74,9 +74,13 @@ the first identity HTTP surfaces:
   a raw bearer. Password and factor fields clear on submission; bearer and MFA
   challenge values remain in process memory only and are cleared with every
   terminal authority transition. Remote endpoints require HTTPS while
-  loopback HTTP remains the explicit development exception. Standard controls,
-  visible focus, accessible names, Enter/Escape behavior, and scrollable
-  minimum-size layouts provide keyboard-only onboarding at 640×420 and above.
+  loopback HTTP remains the explicit development exception. The shell and all
+  ten routed screens share repository-owned semantic theme, heading, status,
+  card, section, and control primitives. Their state remains understandable
+  without color alone; visible focus, accessible names, deterministic initial
+  focus, reversible traversal, Enter/Escape behavior, explicit plain text, and
+  scrollable minimum-size layouts provide keyboard-only play at 640×420 and
+  above without changing controller authority.
 - a dedicated QML social controller uses that same credential-owning API
   object only through a session-gated request function and completion signal;
   it never receives the bearer. Every connection, block, conversation,

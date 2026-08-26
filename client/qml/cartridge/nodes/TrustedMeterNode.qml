@@ -1,4 +1,5 @@
 import QtQuick
+import "../../components" as Components
 
 Rectangle {
     id: root
@@ -12,10 +13,12 @@ Rectangle {
     readonly property real ratio: (nodeData.value - nodeData.minimum)
         / (nodeData.maximum - nodeData.minimum)
 
+    Components.OgsTheme { id: theme }
+
     width: parent ? parent.width : 640
     height: 38 * scaleFactor
-    color: highContrast ? "#000000" : "#132537"
-    border.color: highContrast ? "#ffffff" : "#365572"
+    color: highContrast ? theme.highContrastBackground : theme.surfaceRaised
+    border.color: highContrast ? theme.highContrastForeground : theme.border
     Accessible.role: Accessible.ProgressBar
     Accessible.name: nodeData.accessible_label + ": " + String(nodeData.value)
 
@@ -25,16 +28,18 @@ Rectangle {
         anchors.bottom: parent.bottom
         anchors.margins: 4
         width: (parent.width - 8) * root.ratio
-        color: root.highContrast ? "#ffffff" : "#5ee6a8"
+        color: root.highContrast ? theme.highContrastForeground : theme.accent
     }
 
     Text {
         anchors.centerIn: parent
         text: root.nodeData.accessible_label + " " + root.nodeData.value
         textFormat: Text.PlainText
-        color: root.highContrast && root.ratio > 0.45 ? "#000000" : "#eef7ff"
-        font.family: "monospace"
+        color: root.highContrast && root.ratio > 0.45
+               ? theme.highContrastBackground
+               : root.highContrast ? theme.highContrastForeground : theme.textPrimary
+        font.family: theme.fontFamily
         font.bold: true
-        font.pixelSize: 13 * root.scaleFactor
+        font.pixelSize: theme.bodySize * root.scaleFactor
     }
 }

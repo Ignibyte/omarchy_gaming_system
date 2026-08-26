@@ -1,4 +1,5 @@
 import QtQuick
+import "../../components" as Components
 
 Rectangle {
     id: root
@@ -10,10 +11,12 @@ Rectangle {
     property bool reducedMotion: false
     property bool mutedAudio: false
 
+    Components.OgsTheme { id: theme }
+
     width: parent ? parent.width : 640
     height: 160 * scaleFactor
-    color: highContrast ? "#000000" : "#0b1420"
-    border.color: highContrast ? "#ffffff" : "#263950"
+    color: highContrast ? theme.highContrastBackground : theme.background
+    border.color: highContrast ? theme.highContrastForeground : theme.borderMuted
     Accessible.role: Accessible.Graphic
     Accessible.name: nodeData.accessible_label
 

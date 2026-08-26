@@ -266,9 +266,12 @@ mutate a `VerifiedCartridge` after verification. The renderer then:
 The implemented Core nodes are `terminal`, `grid`, `status`, `button`, `image`,
 and `meter`. Rich-2D adds `sprite`, `particle_field`, and `audio_cue`. QML maps
 those tags through an explicit switch to repository-owned components. All text
-uses `Text.PlainText`; Grid and Button share their keyboard, pointer, and
-accessibility press paths; sprites and particles honor reduced motion; audio
-honors mute; and the origin strip remains platform-owned. The QML boundary
+uses `Text.PlainText`; the preview, trusted surface, and visual nodes consume
+the same host-owned `OgsTheme` palette and typography contract as the main
+shell. Grid and Button share their keyboard, pointer, and accessibility press
+paths; sprites and particles honor reduced motion; audio honors mute; and the
+origin strip remains platform-owned. Cartridge data cannot inject colors,
+styles, or markup. The QML boundary
 independently recounts aggregate grid cells, images, sprites, particles, audio
 cues, and animations against the plan's claimed profile before instantiating
 any component. Trusted Image nodes request a host-bounded source size and load

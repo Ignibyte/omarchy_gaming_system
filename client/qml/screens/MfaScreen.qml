@@ -8,6 +8,8 @@ Item {
 
     required property var controller
 
+    Components.OgsTheme { id: theme }
+
     function focusInitial() {
         factorField.forceActiveFocus()
     }
@@ -27,58 +29,32 @@ Item {
     ScrollView {
         id: scroll
         anchors.fill: parent
-        anchors.margins: 28
+        anchors.margins: theme.space2Xl
         contentWidth: availableWidth
 
         ColumnLayout {
             width: scroll.availableWidth
-            spacing: 16
+            spacing: theme.spaceLg
 
             Item { Layout.fillHeight: true; Layout.minimumHeight: 16 }
 
-            Text {
+            Components.OgsScreenHeader {
                 Layout.fillWidth: true
-                text: "SECOND FACTOR"
-                textFormat: Text.PlainText
-                color: "#f4c95d"
-                font.family: "monospace"
-                font.bold: true
-                font.pixelSize: 30
-                horizontalAlignment: Text.AlignHCenter
+                screenKey: "mfa"
+                title: "SECOND FACTOR"
+                titleTone: "warning"
+                statusText: controller.statusText
+                statusTone: controller.busy ? "working" : "warning"
+                errorText: controller.errorText
+                navigationHint: "ENTER VERIFY // ESC CANCEL"
             }
 
-            Text {
-                Layout.fillWidth: true
-                text: controller.statusText
-                textFormat: Text.PlainText
-                color: "#d5e2ef"
-                font.family: "monospace"
-                font.pixelSize: 15
-                wrapMode: Text.Wrap
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            Text {
-                Layout.fillWidth: true
-                visible: controller.errorText !== ""
-                text: controller.errorText
-                textFormat: Text.PlainText
-                color: "#ff8b98"
-                font.family: "monospace"
-                font.pixelSize: 14
-                wrapMode: Text.Wrap
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 Layout.maximumWidth: 560
                 Layout.alignment: Qt.AlignHCenter
                 text: "AUTHENTICATOR OR RECOVERY CODE"
-                textFormat: Text.PlainText
-                color: "#8aa4c0"
-                font.family: "monospace"
-                font.pixelSize: 12
+                tone: "info"
             }
 
             Components.OgsTextField {
@@ -99,9 +75,9 @@ Item {
                 Layout.fillWidth: true
                 text: controller.mfaExpiresAt === "" ? "" : "Challenge expires " + controller.mfaExpiresAt
                 textFormat: Text.PlainText
-                color: "#6f879f"
-                font.family: "monospace"
-                font.pixelSize: 11
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.captionSize
                 horizontalAlignment: Text.AlignHCenter
             }
 

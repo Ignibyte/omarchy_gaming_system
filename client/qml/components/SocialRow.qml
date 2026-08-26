@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-Rectangle {
+OgsCard {
     id: root
 
     required property var persona
@@ -15,28 +15,28 @@ Rectangle {
     signal secondaryTriggered()
 
     implicitHeight: row.implicitHeight + 20
-    radius: 3
-    color: "#0c1825"
-    border.color: "#29445e"
+    tone: "success"
+
+    OgsTheme { id: theme }
 
     RowLayout {
         id: row
         anchors.fill: parent
         anchors.margins: 10
-        spacing: 10
+        spacing: theme.spaceMd
 
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 3
+            spacing: theme.spaceXs
 
             Text {
                 Layout.fillWidth: true
                 text: root.persona.display_name + "  @" + root.persona.handle
                 textFormat: Text.PlainText
-                color: "#eef7ff"
-                font.family: "monospace"
+                color: theme.textPrimary
+                font.family: theme.fontFamily
                 font.bold: true
-                font.pixelSize: 14
+                font.pixelSize: theme.bodySize
                 elide: Text.ElideRight
             }
 
@@ -45,9 +45,9 @@ Rectangle {
                 visible: root.detail !== ""
                 text: root.detail
                 textFormat: Text.PlainText
-                color: "#8aa4c0"
-                font.family: "monospace"
-                font.pixelSize: 11
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.captionSize
                 elide: Text.ElideRight
             }
         }

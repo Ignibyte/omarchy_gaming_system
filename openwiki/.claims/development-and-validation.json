@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:30a93a747cbc8404b625c00a3a8fcb2791c0b13312cd2ec2939804b8960279be",
+  "pageVersion": "sha256:0bf9b7f6745aff70c6e5b11663a10acf7a821375cc6fbe4e57790adf11fdc3d0",
   "claims": [
     {
       "id": "claim_e75f82f846ca444594c51ed0f48b894b",
@@ -21,8 +21,12 @@
           "version": "repo-file-v1:sha256:48b86a5ce58f10a6eb12bd884ce9319f23ee0da904ca1a527342939cf4be60ed"
         },
         {
-          "resource": "repo://client/qml/Main.qml#L19-L58",
-          "version": "repo-lines-v1:sha256:15b407396c3639375409a9684769807dbb98bd0b1fde8a50ff5cae5b3b536abd:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZjQyZDBjMjEwYTcyNjdmZWQzZWI2ZmRjYTA2NGUwNTgzMTJjNWY3YzQyZGI1ODM3MDkxYjhlNWE1MGYxYTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA5MWU4ZDQ1MWYzODFhZjNkNGVhMDcxMmUwMDdkNjM0NmZkMjU1MjM2ZGUwNDVlNWJjM2NhNjRkNDQzNzgxNmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE3ODUxMTg1NWEyOTY3ZTJjYzAyYThlZGVhNDJlMjRkNGE2Yjk5ZTEwMDFmNTE0MmM4OTJjZmM5N2NlMDNlMzIifQ"
+          "resource": "repo://client/qml/Main.qml#L20-L31",
+          "version": "repo-lines-v1:sha256:38ad731134e24de590fc2f38534ebc4c7794d739a0154f85f23028b8bedab44d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZjQyZDBjMjEwYTcyNjdmZWQzZWI2ZmRjYTA2NGUwNTgzMTJjNWY3YzQyZGI1ODM3MDkxYjhlNWE1MGYxYTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5ZmM5ZGM2NjBiMTk4MzRmOWFjYjhlMmU3NmRkODk4MzYyMGQ0MWI5YWRmOGZkZTVmNzI4ODJkOWE3ZjkxZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA5MWU4ZDQ1MWYzODFhZjNkNGVhMDcxMmUwMDdkNjM0NmZkMjU1MjM2ZGUwNDVlNWJjM2NhNjRkNDQzNzgxNmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkNzBlOTc4YTMyOTQ3ODE5MjJlYzdhNzVkMjllMDNmNjk1YjljN2EyMDFlMDQ3MDkzMTJlNzIwZDdiYWJlOWQifQ"
+        },
+        {
+          "resource": "repo://client/qml/Main.qml#L111-L121",
+          "version": "repo-lines-v1:sha256:56a5b9db3fcc74770a747b6eec5f079fc96a2bf563ade787b72ce73709913b05:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwNzFlMjI0YzJiNjgzMzNiMTBkOTc0NGZiYjEwYzlkMmJlM2FkNjQyMzA0MWRjMzIwODUxMzE4ZWUzYmYyY2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNhYTA2NGE1MDEzMGIwNDJkOWRmOGMzMDQ2NWRiNDE5ZmY2Y2ZjMzA0ODVjMjk2YmQ4ODU1ZmU4Y2RmZTY2YmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhMjA2YjRlMTlmMTM3NzhhZGJkN2E4YjllOGQxYzY0ZDM0MjM5NjQ4MjdhYzJiZWFlOWQzMWRhZjlhOGFiMjQifQ"
         },
         {
           "resource": "repo://client/qml/tests/live/tst_live_onboarding.qml",
@@ -382,19 +386,19 @@
     },
     {
       "id": "claim_46dd32af132d418d934303b2ca56f4df",
-      "statement": "The keyboard-first QML fixture corpus runs thirty-three cases, including eight game-flow cases for 640-pixel containment, strict hostile-envelope rejection, inert provider presentation, exact retry identity, revision-conflict refetch, invalid-session cleanup, challenge transitions, and active-seat enforcement.",
+      "statement": "The keyboard-first QML fixture corpus runs thirty-eight Qt cases, including three end-to-end accessibility cases and eight game-flow cases for contrast, semantics, deterministic focus, reversible traversal, 640-pixel containment, Escape authority, hostile-envelope rejection, exact retry identity, revision refetch, and active-seat enforcement.",
       "evidence": [
         {
-          "resource": "repo://scripts/test-qml-onboarding.sh",
-          "version": "repo-file-v1:sha256:01394f027d655e80d7efd53883cc1585a27fd3cbc608b0fc2f1b09b73cbd95ee"
+          "resource": "repo://scripts/test-qml-onboarding.sh#L82-L125",
+          "version": "repo-lines-v1:sha256:d3a8fe059a8d8e03535177264335e8e63e254530908852065a0cecc5301293a6:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YzUxYmE5OTE1OGVjMzYzZDQwYjc3OGVmMjcxMTI2ZGEzZmQ4MzE1ZWU1MjM4MjI0MjA0NjliNTI5YTBiOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiNjRlOTgzZDk5Y2UxZGI2YmYzOWVkMjMwMjNiNjQxOTcyNDRiMTRjNTA4ODU1NDI3MjA3NTE0MTc3ZDgxMzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNlYmFhOGZiODg4M2I2YjBjOGM0ZThmZWQxNThiNmY1NzRlOTBlNWRhODk1ZDZhYmNlYWQ2ZmI0OTllMTVhMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L108-L300",
+          "version": "repo-lines-v1:sha256:a820093aad5d0a0f9f3029308fd1508610bd07b56cf9b6fcb2fd36ebba9eaa2a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlNDhmMmJkNTBkNjMxMzFmZTA1ZTFkNzlkYjRlZGY5M2YxOWI3YTNkZDc4NDcwOTE4ZTMxZDFjZTA3OWU4YWMyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMjkzMTlkNDZkZjg5MDYyYjNhYTgwZTY3MjA5N2RhMGViY2E3NGIzNzAxNTBmZmIxMGE5MjNmODA1YTBjNWU0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIn0"
         },
         {
           "resource": "repo://client/qml/tests/fixture/tst_games.qml",
           "version": "repo-file-v1:sha256:5624d07cc99f7ef87ec7ba5ecdff19537a8915a2a849c17a0fb3ebce55d1e931"
-        },
-        {
-          "resource": "repo://docs/planning/pipeline/completed/signal-siege-versus-and-keyboard-first-game-flow.notes.md",
-          "version": "repo-file-v1:sha256:9ef97bedaba298345bdcfee71d0c8c71c635f424e789628b48fb6bc8185a2395"
         }
       ]
     },
@@ -407,10 +411,28 @@
           "version": "repo-lines-v1:sha256:2da274aff9d3ae99d07b4d5f22f804b64fbb6770f4ebb7dd899f6483b70c182a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmZDgyNjFhODZjNjBlNGI0ZWI5ZDJiZjczYzIyZjUyNWZhOWRmY2NkMDY1ZDI0NDhhMmQ4MDRlMTFmZDY4ZDQxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkMzkyYjdlODQ5YTJkYTMzYmFjNWZmZGVkYWQ1ODNmNjg5ODZlNTM0MzFjOGRiYjMwNjk2ODAwZGJiYjEzYTEwIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkYmJjMzNlZmQzM2UwOTk5ODIzZjY3NmJjZjZhYTRjMjgwY2E0Mzk5ODVlMjExNTJjODdkZGJkYzBjYTMzYjYwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwNmU4ZGQyYTUxM2E4NzRiOTBiYTk1NGRiYTMxNjJhMzQ0NjVmZDU3ODcxYjA3N2QzZDljZDM5MDFiNjU0MjFiIn0"
         }
       ]
+    },
+    {
+      "id": "claim_94c5d6cb403446f385d88ac2cfd14238",
+      "statement": "The focused QML entrypoint first enforces a 33-file visual policy that centralizes six-digit colors in OgsTheme, requires every visual Text block to select Text.PlainText, rejects rich or automatic text formats, and checks the required theme contract.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/check-qml-style.py#L11-L38",
+          "version": "repo-lines-v1:sha256:d19c849b93320daaeabb4d400356b3c3215dc22abf0086ee1ad8053fa2d846d6:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjMGNhZjQ0MWExYWFkMjI0MGU3YWFjY2JiMmE3MzkxNWZjNWNlNjJhOTBlYjg1NzgzNmQ5MDVjNjg3NjBjN2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhZmJhMDUyN2MzOTUzYzRiNmUwZTViNTczOWJhODM2MTJmODA1M2JjZGM5NDY2NzMwMTkzY2QxZDU5MGI0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE5MWJmM2Q5NmYxYjExOTY4OGRlZWE5YTAwNGIyYjNmZWJiMTgwYmI4ZmIyMzQ0NjI1NjE0YWRjODU5NTYzYWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0MTljZDRlZTUxNzhiZDUzZGY2NjQwY2QzMTFhMTlmYjNiMjgxMzExYmUwNWUyMGE0MGViMDlkNmQwMDRmODgifQ"
+        },
+        {
+          "resource": "repo://scripts/check-qml-style.py#L90-L132",
+          "version": "repo-lines-v1:sha256:42a445fb23bdd366cd0ba944a8317c9efe5749e80dd582c0349ef0f3ab626628:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiMzk3OTMzYTI0YTgwMWVlOTIzMzI3YmQ2OWEwMTA0OWMwNzc5MTUwMjFjZjJlYzM5ZGRhNGY4MWFhODM3ZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE2MjMzYjNmZmVhMzJhMjNkZjUzMDY1MzQzNDhmMmRlZTc3NmE1YTZmNzRmYjUzMzE3NWRkYzUzOWE4ZmU0NjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxYWMwOTFkNzQwZTI1ZmYwNTBiNjY1YWEyYWM5YmIwZDFlNzk0Y2ViMzdlZjc3OTJhYmE5YTYwNTEzNTBmMGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkNDEzNDBjYzIzOWExNTljZTliNjAyMmU5ZjYzMjI4MzJlMmVhZDc2Y2FlOWU0NzU0ZDIxMGViOGZiNmQ1ZTgifQ"
+        },
+        {
+          "resource": "repo://scripts/test-qml-onboarding.sh#L82-L84",
+          "version": "repo-lines-v1:sha256:d73b6a6b38862bf96b9a7d5a204d97474378bf9c2e5adca923ae802b8b4851f2:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjZjNTFiYTk5MTU4ZWMzNjNkNDBiNzc4ZWYyNzExMjZkYTNmZDgzMTVlZTUyMzgyMjQyMDQ2OWI1MjlhMGI5NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2MzOGQwNjE0ODk2MTFhNDdkZTQ2NjVmYTIwMzA0YzZiMWE0ZGI1YTQ2MjlhNGEzOGM2Njk4N2IyMTlkY2Y0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2ViYWE4ZmI4ODgzYjZiMGM4YzRlOGZlZDE1OGI2ZjU3NGU5MGU1ZGE4OTVkNmFiY2VhZDZmYjQ5OWUxNWEzMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2RjN2QwNzU5N2YzMzA3ZGFiMWZiODA5NzU0M2Y4YjZlZDA4ZWU5N2NiYzFiMDRkYmRkNzNhMTMxZjk0NjNlYyJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T02:20:38.948Z"
+    "at": "2026-08-26T03:43:00.059Z"
   }
 }

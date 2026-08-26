@@ -10,6 +10,8 @@ Item {
     required property var controller
     required property var sessionController
 
+    Components.OgsTheme { id: theme }
+
     function focusInitial() {
         if (surface.visible)
             surface.focusInitial()
@@ -23,28 +25,37 @@ Item {
         event.accepted = true
     }
 
+    Connections {
+        target: controller
+        function onBusyChanged() {
+            if (!controller.busy)
+                Qt.callLater(root.focusInitial)
+        }
+    }
+
     ScrollView {
         id: scroll
         anchors.fill: parent
-        anchors.margins: 18
+        anchors.margins: theme.spaceLg
         contentWidth: availableWidth
 
         ColumnLayout {
             width: scroll.availableWidth
-            spacing: 12
+            spacing: theme.spaceMd
+
+            Components.OgsScreenHeader {
+                Layout.fillWidth: true
+                screenKey: "gameplay"
+                title: "AUTHORITATIVE GAME LINK"
+                statusText: controller.statusText
+                statusTone: controller.busy || controller.loadState === "loading"
+                            ? "working" : "success"
+                errorText: controller.errorText
+                navigationHint: "ESC GAMES // ENTER ACTION"
+            }
 
             RowLayout {
-                Layout.fillWidth: true
-
-                Text {
-                    Layout.fillWidth: true
-                    text: "AUTHORITATIVE GAME LINK"
-                    textFormat: Text.PlainText
-                    color: "#8aa4c0"
-                    font.family: "monospace"
-                    font.bold: true
-                }
-
+                Layout.alignment: Qt.AlignRight
                 Components.OgsButton {
                     id: refreshButton
                     objectName: "gameRefreshButton"
@@ -66,16 +77,6 @@ Item {
                 }
             }
 
-            Text {
-                Layout.fillWidth: true
-                text: controller.errorText !== "" ? controller.errorText : controller.statusText
-                textFormat: Text.PlainText
-                color: controller.errorText !== "" ? "#ff6b7a" : "#8aa4c0"
-                font.family: "monospace"
-                font.pixelSize: 12
-                wrapMode: Text.Wrap
-            }
-
             Components.OgsButton {
                 visible: controller.hasRetryableMutation
                 text: "RETRY SAME COMMAND"
@@ -84,14 +85,11 @@ Item {
                 onClicked: controller.retryPendingMutation()
             }
 
-            Text {
+            Components.OgsStatusBanner {
                 Layout.fillWidth: true
                 visible: controller.selectedSession !== null && !controller.presentation.supported
-                text: "This cartridge is listed safely, but this client has no trusted presenter for it."
-                textFormat: Text.PlainText
-                color: "#f4c95d"
-                font.family: "monospace"
-                wrapMode: Text.Wrap
+                message: "This cartridge is listed safely, but this client has no trusted presenter for it."
+                tone: "warning"
             }
 
             Game.SignalSiegeSurface {

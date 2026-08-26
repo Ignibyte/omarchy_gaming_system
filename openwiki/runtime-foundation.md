@@ -3,10 +3,20 @@ type: "Reference"
 title: "Runtime foundation"
 openwiki_generated: true
 sources:
+  - id: openwiki-source-490417654c55d88090cb369e
+    resource: repo://client/qml/components/OgsScreenHeader.qml
+  - id: openwiki-source-f4ccc0eff8d8cee134cf3ed5
+    resource: repo://client/qml/components/OgsStatusBanner.qml
+  - id: openwiki-source-998b0f5a7b56d7475101b7a2
+    resource: repo://client/qml/components/OgsTheme.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
     resource: repo://client/qml/GameController.qml
+  - id: openwiki-source-d392f8f0962c50f0d66e0629
+    resource: repo://client/qml/Main.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
+  - id: openwiki-source-fc035ef77d2451c6e8138211
+    resource: repo://client/qml/tests/fixture/tst_accessibility.qml
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
@@ -69,10 +79,10 @@ sources:
     resource: repo://migrations/0012_game_challenges.sql
   - id: openwiki-source-926664a4167297129df76802
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
-generated: {by: "codex", at: "2026-08-26T02:02:30.593Z"}
+generated: {by: "codex", at: "2026-08-26T03:43:00.059Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-26T02:02:30.593Z
+    at: 2026-08-26T03:43:00.059Z
 ---
 
 # Runtime foundation
@@ -250,6 +260,15 @@ optional MFA, persona inventory or creation, and an authenticated home. Account
 registration deliberately returns to sign-in; session creation immediately
 loads the owned persona inventory; and either an owned selection or successful
 persona creation establishes the active persona for the home screen.
+
+The shell and all ten routed screens share `OgsTheme`, `OgsScreenHeader`, and
+`OgsStatusBanner` rather than defining independent palettes or status grammar.
+Every route exposes a semantic heading, a visible non-color-prefixed state, a
+keyboard navigation hint, and an explicit initial focus target. The shell adds
+an accessible application-state rail and persistent keyboard legend without
+moving navigation or data authority out of the existing controllers. Visual
+text explicitly selects `Text.PlainText`; layout and focus assertions cover
+both the 920×600 default and 640×420 minimum window.
 
 `ApiClient.qml` accepts only a bare HTTP or HTTPS origin. HTTP is limited to
 `localhost`, `127.0.0.1`, and `[::1]`; every remote host requires HTTPS. Each
@@ -710,11 +729,13 @@ seven migrated PostgreSQL cases cover participant privacy, exact creation replay
 and collisions, typed inbox and minimal sync payloads, exact-version acceptance
 and seat order, terminal history and lazy expiry, pending limits, initializer
 and block rollback, production Signal Siege v2 alternation/completion, and
-one-winner terminal races. QML game changes run through the thirty-three-case
+one-winner terminal races. QML game changes run through the thirty-eight-case
 fixture corpus and the live two-authority scenario in `scripts/dev.sh`; those
-prove minimum-width containment, strict hostile-envelope rejection, retained
-retry identity, revision refetch, authority cleanup, active-seat enforcement,
-terminal completion, and fresh-controller recovery.
+prove contrast, semantic headings and status, deterministic focus, reversible
+Tab traversal, Escape authority, minimum-width containment, strict hostile-
+envelope rejection, retained retry identity, revision refetch, authority
+cleanup, active-seat enforcement, terminal completion, and fresh-controller
+recovery.
 Provider player-route changes use `provider_game_api_tests.rs` plus
 `scripts/test-provider-authority-pilot.sh`. The clean-clone proof covers the
 independent TLS process and database, protocol-only dependency, mixed catalog,

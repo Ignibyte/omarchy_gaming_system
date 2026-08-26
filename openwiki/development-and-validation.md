@@ -9,6 +9,8 @@ sources:
     resource: repo://client/qml/cartridge/nodes/TrustedImageNode.qml
   - id: openwiki-source-d392f8f0962c50f0d66e0629
     resource: repo://client/qml/Main.qml
+  - id: openwiki-source-fc035ef77d2451c6e8138211
+    resource: repo://client/qml/tests/fixture/tst_accessibility.qml
   - id: openwiki-source-152956378e80408d69d9dfb7
     resource: repo://client/qml/tests/fixture/tst_games.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
@@ -47,6 +49,8 @@ sources:
     resource: repo://docs/planning/pipeline/completed/signal-siege-versus-and-keyboard-first-game-flow.notes.md
   - id: openwiki-source-d35448de763d92d5820dbaad
     resource: repo://scripts/check-pipeline-tools.sh
+  - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
+    resource: repo://scripts/check-qml-style.py
   - id: openwiki-source-a5928e7ee39885995efdc170
     resource: repo://scripts/dev.sh
   - id: openwiki-source-ff3f60a113327d3006289ed7
@@ -69,10 +73,10 @@ sources:
     resource: repo://scripts/test-provider-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
-generated: {by: "codex", at: "2026-08-26T02:02:30.593Z"}
+generated: {by: "codex", at: "2026-08-26T03:43:00.059Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-26T02:20:38.948Z
+    at: 2026-08-26T03:43:00.059Z
 ---
 
 # Development and validation
@@ -147,8 +151,13 @@ second watchdog.
 `scripts/test-qml-onboarding.sh` is the focused client entrypoint. It owns a
 mode-0700 test configuration directory, forces deterministic headless Qt, and
 runs the real screens and controller against normal, malformed, wrong-identity,
-slow, and oversized fixture responders. The 33-case corpus covers keyboard and
-focus behavior, field bounds, endpoint admission, exact response shapes,
+slow, and oversized fixture responders. Before Qt starts, it runs
+`scripts/check-qml-style.py`: the 33-file visual policy centralizes six-digit
+colors in `OgsTheme`, requires every visual `Text` block to select
+`Text.PlainText`, rejects automatic/rich text modes, and verifies the shared
+theme contract. The 38-case Qt corpus covers contrast, semantic headings and
+status, deterministic initial focus and reversible traversal, Escape authority,
+keyboard behavior, field bounds, endpoint admission, exact response shapes,
 conflicts, timeouts, response limits, request supersession, MFA terminal and
 local expiry, social inventories and actions, private message history,
 pagination, send/read, plain-text rendering, game discovery and challenge
@@ -215,7 +224,8 @@ The gate currently covers:
    movement, connection, fail-closed unavailable-game challenge rejection,
    private inbox, synchronization recovery, and block lifecycle, TOTP
    enrollment, challenged login, recovery replay rejection, MFA disablement,
-   session revocation, rejected-token, the 33-case hostile QML fixture corpus,
+   session revocation, rejected-token, the 38-case hostile/accessibility QML
+   fixture corpus,
    real QML registration/persona, social/inbox, MFA/persona, and two-authority
    Signal Siege challenge/versus/recovery flows, and the standalone QML shell
    smoke.

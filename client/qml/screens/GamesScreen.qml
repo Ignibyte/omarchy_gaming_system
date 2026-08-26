@@ -9,6 +9,8 @@ Item {
     required property var controller
     required property var sessionController
 
+    Components.OgsTheme { id: theme }
+
     function focusInitial() {
         refreshButton.forceActiveFocus()
     }
@@ -21,26 +23,26 @@ Item {
     ScrollView {
         id: scroll
         anchors.fill: parent
-        anchors.margins: 18
+        anchors.margins: theme.spaceLg
         contentWidth: availableWidth
 
         ColumnLayout {
             width: scroll.availableWidth
-            spacing: 12
+            spacing: theme.spaceMd
+
+            Components.OgsScreenHeader {
+                Layout.fillWidth: true
+                screenKey: "games"
+                title: "GAME CARTRIDGES"
+                statusText: controller.statusText
+                statusTone: controller.busy || controller.loadState === "loading"
+                            ? "working" : "success"
+                errorText: controller.errorText
+                navigationHint: "ESC HOME // ENTER START OR OPEN"
+            }
 
             RowLayout {
-                Layout.fillWidth: true
-
-                Text {
-                    Layout.fillWidth: true
-                    text: "GAME CARTRIDGES"
-                    textFormat: Text.PlainText
-                    color: "#5ee6a8"
-                    font.family: "monospace"
-                    font.bold: true
-                    font.pixelSize: 24
-                }
-
+                Layout.alignment: Qt.AlignRight
                 Components.OgsButton {
                     id: refreshButton
                     objectName: "gamesRefreshButton"
@@ -67,16 +69,6 @@ Item {
                 }
             }
 
-            Text {
-                Layout.fillWidth: true
-                text: controller.errorText !== "" ? controller.errorText : controller.statusText
-                textFormat: Text.PlainText
-                color: controller.errorText !== "" ? "#ff6b7a" : "#8aa4c0"
-                font.family: "monospace"
-                font.pixelSize: 12
-                wrapMode: Text.Wrap
-            }
-
             Components.OgsButton {
                 objectName: "gamesRetryButton"
                 visible: controller.hasRetryableMutation
@@ -86,13 +78,9 @@ Item {
                 onClicked: controller.retryPendingMutation()
             }
 
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 text: "SOLO CARTRIDGES"
-                textFormat: Text.PlainText
-                color: "#f4c95d"
-                font.family: "monospace"
-                font.bold: true
             }
 
             Text {
@@ -100,8 +88,9 @@ Item {
                 visible: controller.loadState !== "loading" && controller.soloGames().length === 0
                 text: "No solo cartridges are available."
                 textFormat: Text.PlainText
-                color: "#607890"
-                font.family: "monospace"
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.bodySize
             }
 
             Repeater {
@@ -116,23 +105,18 @@ Item {
                 }
             }
 
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 text: "INSTALLED CATALOG (" + controller.catalog.length + ")"
-                textFormat: Text.PlainText
-                color: "#f4c95d"
-                font.family: "monospace"
-                font.bold: true
             }
 
             Repeater {
                 model: controller.catalog
-                delegate: Rectangle {
+                delegate: Components.OgsCard {
                     required property var modelData
                     Layout.fillWidth: true
                     Layout.preferredHeight: 52
-                    color: "#0c1825"
-                    border.color: "#36516b"
+                    tone: "info"
 
                     Text {
                         anchors.fill: parent
@@ -141,21 +125,18 @@ Item {
                               + modelData.min_human_players + "–" + modelData.max_human_players
                               + " PLAYERS // " + modelData.authority.toUpperCase()
                         textFormat: Text.PlainText
-                        color: "#b7c9da"
-                        font.family: "monospace"
+                        color: theme.textSecondary
+                        font.family: theme.fontFamily
+                        font.pixelSize: theme.bodySize
                         wrapMode: Text.Wrap
                         verticalAlignment: Text.AlignVCenter
                     }
                 }
             }
 
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 text: "YOUR SESSIONS (" + controller.sessions.length + ")"
-                textFormat: Text.PlainText
-                color: "#f4c95d"
-                font.family: "monospace"
-                font.bold: true
             }
 
             Text {
@@ -163,8 +144,9 @@ Item {
                 visible: controller.loadState !== "loading" && controller.sessions.length === 0
                 text: "No matches yet. Start a solo cartridge or accept a challenge."
                 textFormat: Text.PlainText
-                color: "#607890"
-                font.family: "monospace"
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.bodySize
                 wrapMode: Text.Wrap
             }
 

@@ -3,12 +3,16 @@ type: "Reference"
 title: "Omarchy Gaming System engineering quickstart"
 openwiki_generated: true
 sources:
+  - id: openwiki-source-998b0f5a7b56d7475101b7a2
+    resource: repo://client/qml/components/OgsTheme.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
     resource: repo://client/qml/GameController.qml
   - id: openwiki-source-d392f8f0962c50f0d66e0629
     resource: repo://client/qml/Main.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
+  - id: openwiki-source-fc035ef77d2451c6e8138211
+    resource: repo://client/qml/tests/fixture/tst_accessibility.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
   - id: openwiki-source-df8490db5b51be8096630e7e
@@ -45,6 +49,8 @@ sources:
     resource: repo://docs/product-charter.md
   - id: openwiki-source-cb6494f7cbf0d5d23ffe082a
     resource: repo://migrations/0012_game_challenges.sql
+  - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
+    resource: repo://scripts/check-qml-style.py
   - id: openwiki-source-d69dbacb0ae7fe382ee46161
     resource: repo://scripts/test-game-cartridge-renderer.sh
   - id: openwiki-source-8df9ad1a3495f8360740ff03
@@ -53,10 +59,7 @@ sources:
     resource: repo://scripts/test-game-cartridge.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-26T02:02:30.593Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-26T02:02:30.593Z
+generated: {by: "codex", at: "2026-08-26T03:43:00.059Z"}
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -99,6 +102,12 @@ challenges, and play Signal Siege through authoritative REST commands. It does
 not yet acquire or launch signed cartridge packages, present provider-owned
 games, poll, or subscribe to live WebSocket hints.
 
+The main shell, all ten routes, and the trusted cartridge visual boundary now
+share one host-owned theme and explicit plain-text policy. Semantic headings,
+non-color status labels, accessible control names, deterministic initial focus,
+reversible Tab traversal, Escape authority, contrast, and 640×420 containment
+are exercised by the focused QML fixture before a delivery can pass.
+
 The product is game-first: connections, private inboxes, challenges, and
 persistent game history define the intended experience. A public message board
 may complement that system later, but it is not the current identity or
@@ -135,7 +144,7 @@ signed cartridge packages remain later work.
 |---|---|---|---|
 | Change server startup, configuration, migrations, or health behavior | [Runtime foundation](runtime-foundation.md) | `crates/server/src/main.rs`, `config.rs`, `app.rs`; `migrations/` | `cargo test -p omarchy-gaming-system-server`; health smoke |
 | Change accounts, device sessions, MFA, personas, or connections | [Runtime foundation](runtime-foundation.md) | `accounts.rs`, `credentials.rs`, `sessions.rs`, `mfa.rs`, `personas.rs`, `connections.rs`; `docs/api.md` | Domain tests plus multi-account PostgreSQL evidence |
-| Change QML endpoint selection, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/screens/`, `client/qml/game/` | `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
+| Change QML endpoint selection, appearance/accessibility, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/components/`, `client/qml/screens/`, `client/qml/game/` | `scripts/check-qml-style.py`; `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
 | Change cartridge packaging, trusted rendering, SDK portability, or provider integration | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `client/qml/cartridge`; migrations `0014`–`0015`; ADR-0002; Tickets 015–019 | `scripts/test-game-cartridge.sh`; `scripts/test-game-cartridge-renderer.sh`; `scripts/test-game-cartridge-sdk.sh`; `scripts/test-provider-conformance.sh`; `scripts/test-provider-authority-pilot.sh`; threat/authority review and constitutional authority check |
 | Run or diagnose the local stack and quality gate | [Development and validation](development-and-validation.md) | `scripts/dev.sh`; `bin/gate.sh`; `client/qml/Main.qml` | `bin/gate.sh --fast` or `--diff` |

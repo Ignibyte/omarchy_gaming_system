@@ -9,6 +9,8 @@ Item {
     required property var controller
     required property var sessionController
 
+    Components.OgsTheme { id: theme }
+
     function focusInitial() {
         refreshButton.forceActiveFocus()
     }
@@ -21,26 +23,26 @@ Item {
     ScrollView {
         id: scroll
         anchors.fill: parent
-        anchors.margins: 18
+        anchors.margins: theme.spaceLg
         contentWidth: availableWidth
 
         ColumnLayout {
             width: scroll.availableWidth
-            spacing: 12
+            spacing: theme.spaceMd
+
+            Components.OgsScreenHeader {
+                Layout.fillWidth: true
+                screenKey: "challenges"
+                title: "GAME CHALLENGES"
+                statusText: controller.statusText
+                statusTone: controller.busy || controller.loadState === "loading"
+                            ? "working" : "success"
+                errorText: controller.errorText
+                navigationHint: "ESC GAMES // ENTER CHALLENGE ACTION"
+            }
 
             RowLayout {
-                Layout.fillWidth: true
-
-                Text {
-                    Layout.fillWidth: true
-                    text: "GAME CHALLENGES"
-                    textFormat: Text.PlainText
-                    color: "#5ee6a8"
-                    font.family: "monospace"
-                    font.bold: true
-                    font.pixelSize: 24
-                }
-
+                Layout.alignment: Qt.AlignRight
                 Components.OgsButton {
                     id: refreshButton
                     objectName: "challengesRefreshButton"
@@ -59,16 +61,6 @@ Item {
                 }
             }
 
-            Text {
-                Layout.fillWidth: true
-                text: controller.errorText !== "" ? controller.errorText : controller.statusText
-                textFormat: Text.PlainText
-                color: controller.errorText !== "" ? "#ff6b7a" : "#8aa4c0"
-                font.family: "monospace"
-                font.pixelSize: 12
-                wrapMode: Text.Wrap
-            }
-
             Components.OgsButton {
                 visible: controller.hasRetryableMutation
                 text: "RETRY SAME OPERATION"
@@ -77,13 +69,9 @@ Item {
                 onClicked: controller.retryPendingMutation()
             }
 
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 text: "CHALLENGE A CONNECTION"
-                textFormat: Text.PlainText
-                color: "#f4c95d"
-                font.family: "monospace"
-                font.bold: true
             }
 
             Text {
@@ -93,8 +81,9 @@ Item {
                 text: controller.connections.length === 0 ? "Connect with another persona first."
                       : "No two-player cartridge is available."
                 textFormat: Text.PlainText
-                color: "#607890"
-                font.family: "monospace"
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.bodySize
             }
 
             Repeater {
@@ -107,8 +96,9 @@ Item {
                         Layout.fillWidth: true
                         text: "@" + modelData.persona.handle
                         textFormat: Text.PlainText
-                        color: "#b7c9da"
-                        font.family: "monospace"
+                        color: theme.textSecondary
+                        font.family: theme.fontFamily
+                        font.pixelSize: theme.bodySize
                     }
 
                     Components.OgsButton {
@@ -122,13 +112,9 @@ Item {
                 }
             }
 
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 text: "CHALLENGE HISTORY (" + controller.challenges.length + ")"
-                textFormat: Text.PlainText
-                color: "#f4c95d"
-                font.family: "monospace"
-                font.bold: true
             }
 
             Text {
@@ -136,18 +122,20 @@ Item {
                 visible: controller.loadState !== "loading" && controller.challenges.length === 0
                 text: "No challenges yet."
                 textFormat: Text.PlainText
-                color: "#607890"
-                font.family: "monospace"
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.bodySize
             }
 
             Repeater {
                 model: controller.challenges
-                delegate: Rectangle {
+                delegate: Components.OgsCard {
                     required property var modelData
                     Layout.fillWidth: true
                     Layout.preferredHeight: challengeColumn.implicitHeight + 20
-                    color: "#0c1825"
-                    border.color: "#36516b"
+                    tone: modelData.status === "accepted" ? "success"
+                          : modelData.status === "pending" ? "warning" : "info"
+                    highlighted: modelData.status === "accepted"
 
                     ColumnLayout {
                         id: challengeColumn
@@ -162,8 +150,9 @@ Item {
                                   + " // " + modelData.direction.toUpperCase()
                                   + " // " + modelData.status.toUpperCase()
                             textFormat: Text.PlainText
-                            color: "#eef7ff"
-                            font.family: "monospace"
+                            color: theme.textPrimary
+                            font.family: theme.fontFamily
+                            font.pixelSize: theme.bodySize
                             font.bold: true
                             wrapMode: Text.Wrap
                         }

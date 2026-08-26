@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:639d65ac89c943166b931b91e59838c07dc992942d007c542d05bdce406394cd",
+  "pageVersion": "sha256:2af1206ca665a0cf5ec20a3639e9a753e0ee6eecd44043febf99da9d7797ab4b",
   "claims": [
     {
       "id": "claim_c3d3ba6c62e34b5d90ee8cc7649b3c6e",
@@ -254,15 +254,19 @@
     },
     {
       "id": "claim_4621b2fc8e64400caddfa2017b66ab7e",
-      "statement": "The trusted QML surface accepts only exact plan keys and fixed node kinds, independently recounts aggregate profile budgets, maps kinds to repository-owned Components, and renders cartridge strings as plain text.",
+      "statement": "The trusted QML surface accepts only exact plan keys and fixed node kinds, independently recounts aggregate profile budgets, maps kinds to repository-owned Components, and renders cartridge strings as explicit plain text.",
       "evidence": [
         {
-          "resource": "repo://client/qml/cartridge/TrustedCartridgeSurface.qml#L1-L192",
-          "version": "repo-lines-v1:sha256:d15d7d63a151dc60a4ac91d7164a676354ff394f65f86622944f94308e309e23:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwN2RmOWU2MzhjMDYzYTVhNDdlZmRmNTYyMTkxNGQyMjI4NDliYmZhNGY3Y2U5ZjA3YzhhZGQwYzhmYjY3OWI1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJjN2U5ZTcwNDU3OTQ2NDI2ZGRhZjRhYjEwMjg0NDQ2ZDVmNDk0NDAyZjVkNTEyZDE5NjNkNWZhNWIxYTU5NWY2IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5OTliZGVmZWVhY2E2MzQwZTAyOTBkYzg2ZTg4OWM4OWQ1ZTE4OWFhNWJhNDRiNTg1YjNiNzA3MzRmNGE2MmQ4In0"
+          "resource": "repo://client/qml/cartridge/TrustedCartridgeSurface.qml#L142-L197",
+          "version": "repo-lines-v1:sha256:1f4af94dfc9bfb54be1aada5275d880f8530e36c624f845858340b22dfc9b43d:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3OWE5ODBhNGU2ZGMxZjllMWEwNjhlNTMzMzZkZTk2N2QwMmIzNmNlMTE4Y2MyNzQ4Nzc0MjZhNWFmMDg1ZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3ZTllNzA0NTc5NDY0MjZkZGFmNGFiMTAyODQ0NDZkNWY0OTQ0MDJmNWQ1MTJkMTk2M2Q1ZmE1YjFhNTk1ZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMxNGIzNWJjOTkxYWJkMGExYThmY2Y3Yjg5ZTUwZjhjOWU1OGVhYzFmNmNlYmMxYWZkZDJmYjNjMzY4MGM3NmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5OWJkZWZlZWFjYTYzNDBlMDI5MGRjODZlODg5Yzg5ZDVlMTg5YWE1YmE0NGI1ODViM2I3MDczNGY0YTYyZDgifQ"
         },
         {
-          "resource": "repo://client/qml/cartridge/TrustedCartridgeSurface.qml#L224-L305",
-          "version": "repo-lines-v1:sha256:3323cec7e60e8075df14e4ae674379ccf0af502a9c180eea84111bf0ff67dba4:eyJzZWxlY3RlZExpbmVDb3VudCI6ODIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmYzVhZjEwNzMyMGU1YTliZGE5MDI0YjE2YTg3M2JiMDdiNjk2YzZmYjRjYjA2MjZjOGM5ZTVjYTJiMGRlZGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRjYTM5MjlhNzc2N2RiZTMwOTEwODFlYjBjN2IyMDZjZGZmYzAzNWQ4NzUzZDRjYmVkN2QwMTc1YmU5ZDlhZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+          "resource": "repo://client/qml/cartridge/TrustedCartridgeSurface.qml#L227-L304",
+          "version": "repo-lines-v1:sha256:528e73bd1cba6edd64d25183e8a9d0893bd09fb2537dbd71d6ef83cb83a1aaea:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhODg0MDdkNjAyODY2ZDhjZmFhOWMxYzExNTZiMmIzODhmMDRkZGI3YzBiYTJjZGE0NGZlNmNjNDJhODdjZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhYjU5N2M0NjRkNzRjMzlmNjYwNjFmMzNlNGUwMzM2MTkzMTZiMTAzNWZhYWJiZGY1YWEzMzkxZjZkMWNiZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZlYTI0YzIwMzgzZTliMWQ4ODk1OGZlYWU4OTVjZTI2NTBkZTgxM2YxNGZmNWQ0NjgzNjU1ZDAxYjdkZTY4MDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlYmM2Zjk0NWU1NjkzY2MwZDQxY2E1N2MwN2I1NmMxZGY5YmVjODFmNDJjZDM5MDcyODk2ZmJkNTIzNDI1YzAifQ"
+        },
+        {
+          "resource": "repo://client/qml/cartridge/nodes/TrustedTerminalNode.qml#L14-L33",
+          "version": "repo-lines-v1:sha256:45b497215a4022ec7504cd9950520f1becf4b7edf2f3dcb753427bc9e5cd7dd0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5ZmM5ZGM2NjBiMTk4MzRmOWFjYjhlMmU3NmRkODk4MzYyMGQ0MWI5YWRmOGZkZTVmNzI4ODJkOWE3ZjkxZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYxNGJkODVlZTAzYTNlNDg3ZWNjM2U0MDZmNGM5MTU4OWZkZWUzNmYwMDk2Mzc3ZDZmMmIzMmZkMjIxYWY0Y2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         }
       ]
     },
@@ -460,7 +464,7 @@
       "evidence": [
         {
           "resource": "repo://client/qml/game/SignalSiegeSurface.qml",
-          "version": "repo-file-v1:sha256:c18ad294f1ff9da1f753a212fd0e528e9a2bba771f9193ef79ac608d977825ae"
+          "version": "repo-file-v1:sha256:9667495914cb3f03a98c95906a6c7f7fa150b9bf746e54866b9aee97a6b4c899"
         },
         {
           "resource": "repo://client/qml/GameController.qml#L436-L509",
@@ -471,10 +475,32 @@
           "version": "repo-file-v1:sha256:2ff6a840ff1c0c2f00ae9f13411fad26e94ee59832060949d033976d28eecaa6"
         }
       ]
+    },
+    {
+      "id": "claim_6c4c41adbec4461c81eca4a9fc4764d4",
+      "statement": "The trusted cartridge preview, surface, and visual node implementations consume the host OgsTheme palette and preserve platform-owned high-contrast, focus, accessibility, reduced-motion, and mute behavior without granting the cartridge executable styling authority.",
+      "evidence": [
+        {
+          "resource": "repo://client/qml/cartridge/CartridgePreview.qml#L1-L13",
+          "version": "repo-lines-v1:sha256:5497c569d6d6a89654b2c998440c9ab5dc7970bd250be28e6456272b126eca99:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3ZGY5ZTYzOGMwNjNhNWE0N2VmZGY1NjIxOTE0ZDIyMjg0OWJiZmE0ZjdjZTlmMDdjOGFkZDBjOGZiNjc5YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyYTFjOGFmNDBmNGM4MGNkMWZkNGU2YWI4MDcyMGM5MWEyNmM3YmNjOGJmY2M0MDFjYjhkZDhlY2IxMGNmMTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRmMzFhOTMzNDk1ZjBjMDU1ZTJmZDUwOGYyYjA1ZTUwMDY4MGRkZjA2MWQzZGQ3YmQ5MzRlMGM3MjRiNzg1MTQifQ"
+        },
+        {
+          "resource": "repo://client/qml/cartridge/TrustedCartridgeSurface.qml#L1-L25",
+          "version": "repo-lines-v1:sha256:9136c2b63a0c78fb9a0ded34650799751cf80def4a05640810b959d79965363d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3ZGY5ZTYzOGMwNjNhNWE0N2VmZGY1NjIxOTE0ZDIyMjg0OWJiZmE0ZjdjZTlmMDdjOGFkZDBjOGZiNjc5YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZjMmMwMzczYzM0N2I3ODZjNzMyMjg0ZDkzZmUzMmI2ZDYwNzRiMjljMDQzYzNmNjNmNDc4YjhkZmMzOTM2NjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBiYTdhNDRiNTBmNGFlZDQwYTM4YjBkMGM5N2VmZDY1MWI5MWE2ZmRiNmIzN2ExMTUxYWM4NmNkNmE5MDNhMmUifQ"
+        },
+        {
+          "resource": "repo://client/qml/cartridge/nodes/TrustedButtonNode.qml#L14-L49",
+          "version": "repo-lines-v1:sha256:ae91fba49a8a2b7afbda8bf91cd745780b8c5982b27537eb6ae952b76a208934:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxZGU5ODdiMDI1ZDU0ZTJiNWU5ZWM4YzJhNWZlNDJkMjBhMDVjNWVlYTg5NzBmNWI0YTQ0OGE2Nzc4NjE3OTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2MDVmNjA5OGJlZGYxYTQ2MGY0OGExNjNjN2E1MmVjNzBhZjQ4ODExYzVjYWNkOWE4MzYxOWRhNGNiYmQwZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYxZjkzZTE2OTM3NGFiYTQ1YTJjYmJlYmM4ZjMwYzVkZGFjM2UwOGIwOTE2NzE4OWM1NDBlMWY4MDc1ZjMzZjAifQ"
+        },
+        {
+          "resource": "repo://client/qml/cartridge/nodes/TrustedParticleFieldNode.qml#L17-L47",
+          "version": "repo-lines-v1:sha256:80a912ec86413435d3be30f4e6b63fe94d45cc437e210759fcbb81f07700d8e2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5ZmM5ZGM2NjBiMTk4MzRmOWFjYjhlMmU3NmRkODk4MzYyMGQ0MWI5YWRmOGZkZTVmNzI4ODJkOWE3ZjkxZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYxNGJkODVlZTAzYTNlNDg3ZWNjM2U0MDZmNGM5MTU4OWZkZWUzNmYwMDk2Mzc3ZDZmMmIzMmZkMjIxYWY0Y2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T02:02:30.593Z"
+    "at": "2026-08-26T03:43:00.059Z"
   }
 }

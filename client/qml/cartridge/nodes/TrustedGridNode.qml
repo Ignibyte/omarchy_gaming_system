@@ -1,4 +1,5 @@
 import QtQuick
+import "../../components" as Components
 
 Rectangle {
     id: root
@@ -14,11 +15,13 @@ Rectangle {
     property int selectedIndex: 0
     signal actionRequested(string action, var payload)
 
+    Components.OgsTheme { id: theme }
+
     width: parent ? parent.width : 640
     height: Math.max(120 * scaleFactor, nodeData.rows * 34 * scaleFactor + 16)
-    color: highContrast ? "#000000" : "#0b1420"
-    border.color: highContrast ? "#ffffff" : "#263950"
-    border.width: activeFocus ? 3 : 1
+    color: highContrast ? theme.highContrastBackground : theme.background
+    border.color: highContrast ? theme.highContrastForeground : theme.borderMuted
+    border.width: activeFocus ? theme.focusWidth : theme.borderWidth
     activeFocusOnTab: true
     Accessible.role: Accessible.List
     Accessible.name: nodeData.accessible_label
@@ -63,18 +66,19 @@ Rectangle {
                 width: (root.width - 16 - (root.nodeData.columns - 1) * 3) / root.nodeData.columns
                 height: (root.height - 16 - (root.nodeData.rows - 1) * 3) / root.nodeData.rows
                 color: root.selectedIndex === index
-                    ? (root.highContrast ? "#ffffff" : "#1d5c72")
-                    : (root.highContrast ? "#000000" : "#132537")
-                border.color: root.highContrast ? "#ffffff" : "#365572"
+                    ? (root.highContrast ? theme.highContrastForeground : theme.surfacePressed)
+                    : (root.highContrast ? theme.highContrastBackground : theme.surfaceRaised)
+                border.color: root.highContrast ? theme.highContrastForeground : theme.border
 
                 Text {
                     anchors.centerIn: parent
                     text: parent.modelData
                     textFormat: Text.PlainText
                     color: root.highContrast && root.selectedIndex === parent.index
-                        ? "#000000" : "#eef7ff"
-                    font.family: "monospace"
-                    font.pixelSize: 13 * root.scaleFactor
+                        ? theme.highContrastBackground
+                        : root.highContrast ? theme.highContrastForeground : theme.textPrimary
+                    font.family: theme.fontFamily
+                    font.pixelSize: theme.bodySize * root.scaleFactor
                     elide: Text.ElideRight
                 }
 

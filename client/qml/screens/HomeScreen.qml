@@ -8,6 +8,8 @@ Item {
 
     required property var controller
 
+    Components.OgsTheme { id: theme }
+
     function focusInitial() {
         gamesButton.forceActiveFocus()
     }
@@ -15,50 +17,48 @@ Item {
     ScrollView {
         id: scroll
         anchors.fill: parent
-        anchors.margins: 28
+        anchors.margins: theme.space2Xl
         contentWidth: availableWidth
 
         ColumnLayout {
             width: scroll.availableWidth
-            spacing: 18
+            spacing: theme.spaceLg
 
             Item { Layout.fillHeight: true; Layout.minimumHeight: 16 }
 
-            Text {
+            Components.OgsScreenHeader {
                 Layout.fillWidth: true
-                text: "PLAYER LINK READY"
-                textFormat: Text.PlainText
-                color: "#5ee6a8"
-                font.family: "monospace"
-                font.bold: true
-                font.pixelSize: 30
-                horizontalAlignment: Text.AlignHCenter
+                screenKey: "home"
+                title: "PLAYER LINK READY"
+                statusText: controller.statusText
+                statusTone: "success"
+                errorText: controller.errorText
+                navigationHint: "TAB CHOOSE DESTINATION // ENTER OPEN"
             }
 
-            Rectangle {
+            Components.OgsCard {
                 Layout.fillWidth: true
                 Layout.maximumWidth: 620
                 Layout.preferredHeight: personaColumn.implicitHeight + 36
                 Layout.alignment: Qt.AlignHCenter
-                radius: 4
-                color: "#0c1825"
-                border.color: "#36516b"
+                tone: "success"
+                highlighted: true
 
                 ColumnLayout {
                     id: personaColumn
                     anchors.fill: parent
                     anchors.margins: 18
-                    spacing: 8
+                    spacing: theme.spaceSm
 
                     Text {
                         Layout.fillWidth: true
                         text: controller.selectedPersona
                               ? controller.selectedPersona.display_name : "No persona selected"
                         textFormat: Text.PlainText
-                        color: "#eef7ff"
-                        font.family: "monospace"
+                        color: theme.textPrimary
+                        font.family: theme.fontFamily
                         font.bold: true
-                        font.pixelSize: 24
+                        font.pixelSize: theme.titleSize
                         wrapMode: Text.Wrap
                     }
 
@@ -67,9 +67,9 @@ Item {
                         text: controller.selectedPersona
                               ? "@" + controller.selectedPersona.handle : ""
                         textFormat: Text.PlainText
-                        color: "#f4c95d"
-                        font.family: "monospace"
-                        font.pixelSize: 15
+                        color: theme.warning
+                        font.family: theme.fontFamily
+                        font.pixelSize: theme.sectionSize
                     }
 
                     Text {
@@ -77,9 +77,9 @@ Item {
                         text: controller.selectedPersona
                               ? controller.selectedPersona.status_message : ""
                         textFormat: Text.PlainText
-                        color: "#b7c9da"
-                        font.family: "monospace"
-                        font.pixelSize: 14
+                        color: theme.textSecondary
+                        font.family: theme.fontFamily
+                        font.pixelSize: theme.bodySize
                         wrapMode: Text.Wrap
                     }
                 }
@@ -91,9 +91,9 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 text: "Load a game cartridge, challenge a connection, or continue a durable match. Social and inbox links remain available."
                 textFormat: Text.PlainText
-                color: "#8aa4c0"
-                font.family: "monospace"
-                font.pixelSize: 14
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.bodySize
                 wrapMode: Text.Wrap
                 horizontalAlignment: Text.AlignHCenter
             }
@@ -165,9 +165,9 @@ Item {
                 Layout.fillWidth: true
                 text: controller.serverUrl
                 textFormat: Text.PlainText
-                color: "#607890"
-                font.family: "monospace"
-                font.pixelSize: 11
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.captionSize
                 elide: Text.ElideMiddle
                 horizontalAlignment: Text.AlignHCenter
             }

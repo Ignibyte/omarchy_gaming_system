@@ -8,6 +8,8 @@ Item {
 
     required property var controller
 
+    Components.OgsTheme { id: theme }
+
     function focusInitial() {
         usernameField.forceActiveFocus()
     }
@@ -37,17 +39,30 @@ Item {
             if (controller.suggestedUsername !== "")
                 usernameField.text = controller.suggestedUsername
         }
+        function onAccessModeChanged() {
+            Qt.callLater(root.focusInitial)
+        }
     }
 
     ScrollView {
         id: scroll
         anchors.fill: parent
-        anchors.margins: 24
+        anchors.margins: theme.spaceXl
         contentWidth: availableWidth
 
         ColumnLayout {
             width: scroll.availableWidth
-            spacing: 12
+            spacing: theme.spaceMd
+
+            Components.OgsScreenHeader {
+                Layout.fillWidth: true
+                screenKey: "access"
+                title: controller.accessMode === "register" ? "NEW PLAYER LINK" : "PLAYER ACCESS"
+                statusText: controller.statusText
+                statusTone: controller.busy ? "working" : "info"
+                errorText: controller.errorText
+                navigationHint: "TAB MOVE // ENTER SUBMIT // ESC SERVER"
+            }
 
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter
@@ -58,8 +73,11 @@ Item {
                     objectName: "signInModeButton"
                     text: "SIGN IN"
                     accessibleName: "Show sign in form"
+                    accessibleDescription: controller.accessMode === "sign_in"
+                                           ? "Selected access mode" : "Switch access mode"
+                    checkable: true
+                    checked: controller.accessMode === "sign_in"
                     enabled: !controller.busy
-                    opacity: controller.accessMode === "sign_in" ? 1 : 0.65
                     onClicked: controller.chooseAccessMode("sign_in")
                 }
 
@@ -68,55 +86,21 @@ Item {
                     objectName: "registerModeButton"
                     text: "CREATE ACCOUNT"
                     accessibleName: "Show account registration form"
+                    accessibleDescription: controller.accessMode === "register"
+                                           ? "Selected access mode" : "Switch access mode"
+                    checkable: true
+                    checked: controller.accessMode === "register"
                     enabled: !controller.busy
-                    opacity: controller.accessMode === "register" ? 1 : 0.65
                     onClicked: controller.chooseAccessMode("register")
                 }
             }
 
-            Text {
-                Layout.fillWidth: true
-                text: controller.accessMode === "register" ? "NEW PLAYER LINK" : "PLAYER ACCESS"
-                textFormat: Text.PlainText
-                color: "#5ee6a8"
-                font.family: "monospace"
-                font.bold: true
-                font.pixelSize: 26
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            Text {
-                Layout.fillWidth: true
-                text: controller.statusText
-                textFormat: Text.PlainText
-                color: "#d5e2ef"
-                font.family: "monospace"
-                font.pixelSize: 14
-                wrapMode: Text.Wrap
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            Text {
-                Layout.fillWidth: true
-                visible: controller.errorText !== ""
-                text: controller.errorText
-                textFormat: Text.PlainText
-                color: "#ff8b98"
-                font.family: "monospace"
-                font.pixelSize: 14
-                wrapMode: Text.Wrap
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 Layout.maximumWidth: 560
                 Layout.alignment: Qt.AlignHCenter
                 text: "USERNAME"
-                textFormat: Text.PlainText
-                color: "#8aa4c0"
-                font.family: "monospace"
-                font.pixelSize: 12
+                tone: "info"
             }
 
             Components.OgsTextField {
@@ -132,15 +116,12 @@ Item {
                 onAccepted: passwordField.forceActiveFocus()
             }
 
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 Layout.maximumWidth: 560
                 Layout.alignment: Qt.AlignHCenter
                 text: "PASSWORD"
-                textFormat: Text.PlainText
-                color: "#8aa4c0"
-                font.family: "monospace"
-                font.pixelSize: 12
+                tone: "info"
             }
 
             Components.OgsTextField {
@@ -157,16 +138,13 @@ Item {
                 onAccepted: root.submit()
             }
 
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 Layout.maximumWidth: 560
                 Layout.alignment: Qt.AlignHCenter
                 visible: controller.accessMode === "sign_in"
                 text: "DEVICE LABEL"
-                textFormat: Text.PlainText
-                color: "#8aa4c0"
-                font.family: "monospace"
-                font.pixelSize: 12
+                tone: "info"
             }
 
             Components.OgsTextField {
@@ -214,9 +192,9 @@ Item {
                 Layout.fillWidth: true
                 text: controller.serverUrl
                 textFormat: Text.PlainText
-                color: "#607890"
-                font.family: "monospace"
-                font.pixelSize: 11
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.captionSize
                 elide: Text.ElideMiddle
                 horizontalAlignment: Text.AlignHCenter
             }

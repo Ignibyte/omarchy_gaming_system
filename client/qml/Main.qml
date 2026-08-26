@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import "screens" as Screens
+import "components" as Components
 
 ApplicationWindow {
     id: root
@@ -11,12 +12,23 @@ ApplicationWindow {
     minimumHeight: 420
     visible: true
     title: "Omarchy Gaming System"
-    color: "#070b12"
+    color: theme.background
 
     readonly property alias onboardingController: onboarding
     readonly property alias socialController: social
     readonly property alias gameController: games
     property bool smokeTest: Qt.application.arguments.indexOf("--smoke-test") !== -1
+    readonly property bool hasShellError: onboarding.errorText !== ""
+                                          || social.errorText !== ""
+                                          || games.errorText !== ""
+    readonly property bool playerReady: ["home", "social", "inbox", "games",
+                                         "challenges", "gameplay"].indexOf(onboarding.state) !== -1
+    readonly property string shellStateLabel: hasShellError ? "ERROR"
+                                                   : playerReady ? "PLAYER READY" : "SETUP"
+    readonly property color shellStateColor: hasShellError ? theme.danger
+                                                   : playerReady ? theme.accent : theme.warning
+
+    Components.OgsTheme { id: theme }
 
     function argumentValue(prefix, fallback) {
         const argumentsList = Qt.application.arguments
@@ -111,19 +123,29 @@ ApplicationWindow {
     Rectangle {
         anchors.fill: parent
         color: "transparent"
-        border.color: "#182538"
-        border.width: 1
+        border.color: theme.borderMuted
+        border.width: theme.borderWidth
 
         Rectangle {
             id: statusRail
             width: parent.width
-            height: 6
-            color: onboarding.errorText !== "" || social.errorText !== ""
-                   || games.errorText !== "" ? "#ff6b7a"
-                  : onboarding.state === "home" || onboarding.state === "social"
-                    || onboarding.state === "inbox" || onboarding.state === "games"
-                    || onboarding.state === "challenges" || onboarding.state === "gameplay"
-                    ? "#5ee6a8" : "#f4c95d"
+            objectName: "shellStatusRail"
+            height: 24
+            color: root.shellStateColor
+            Accessible.role: Accessible.StatusBar
+            Accessible.name: "Application state: " + root.shellStateLabel
+
+            Text {
+                anchors.fill: parent
+                text: root.shellStateLabel + " // " + onboarding.state.toUpperCase()
+                textFormat: Text.PlainText
+                color: theme.background
+                font.family: theme.fontFamily
+                font.bold: true
+                font.pixelSize: theme.captionSize
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
         }
 
         Text {
@@ -135,9 +157,9 @@ ApplicationWindow {
             height: 34
             text: "OMARCHY // GAMES"
             textFormat: Text.PlainText
-            color: "#8aa4c0"
-            font.family: "monospace"
-            font.pixelSize: 15
+            color: theme.textMuted
+            font.family: theme.fontFamily
+            font.pixelSize: theme.sectionSize
             font.letterSpacing: 3
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -165,13 +187,15 @@ ApplicationWindow {
             anchors.leftMargin: 20
             anchors.rightMargin: 20
             height: 28
-            text: onboarding.state.toUpperCase() + " // REST RECOVERY LINK"
+            text: onboarding.state.toUpperCase() + " // TAB: MOVE // ENTER: ACTIVATE // ESC: BACK // REST RECOVERY"
             textFormat: Text.PlainText
-            color: "#546b82"
-            font.family: "monospace"
-            font.pixelSize: 11
+            color: theme.textMuted
+            font.family: theme.fontFamily
+            font.pixelSize: theme.captionSize
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
+            Accessible.role: Accessible.Footer
+            Accessible.name: "Keyboard navigation: Tab to move, Enter to activate, Escape to go back"
         }
     }
 }

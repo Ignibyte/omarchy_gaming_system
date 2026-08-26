@@ -26,7 +26,9 @@ result recorded.
 - Game catalog, challenges, turns, and match history
 - One original asynchronous game with solo bot and two-person challenge modes
 - Cursor-based synchronization and live notifications
-- Keyboard-first QML connector for Omarchy
+- Keyboard-first QML connector for Omarchy with one accessible semantic theme,
+  deterministic focus/traversal, explicit plain-text presentation, and
+  minimum-window containment across the complete player flow
 - Sysop audit, suspension, and reporting basics
 
 ## Explicit non-goals for the first alpha

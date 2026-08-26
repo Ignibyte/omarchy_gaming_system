@@ -8,6 +8,8 @@ Item {
 
     required property var controller
 
+    Components.OgsTheme { id: theme }
+
     function focusInitial() {
         endpointField.forceActiveFocus()
     }
@@ -20,58 +22,32 @@ Item {
     ScrollView {
         id: scroll
         anchors.fill: parent
-        anchors.margins: 28
+        anchors.margins: theme.space2Xl
         contentWidth: availableWidth
 
         ColumnLayout {
             width: scroll.availableWidth
-            spacing: 16
+            spacing: theme.spaceLg
 
             Item { Layout.fillHeight: true; Layout.minimumHeight: 12 }
 
-            Text {
+            Components.OgsScreenHeader {
                 Layout.fillWidth: true
-                text: "LINK A SERVER"
-                textFormat: Text.PlainText
-                color: "#5ee6a8"
-                font.family: "monospace"
-                font.bold: true
-                font.pixelSize: 30
-                horizontalAlignment: Text.AlignHCenter
+                screenKey: "connection"
+                title: "LINK A SERVER"
+                statusText: controller.statusText
+                statusTone: controller.busy ? "working"
+                            : controller.connectionState === "ready" ? "success" : "info"
+                errorText: controller.errorText
+                navigationHint: "ENTER CONNECT // ESC RESTORE SAVED SERVER"
             }
 
-            Text {
-                Layout.fillWidth: true
-                text: controller.statusText
-                textFormat: Text.PlainText
-                color: "#d5e2ef"
-                font.family: "monospace"
-                font.pixelSize: 16
-                wrapMode: Text.Wrap
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            Text {
-                Layout.fillWidth: true
-                visible: controller.errorText !== ""
-                text: controller.errorText
-                textFormat: Text.PlainText
-                color: "#ff8b98"
-                font.family: "monospace"
-                font.pixelSize: 14
-                wrapMode: Text.Wrap
-                horizontalAlignment: Text.AlignHCenter
-            }
-
-            Text {
+            Components.OgsSectionLabel {
                 Layout.fillWidth: true
                 Layout.maximumWidth: 620
                 Layout.alignment: Qt.AlignHCenter
                 text: "SERVER URL"
-                textFormat: Text.PlainText
-                color: "#8aa4c0"
-                font.family: "monospace"
-                font.pixelSize: 12
+                tone: "info"
             }
 
             Components.OgsTextField {
@@ -104,9 +80,9 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 text: "Remote servers require HTTPS. Plain HTTP is limited to localhost."
                 textFormat: Text.PlainText
-                color: "#6f879f"
-                font.family: "monospace"
-                font.pixelSize: 12
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.captionSize
                 wrapMode: Text.Wrap
                 horizontalAlignment: Text.AlignHCenter
             }
