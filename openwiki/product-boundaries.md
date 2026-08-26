@@ -11,12 +11,8 @@ sources:
     resource: repo://client/qml/game/SignalSiegeSurface.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
     resource: repo://client/qml/GameController.qml
-  - id: openwiki-source-d392f8f0962c50f0d66e0629
-    resource: repo://client/qml/Main.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
-  - id: openwiki-source-3156e0b1532bb1d02a0118e1
-    resource: repo://client/qml/tests/live/tst_live_onboarding.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
   - id: openwiki-source-37af4c6b51c86b62db25f85f
@@ -45,10 +41,10 @@ sources:
     resource: repo://crates/server/src/games.rs
   - id: openwiki-source-b2c7af59f511c4ed8a004fb0
     resource: repo://crates/server/src/inbox_api_tests.rs
-  - id: openwiki-source-a13fe4db1eee073d0a7e2c4d
-    resource: repo://crates/server/src/main.rs
   - id: openwiki-source-83e16151ac88c29a31cb79d2
     resource: repo://crates/server/src/mfa.rs
+  - id: openwiki-source-94ddb58f2dc1a71ed1959533
+    resource: repo://crates/server/src/operator_admin.rs
   - id: openwiki-source-54f6da1456b2b76d94d11b0e
     resource: repo://crates/server/src/personas.rs
   - id: openwiki-source-0e10f198b5749ecebf761185
@@ -77,9 +73,16 @@ sources:
     resource: repo://docs/product-charter.md
   - id: openwiki-source-674113ba65eebb6f842b2dda
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
+  - id: openwiki-source-4331166a21e12c8c40994c1e
+    resource: repo://migrations/0016_operator_reporting_and_audit.sql
   - id: openwiki-source-8df9ad1a3495f8360740ff03
     resource: repo://scripts/test-game-cartridge-sdk.sh
-generated: {by: "codex", at: "2026-08-26T15:15:44.851Z"}
+  - id: openwiki-source-e08dc6155c081d7928029e27
+    resource: repo://scripts/test-operator-recovery.sh
+generated: {by: "codex", at: "2026-08-26T17:59:41.119Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-26T17:59:41.119Z
 ---
 
 # Product and architecture boundaries
@@ -126,6 +129,16 @@ contain only seven public profile fields. Exact canonical handle lookup is
 intentionally public, but neither it nor an authenticated response reveals the
 owning account or session.
 
+Reporting stays on that same persona boundary. An authenticated owned persona
+may file a bounded report about another public persona, but the player receipt
+contains no account ownership, operator state, other reports, or report queue.
+The subject account identifier and report detail are available only to the
+trusted database-local operator command. Operator mutations are not network
+API routes: private alpha permits only reversible account suspension/
+reactivation and terminal report disposition with an immutable same-transaction
+audit event. Suspension revokes current sessions without deleting personas,
+messages, games, MFA state, reports, or provider state.
+
 The implemented social graph also stays on the persona side of this boundary.
 Every connection or block command derives the private account principal from a
 validated device session and owner-scopes the acting persona; same-account
@@ -165,6 +178,14 @@ their durable mutation and replay surfaces; their WebSocket effect remains
 only an advisory participant-local invalidation. Both transports preserve
 persona ownership without exposing private account identity.
 
+Platform backup is a separate operator responsibility from cursor recovery.
+The implemented drill restores the PostgreSQL application schema and
+representative identity, social, inbox, game, report, suspension, and audit
+state into an isolated database, then starts the production server and proves a
+pre-suspension token remains invalid. `OGS_MFA_ENCRYPTION_KEY` is outside the
+database and must be protected and restored separately. Provider authority
+uses its own database and independent recovery procedure.
+
 ## Ordered identity work
 
 The four roadmap identity outcomes are intentionally sequenced:
@@ -192,8 +213,11 @@ The keyboard-first QML connector now covers catalog discovery, challenge
 creation and acceptance, authoritative turns, terminal result, and refetch
 recovery without treating WebSocket delivery as durable truth. Door Legends v1
 adds one operator-pinned remote authority pilot with platform-owned result and
-achievement projections. Signed-cartridge main-client launch and external-
-provider onboarding remain later slices.
+achievement projections. Player reporting, the database-local report queue,
+reversible account containment, immutable platform audit, and an isolated
+platform backup/restore proof are also implemented. Remote administration,
+signed-cartridge main-client launch, and external-provider onboarding remain
+later slices.
 
 The current server is a local development slice. Bearer tokens require
 production TLS in transit, and public login requires distributed attempt

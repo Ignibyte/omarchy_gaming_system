@@ -135,12 +135,11 @@ only in process memory and are erased on logout, endpoint changes, invalid
 sessions, or protocol failure. Persistent sign-in waits for a reviewed OS
 keyring boundary. The selected persona can now open keyboard-first social and
 private-inbox screens through that same credential owner. Exact-handle
-requests, connection and private-block lifecycle, bounded ascending history,
-body-only sends, and monotonic read receipts use explicit durable REST
+requests and reports, connection and private-block lifecycle, bounded ascending
+history, body-only sends, and monotonic read receipts use explicit durable REST
 refresh. Exact response allowlists and plain-text rendering reject protocol
 confusion, while a validated `invalid_session` clears the full account/persona
-authority boundary. Challenge/gameplay and live-hint subscription remain the
-next client slices.
+authority boundary.
 
 Owned personas can now send and accept idempotent connection requests, remove
 connections, and privately block or unblock another persona. Pair mutations
@@ -156,6 +155,16 @@ missed or duplicate hints through the bounded REST feed and authoritative
 resource endpoints. Live sockets retain no raw credentials, recheck session
 authority without extending idle expiry, reject client payloads above 1 KiB,
 and enforce persona, account, and process connection budgets.
+
+Players can file one of four bounded persona-report categories from the Social
+screen. Reports are private to the server operator and return only a retry-safe
+receipt; they do not notify the subject or enter the sync feed. A separate
+database-local `omarchygs-admin` command lists the report queue, resolves or
+dismisses reports, and reversibly suspends accounts. Suspension revokes all
+live device sessions in the same transaction, reactivation never resurrects
+them, and every operator mutation appends immutable audit. See
+[operator safety and platform recovery](docs/operators/operator-safety-and-recovery.md)
+for the command and backup/restore procedure.
 
 The production catalog now includes **Signal Siege v1**, a deterministic
 asynchronous duel against a server-side bot. An owned persona can start a
@@ -189,10 +198,19 @@ Run the full server/database/QML player path without opening a window:
 ./scripts/dev.sh --smoke-test
 ```
 
-The smoke includes deterministic hostile HTTP fixtures, keyboard-only social
-and inbox interactions, real QML registration/persona creation, an enrolled
-MFA recovery login, and a migrated two-account QML connection/conversation/
-message path before the existing API/game/social/reconnect checks complete.
+The smoke includes deterministic hostile HTTP fixtures, keyboard-only social,
+report, and inbox interactions, real QML registration/persona creation, an
+enrolled MFA recovery login, and a migrated two-account QML connection/
+conversation/message/report path before the API/game/social/reconnect checks
+complete.
+
+The non-fast delivery gate also proves a custom-format platform backup and
+isolated restore, compares every application table, and rejects a
+pre-suspension token against the restored production server:
+
+```bash
+./scripts/test-operator-recovery.sh
+```
 
 The delivery gate combines both levels and writes a worktree-bound commit
 receipt:

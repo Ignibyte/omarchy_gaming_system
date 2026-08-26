@@ -24,6 +24,10 @@ SOCIAL_FRIEND_ID = "77777777-7777-4777-8777-777777777777"
 SOCIAL_OUTGOING_ID = "88888888-8888-4888-8888-888888888888"
 SOCIAL_BLOCKED_ID = "99999999-9999-4999-8999-999999999999"
 SOCIAL_LOST_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+REPORT_MALFORMED_ID = "abababab-abab-4bab-8bab-abababababab"
+REPORT_OVERSIZED_ID = "acacacac-acac-4cac-8cac-acacacacacac"
+REPORT_SESSION_LOST_ID = "adadadad-adad-4dad-8dad-adadadadadad"
+REPORT_ID = "aeaeaeae-aeae-4eae-8eae-aeaeaeaeaeae"
 CONVERSATION_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
 SOLO_GAME_SESSION_ID = "10101010-1010-4010-8010-101010101010"
 VERSUS_GAME_SESSION_ID = "20202020-2020-4020-8020-202020202020"
@@ -67,6 +71,8 @@ class FixtureState:
         self.block_present = True
         self.sent_body = ""
         self.read_message_id = ""
+        self.report_body: dict[str, Any] | None = None
+        self.report_attempt_keys: dict[str, str] = {}
         self.game_revision = 0
         self.game_state = self._solo_state()
         self.versus_revision = 1
@@ -82,6 +88,8 @@ class FixtureState:
             self.block_present = True
             self.sent_body = ""
             self.read_message_id = ""
+            self.report_body = None
+            self.report_attempt_keys = {}
             self.game_revision = 0
             self.game_state = self._solo_state()
             self.versus_revision = 1
@@ -238,9 +246,19 @@ class Handler(BaseHTTPRequestHandler):
             handle = unquote(path.removeprefix("/v1/personas/by-handle/"))
             lookup = {
                 "social_peer": self._social_persona(SOCIAL_PEER_ID, "social_peer", "Social Peer"),
+                "social_friend": self._social_persona(SOCIAL_FRIEND_ID, "social_friend", "Social Friend"),
                 "session_lost": self._social_persona(SOCIAL_LOST_ID, "session_lost", "Lost Session"),
                 "malformed_peer": self._social_persona(SOCIAL_PEER_ID, "malformed_peer", "Malformed Peer"),
                 "oversized_peer": self._social_persona(SOCIAL_PEER_ID, "oversized_peer", "Oversized Peer"),
+                "malformed_report": self._social_persona(
+                    REPORT_MALFORMED_ID, "malformed_report", "Malformed Report"
+                ),
+                "oversized_report": self._social_persona(
+                    REPORT_OVERSIZED_ID, "oversized_report", "Oversized Report"
+                ),
+                "report_session_lost": self._social_persona(
+                    REPORT_SESSION_LOST_ID, "report_session_lost", "Lost Report Session"
+                ),
             }.get(handle)
             if lookup is None:
                 self._error(404, "persona_not_found", "persona was not found")
@@ -431,6 +449,54 @@ class Handler(BaseHTTPRequestHandler):
             if document.get("game_key") != "signal_siege" or document.get("game_version") != 1:
                 self.state.violate("solo start did not select Signal Siege v1")
             self._json(201, self._solo_session())
+            return
+        if self.path == f"/v1/personas/{SOCIAL_ACTOR_ID}/reports":
+            if not self._require_social_bearer():
+                return
+            if set(document) != {"idempotency_key", "subject_persona_id", "category", "detail"}:
+                self.state.violate("persona report body did not have exact keys")
+            subject_id = document.get("subject_persona_id")
+            idempotency_key = document.get("idempotency_key")
+            if not isinstance(idempotency_key, str) or len(idempotency_key) != 36:
+                self.state.violate("persona report did not carry a UUID idempotency key")
+            elif isinstance(subject_id, str):
+                earlier_key = self.state.report_attempt_keys.get(subject_id)
+                if earlier_key is not None and earlier_key != idempotency_key:
+                    self.state.violate("persona report retry replaced its idempotency key")
+                self.state.report_attempt_keys[subject_id] = idempotency_key
+            if subject_id == REPORT_SESSION_LOST_ID:
+                self._error(401, "invalid_session", "device session is invalid")
+                return
+            if subject_id == REPORT_MALFORMED_ID:
+                self._json(201, {
+                    "id": REPORT_ID,
+                    "idempotency_key": document.get("idempotency_key"),
+                    "status": "open",
+                    "created_at": CREATED_AT,
+                    "subject_persona_id": subject_id,
+                })
+                return
+            if subject_id == REPORT_OVERSIZED_ID:
+                self._json(201, {
+                    "id": REPORT_ID,
+                    "idempotency_key": document.get("idempotency_key"),
+                    "status": "open",
+                    "created_at": CREATED_AT,
+                    "padding": "x" * 300_000,
+                })
+                return
+            if subject_id != SOCIAL_FRIEND_ID:
+                self.state.violate("persona report did not resolve the exact subject")
+            if document.get("category") != "cheating" \
+                    or document.get("detail") != "Fixture report detail":
+                self.state.violate("persona report did not preserve category and trimmed detail")
+            self.state.report_body = document
+            self._json(201, {
+                "id": REPORT_ID,
+                "idempotency_key": idempotency_key,
+                "status": "open",
+                "created_at": CREATED_AT,
+            })
             return
         if self.path == f"/v1/personas/{SOCIAL_ACTOR_ID}/game-challenges":
             if not self._require_social_bearer():

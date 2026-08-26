@@ -278,3 +278,12 @@ and in this register.
 | `PR-omarchy-gaming-system-enforce-line-manifest-termination-001` | rule | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
 | `PR-omarchy-gaming-system-bind-terminal-scan-document-identities-001` | rule | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
 | `AD-omarchy-gaming-system-native-client-package-boundary-001` | decision | `../../architecture/system-overview.md` |
+| `BF-omarchy-gaming-system-private-route-error-cache-policy-gap-001` | failure | `aar/AAR-029-operator-reporting-suspension-audit-and-recovery-drill.md` |
+| `BF-omarchy-gaming-system-recovery-fixture-cumulative-schema-drift-001` | failure | `aar/AAR-029-operator-reporting-suspension-audit-and-recovery-drill.md` |
+| `BF-omarchy-gaming-system-cargo-multi-binary-default-run-ambiguity-001` | failure | `aar/AAR-029-operator-reporting-suspension-audit-and-recovery-drill.md` |
+| `BF-omarchy-gaming-system-idempotent-creation-replay-mutable-projection-001` | failure | `aar/AAR-029-operator-reporting-suspension-audit-and-recovery-drill.md` |
+| `PR-omarchy-gaming-system-apply-private-cache-policy-at-route-boundary-001` | rule | `aar/AAR-029-operator-reporting-suspension-audit-and-recovery-drill.md` |
+| `PR-omarchy-gaming-system-build-recovery-fixtures-against-cumulative-schema-001` | rule | `aar/AAR-029-operator-reporting-suspension-audit-and-recovery-drill.md` |
+| `PR-omarchy-gaming-system-pin-default-run-when-adding-package-binary-001` | rule | `aar/AAR-029-operator-reporting-suspension-audit-and-recovery-drill.md` |
+| `PR-omarchy-gaming-system-reconstruct-idempotent-creation-receipts-from-immutable-fields-001` | rule | `aar/AAR-029-operator-reporting-suspension-audit-and-recovery-drill.md` |
+| `AD-omarchy-gaming-system-database-local-operator-safety-boundary-001` | decision | `../../architecture/system-overview.md` |

@@ -75,6 +75,10 @@ Before inviting players, an operator is responsible for at least:
 - complying with the laws and contractual obligations that apply to their
   jurisdiction, users, and data.
 
+The implemented private-alpha report, suspension, immutable-audit, and
+platform restore workflow is documented in
+[operator safety and platform recovery](operator-safety-and-recovery.md).
+
 This document is engineering and product guidance, not legal advice. Public
 self-hosting distribution requires reviewed terms, privacy and telemetry
 disclosures, warranty/support boundaries, a security contact policy, and

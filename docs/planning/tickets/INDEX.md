@@ -4,14 +4,15 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `029`**
+- **Next ticket number: `030`**
 
 ## Open queue
 
-- None.
+No open tickets.
 
 ## Closed
 
+- [`TICKET-029` — Operator reporting, suspension, audit, and recovery drill](closed/TICKET-029-operator-reporting-suspension-audit-and-recovery-drill.md)
 - [`TICKET-028` — Native Omarchy client package and clean-install smoke](closed/TICKET-028-native-omarchy-client-package-and-clean-install-smoke.md)
 - [`TICKET-027` — Owner-operated servers, cartridge distribution, and extension roadmap](closed/TICKET-027-owner-operated-servers-cartridge-distribution-and-extension-roadmap.md)
 - [`TICKET-026` — Explicit QML application exit control](closed/TICKET-026-explicit-qml-application-exit-control.md)

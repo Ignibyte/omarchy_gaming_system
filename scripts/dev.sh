@@ -40,7 +40,7 @@ for command_name in docker mise qml6 curl jq openssl python3 cmp; do
 done
 
 if [[ "$ogs_smoke_test" == true ]]; then
-  for command_name in qmake6 flock; do
+  for command_name in qmake6 flock psql; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
       echo "Missing required smoke-test command: $command_name" >&2
       exit 1
@@ -829,6 +829,12 @@ if [[ "$ogs_smoke_test" == true ]]; then
     "" \
     "$ogs_peer_handle" \
     "$ogs_qml_social_message"
+  ogs_qml_report_count=$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc \
+    "SELECT count(*) FROM persona_reports WHERE reporter_persona_id = '$ogs_persona_id' AND subject_persona_id = '$ogs_peer_persona_id' AND category = 'other' AND detail = 'QML live operator report'")
+  if [[ "$ogs_qml_report_count" != 1 ]]; then
+    echo "Live QML social smoke did not commit the expected operator report" >&2
+    exit 1
+  fi
   ogs_qml_social_history=$(curl \
     --fail \
     --silent \

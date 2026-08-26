@@ -37,7 +37,9 @@ result recorded.
   minimum-window containment across the complete player flow
 - Native client-only Arch package with an Omarchy application entry, exact
   trusted-QML payload, and extracted-artifact launch proof
-- Sysop audit, suspension, and reporting basics
+- Persona reporting plus a database-local sysop queue, reversible account
+  suspension with session containment, immutable audit, and isolated platform
+  backup/restore proof
 
 ## Explicit non-goals for the first alpha
 
@@ -61,6 +63,9 @@ result recorded.
   rules/state/revision while OmarchyGS retains identity, envelope, policy,
   projections, audit, and recovery.
 - WebSockets are advisory; durable cursor sync recovers missed events
+- Player reports are bounded platform data. Private-alpha operator mutations
+  stay outside the network API in a PostgreSQL-local command, revoke current
+  authority transactionally, and retain immutable audit.
 - Signal Siege remains a reviewed compiled Rust crate. Door Legends v1 is the
   sole first-party remote authority pilot. Signed declarative cartridges and
   the versioned conformance SDK remain the portable frontend contract;

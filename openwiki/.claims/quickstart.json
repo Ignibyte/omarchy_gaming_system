@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:952fe77241ea4d8dd54160dd03c427d8d4411677ef28f234e590934af86b7dca",
+  "pageVersion": "sha256:a50054225542d485338fa510d54c5c0f5f5a4f6cb3c6eff3dfdc269c6721d82f",
   "claims": [
     {
       "id": "claim_cfd815337fbb4c508371651403a7fecb",
@@ -14,19 +14,15 @@
     },
     {
       "id": "claim_f39ada371a374e9a9d39ff4356f53b90",
-      "statement": "The implemented runtime spans authentication and MFA, persona social state and inboxes, durable synchronization, exact-version sessions and challenges, playable Signal Siege v1 and v2, the keyboard-first QML first-playable flow, and the operator-pinned Door Legends v1 provider pilot.",
+      "statement": "The implemented runtime spans authentication and MFA, persona social state and inboxes, player reporting, durable synchronization, exact-version sessions and challenges, playable Signal Siege v1 and v2, the keyboard-first QML first-playable flow, database-local operator containment and audit, isolated platform recovery proof, and the operator-pinned Door Legends v1 provider pilot.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/main.rs#L36-L99",
-          "version": "repo-lines-v1:sha256:cb208b37004918f9d504fa11dd0c0cf32132b01dec516ce496e5e7bcc9404234:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1M2Q5YTYwOTI4NDZmNmU2OWJiNDJmMzNiZWU2M2ExNDQ1ZDAwNGQ1ZDI0OGM2Y2M3NzcxYmMyZTBiY2JjYWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlM2FmOTlmNjQ5ZjNhYjg4NTM3ZDlhYWRiYmM3ZGZkNjFjNzI4NmNjNjQ0YTQzYTQxNmNhY2E0OGQ1OGU3ZTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA4NTQxNWZkOTZiYzIzYmI2ZmNhYTkzNjE4NDIyNDlkOGUxYTdkMmNkOTFhMTBjMGJkMGY1Y2Q3MjBkNTBlZDYifQ"
+          "resource": "repo://docs/architecture/system-overview.md#L56-L153",
+          "version": "repo-lines-v1:sha256:8372dddbca58c2cbb75f695527e43f8c6247b5c245c2e8409fe6a9e5da7243e1:eyJzZWxlY3RlZExpbmVDb3VudCI6OTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzM2QxMTcyMTZkOTQwNjIwNzkxYWJkMTAyZGIyMGZlYTNlMGE4ODhlMDE1MWY1ZDFjNzNjMWFjNTM1NGFhZmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYjAwNjA1YjBjZjRmYmIzNGNjYWY3MTdhNGFmZmU1NzgyNzA2MTE1YTQ4YjI0M2EzNDY4M2Q3M2IxMmZmNzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkwMDgwOTQ3YmM4OGJhY2VhZTc2YmNjMjI4ODMyMDUwZjkwNjkzNGI3MmFjZjkzMDliZGEzOTg2MDc4NzAzZjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNlYWZlNDgxYjUzOGQxZmZhMDk2MmY1ZmIyMjM1MzVhOGE3M2U2OGQxZTg3MjBjMGFhNTYxMzVhNWUxOTJhYzgifQ"
         },
         {
-          "resource": "repo://client/qml/Main.qml#L42-L109",
-          "version": "repo-lines-v1:sha256:e4c69367d1f6642baa5370553cd157fa263bba95cb771999f779e508b6472107:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwYzk2ZGNlM2IyMDk4YjZjNDVkNmVlYmMyNTk5OTc1ZTVkMmQyYWNkNDBmNDA1ODVjNjYwMjAwMTk1NmU4N2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2MzZhODk2MzUzMzNkNTZjZDA3NzI1YzFhYzE4ZjVkZDBkMWMzMmMyMzZlZGU5ODBiZTgyYzE0MTdmNGE2MjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkZDY2MmI4ZDU5NmFiOWYwZjkzNTQ2ZmY1MDAwOWVmNDhhYzBlZTUyZmM3ODA2MGQ1NjgyNmUzZmMzMDU1ZDUifQ"
-        },
-        {
-          "resource": "repo://client/qml/tests/live/tst_live_onboarding.qml#L119-L257",
-          "version": "repo-lines-v1:sha256:2da274aff9d3ae99d07b4d5f22f804b64fbb6770f4ebb7dd899f6483b70c182a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmZDgyNjFhODZjNjBlNGI0ZWI5ZDJiZjczYzIyZjUyNWZhOWRmY2NkMDY1ZDI0NDhhMmQ4MDRlMTFmZDY4ZDQxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkMzkyYjdlODQ5YTJkYTMzYmFjNWZmZGVkYWQ1ODNmNjg5ODZlNTM0MzFjOGRiYjMwNjk2ODAwZGJiYjEzYTEwIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkYmJjMzNlZmQzM2UwOTk5ODIzZjY3NmJjZjZhYTRjMjgwY2E0Mzk5ODVlMjExNTJjODdkZGJkYzBjYTMzYjYwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwNmU4ZGQyYTUxM2E4NzRiOTBiYTk1NGRiYTMxNjJhMzQ0NjVmZDU3ODcxYjA3N2QzZDljZDM5MDFiNjU0MjFiIn0"
+          "resource": "repo://scripts/test-operator-recovery.sh#L282-L359",
+          "version": "repo-lines-v1:sha256:da28bbe03291523f91be9099b1ea7ab2e12e6ec6ac41620f9ffb3d8bd341ea28:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmYjczZWUwOTNjNzVmYTIzZDczMWFkZmFhMzc3Mzk1ZWJiYjdlM2Y3ZGNjZjFjMWQ3YjliOTRkZmU4MTY2ZmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzYzk2YTI0YjIxZWU2YjIzMDAzZTU5NmE5ODA0ZjFlZjNhZmI5M2JiODYzMjE1Mzc2NTAzYTliNTczYjAyMTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0YjRkOGQzYzk0OGEyZjI5MjMxMWYyMWNlMTMxMDM4M2EzNzYwYzdhNzllMzFhZjM5ZjE4ZjdiM2Q2Y2I0NDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -87,12 +83,12 @@
       "statement": "Every persona response is mapped to the seven public profile fields and structurally omits account ownership and authentication material.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/app.rs#L74-L108",
-          "version": "repo-lines-v1:sha256:600dcd3286dd0eb7111806a165d992650e7dc78034a9e402674873467c019789:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5NjAyMWJjNDgwOTk3YjUxZmViODlkYjA4YThiMzc2YWE4NjBlMWU2OWFjNGM5Y2Q1OTZkMDc3Yjg5MzM0ZDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEwNTliZjNkYTZjYjhiYjk4MzQxNDY3YzM5MmZiOGM4MTI4NGQzNWYxMGU4NzdmMjFiODk0NTE3NTI5NTJkMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0NmVjN2ViMTZjOTk2MDg5OTU5ZWY4NzMyNWUyZTM3MjkxY2JlODk1YWQ3YjFmNGJhZWVhYjc5NThjYjQwOTQifQ"
+          "resource": "repo://crates/server/src/app.rs#L196-L204",
+          "version": "repo-lines-v1:sha256:b95da120aaaf05d3f38c3209ad3ea4ed88a41ad5dd04da4f231f4f58f439044b:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDIwMGZkODY3YzJlZDFiNjA2NWE5MWMyNDRiMThmNjUyNGUzZGUwM2Y0ZmVlMmU0NjU5OTcwNjQ0YzllYzcyNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzNmYzk0NTE4ZjMwOGFkNWJkZjIxODA0ODFkOGY2Y2U1MTM3M2U2NmU1NmMwNjlkYzJkNzEyYjU0MDE0ZjllYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWU2NGViMjEwMTRmNTc0NThkOWI5M2JkMmE0MTI5MDU1M2ZjYmYyMjFlYTc5MTczNmE1NWM3NDZmMDNhNjMwZSJ9"
         },
         {
-          "resource": "repo://crates/server/src/app.rs#L352-L362",
-          "version": "repo-lines-v1:sha256:560e3f16e2f654885fb355818c1822879f30b1d27b4c65a8e4abd6977b1f1caf:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0YTllZTc0ZmQ5Yzk3YzA3MzBmYzliZDU3OWE4NDQwNzQzNWJkZDMyMDZhZDJiN2I4NWYwOWQ0MzNiN2NmNzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZmZDVjZDVlNzMzZmQ3YjkwNzE1NDBiZTI5YWE5YWQ3NTE0NDllYWNjODljYTNiMTNiMzU5ZjVhNzg3MjQ4MjUifQ"
+          "resource": "repo://crates/server/src/app.rs#L1736-L1746",
+          "version": "repo-lines-v1:sha256:560e3f16e2f654885fb355818c1822879f30b1d27b4c65a8e4abd6977b1f1caf:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0YTllZTc0ZmQ5Yzk3YzA3MzBmYzliZDU3OWE4NDQwNzQzNWJkZDMyMDZhZDJiN2I4NWYwOWQ0MzNiN2NmNzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1MjY1MGE0N2ZhYjM1MDA4NTAxOWE0NWU0ODU1ODY1OTUwMWZlM2JiODVhODhkYTdjZWEyMmRkOTE0MzQ3MDgifQ"
         }
       ]
     },
@@ -383,8 +379,8 @@
           "version": "repo-lines-v1:sha256:0e9db745b297fbd74f5edb692a6da86e41369d5466f8746aedab84dd636853bb:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3OTg2YWI0MjM1OTRkNzFmNTBlYjBiOWQyM2YyZDRkY2Q3NWU3MjVlNmRiNWI0NmY3NjZlMGRiMTIxNTM5OGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZjNTlkNTA2ODgyZTJiY2Y2ZDYxMjA2YWZkYzFjYjAxOWFlMWYwMWM2NTU0YzA5NDhhNmYxYWJiOWI5MjhjZmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         },
         {
-          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L108-L310",
-          "version": "repo-lines-v1:sha256:80d6fd994377855da74fc45ec7272bae7ad3e7b38567ee1e4a67b7b68da74924:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlNDhmMmJkNTBkNjMxMzFmZTA1ZTFkNzlkYjRlZGY5M2YxOWI3YTNkZDc4NDcwOTE4ZTMxZDFjZTA3OWU4YWMyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI2OGU4ZmVkMWE3Njc2YTg5MWNhZjFlMWY1M2EzZWUzNmM5ZjdhZDU0ZjNmNTE3ZDMxNGU4ODIwNzM4YThkMzQ4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMjkzMTlkNDZkZjg5MDYyYjNhYTgwZTY3MjA5N2RhMGViY2E3NGIzNzAxNTBmZmIxMGE5MjNmODA1YTBjNWU0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyMzJkMWRkYTliMzVkMTlkNzQxMTA4ZTk1YjQ4NjY0MWY3MGYxZTQzOThhNWNhNDkwN2U0NWRkMWExN2M2YWRhIn0"
+          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L108-L339",
+          "version": "repo-lines-v1:sha256:a78f0aab0b86c3811d3b71c2d5545bcd8349fbe83656287d6abdcba305b920d9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlNDhmMmJkNTBkNjMxMzFmZTA1ZTFkNzlkYjRlZGY5M2YxOWI3YTNkZDc4NDcwOTE4ZTMxZDFjZTA3OWU4YWMyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMjkzMTlkNDZkZjg5MDYyYjNhYTgwZTY3MjA5N2RhMGViY2E3NGIzNzAxNTBmZmIxMGE5MjNmODA1YTBjNWU0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIn0"
         },
         {
           "resource": "repo://scripts/check-qml-style.py#L11-L38",
@@ -455,10 +451,64 @@
           "version": "repo-lines-v1:sha256:6083301a4603e5fc707b56dd008ad949f2eca621f0475699fa8aada1e2ed174b:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4NjI5MzUxN2E2ZWQ5YzFiYmU2NzU5YTdmODgwYWM1MjM2MmZmMDM4YzJlZGE3OGMzNDU1MTFhODU1MDMyODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA2YTIwZGM4ZGE0NzFjMGU3ODA4MjRmYmJkZGQ2OGNjOThmMDk5ZWNiOWY0NTYzODc5OTI5MzcxMWI4MWIyNDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYyN2JlYTg0ZmU2MjMzNGRlMzNhMjg4MzYwODU2NmYwNzJhYmY2NDI3MTg4MGVkZTIwOTQ3N2MzYWU3MzBlM2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_bcfec4450e814185a3c4acb4fb9bd922",
+      "statement": "An authenticated owned persona can create a bounded persona-targeted report under a UUID, with exact replay, a 25-open-report cap, and a response limited to the immutable creation receipt.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/reports.rs#L43-L149",
+          "version": "repo-lines-v1:sha256:9d9e0c3bd786f0bce8b93db537f48085fb9da4010ea5c637ed497f140934ec44:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwZDA5OTVmMTM5NmY0ZDlmMTQxYzRkOTExN2U1ZDJhZWEzM2QxMzdiMDRjZjY4YTI0ZTk5NGI3NzIzNjY2NWFjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkNzNiNzdhMzdiYzFlOWM5MTliZTI4MjZkNGI0OTFkZjljMGFmNDNhMDQwYmUyYmRjNDIxYTU0MDk3OTk3NTA1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmNGE0OGQ0M2M5Zjk4YTgwZDIwZTViZWY1YmY1NGVlZjMzMGJhODU3NzJkMDY3YmRhZjUwMzliZjE0MjdhYWI4In0"
+        },
+        {
+          "resource": "repo://crates/server/src/app.rs#L1519-L1546",
+          "version": "repo-lines-v1:sha256:8716273ba48a08b909294ca9839b9c76489894e49821a5294bc62c28a7177a66:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExZWE0MmY3MDJhOWE0MDRjN2YyYjRmNDA5OWIzZDJjMTg4MmY4MWYxYmM2OTZiYjgyMTQ3ODlmZjllNWY0ODIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNjNjNGQxYWY4Y2Q4OWJiMGJkZDc2NTdmZmNiZjY4MDZhNjEwZDc5ZDZjOGQ0YzMwN2MyNDFkZjM5MDA1MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjMjI5ZDM2MDJlNmIzNmQyNzE5ZTQ3MTBhNjc0NzU1YmZkNGYwZDc4N2UzMThhYzhlNzI0ODg4ZDMwYWEwNzkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e11f297c0b0a40d9b113dcc7b7be8187",
+      "statement": "The QML social flow resolves an exact public handle, retains one report UUID for an exact uncertain retry, validates the minimal receipt, and clears player-entered report fields only after success.",
+      "evidence": [
+        {
+          "resource": "repo://client/qml/SocialController.qml#L99-L136",
+          "version": "repo-lines-v1:sha256:a8218632dc5f987f0b2a51319f273f1f43938b8aa2ff8b71ce1f7ec79a3bb9b9:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzNTFiYzA3ZTZlZDU1YTg1MmI2NjJhMmNkY2VlZWMwMjRlZDM4ZDhkYWMwYTc5N2Q3NGM0MDYzOTQ1OTU0ZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwZGViOTM1ZDQ1OGVlYWVlMTJlNWYwYzFhNWViODc2NWY1YWY3ZWM3OThjZjhlYmJkZDhhNzZhYjU1ZjViNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1NTBiMzA1NzMyYTg2NjdkY2EwMWZiNTdiY2JhNThiMWExY2Y5NzlkYTQ3NmYyYjk0MDgzZWEwMmNhMWJmNDUifQ"
+        },
+        {
+          "resource": "repo://client/qml/SocialController.qml#L309-L333",
+          "version": "repo-lines-v1:sha256:500ad3f4c8f8064d8a3c349b3fd6892feabad937ff12fcdbdeb5a1b8acceb5fe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBhZGU5NGM3N2M2MGFlYzAxNjlmMmJmMTFiNTk4M2NlYmJhZTRmYzdlNGQ1YzQ4YWRiNTUyNTQ5YzFiZTJkNmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdjOWQwZGUyYzllZGI1NjMwYmIyMTJkZWYyZjk4OWRhYjljMzFlZWRlOTVhNzU5M2I2NGYwYjg3YTJkNmRlN2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRlYWY2YjBjMTNjZmY0YzEwOGU0NzAzMzlhYjUxY2U1NGFjMDkxZmUxODViM2IxMmQwYjA1OTkzYjczZTExMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxZjIxNzAyM2ZiYzZmNTE0YTc0NjBmNmVjMGFhMDU4M2Y1MDM1MWNmYzNjY2JlMmQ4MzQ5YzU5MDRiYTgxNmIifQ"
+        },
+        {
+          "resource": "repo://client/qml/screens/SocialScreen.qml#L100-L157",
+          "version": "repo-lines-v1:sha256:2c9fc6e5b157a3c337d3c4b495e2620975c0379c56075c50fef1e2c85a92ca01:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3NTQ3YjBlYzFiMTdkMTQyYmE5NmFkYjlhYmQ2NTNiNzNmMzYyMTYxNTllM2U5YzM3ZTNjYTFkOWZiNjRlYTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE3NjFiZjRiZTFiMWZjOTM5NDEyZDdiNjhhY2VkZmUyNjNjMWNiYzIyMjMxMjEyZGYzOTA5YzcyMjljZDE2ZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4MjZiY2YxMmU0ZmVjMGM3ZGVjODY5MGI5MzEzN2M3OGVjYjg1NDhiOTY5NjA5ZDQ0MTE0YmVmOGMxYzE5MGEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e0d9ec66104a4e68af7a94bc950cafc9",
+      "statement": "The private-alpha operator surface is a PostgreSQL-local CLI with bounded report inventory, reversible account suspension and reactivation, terminal report disposition, transaction-coupled session revocation, and immutable audit rather than a remote administration API.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/bin/omarchygs-admin.rs#L31-L89",
+          "version": "repo-lines-v1:sha256:e39dbf9ceef4e2f4e3c5c121840540fc61cfa1023c700db4778e498b84270102:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5N2Q1NGY2YmNlMTZhZjA4YjQ4MTQ3MzNkYTIxYTAwZTZjOGM1ZGFmMWUyZTI2ZGM3MWE2NTNiOTY2ODBkZTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4OTc3MWZlMWI2NjI4ODc1YWEyM2U3ZGJlNGFhNzE0NjFkMDBjZGZiNjZkZGYxMWI5ZDgyMGFjNTg5N2ZkZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVlYjYwMTdmZDhkYzNhMDQ0N2I4MWI3NGMxM2NkMDk1ZTBjYjk1MGU5NzhmNmMzZjQ2MmU1NjJjMjMwOTI0ZjcifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/operator_admin.rs#L220-L295",
+          "version": "repo-lines-v1:sha256:a4073cddbfcdc1747240cf7661f1dbd33896963d455cd636a0961d8bd9cbb061:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmNjMzN2MyYWU2OTE4MmU3MjY2N2ZkMGVlMjVjNmI2ODUxZmM1NzZjZDk3YWEzMTJjZGYyMjgwNTRjNTgwYzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzNWU4Njc1OTAyZjIyZGQyOTRlNmZjYzNhYzAwMWI4OTc5MTgyODQzYmQxNWI1MjM2ZTg2NmFlNTgwOGZiNzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1NTUxYTE0Y2YwNDgxNTEzMjM3MTk4ZWIzNDhkNzE2YWE3MzNhZDUwY2M5NzA4YTRiMzFmOWIyMDQzNzViODQifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/operator_admin.rs#L297-L424",
+          "version": "repo-lines-v1:sha256:f8c4faf3144dbf348ba09d421481c32f1e4a2dad888f6f1ef76f68344cf8f62e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyZDk4MGU2MTllZWQ1M2VmZGQ4OGU2ZGE0ZjY0NzI5ZWVjODY2MmMzNzM0ZjUwZWEyODM1NDIyYjgzYjY0NjBmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5NjEyYWNmOTE1ODdmMzk3NWFkZjY3MmI4NmUzMWFjNTkzN2Y1YWFlM2EzMmNjZjU5ZmJlYjIzMDVhYWI5YjA1In0"
+        },
+        {
+          "resource": "repo://migrations/0016_operator_reporting_and_audit.sql#L39-L94",
+          "version": "repo-lines-v1:sha256:1b85e10209e4c03e1671f80f2325a8edefe3ba49bee2b488628e6e2db154399e:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3YmU2OGUyMDJkOTk4ZGVlMWFmNTk0NTBhN2ZmNzczYWQxYjhjNzkxZDM4YmVhY2FlMmNlOTZkYjgwMWY4ZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyOGU5MjFiOGNjYjJiZjc0ZDE0MzVkZDA3ZmQ2ZjdiNzMxM2ExZWJhZjM1OGIzM2Q0NWJkMTQ0MmYzNjZhMDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIyZWU2NGE5YjE4ZDk2OTkwY2E4YjVmY2IzZDkxMTk4OTgxMjg4YmRiNGI0MGE5OGUwNDQ2Y2VkYzYxZDgwYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T16:57:43.335Z"
+    "at": "2026-08-26T17:59:41.119Z"
   }
 }

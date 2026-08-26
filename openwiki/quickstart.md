@@ -11,6 +11,10 @@ sources:
     resource: repo://client/qml/Main.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
+  - id: openwiki-source-fb3bac0b93c3046f977a1023
+    resource: repo://client/qml/screens/SocialScreen.qml
+  - id: openwiki-source-4f5334e859a4d83e2a196fcf
+    resource: repo://client/qml/SocialController.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
@@ -19,6 +23,8 @@ sources:
     resource: repo://crates/game-signal-siege/src/lib.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
+  - id: openwiki-source-ba203ea2e600f294ab58ef02
+    resource: repo://crates/server/src/bin/omarchygs-admin.rs
   - id: openwiki-source-a3892e0554790e3efc606fe1
     resource: repo://crates/server/src/challenges.rs
   - id: openwiki-source-4b133589ca70bd174cf19eb9
@@ -31,10 +37,14 @@ sources:
     resource: repo://crates/server/src/main.rs
   - id: openwiki-source-83e16151ac88c29a31cb79d2
     resource: repo://crates/server/src/mfa.rs
+  - id: openwiki-source-94ddb58f2dc1a71ed1959533
+    resource: repo://crates/server/src/operator_admin.rs
   - id: openwiki-source-54f6da1456b2b76d94d11b0e
     resource: repo://crates/server/src/personas.rs
   - id: openwiki-source-0e10f198b5749ecebf761185
     resource: repo://crates/server/src/provider_games.rs
+  - id: openwiki-source-e4423ee4de83f38bd240bf8b
+    resource: repo://crates/server/src/reports.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
   - id: openwiki-source-76060b846b9222af2c790243
@@ -47,6 +57,8 @@ sources:
     resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
     resource: repo://docs/architecture/game-cartridges.md
+  - id: openwiki-source-872141f77f71851168245852
+    resource: repo://docs/architecture/system-overview.md
   - id: openwiki-source-831ed1de42e0dff0edb87b3b
     resource: repo://docs/client-installation.md
   - id: openwiki-source-c3d1d450d3a3561b368e5307
@@ -55,6 +67,8 @@ sources:
     resource: repo://docs/product-charter.md
   - id: openwiki-source-cb6494f7cbf0d5d23ffe082a
     resource: repo://migrations/0012_game_challenges.sql
+  - id: openwiki-source-4331166a21e12c8c40994c1e
+    resource: repo://migrations/0016_operator_reporting_and_audit.sql
   - id: openwiki-source-449de92825ee702b9aa05d2a
     resource: repo://packaging/arch/client-runtime-files.txt
   - id: openwiki-source-d85e6ea816d7c91e9828f7b2
@@ -69,12 +83,14 @@ sources:
     resource: repo://scripts/test-game-cartridge-sdk.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
+  - id: openwiki-source-e08dc6155c081d7928029e27
+    resource: repo://scripts/test-operator-recovery.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-26T16:57:43.335Z"}
+generated: {by: "codex", at: "2026-08-26T17:59:41.119Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-26T16:57:43.335Z
+    at: 2026-08-26T17:59:41.119Z
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -86,7 +102,9 @@ account registration at `POST /v1/accounts`, provides revocable Bearer device
 sessions, offers opt-in TOTP two-factor authentication with single-use recovery
 codes, supports account-owned personas with public exact-handle lookup, and
 supports persona-scoped connection requests, accepted connections, and private
-directional blocks. Accepted persona pairs also own durable private
+directional blocks. An authenticated owned persona can also file a bounded,
+retry-safe report about another public persona for local operator review.
+Accepted persona pairs also own durable private
 conversations with typed messages and per-participant unread state. Every
 persona also has a retained, monotonic synchronization cursor: REST recovers
 durable changes and an authenticated WebSocket supplies owner-scoped wakeup
@@ -111,11 +129,12 @@ player operations to a separate provider process and database. The main QML
 connector now handles server selection, account registration, password or MFA
 sign-in, and owned-persona creation or selection before entering an
 authenticated home. From there it can manage persona connections and private
-blocks, browse private conversations, page history, send messages, clear unread
-state, browse the compiled game catalog and session history, create or resolve
-challenges, and play Signal Siege through authoritative REST commands. It does
-not yet acquire or launch signed cartridge packages, present provider-owned
-games, poll, or subscribe to live WebSocket hints.
+blocks, submit a report by exact persona handle, browse private conversations,
+page history, send messages, clear unread state, browse the compiled game
+catalog and session history, create or resolve challenges, and play Signal
+Siege through authoritative REST commands. It does not yet acquire or launch
+signed cartridge packages, present provider-owned games, poll, or subscribe to
+live WebSocket hints.
 
 The main shell, all ten routes, and the trusted cartridge visual boundary now
 share one host-owned theme and explicit plain-text policy. Semantic headings,
@@ -135,6 +154,15 @@ provenance; it depends only on Omarchy's `qt6-declarative` runtime and contains
 no Rust server. These locally built artifacts are unsigned. Public package
 repository publication, release signing, automatic updates, and saved
 multi-server profiles remain future work.
+
+The private-alpha operator path is deliberately separate from the player API.
+`omarchygs-admin` uses a reviewed local `DATABASE_URL` to list a bounded report
+queue, resolve or dismiss an open report, and reversibly suspend or reactivate
+an account. Every mutation carries an operation UUID, actor, and reason and
+commits an immutable audit event with the state change. Suspension revokes all
+current device sessions; reactivation never resurrects them. The isolated
+recovery drill proves that report, audit, suspension, and representative
+platform history survive a custom PostgreSQL dump and restore.
 
 The product is game-first: connections, private inboxes, challenges, and
 persistent game history define the intended experience. A public message board
@@ -187,6 +215,7 @@ plugin runtime is authorized today.
 |---|---|---|---|
 | Change server startup, configuration, migrations, or health behavior | [Runtime foundation](runtime-foundation.md) | `crates/server/src/main.rs`, `config.rs`, `app.rs`; `migrations/` | `cargo test -p omarchy-gaming-system-server`; health smoke |
 | Change accounts, device sessions, MFA, personas, or connections | [Runtime foundation](runtime-foundation.md) | `accounts.rs`, `credentials.rs`, `sessions.rs`, `mfa.rs`, `personas.rs`, `connections.rs`; `docs/api.md` | Domain tests plus multi-account PostgreSQL evidence |
+| Change player reporting, account suspension, report disposition, operator audit, or platform restore | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `reports.rs`, `operator_admin.rs`, `bin/omarchygs-admin.rs`; migration `0016`; `docs/operators/operator-safety-and-recovery.md` | Report API and operator-domain PostgreSQL tests; real CLI test; `scripts/test-operator-recovery.sh` |
 | Change QML endpoint selection, appearance/accessibility, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/components/`, `client/qml/screens/`, `client/qml/game/` | `scripts/check-qml-style.py`; `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
 | Change cartridge packaging, trusted rendering, SDK portability, or provider integration | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `client/qml/cartridge`; migrations `0014`–`0015`; ADR-0002; Tickets 015–019 | `scripts/test-game-cartridge.sh`; `scripts/test-game-cartridge-renderer.sh`; `scripts/test-game-cartridge-sdk.sh`; `scripts/test-provider-conformance.sh`; `scripts/test-provider-authority-pilot.sh`; threat/authority review and constitutional authority check |
@@ -223,8 +252,13 @@ transport stays behind the onboarding authority controller; the social and game
 controllers receive a gated request function and derive actor paths from that
 selected persona. Social
 entry manually refreshes incoming/outgoing requests, accepted connections, and
-the actor's private block inventory. Inbox entry manually refreshes at most 100
-conversations, loads ascending bounded message pages, prepends older pages by
+the actor's private block inventory. Its report form resolves an exact public
+handle, accepts one fixed category and 1–1,000 control-safe detail characters,
+retains the same operation UUID only for an exact uncertain retry, and clears
+player text only after validating the minimal creation receipt. Reports create
+no subject notification or synchronization event. Inbox entry manually
+refreshes at most 100 conversations, loads ascending bounded message pages,
+prepends older pages by
 the conversation-local cursor, sends trimmed control-safe text, and advances
 unread state through the latest loaded message. Exact public profiles and
 allowlisted user/system message shapes render as plain text. Malformed,

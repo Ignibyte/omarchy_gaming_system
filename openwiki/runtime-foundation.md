@@ -15,6 +15,8 @@ sources:
     resource: repo://client/qml/Main.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
+  - id: openwiki-source-4f5334e859a4d83e2a196fcf
+    resource: repo://client/qml/SocialController.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
@@ -25,6 +27,8 @@ sources:
     resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
+  - id: openwiki-source-ba203ea2e600f294ab58ef02
+    resource: repo://crates/server/src/bin/omarchygs-admin.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
     resource: repo://crates/server/src/challenge_api_tests.rs
   - id: openwiki-source-a3892e0554790e3efc606fe1
@@ -45,10 +49,14 @@ sources:
     resource: repo://crates/server/src/mfa_api_tests.rs
   - id: openwiki-source-83e16151ac88c29a31cb79d2
     resource: repo://crates/server/src/mfa.rs
+  - id: openwiki-source-94ddb58f2dc1a71ed1959533
+    resource: repo://crates/server/src/operator_admin.rs
   - id: openwiki-source-54f6da1456b2b76d94d11b0e
     resource: repo://crates/server/src/personas.rs
   - id: openwiki-source-0e10f198b5749ecebf761185
     resource: repo://crates/server/src/provider_games.rs
+  - id: openwiki-source-e4423ee4de83f38bd240bf8b
+    resource: repo://crates/server/src/reports.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
   - id: openwiki-source-76060b846b9222af2c790243
@@ -79,12 +87,14 @@ sources:
     resource: repo://migrations/0012_game_challenges.sql
   - id: openwiki-source-926664a4167297129df76802
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
+  - id: openwiki-source-4331166a21e12c8c40994c1e
+    resource: repo://migrations/0016_operator_reporting_and_audit.sql
   - id: openwiki-source-a5928e7ee39885995efdc170
     resource: repo://scripts/dev.sh
-generated: {by: "codex", at: "2026-08-26T13:49:04.179Z"}
+generated: {by: "codex", at: "2026-08-26T17:59:41.119Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-26T13:49:04.179Z
+    at: 2026-08-26T17:59:41.119Z
 ---
 
 # Runtime foundation
@@ -633,6 +643,44 @@ keeps sessions non-ready until that reconciliation succeeds. Retirement is
 terminal. The provider database remains independent of the OmarchyGS database;
 the tested recovery procedure backs it up and restores it separately.
 
+## Player reporting and operator containment
+
+`POST /v1/personas/{persona_id}/reports` authenticates the device session and
+owner-scopes the reporter before disclosing target validity. The report domain
+locks that persona, resolves an exact UUID replay before current admission,
+rejects self-reporting, accepts only `harassment`, `spam`, `cheating`, or
+`other`, bounds trimmed control-safe detail to 1–1,000 characters, and admits
+at most 25 open reports per reporter. The player receives only the report ID,
+idempotency key, immutable creation status, and timestamp; the route emits no
+subject notification or persona synchronization event.
+
+The QML Social screen resolves the existing public exact-handle resource and
+submits through the bearer-owning onboarding request gateway. The social
+controller never receives the raw token, preserves one operation UUID only for
+the same uncertain submission, rejects extra or malformed receipt fields, and
+clears the report form only after an exact success. Fixed guidance and player
+content remain plain text, and the report controls participate in the existing
+keyboard, accessibility, and 640×420 containment checks.
+
+`omarchygs-admin` is a separate PostgreSQL-local executable, not an Axum route,
+account role, administrator token, or listener. It reads only `DATABASE_URL`,
+lists a filtered newest-first queue of at most 100 reports, or applies one
+bounded non-symlink regular JSON command file. Account actions permit only
+`active` ↔ `suspended`; suspension revokes every live device session in the
+same transaction, reactivation never clears `revoked_at`, and `disabled`
+remains outside this reversible command. Report actions permit one `open` →
+`resolved` or `dismissed` transition. Both target roots are locked, exact
+operation retries return the original receipt, conflicting retries or terminal
+state changes fail, and the state transition plus audit append commit together.
+
+The operator audit records only the bounded actor/reason, target, action,
+previous/resulting state, operation UUID, and timestamp—not report detail or
+credentials. PostgreSQL rejects audit update/deletion and report deletion. The
+operator guide owns database credential, report privacy, MFA-key custody,
+backup, isolated restore, and rollback guidance; remote administrator accounts,
+roles, appeals, evidence attachments, content deletion, and scheduled backup
+infrastructure remain out of scope.
+
 ## Identity-ready schema
 
 The forward-only `0001_identity_foundation.sql` migration creates three
@@ -684,7 +732,10 @@ adds the registered-provider security/control-plane foundation. Migration
 `0015` adds the session authority discriminator and exclusive state shape,
 provider release and availability, the singleton pilot, authenticated bounded
 views, immutable result and achievement projections, and terminal lifecycle
-guards. Add later
+guards. Migration `0016` adds retained persona reports with reporter-scoped
+idempotency, fixed category/status and terminal-time constraints, plus
+exact-target operator audit with target-scoped operation uniqueness. Database
+triggers make audit append-only and deny report deletion. Add later
 capabilities through domain modules and thin handlers rather than placing policy
 directly in SQL or transport code.
 
@@ -716,6 +767,16 @@ incremental recovery, retention resets, owner privacy, transaction-coupled
 invalidations, real TCP WebSocket authentication and hints, principal-scoped
 quotas, frame bounds, permit release, and session revocation, expiry,
 inactivity, and no-touch revalidation.
+Report changes use `report_api_tests.rs`: its migrated cases cover exact
+receipts, no-store success and errors, authentication precedence, owner scope,
+self/absent targets, input bounds, open-cap and concurrent-first-write
+serialization, idempotency collision, and immutable replay after disposition.
+Operator-state changes use the focused database tests in `operator_admin.rs`
+plus the real executable test under `crates/server/tests`; together they cover
+inventory privacy, bounded file input, exact replay, conflicting and concurrent
+decisions, account suspension/reactivation, session containment, terminal
+report disposition, and append-only linked audit. Platform restore changes
+must also pass `scripts/test-operator-recovery.sh`.
 Game-runtime changes use its five unit tests for manifest validation, stable
 exact-version lookup, and bounded deterministic initialization and commands.
 Signal Siege changes use its ten v1/v2 rule tests plus
@@ -736,13 +797,13 @@ seven migrated PostgreSQL cases cover participant privacy, exact creation replay
 and collisions, typed inbox and minimal sync payloads, exact-version acceptance
 and seat order, terminal history and lazy expiry, pending limits, initializer
 and block rollback, production Signal Siege v2 alternation/completion, and
-one-winner terminal races. QML game changes run through the thirty-eight-case
-fixture corpus and the live two-authority scenario in `scripts/dev.sh`; those
+one-winner terminal races. QML client changes run through the 41-case fixture
+corpus and four live scenarios in `scripts/dev.sh`; those
 prove contrast, semantic headings and status, deterministic focus, reversible
 Tab traversal, Escape authority, minimum-width containment, strict hostile-
-envelope rejection, retained retry identity, revision refetch, authority
-cleanup, active-seat enforcement, terminal completion, and fresh-controller
-recovery.
+envelope rejection, report retry and receipt handling, retained game retry
+identity, revision refetch, authority cleanup, active-seat enforcement,
+terminal completion, and fresh-controller recovery.
 Provider player-route changes use `provider_game_api_tests.rs` plus
 `scripts/test-provider-authority-pilot.sh`. The clean-clone proof covers the
 independent TLS process and database, protocol-only dependency, mixed catalog,

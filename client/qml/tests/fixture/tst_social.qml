@@ -78,6 +78,14 @@ TestCase {
         keyClick(Qt.Key_Return)
     }
 
+    function enterReport(handle, detail) {
+        enterText(object("reportHandleField"), handle)
+        const category = object("reportCategoryBox")
+        category.currentIndex = 2
+        enterText(object("reportDetailField"), detail)
+        activate(object("reportSubmitButton"))
+    }
+
     function signInAndSelectActor() {
         enterText(object("usernameField"), "social_user")
         const password = object("passwordField")
@@ -186,6 +194,43 @@ TestCase {
         tryCompare(applicationWindow.onboardingController, "state", "home")
     }
 
+    function test_keyboard_report_submission_and_local_validation() {
+        applicationWindow.width = 640
+        applicationWindow.height = 420
+        activate(object("homeSocialButton"))
+        tryCompare(applicationWindow.socialController, "loadState", "ready", 5000)
+
+        const handle = object("reportHandleField")
+        const category = object("reportCategoryBox")
+        const detail = object("reportDetailField")
+        const submit = object("reportSubmitButton")
+        verify(handle.Accessible.name.length > 0)
+        verify(category.Accessible.name.length > 0)
+        verify(detail.Accessible.name.length > 0)
+        verify(submit.Accessible.name.indexOf("operator review") !== -1)
+
+        enterText(handle, "social_actor")
+        enterText(detail, "Cannot report myself")
+        activate(submit)
+        verify(applicationWindow.socialController.errorText.indexOf("another") !== -1)
+        compare(handle.text, "social_actor")
+        compare(detail.text, "Cannot report myself")
+
+        enterText(handle, "social_friend")
+        detail.clear()
+        activate(submit)
+        verify(applicationWindow.socialController.errorText.indexOf("1–1,000") !== -1)
+
+        enterReport("social_friend", "  Fixture report detail  ")
+        tryCompare(applicationWindow.socialController, "loadState", "ready", 5000)
+        compare(applicationWindow.socialController.statusText,
+                "Report submitted for operator review.")
+        compare(handle.text, "")
+        compare(detail.text, "")
+        compare(category.currentIndex, 0)
+        verify(applicationWindow.onboardingController.hasSession)
+    }
+
     function test_z_hostile_schema_size_and_invalid_session_fail_safe() {
         activate(object("homeSocialButton"))
         tryCompare(applicationWindow.socialController, "loadState", "ready", 5000)
@@ -202,8 +247,20 @@ TestCase {
         }, 5000)
         verify(applicationWindow.onboardingController.hasSession)
 
-        enterText(object("socialHandleField"), "session_lost")
-        activate(object("socialRequestButton"))
+        enterReport("malformed_report", "Retryable report detail")
+        tryCompare(applicationWindow.socialController, "loadState", "error", 5000)
+        verify(applicationWindow.onboardingController.hasSession)
+        enterReport("malformed_report", "Retryable report detail")
+        tryCompare(applicationWindow.socialController, "loadState", "error", 5000)
+        verify(applicationWindow.onboardingController.hasSession)
+
+        enterReport("oversized_report", "Oversized report detail")
+        tryVerify(function() {
+            return applicationWindow.socialController.errorText.indexOf("limit") !== -1
+        }, 5000)
+        verify(applicationWindow.onboardingController.hasSession)
+
+        enterReport("report_session_lost", "Invalid session report detail")
         tryCompare(applicationWindow.onboardingController, "state", "access", 5000)
         verify(!applicationWindow.onboardingController.hasSession)
         compare(applicationWindow.onboardingController.selectedPersona, null)

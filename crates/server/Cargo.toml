@@ -3,6 +3,7 @@ name = "omarchy-gaming-system-server"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+default-run = "omarchy-gaming-system-server"
 
 [dependencies]
 anyhow.workspace = true
@@ -39,4 +40,5 @@ rustls.workspace = true
 tempfile = "3.23.0"
 tokio-tungstenite.workspace = true
 tower.workspace = true
+url.workspace = true
 omarchy-game-provider = { path = "../game-provider", features = ["provider-conformance"] }

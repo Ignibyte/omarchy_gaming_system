@@ -11,6 +11,15 @@ Item {
 
     Components.OgsTheme { id: theme }
 
+    Connections {
+        target: root.controller
+        function onReportSubmitted() {
+            reportHandleField.clear()
+            reportDetail.clear()
+            reportCategory.currentIndex = 0
+        }
+    }
+
     function focusInitial() {
         handleField.forceActiveFocus()
     }
@@ -86,6 +95,65 @@ Item {
                             handleField.clear()
                     }
                 }
+            }
+
+            Components.OgsSectionLabel {
+                Layout.fillWidth: true
+                text: "REPORT PERSONA"
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: "Reports go to this server's operator. Include only the detail needed for review."
+                textFormat: Text.PlainText
+                wrapMode: Text.Wrap
+                color: theme.textMuted
+                font.family: theme.fontFamily
+                font.pixelSize: theme.bodySize
+            }
+
+            Components.OgsTextField {
+                id: reportHandleField
+                objectName: "reportHandleField"
+                Layout.fillWidth: true
+                accessibleName: "Exact persona handle to report"
+                placeholderText: "exact_handle"
+                maximumLength: 24
+                enabled: !controller.busy
+            }
+
+            ComboBox {
+                id: reportCategory
+                objectName: "reportCategoryBox"
+                Layout.fillWidth: true
+                Accessible.name: "Report category"
+                activeFocusOnTab: true
+                focusPolicy: Qt.StrongFocus
+                enabled: !controller.busy
+                model: ["HARASSMENT", "SPAM", "CHEATING", "OTHER"]
+                property var categoryValues: ["harassment", "spam", "cheating", "other"]
+            }
+
+            Components.OgsTextArea {
+                id: reportDetail
+                objectName: "reportDetailField"
+                Layout.fillWidth: true
+                accessibleName: "Report details"
+                placeholderText: "Briefly describe what happened"
+                maximumLength: 1000
+                enabled: !controller.busy
+            }
+
+            Components.OgsButton {
+                objectName: "reportSubmitButton"
+                Layout.alignment: Qt.AlignRight
+                text: "REPORT"
+                accessibleName: "Submit persona report for operator review"
+                enabled: !controller.busy
+                onClicked: controller.reportPersonaByHandle(
+                    reportHandleField.text,
+                    reportCategory.categoryValues[reportCategory.currentIndex],
+                    reportDetail.text)
             }
 
             Components.OgsSectionLabel {

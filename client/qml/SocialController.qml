@@ -3,6 +3,8 @@ import QtQuick
 QtObject {
     id: root
 
+    signal reportSubmitted()
+
     required property var sessionController
     property var actor: null
     property string statusText: ""
@@ -22,6 +24,7 @@ QtObject {
     property int _expectedGeneration: 0
     property string _expectedOperation: ""
     property string _pendingHandle: ""
+    property var _pendingReport: null
     property bool _historyAppendOlder: false
 
     property Connections _requestConnection: Connections {
@@ -51,6 +54,7 @@ QtObject {
         nextBefore = null
         foundPersona = null
         _pendingHandle = ""
+        _pendingReport = null
         _historyAppendOlder = false
     }
 
@@ -89,6 +93,45 @@ QtObject {
         errorText = ""
         statusText = "Resolving exact persona handle..."
         return _request("player_social_lookup", "GET",
+                        "/v1/personas/by-handle/" + encodeURIComponent(normalized), null, false)
+    }
+
+    function reportPersonaByHandle(handle, category, detail) {
+        if (!_ready())
+            return false
+        const normalized = String(handle).trim().toLowerCase()
+        const normalizedCategory = String(category)
+        const normalizedDetail = String(detail).trim()
+        if (!/^[a-z0-9][a-z0-9_-]{2,23}$/.test(normalized)) {
+            errorText = "Enter an exact 3–24 character persona handle."
+            return false
+        }
+        if (normalized === actor.handle.toLowerCase()) {
+            errorText = "Choose another persona."
+            return false
+        }
+        if (["harassment", "spam", "cheating", "other"].indexOf(normalizedCategory) === -1
+                || _characterCount(normalizedDetail) < 1
+                || _characterCount(normalizedDetail) > 1000
+                || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(normalizedDetail)) {
+            errorText = "Reports need a category and 1–1,000 supported detail characters."
+            return false
+        }
+        if (!_pendingReport || _pendingReport.handle !== normalized
+                || _pendingReport.category !== normalizedCategory
+                || _pendingReport.detail !== normalizedDetail) {
+            _pendingReport = {
+                "handle": normalized,
+                "category": normalizedCategory,
+                "detail": normalizedDetail,
+                "idempotency_key": _newUuid()
+            }
+        }
+        _pendingHandle = normalized
+        foundPersona = null
+        errorText = ""
+        statusText = "Resolving report subject..."
+        return _request("player_report_lookup", "GET",
                         "/v1/personas/by-handle/" + encodeURIComponent(normalized), null, false)
     }
 
@@ -263,6 +306,31 @@ QtObject {
             foundPersona = document
             statusText = "Sending connection request..."
             _request("player_social_request", "PUT", _actorPath() + "/connection-requests/" + document.id)
+        } else if (operation === "player_report_lookup") {
+            if (!_pendingReport || !_validPersona(document) || document.id === actor.id
+                    || document.handle !== _pendingReport.handle) { _protocolFailure(); return }
+            foundPersona = document
+            statusText = "Submitting persona report..."
+            _request("player_report_create", "POST", _actorPath() + "/reports", {
+                "idempotency_key": _pendingReport.idempotency_key,
+                "subject_persona_id": document.id,
+                "category": _pendingReport.category,
+                "detail": _pendingReport.detail
+            })
+        } else if (operation === "player_report_create") {
+            if ((status !== 200 && status !== 201) || !_pendingReport
+                    || !_validReportReceipt(document)
+                    || document.idempotency_key !== _pendingReport.idempotency_key) {
+                _protocolFailure()
+                return
+            }
+            _pendingReport = null
+            _pendingHandle = ""
+            foundPersona = null
+            loadState = "ready"
+            statusText = "Report submitted for operator review."
+            errorText = ""
+            reportSubmitted()
         } else if (operation === "player_social_request") {
             if ((status !== 200 && status !== 201) || !_validRequest(document)) { _protocolFailure(); return }
             statusText = "Connection request sent."
@@ -338,6 +406,9 @@ QtObject {
             "message_not_found": "That message is unavailable.",
             "invalid_message_body": "Messages must contain 1–4,000 supported characters.",
             "invalid_pagination": "That history page is unavailable.",
+            "invalid_report": "Reports need a valid subject, category, and detail.",
+            "report_idempotency_conflict": "That report operation conflicted with an earlier submission.",
+            "report_limit_reached": "Resolve an existing report with the server operator before filing another.",
             "internal_error": "The server could not complete the request."
         }
         errorText = messagesByCode[code] || "The server rejected the request."
@@ -453,6 +524,12 @@ QtObject {
                 && Number.isSafeInteger(value.unread_count) && value.unread_count >= 0
     }
 
+    function _validReportReceipt(value) {
+        return _exactKeys(value, ["id", "idempotency_key", "status", "created_at"])
+                && _validUuid(value.id) && _validUuid(value.idempotency_key)
+                && value.status === "open" && _validTimestamp(value.created_at)
+    }
+
     function _validPersona(value) {
         return _exactKeys(value, ["id", "handle", "display_name", "bio", "status_message",
                                   "created_at", "updated_at"])
@@ -487,6 +564,15 @@ QtObject {
     function _validUuid(value) {
         return typeof value === "string"
                 && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value)
+    }
+
+    function _newUuid() {
+        let timestamp = Date.now()
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(character) {
+            const random = (timestamp + Math.random() * 16) % 16 | 0
+            timestamp = Math.floor(timestamp / 16)
+            return (character === "x" ? random : (random & 0x3) | 0x8).toString(16)
+        })
     }
 
     function _validTimestamp(value) {

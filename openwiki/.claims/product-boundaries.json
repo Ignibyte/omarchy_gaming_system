@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:71c87f5f340b619bdc221340b3c5582d75723830207e5b8f1fb897ed39cebcdb",
+  "pageVersion": "sha256:216d9e9a2a9baba54ced99f74e3c2efa0f754227c4821136c1c5c025daadf9a6",
   "claims": [
     {
       "id": "claim_6694314ff9ed40c7b402b20720f16d87",
@@ -22,11 +22,11 @@
       "evidence": [
         {
           "resource": "repo://CONSTITUTION.md#L90-L95",
-          "version": "repo-lines-v1:sha256:9b1e16272362550c0dcf1f7d4079f117573f1c38d0947f6f3b3cf9e87f2c1c67:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTllMTM1NmY5NzQ3ODQwZWZjZmFjOTVjNDM2OTljOGE1OTIwYzQyMzVhMjA1ODUwZjI2NjRmYzQ3Mjk0NjI4YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjUzMGYwNzg4NDEzZjBhNTRkNzUyMjFjZTg0MWFkNDhhZmZjNDBmMjIyNmJkOWUxMDIxYWMwODdhMGMyMzExMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjQ4MzFlZWE5ZGZmZThiZDE3NDI3OWFmMjQ0NDc5MzNlMTk4ZGFmOWE2NDE4NDNkZTgzZGY0ZTA3MzMxYjdlNyJ9"
+          "version": "repo-lines-v1:sha256:e00357eb55b294d4b898db0a9e84ef6b669317ff6d02dbf67c5555cb05948a97:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2NiMjY1MjVjZWI4ZGFhY2IwNTNjNGE1MDgzOGQzYWU4YmFmMDA2YzA3MWE5OGRlNTIxOGJmYWNkZTVkOTY2ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjUxOTEzZTMwNmE5Zjc5ZDUxYjcxZDQ0ZGMyMzk0MjQwNjM0NzhkYWU1ZTE3MTgyM2Y3NGYyZDMyMzJlMDhkOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzhhMDAwMzcyYmRjZGYxNTU5ZmMxM2ZjMDJhMGU0MzNmNDc2Yzg1NzIzZTYyNWMyZDQ2OTJiZWE4OWFmYTY2NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWVjODJjZDUzNjMyYTFlNjBhOTAxNGI0MTIyN2FkZjJiZjRjZWE0ODk4MjNjY2Q0ZmRlNzk4NmY5ZGZhODc1YSJ9"
         },
         {
-          "resource": "repo://docs/product-charter.md#L50-L74",
-          "version": "repo-lines-v1:sha256:7c7f81c30849df33f42cabdca2ab9d4dc344a4fedb7c4e4576415ec63853c7b5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiNTI2YjJhYjk1Nzk0MGQ1YzA3ZDMyNDBhNjJkZGUyZWQ4NDdmZTlkYTAwZTIxMjllOTZhZmY0ODZjMmM4OTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmYWVlYzRkNDY4NTE4ZjBmMmU3OGJmYjgzYTg3ODk2ODExOTNhYWQwMGM5YWY4NjZmYmRkYjMwNzhjYTRhYWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA0YTBhY2QzMTZkYmIzNzhkZmFlNzQ0YmZkY2Q0NDkyYTc0MjgzZWI4MDlhYjIxNWEwNDY4ZGQ1MTVmZjU3MmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJkNGI1OGQ3MWMzN2ZiZDhhNDVjNDA3ZTQ2NWZmNGE2NzUxNjgwYzE0YTYzNDE2NjFiZWE1YzA4OWU2ZTAxYmYifQ"
+          "resource": "repo://docs/product-charter.md#L54-L68",
+          "version": "repo-lines-v1:sha256:8c768782d4e82a996addf7e1113a8cde32ddce8d204041bd9d6c8bc7ca17aeb1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiNTI2YjJhYjk1Nzk0MGQ1YzA3ZDMyNDBhNjJkZGUyZWQ4NDdmZTlkYTAwZTIxMjllOTZhZmY0ODZjMmM4OTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiMjc1Y2EyNjIxYWYyYTE2NTc5NTM5MTViNDI2NTI4MGY2ZTMzZDNjZDJkYmZhMTBjMWZiN2Y1NzMxODBjODAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA0YTBhY2QzMTZkYmIzNzhkZmFlNzQ0YmZkY2Q0NDkyYTc0MjgzZWI4MDlhYjIxNWEwNDY4ZGQ1MTVmZjU3MmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjExMDM5MDA5YzVkNDEwMjg3MGFkYWNjYjVmZDhkOWYwNThiZjcyYWE3N2I3YzdmZDAyNTNkYTllNzJlNDQyNTkifQ"
         }
       ]
     },
@@ -56,23 +56,19 @@
     },
     {
       "id": "claim_824ce67ba5814663b5f34951ede1c74e",
-      "statement": "Authentication and MFA, persona social state and inboxes, durable synchronization, exact-version sessions and challenges, Signal Siege solo and versus play, the keyboard-first QML first-playable flow, cartridge tooling, and the Door Legends remote-authority pilot are implemented; external provider onboarding and signed-cartridge main-client launch remain later work.",
+      "statement": "Authentication and MFA, persona social state and inboxes, player reporting, durable synchronization, exact-version sessions and challenges, Signal Siege solo and versus play, the keyboard-first QML first-playable flow, database-local operator containment and audit, isolated platform recovery proof, cartridge tooling, and the Door Legends remote-authority pilot are implemented; remote administration, external provider onboarding, and signed-cartridge main-client launch remain later work.",
       "evidence": [
         {
-          "resource": "repo://docs/architecture/system-overview.md#L51-L212",
-          "version": "repo-lines-v1:sha256:679b365e717f951dbee2c9095d3ae75cdce1ceca7082b2626f211866cfef10a7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwMzNkMTE3MjE2ZDk0MDYyMDc5MWFiZDEwMmRiMjBmZWEzZTBhODg4ZTAxNTFmNWQxYzczYzFhYzUzNTRhYWZkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI2NGI3NTkwNjQyOGVmYzdhMjVjOWIwNjk3MDBjYmZmMjkxYTE1ZTEzMWM5NDUxMGM3M2ZlNjQwYWExMTQ0YTNkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI5Y2FlNDA5MGE3ZTdlMzUzOWQ0ZTJmZTU5OTA1YjA3NDA0MTllMmM2ZWMyMDNlZmU1ZWMxNmUyM2Q0ZDZiYThhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJiNTZkZjgyZmVmYTEyN2Q2YzhmYmNjNGQ1NGU3NzljMTE1OWY2ZjRhMGRkZjA1ZTE3MzQ5NTVkNmE3OTk0YmY0In0"
+          "resource": "repo://docs/architecture/system-overview.md#L56-L153",
+          "version": "repo-lines-v1:sha256:8372dddbca58c2cbb75f695527e43f8c6247b5c245c2e8409fe6a9e5da7243e1:eyJzZWxlY3RlZExpbmVDb3VudCI6OTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzM2QxMTcyMTZkOTQwNjIwNzkxYWJkMTAyZGIyMGZlYTNlMGE4ODhlMDE1MWY1ZDFjNzNjMWFjNTM1NGFhZmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYjAwNjA1YjBjZjRmYmIzNGNjYWY3MTdhNGFmZmU1NzgyNzA2MTE1YTQ4YjI0M2EzNDY4M2Q3M2IxMmZmNzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkwMDgwOTQ3YmM4OGJhY2VhZTc2YmNjMjI4ODMyMDUwZjkwNjkzNGI3MmFjZjkzMDliZGEzOTg2MDc4NzAzZjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNlYWZlNDgxYjUzOGQxZmZhMDk2MmY1ZmIyMjM1MzVhOGE3M2U2OGQxZTg3MjBjMGFhNTYxMzVhNWUxOTJhYzgifQ"
         },
         {
-          "resource": "repo://crates/server/src/main.rs#L36-L99",
-          "version": "repo-lines-v1:sha256:cb208b37004918f9d504fa11dd0c0cf32132b01dec516ce496e5e7bcc9404234:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1M2Q5YTYwOTI4NDZmNmU2OWJiNDJmMzNiZWU2M2ExNDQ1ZDAwNGQ1ZDI0OGM2Y2M3NzcxYmMyZTBiY2JjYWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlM2FmOTlmNjQ5ZjNhYjg4NTM3ZDlhYWRiYmM3ZGZkNjFjNzI4NmNjNjQ0YTQzYTQxNmNhY2E0OGQ1OGU3ZTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA4NTQxNWZkOTZiYzIzYmI2ZmNhYTkzNjE4NDIyNDlkOGUxYTdkMmNkOTFhMTBjMGJkMGY1Y2Q3MjBkNTBlZDYifQ"
+          "resource": "repo://docs/product-charter.md#L26-L42",
+          "version": "repo-lines-v1:sha256:fe8b31726c336cb9434487c00c86b65ede099e21f3104be47386bb790ca4612c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3YWJkMzU2OWI0NWJhZjM2YWU4NmU2ZmZmOWU3MzdlODBkZDI3MWFlNzU5ZDI0NjMwNjg4NWFiZjAyMjJhMTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxNjM0MmVmN2RkNzNmZDAyNWRjYzJhODFjZTMwNTE5YmUwM2ZhODcwYzcyNjkwZDZhYTU5ZWI2YTk2ZjE1ZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA5NDM0MTNmODMyN2IyOWI0YjZhYzVmMDIzNTk2NzIwMDMwMjY3N2ZkYTllYWY4Yjk0NzgxZmY3NDdlNTdiZDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVlYzUzZjA1MzY2NjdjMzMyNjQ4NGRiNTg0ZWRmZmVkNGU4YjJiMzQ4NGRkZGI2ZjQwY2U2ZDVkODYzMzA2ZDMifQ"
         },
         {
-          "resource": "repo://client/qml/Main.qml#L17-L109",
-          "version": "repo-lines-v1:sha256:ed5510dfdafe565260f94281da5b96924132345a62513d80beaec0c84ed99f67:eyJzZWxlY3RlZExpbmVDb3VudCI6OTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhYjNlZmYyMjhhNjczZmZhZTg1MDMwYjgwNGM1ZGY3Yjk1ZmJkMzVkNjBhMDlhZjI5MDk1YThjOGJiNjFiYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzMDI5Yjk3MWQyZTA2YTVhMmMzYTU1MTY0ZDAxYjIyYzNiZDcwY2Y3YjhmZDhlNjhiOTRhNzkyODFlNzU5MmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkZDY2MmI4ZDU5NmFiOWYwZjkzNTQ2ZmY1MDAwOWVmNDhhYzBlZTUyZmM3ODA2MGQ1NjgyNmUzZmMzMDU1ZDUifQ"
-        },
-        {
-          "resource": "repo://client/qml/tests/live/tst_live_onboarding.qml#L119-L257",
-          "version": "repo-lines-v1:sha256:2da274aff9d3ae99d07b4d5f22f804b64fbb6770f4ebb7dd899f6483b70c182a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmZDgyNjFhODZjNjBlNGI0ZWI5ZDJiZjczYzIyZjUyNWZhOWRmY2NkMDY1ZDI0NDhhMmQ4MDRlMTFmZDY4ZDQxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkMzkyYjdlODQ5YTJkYTMzYmFjNWZmZGVkYWQ1ODNmNjg5ODZlNTM0MzFjOGRiYjMwNjk2ODAwZGJiYjEzYTEwIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkYmJjMzNlZmQzM2UwOTk5ODIzZjY3NmJjZjZhYTRjMjgwY2E0Mzk5ODVlMjExNTJjODdkZGJkYzBjYTMzYjYwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwNmU4ZGQyYTUxM2E4NzRiOTBiYTk1NGRiYTMxNjJhMzQ0NjVmZDU3ODcxYjA3N2QzZDljZDM5MDFiNjU0MjFiIn0"
+          "resource": "repo://scripts/test-operator-recovery.sh#L282-L359",
+          "version": "repo-lines-v1:sha256:da28bbe03291523f91be9099b1ea7ab2e12e6ec6ac41620f9ffb3d8bd341ea28:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmYjczZWUwOTNjNzVmYTIzZDczMWFkZmFhMzc3Mzk1ZWJiYjdlM2Y3ZGNjZjFjMWQ3YjliOTRkZmU4MTY2ZmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzYzk2YTI0YjIxZWU2YjIzMDAzZTU5NmE5ODA0ZjFlZjNhZmI5M2JiODYzMjE1Mzc2NTAzYTliNTczYjAyMTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0YjRkOGQzYzk0OGEyZjI5MjMxMWYyMWNlMTMxMDM4M2EzNzYwYzdhNzllMzFhZjM5ZjE4ZjdiM2Q2Y2I0NDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -587,10 +583,46 @@
           "version": "repo-lines-v1:sha256:58bdb17ec984a005bf101df44aae80eb09c8880bd0443a746dfe69fc9532bb0e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZjMwMzY5M2RhZDExNjI3ODgyNjEwY2EyOTg5MTBmYTIyYjAxYjI5N2VjZTdlODhjNTY4NjZiNzJlOGRmZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwODUxZmRiMTYzZGY2ZjFjZWU4NDBkOWJiNjcyYTY0OWJjNWI3NzYwY2RiNmY4YzQzN2UwMDczN2JlMzI2YzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhM2Y2Mjg2NmQ1MjJlN2Q4N2VkNmM4OTQ5MjM4NzQwZjBmOTk4ZDAxODJkODFlMWJhMTBhOGNjMTBmMTFlNTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzN2Q3MzU4OTZlOWFkY2RjNTI1ODUwMzE1YTYyNDE4Y2ZhNDMyNTE4YTNhMzY2ZDA5ZGQxNWMyZjlhZDcwYmMifQ"
         }
       ]
+    },
+    {
+      "id": "claim_1cf95f22bbee46cb9927e05d80a5772b",
+      "statement": "Player reports target public persona identity, while the subject account identifier and report detail are available only through the trusted database-local operator queue.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/app.rs#L1519-L1546",
+          "version": "repo-lines-v1:sha256:8716273ba48a08b909294ca9839b9c76489894e49821a5294bc62c28a7177a66:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExZWE0MmY3MDJhOWE0MDRjN2YyYjRmNDA5OWIzZDJjMTg4MmY4MWYxYmM2OTZiYjgyMTQ3ODlmZjllNWY0ODIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNjNjNGQxYWY4Y2Q4OWJiMGJkZDc2NTdmZmNiZjY4MDZhNjEwZDc5ZDZjOGQ0YzMwN2MyNDFkZjM5MDA1MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjMjI5ZDM2MDJlNmIzNmQyNzE5ZTQ3MTBhNjc0NzU1YmZkNGYwZDc4N2UzMThhYzhlNzI0ODg4ZDMwYWEwNzkifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/operator_admin.rs#L220-L272",
+          "version": "repo-lines-v1:sha256:955eda67e310925125eae6e1cbc8f9a24db5842c96bdcb4a901515b4ee1a9fd0:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmNjMzN2MyYWU2OTE4MmU3MjY2N2ZkMGVlMjVjNmI2ODUxZmM1NzZjZDk3YWEzMTJjZGYyMjgwNTRjNTgwYzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzNWU4Njc1OTAyZjIyZGQyOTRlNmZjYzNhYzAwMWI4OTc5MTgyODQzYmQxNWI1MjM2ZTg2NmFlNTgwOGZiNzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllMDFjM2QxMmMyZWUxMzc3ZjgxYTEwM2UzN2I4ZDY3NzQxOWZlZjc5ZWEwOTgwNjM0NDZjMmRmZjE0OGQ2MzEifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/operator_admin.rs#L542-L570",
+          "version": "repo-lines-v1:sha256:0f17aadb9ffcd12dd82dac7eefe56625f8927c5b5b53e176a256d7b3510a6401:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmN2NmOTA2ZDJjYjRhYTI4YjcxOTkzYmM3YTgwNjI3ZTQzNzI4MTFjZjIwMjQ3MzgxZWI5YTJjZDlmNzc4ZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0ZWRlYTgyM2FlNDU3NWEyMWYzZDgxYzliMDBlNTRmNTBjYTBkODlhMDIxODQ1NzJkNTZhNzU4YzE3MmYwZTQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_14e234eac16b436b8be569eea8ee9dd8",
+      "statement": "Private-alpha operator mutations deliberately remain outside the network API and are limited to reversible active-to-suspended account containment and terminal open-report disposition with mandatory immutable audit.",
+      "evidence": [
+        {
+          "resource": "repo://docs/product-charter.md#L54-L68",
+          "version": "repo-lines-v1:sha256:8c768782d4e82a996addf7e1113a8cde32ddce8d204041bd9d6c8bc7ca17aeb1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiNTI2YjJhYjk1Nzk0MGQ1YzA3ZDMyNDBhNjJkZGUyZWQ4NDdmZTlkYTAwZTIxMjllOTZhZmY0ODZjMmM4OTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiMjc1Y2EyNjIxYWYyYTE2NTc5NTM5MTViNDI2NTI4MGY2ZTMzZDNjZDJkYmZhMTBjMWZiN2Y1NzMxODBjODAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA0YTBhY2QzMTZkYmIzNzhkZmFlNzQ0YmZkY2Q0NDkyYTc0MjgzZWI4MDlhYjIxNWEwNDY4ZGQ1MTVmZjU3MmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjExMDM5MDA5YzVkNDEwMjg3MGFkYWNjYjVmZDhkOWYwNThiZjcyYWE3N2I3YzdmZDAyNTNkYTllNzJlNDQyNTkifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/operator_admin.rs#L297-L424",
+          "version": "repo-lines-v1:sha256:f8c4faf3144dbf348ba09d421481c32f1e4a2dad888f6f1ef76f68344cf8f62e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyZDk4MGU2MTllZWQ1M2VmZGQ4OGU2ZGE0ZjY0NzI5ZWVjODY2MmMzNzM0ZjUwZWEyODM1NDIyYjgzYjY0NjBmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5NjEyYWNmOTE1ODdmMzk3NWFkZjY3MmI4NmUzMWFjNTkzN2Y1YWFlM2EzMmNjZjU5ZmJlYjIzMDVhYWI5YjA1In0"
+        },
+        {
+          "resource": "repo://migrations/0016_operator_reporting_and_audit.sql#L39-L94",
+          "version": "repo-lines-v1:sha256:1b85e10209e4c03e1671f80f2325a8edefe3ba49bee2b488628e6e2db154399e:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3YmU2OGUyMDJkOTk4ZGVlMWFmNTk0NTBhN2ZmNzczYWQxYjhjNzkxZDM4YmVhY2FlMmNlOTZkYjgwMWY4ZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyOGU5MjFiOGNjYjJiZjc0ZDE0MzVkZDA3ZmQ2ZjdiNzMxM2ExZWJhZjM1OGIzM2Q0NWJkMTQ0MmYzNjZhMDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIyZWU2NGE5YjE4ZDk2OTkwY2E4YjVmY2IzZDkxMTk4OTgxMjg4YmRiNGI0MGE5OGUwNDQ2Y2VkYzYxZDgwYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T15:18:17.322Z"
+    "at": "2026-08-26T17:59:41.119Z"
   }
 }

@@ -92,6 +92,7 @@ if [[ "$ogs_mode" != "fast" ]]; then
   run_gate 18 "PostgreSQL + Rust API + QML smoke" ./scripts/dev.sh --smoke-test
   run_gate 19 "remote provider security conformance" ./scripts/test-provider-conformance.sh
   run_gate 20 "first-party remote-provider authority pilot" ./scripts/test-provider-authority-pilot.sh
+  run_gate 21 "platform operator backup and restore drill" ./scripts/test-operator-recovery.sh
 fi
 
 if ((ogs_failures > 0)); then

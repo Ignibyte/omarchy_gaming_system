@@ -20,6 +20,7 @@ Rust application
   ├─ auth and accounts
   ├─ personas and social connections
   ├─ conversations and notifications
+  ├─ reports and operator containment
   └─ server-authoritative game runtime
              ↓
 PostgreSQL
@@ -87,6 +88,17 @@ the first identity HTTP surfaces:
   account-scoped SQL for inventory and mutation.
 - public `GET /v1/personas/by-handle/{handle}` performs exact canonical handle
   lookup and returns only the explicit public profile fields.
+- authenticated `POST /v1/personas/{persona_id}/reports` owner-scopes the
+  reporter, accepts one bounded persona target/category/detail under a UUID,
+  caps each reporter at 25 open reports, and returns only an exact private
+  receipt. Reports do not generate sync hints or notify the subject.
+- the separate `omarchygs-admin` process is a PostgreSQL-local operator
+  adapter, not an HTTP route or reusable administrator credential. It lists a
+  bounded report queue and applies only reversible account suspension/
+  reactivation or terminal report disposition. Account/report root locks,
+  target-scoped operation UUIDs, same-transaction session revocation, and
+  insert-only audit serialize every action. Reactivation cannot resurrect old
+  tokens, and the stronger `disabled` state remains outside this command.
 - the keyboard-first QML access shell composes those unchanged REST endpoints
   through one finite connection/access/MFA/persona/home state machine. Its API
   object serializes one bounded request generation, rejects stale completions,
@@ -115,15 +127,18 @@ the first identity HTTP surfaces:
 - a dedicated QML social controller uses that same credential-owning API
   object only through a session-gated request function and completion signal;
   it never receives the bearer. Every connection, block, conversation,
-  history, send, and read path derives its actor from the currently selected
-  owned persona. Exact schema allowlists reject partial, extra, unknown, or
-  oversized social/inbox responses while plain-text presentation keeps peer
-  and system content out of the QML rich-text boundary.
+  history, send, read, and report path derives its actor from the currently
+  selected owned persona. Exact schema allowlists reject partial, extra,
+  unknown, or oversized social/inbox/report responses while plain-text
+  presentation keeps peer, report, and system content out of the QML rich-text
+  boundary.
 - social and inbox screens refresh authoritative REST state on entry or
   explicit player action. They expose exact-handle connection requests,
   accept/decline/cancel/remove and private block lifecycle, bounded
   conversations, ascending older-page recovery, body-only private sends, and
-  monotonic read acknowledgements. They deliberately do not start polling or
+  monotonic read acknowledgements, plus a bounded exact-handle report form that
+  clears player text only after an exact successful receipt. They deliberately
+  do not start polling or
   subscribe to `/sync/live`; concurrent live-hint lifetime and recovery remain
   a separately reviewed client transport slice.
 - a dedicated QML game controller follows the same bearer-owning session

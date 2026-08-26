@@ -34,6 +34,9 @@ sources:
   - id: openwiki-source-037d6d04880b10f227f0ac17
     resource: repo://scripts/setup-pipeline-tools.sh
 generated: {by: "codex", at: "2026-08-25T01:37:12.518Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-26T17:59:41.119Z
 ---
 
 # Codex work pipeline

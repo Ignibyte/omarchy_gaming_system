@@ -364,6 +364,50 @@ Bearer tokens grant account-level authority. Production transport must protect
 them with TLS, and a public deployment must add distributed login throttling;
 neither deployment control is supplied by the current local slice.
 
+## Report another persona
+
+`POST /v1/personas/{reporter_persona_id}/reports`
+
+Use a valid device Bearer token. The path persona must belong to the
+authenticated account. Resolve the intended subject through exact public
+handle lookup, then submit its UUID with a fresh operation UUID:
+
+```json
+{
+  "idempotency_key": "3b569db7-1aaa-4d8c-afbb-a995c56c4e44",
+  "subject_persona_id": "1f538dbf-bbe7-48fc-b9ca-31bc3af96f69",
+  "category": "harassment",
+  "detail": "Repeated unwanted messages after I asked them to stop."
+}
+```
+
+Categories are exactly `harassment`, `spam`, `cheating`, or `other`. Detail is
+trimmed, must contain 1–1,000 characters, and may contain ordinary tabs and line
+breaks but no other control characters. A persona cannot report itself. Each
+reporter may have at most 25 open reports; resolving or dismissing a report
+through the local operator workflow releases capacity.
+
+A new report returns `201 Created`, `Cache-Control: no-store`, and only this
+receipt:
+
+```json
+{
+  "id": "edceff52-2e75-4e3c-ae92-ab09b1f510f0",
+  "idempotency_key": "3b569db7-1aaa-4d8c-afbb-a995c56c4e44",
+  "status": "open",
+  "created_at": "2026-08-26T16:30:00.000Z"
+}
+```
+
+An exact retry returns the same receipt with HTTP 200, including after the
+report has been dispositioned. Reusing the UUID with another subject, category,
+or normalized detail returns HTTP 409 `report_idempotency_conflict`. Invalid
+input and self-reporting return HTTP 422 `invalid_report`; an absent subject or
+unowned/malformed reporter path returns HTTP 404 `persona_not_found` after
+Bearer authentication; the open-report cap returns HTTP 429
+`report_limit_reached`. No player route lists reports, exposes the subject's
+account, reveals other reporters, or returns operator action/audit state.
+
 ## QML account and persona onboarding
 
 The production QML connector composes the existing endpoints above without a
@@ -406,6 +450,14 @@ Signal Siege is presented by trusted platform QML through a narrow derived
 view model and the three allowlisted actions. This first-playable presenter is
 not a signed cartridge and never invents a cartridge origin or digest;
 publisher presentation remains restricted to verified installed packages.
+
+The Social screen also resolves an exact public handle and submits the bounded
+report above through the same credential-owning gateway. The QML controller
+retains one operation UUID while the same form is retried after a transport or
+protocol failure, validates the exact receipt, clears handle/detail only after
+success, and clears the full player authority on a valid `invalid_session`.
+Report text is presented as plain text and is never emitted through sync or
+WebSocket hints.
 
 ## Request a persona connection
 

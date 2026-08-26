@@ -47,7 +47,7 @@ server-authoritative game runtime below.
 - [x] End-to-end accessibility and visual polish across the complete player flow
 - [x] Native client-only Arch package, desktop launcher, exact payload
   inspection, and extracted-package smoke on Omarchy
-- Reporting, suspension, audit records, backups, and restore drill
+- [x] Reporting, suspension, audit records, backups, and restore drill
 - Invite-only external testing
 
 ## Owner-operated server ecosystem

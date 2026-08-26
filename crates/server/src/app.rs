@@ -36,6 +36,7 @@ use crate::mfa::{
 };
 use crate::personas::{self, CreatePersonaInput, Persona, PersonaError, UpdatePersonaInput};
 use crate::provider_games::{self, CallbackApplyOutcome, ProviderRuntime};
+use crate::reports::{self, CreateReportInput, PlayerReportReceipt, ReportError, ReportOutcome};
 use crate::sessions::{self, CreateSessionInput, DeviceSession, SessionCreation, SessionError};
 use crate::sync::{self, SyncError, SyncEvent, SyncEventKind, SyncHub};
 
@@ -167,6 +168,23 @@ struct UpdatePersonaRequest {
     display_name: Option<String>,
     bio: Option<String>,
     status_message: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CreateReportRequest {
+    idempotency_key: String,
+    subject_persona_id: String,
+    category: String,
+    detail: String,
+}
+
+#[derive(Serialize)]
+struct PlayerReportReceiptResponse {
+    id: String,
+    idempotency_key: String,
+    status: String,
+    created_at: String,
 }
 
 #[derive(Serialize)]
@@ -505,6 +523,7 @@ enum ApiError {
     Session(SessionError),
     Mfa(MfaError),
     Persona(PersonaError),
+    Report(ReportError),
     Connection(ConnectionError),
     Challenge(ChallengeError),
     Inbox(InboxError),
@@ -552,6 +571,12 @@ pub(crate) fn router_with_provider_runtime(
     game_registry: GameRegistry,
     provider_runtime: Option<ProviderRuntime>,
 ) -> Router {
+    let report_routes = Router::new()
+        .route(
+            "/v1/personas/{persona_id}/reports",
+            post(create_report).layer(DefaultBodyLimit::max(8 * 1024)),
+        )
+        .layer(middleware::map_response(inbox_no_store));
     let inbox_routes = Router::new()
         .route(
             "/v1/personas/{persona_id}/conversations",
@@ -685,6 +710,7 @@ pub(crate) fn router_with_provider_runtime(
             "/v1/personas/{persona_id}/blocks/{other_persona_id}",
             put(block_persona).delete(unblock_persona),
         )
+        .merge(report_routes)
         .merge(inbox_routes)
         .merge(sync_routes)
         .merge(game_routes)
@@ -1490,6 +1516,35 @@ async fn receive_provider_event(
     })
 }
 
+async fn create_report(
+    State(state): State<AppState>,
+    Path(persona_id): Path<String>,
+    headers: HeaderMap,
+    Json(request): Json<CreateReportRequest>,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    let outcome = reports::create_report(
+        &state.pool,
+        token,
+        &persona_id,
+        CreateReportInput {
+            idempotency_key: request.idempotency_key,
+            subject_persona_id: request.subject_persona_id,
+            category: request.category,
+            detail: request.detail,
+        },
+    )
+    .await
+    .map_err(ApiError::Report)?;
+    let (status, receipt) = match outcome {
+        ReportOutcome::Created(receipt) => (StatusCode::CREATED, receipt),
+        ReportOutcome::Existing(receipt) => (StatusCode::OK, receipt),
+    };
+    Ok(no_store(
+        (status, Json(player_report_receipt_response(receipt))).into_response(),
+    ))
+}
+
 async fn create_game_challenge(
     State(state): State<AppState>,
     Path(persona_id): Path<String>,
@@ -1687,6 +1742,15 @@ fn persona_response(persona: Persona) -> PersonaResponse {
         status_message: persona.status_message,
         created_at: persona.created_at,
         updated_at: persona.updated_at,
+    }
+}
+
+fn player_report_receipt_response(receipt: PlayerReportReceipt) -> PlayerReportReceiptResponse {
+    PlayerReportReceiptResponse {
+        id: receipt.id.to_string(),
+        idempotency_key: receipt.idempotency_key.to_string(),
+        status: receipt.status,
+        created_at: receipt.created_at,
     }
 }
 
@@ -2062,6 +2126,36 @@ impl IntoResponse for ApiError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "internal_error",
                 "persona operation failed",
+            ),
+            ApiError::Report(ReportError::Unauthorized) => (
+                StatusCode::UNAUTHORIZED,
+                "invalid_session",
+                "a valid device session is required",
+            ),
+            ApiError::Report(ReportError::PersonaNotFound) => (
+                StatusCode::NOT_FOUND,
+                "persona_not_found",
+                "persona was not found",
+            ),
+            ApiError::Report(ReportError::InvalidReport) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "invalid_report",
+                "report input is invalid",
+            ),
+            ApiError::Report(ReportError::IdempotencyConflict) => (
+                StatusCode::CONFLICT,
+                "report_idempotency_conflict",
+                "the report idempotency key was already used",
+            ),
+            ApiError::Report(ReportError::OpenLimitReached) => (
+                StatusCode::TOO_MANY_REQUESTS,
+                "report_limit_reached",
+                "the open report limit was reached",
+            ),
+            ApiError::Report(ReportError::Internal) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal_error",
+                "report operation failed",
             ),
             ApiError::Connection(ConnectionError::Unauthorized) => (
                 StatusCode::UNAUTHORIZED,

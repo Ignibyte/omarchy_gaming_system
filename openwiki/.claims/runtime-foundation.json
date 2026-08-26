@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1367edbb139e9cef81f2d86c873c928c041bd3e8e223dd85a12c68c0d70b9e80",
+  "pageVersion": "sha256:11f48fd692e4e1c71c8986dd4850548538a0dc27aed669696ab631e13126fc43",
   "claims": [
     {
       "id": "claim_d5e2f3a3ffed4330a12a21d8fb73de2d",
@@ -47,8 +47,8 @@
       "statement": "Account registration uses a thin Axum POST /v1/accounts handler with a 1 KiB body limit, delegates validation and insertion to the account module, and delegates Argon2id work to shared credentials.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/app.rs",
-          "version": "repo-file-v1:sha256:0ed903d873bcf2e65ae1437d744f00f1020df5f70a26aa3e779d2a04ac0ce931"
+          "resource": "repo://crates/server/src/app.rs#L650-L655",
+          "version": "repo-lines-v1:sha256:44683c80a9536d2b71392fc627e6aa9105abf43a7be06650e68fe27613cfefdc:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDI4Y2E0NzY2MGIwYjM0M2FiYmRhZTIyMDQ1NmU4YzhjY2ZhNGVlMTQ5YjYyZjdkNGZmNTJjNzAxZTY2OTI5OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTkwOWE1M2E2MThkMDI4ZTFkMzAwMGMwYTdhYmNlZWNiZTVmYjM3ZjRlNTExZWZlNDY2NDNmYWQ2ZTY2ODcyZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzk2OWYxYTVhODQxYjU1OTNlMzEzYmZlNmM5NmFiYzZlOGY1NjcxZTA5ZGYwZGZmYjFmODNmNjNjOGIwZTI1MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGM0MjlmNDI1NzI1YmIyOWE3MDEyNGM1Y2FkMTM3ZDliZDQ3M2VhODQzZjJmNjViNmFjY2E5YzhmNTQxY2QwNCJ9"
         },
         {
           "resource": "repo://crates/server/src/accounts.rs#L30-L63",
@@ -879,8 +879,8 @@
           "version": "repo-lines-v1:sha256:aa92795abff4c032f4a88c68bc9e6597747a486cc131080294323a5e5a1b3d17:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0OGYyYmQ1MGQ2MzEzMWZlMDVlMWQ3OWRiNGVkZjkzZjE5YjdhM2RkNzg0NzA5MThlMzFkMWNlMDc5ZThhYzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlZWQ0ZjAzZjdkMTM4ZDk3YzU1Yjg0MDAwNDRhZjM4ZTgxZjM1NTljMDZmZDMwYTgzOGUyMzhkZGZlZjMyM2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEyOTMxOWQ0NmRmODkwNjJiM2FhODBlNjcyMDk3ZGEwZWJjYTc0YjM3MDE1MGZmYjEwYTkyM2Y4MDVhMGM1ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNmMTYwZjEyNjQzZjk4NDM4MTU0ZGZlYmU2Njg2OGVlMjhmYTQ4MGZlMWM2NDJjN2Y2YzQ3Mjc4NTEwMGY5MGIifQ"
         },
         {
-          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L216-L332",
-          "version": "repo-lines-v1:sha256:eaf5ba90b7fcfb0295593c681596891cc5846084d85412537e4dc4e70cac452c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1Y2ExODYyYjg3M2U0ODdlY2RlMWQ3YzI3YThjZTk5NDcwNTQ5M2IwNWQ0ZTE2MDdiY2Q1MmIwYTVmZmI1ZmRmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0OGQzZmRhYzIxNTgyYzU2Yzc2Y2YxMGI3NDk5N2MxY2U5ZTFiMjA5N2U0YWM0ZmM2NDAxYmY0Yzc0NTk3NzY1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L216-L339",
+          "version": "repo-lines-v1:sha256:d052d1d102503f8cc0d8edd7c1efa1c33d6e0aeb9f1f74c5b6b107f6faf06e91:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1Y2ExODYyYjg3M2U0ODdlY2RlMWQ3YzI3YThjZTk5NDcwNTQ5M2IwNWQ0ZTE2MDdiY2Q1MmIwYTVmZmI1ZmRmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0OGQzZmRhYzIxNTgyYzU2Yzc2Y2YxMGI3NDk5N2MxY2U5ZTFiMjA5N2U0YWM0ZmM2NDAxYmY0Yzc0NTk3NzY1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIn0"
         }
       ]
     },
@@ -905,10 +905,72 @@
           "version": "repo-lines-v1:sha256:19565dcf0e5d0dceb51497e2a39837d2aef526240a199a9765ae8820ed18661a:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTE3YmY3YzVjZGVjYzNmYjI0NTUxMDMyODA1MjRjM2FiOWY0ZDE5ODcwZDk5ZmM0MGVmZWJhNGZjZWYwOWY2OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNWZjMWFmZDc0NWQzMWMyNGQ2NDJhNTUxOTg3ZmFkY2ExZmIzOWI3ZDM0MmJmOTY1ZGVmY2I5NTZiYjdkMmUwYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDEzYmE5ZmIzODRiODg0MWM2ZTU5MDNkYTFhOGYyZjc4ZjA5ZWFmNzM0M2MwNTc2YWYzMTU3ZjUxODYwOWFmYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         }
       ]
+    },
+    {
+      "id": "claim_126e149fd18f4466bb999386b4d910db",
+      "statement": "Report creation authenticates before owner-scoping the reporter persona, locks that persona to serialize replay and open-cap admission, rejects self or absent targets, and persists one of four fixed categories with bounded control-safe detail.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/reports.rs#L43-L149",
+          "version": "repo-lines-v1:sha256:9d9e0c3bd786f0bce8b93db537f48085fb9da4010ea5c637ed497f140934ec44:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwZDA5OTVmMTM5NmY0ZDlmMTQxYzRkOTExN2U1ZDJhZWEzM2QxMzdiMDRjZjY4YTI0ZTk5NGI3NzIzNjY2NWFjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkNzNiNzdhMzdiYzFlOWM5MTliZTI4MjZkNGI0OTFkZjljMGFmNDNhMDQwYmUyYmRjNDIxYTU0MDk3OTk3NTA1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmNGE0OGQ0M2M5Zjk4YTgwZDIwZTViZWY1YmY1NGVlZjMzMGJhODU3NzJkMDY3YmRhZjUwMzliZjE0MjdhYWI4In0"
+        },
+        {
+          "resource": "repo://crates/server/src/reports.rs#L185-L203",
+          "version": "repo-lines-v1:sha256:c76b615a5fd1d4a727d83f7946e8b14a279e09c2551afd2553dc506dc31794a9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3YjA1MDllYjc3NWM1MDlhMzYxNjYzODBjODRkMTAzNzAyYWE1MDhjMWZkZjEzNWQ5ZDEzM2VjOTUyYjk4NGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiMDhkZDdkZTFjNDU2NzBhNmM5ODJiZDU4OGZhOGY4NWU5YWY5OTgzMDkxMjA0ZjI4YzVkYTVkYTk4OWQ5NzgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a7ff5bd85c6649bb990a928ace62abd0",
+      "statement": "Migration 0016 retains persona reports, enforces reporter-scoped idempotency and terminal timestamps, denies report deletion, and makes operator audit rows append-only with exactly one account or report target.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0016_operator_reporting_and_audit.sql#L1-L94",
+          "version": "repo-lines-v1:sha256:8e7dffdfd68dad57c8c84de911cbd4af845b0626e2359efb6ff91f58faad9ff4:eyJzZWxlY3RlZExpbmVDb3VudCI6OTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliZjNlMGI1NDk4ZGVhZTk4ZjA5OGRmODhiMjUxNzQzNDliMjljMzNmMmQzN2UwMmI4ZDViZjNhODBmNmZkY2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyOGU5MjFiOGNjYjJiZjc0ZDE0MzVkZDA3ZmQ2ZjdiNzMxM2ExZWJhZjM1OGIzM2Q0NWJkMTQ0MmYzNjZhMDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f8117758b9d6406fac853593bf2e703e",
+      "statement": "Account suspension and report disposition lock their target roots and append audit in the same transaction; suspension revokes every live session, reactivation never clears revocation, disabled accounts are denied, and report closure is terminal.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/operator_admin.rs#L297-L424",
+          "version": "repo-lines-v1:sha256:f8c4faf3144dbf348ba09d421481c32f1e4a2dad888f6f1ef76f68344cf8f62e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyZDk4MGU2MTllZWQ1M2VmZGQ4OGU2ZGE0ZjY0NzI5ZWVjODY2MmMzNzM0ZjUwZWEyODM1NDIyYjgzYjY0NjBmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWU3NjM1NWNmMTE5OTQ4MGMzZjk5ODM2YjE0ODZjODQxZDg5MWZhYWQ5MDRjNjA4ZTA5MzAyMmQzNzU3YWVlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5NjEyYWNmOTE1ODdmMzk3NWFkZjY3MmI4NmUzMWFjNTkzN2Y1YWFlM2EzMmNjZjU5ZmJlYjIzMDVhYWI5YjA1In0"
+        }
+      ]
+    },
+    {
+      "id": "claim_31005cca6d3a440898ce680f7bfe44dd",
+      "statement": "The local sysop executable reads PostgreSQL authority only from DATABASE_URL, accepts bounded report queries or one bounded non-symlink regular JSON command file, emits machine-readable success, and exposes only stable error codes on failure.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/bin/omarchygs-admin.rs#L20-L115",
+          "version": "repo-lines-v1:sha256:2b9b74c5e9157998149a161594340d530e55bf34044886c46d48f9fe6dd6a22f:eyJzZWxlY3RlZExpbmVDb3VudCI6OTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExZDA2ZTA0OGNkMjcyNzM4ZDgzN2IwYzBlYzZhYWIwYjAzMTQ1N2U0NzVmZDQ5YWJiY2JhZmM1ZjczYzAyMGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkxZjYyYWQ2ZjBkODBmYTQ3MjU3ZThiNmZlYzk3MmM2ODY0MzkxZjM5MjdiOGJhZTEzNjU0ZjAyMmVhMzU0ZDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_419d736c033247649bd051da679d7ab8",
+      "statement": "The QML social controller keeps report submission behind the bearer-owning request gateway, validates exact lookup and receipt documents, and preserves the operation UUID only for the same uncertain submission.",
+      "evidence": [
+        {
+          "resource": "repo://client/qml/SocialController.qml#L99-L136",
+          "version": "repo-lines-v1:sha256:a8218632dc5f987f0b2a51319f273f1f43938b8aa2ff8b71ce1f7ec79a3bb9b9:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzNTFiYzA3ZTZlZDU1YTg1MmI2NjJhMmNkY2VlZWMwMjRlZDM4ZDhkYWMwYTc5N2Q3NGM0MDYzOTQ1OTU0ZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwZGViOTM1ZDQ1OGVlYWVlMTJlNWYwYzFhNWViODc2NWY1YWY3ZWM3OThjZjhlYmJkZDhhNzZhYjU1ZjViNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1NTBiMzA1NzMyYTg2NjdkY2EwMWZiNTdiY2JhNThiMWExY2Y5NzlkYTQ3NmYyYjk0MDgzZWEwMmNhMWJmNDUifQ"
+        },
+        {
+          "resource": "repo://client/qml/SocialController.qml#L309-L333",
+          "version": "repo-lines-v1:sha256:500ad3f4c8f8064d8a3c349b3fd6892feabad937ff12fcdbdeb5a1b8acceb5fe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBhZGU5NGM3N2M2MGFlYzAxNjlmMmJmMTFiNTk4M2NlYmJhZTRmYzdlNGQ1YzQ4YWRiNTUyNTQ5YzFiZTJkNmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdjOWQwZGUyYzllZGI1NjMwYmIyMTJkZWYyZjk4OWRhYjljMzFlZWRlOTVhNzU5M2I2NGYwYjg3YTJkNmRlN2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRlYWY2YjBjMTNjZmY0YzEwOGU0NzAzMzlhYjUxY2U1NGFjMDkxZmUxODViM2IxMmQwYjA1OTkzYjczZTExMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxZjIxNzAyM2ZiYzZmNTE0YTc0NjBmNmVjMGFhMDU4M2Y1MDM1MWNmYzNjY2JlMmQ4MzQ5YzU5MDRiYTgxNmIifQ"
+        },
+        {
+          "resource": "repo://client/qml/SocialController.qml#L527-L545",
+          "version": "repo-lines-v1:sha256:d83878ea0d34d69d02dd7827d45d7eff913b7a35d77acc9739a50d9ef87e829c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0YWM1NjJiZmYyOWFkNTU0NDNiNzM5MTFlOTA4NjQ3NjEyYWMzM2EyY2QxZmQxZDMwMmYyZmI5NzI5M2RlN2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxNWZmMzZjNTM2OTE0MzE5ZjMyMGFlMzUwZTgwMDIyMWVlM2IxMjRmZDhhYThjN2ZhZDgxODI3MTZmZjI5NjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ3NGExMGJiNzY5MzdmYWM5MjBiMzJmNTJmMTAwNjA5Njc5NjViNTU4NDVlODBkOTc4OWE3YmUzZTAzNjZiNTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1MmVmMzE3NTE3NzkyNDllY2VhOWZmMTlmYWFiYmRjNmUzMzlkNGJjMGNmYzE4YTU5ZmU1M2Y3OTVmOWUzN2EifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T13:49:04.179Z"
+    "at": "2026-08-26T17:59:41.119Z"
   }
 }

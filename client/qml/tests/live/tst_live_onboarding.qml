@@ -96,6 +96,12 @@ TestCase {
             verify(social.connections.some(function(connection) {
                 return connection.persona.handle === peerHandle
             }))
+            verify(social.reportPersonaByHandle(
+                       peerHandle, "other", "QML live operator report"))
+            tryVerify(function() {
+                return !social.busy && social.loadState === "ready"
+                        && social.statusText === "Report submitted for operator review."
+            }, 10000, social.statusText + " // " + social.errorText)
 
             verify(controller.showPlayerScreen("inbox"))
             verify(social.refreshInbox())
