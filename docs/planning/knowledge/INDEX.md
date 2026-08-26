@@ -93,6 +93,9 @@ and in this register.
 | `PR-omarchy-gaming-system-inventory-callers-after-exact-contract-break-001` | After an intentional exact-schema break, inventory every production, fixture, script, and peer caller and execute the complete vertical slice. | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
 | `PR-omarchy-gaming-system-equalize-secret-replay-credential-work-001` | Once a bearer secret resolves a credential-linked row, perform the same password-verification work before combining any attacker-controlled identity predicate into denial. | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
 | `PR-omarchy-gaming-system-budget-readiness-for-measured-cold-path-001` | Bound process readiness with a deadline that covers measured cold migration under full-gate load plus margin, while retaining immediate process-death detection. | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `PR-omarchy-gaming-system-pin-qsettings-to-project-location-001` | Persistent QML state must use one explicit project-specific settings location and prove readback from a separate process under an isolated configuration root. | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
+| `PR-omarchy-gaming-system-preserve-qml-standardpaths-url-type-001` | Treat a QML `StandardPaths.writableLocation` result as a URL and append only the relative filename; never add a second URL scheme without inspecting the returned type. | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
+| `PR-omarchy-gaming-system-separate-database-tests-from-portable-loop-001` | Mark PostgreSQL-only tests with the repository's canonical ignore reason, then execute them through `scripts/test-database.sh` before relying on the portable fast gate. | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
 
 ## Register
 
@@ -303,3 +306,10 @@ and in this register.
 | `PR-omarchy-gaming-system-equalize-secret-replay-credential-work-001` | rule | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
 | `PR-omarchy-gaming-system-budget-readiness-for-measured-cold-path-001` | rule | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
 | `AD-omarchy-gaming-system-invite-only-account-admission-001` | decision | `../../architecture/system-overview.md` |
+| `BF-omarchy-gaming-system-qsettings-implicit-application-identity-001` | failure | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
+| `BF-omarchy-gaming-system-qsettings-url-prefix-assumption-001` | failure | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
+| `BF-omarchy-gaming-system-database-test-portable-gate-marker-001` | failure | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
+| `PR-omarchy-gaming-system-pin-qsettings-to-project-location-001` | rule | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
+| `PR-omarchy-gaming-system-preserve-qml-standardpaths-url-type-001` | rule | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
+| `PR-omarchy-gaming-system-separate-database-tests-from-portable-loop-001` | rule | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
+| `AD-omarchy-gaming-system-stable-server-discovery-and-isolated-profiles-001` | decision | `../../architecture/system-overview.md` |

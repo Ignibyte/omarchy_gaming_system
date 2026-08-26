@@ -154,6 +154,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         SyncHub::new(),
         GameRegistry::empty(),
         Some(runtime),
+        std::sync::Arc::from(crate::config::DEFAULT_SERVER_NAME),
     );
     let callback_server = spawn_callback_server(
         callback_address,

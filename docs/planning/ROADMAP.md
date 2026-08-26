@@ -55,7 +55,7 @@ server-authoritative game runtime below.
 
 ## Owner-operated server ecosystem
 
-- [ ] Stable server identity and capability discovery plus saved, isolated
+- [x] Stable server identity and capability discovery plus saved, isolated
   client profiles for multiple independent OmarchyGS communities
 - [ ] Server-admin marketplace synchronization, review metadata, exact release
   import, catalog activation, lifecycle policy, and rollback controls

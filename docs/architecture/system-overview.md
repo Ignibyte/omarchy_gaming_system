@@ -296,6 +296,14 @@ prefixes, so legacy sessions require no schema migration and still follow the
 same expiry and revocation rules. Forward-only migrations and completed
 planning records retain their historical names.
 
+Each database now also owns exactly one random immutable server UUID. The
+public discovery endpoint combines it with the operator-configured display
+name and a deterministic protocol/capability document. The flagship client
+stores only that public metadata for multiple canonical origins, clears all
+live authority before an origin change, and pins remembered origins to their
+UUID. These profiles are isolated server choices, not federation or shared
+identity.
+
 ## Portable game direction
 
 The accepted [OmarchyGS Game Cartridge](game-cartridges.md) model lets

@@ -3,8 +3,6 @@ type: "Reference"
 title: "Product and architecture boundaries"
 openwiki_generated: true
 sources:
-  - id: openwiki-source-0bb8016edf4f4744d3a09cf4
-    resource: repo://bin/gate.sh
   - id: openwiki-source-0d99cc708822fd795c83ba12
     resource: repo://client/qml/cartridge/CartridgePreview.qml
   - id: openwiki-source-c566a55d52a9744f7b26b7c4
@@ -15,6 +13,8 @@ sources:
     resource: repo://client/qml/GameController.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
+  - id: openwiki-source-7ea06d71b0299905dc0706ce
+    resource: repo://client/qml/ServerProfiles.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
   - id: openwiki-source-37af4c6b51c86b62db25f85f
@@ -69,21 +69,21 @@ sources:
     resource: repo://docs/architecture/system-overview.md
   - id: openwiki-source-36d583174a7a0018316f71c7
     resource: repo://docs/operators/owner-operated-servers.md
-  - id: openwiki-source-cf57125ee481ca29c99adcb8
-    resource: repo://docs/operators/private-alpha.md
   - id: openwiki-source-c3d1d450d3a3561b368e5307
     resource: repo://docs/planning/ROADMAP.md
   - id: openwiki-source-85dba8f87dd5947de337aca5
     resource: repo://docs/product-charter.md
   - id: openwiki-source-674113ba65eebb6f842b2dda
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
-  - id: openwiki-source-75e44c1b77422917d3f6c324
-    resource: repo://migrations/0017_invite_only_registration.sql
+  - id: openwiki-source-4331166a21e12c8c40994c1e
+    resource: repo://migrations/0016_operator_reporting_and_audit.sql
+  - id: openwiki-source-29dc4177717fc3b17f932290
+    resource: repo://migrations/0018_server_identity.sql
   - id: openwiki-source-8df9ad1a3495f8360740ff03
     resource: repo://scripts/test-game-cartridge-sdk.sh
-  - id: openwiki-source-a0a026a4d434d1b48884aa8e
-    resource: repo://scripts/test-private-alpha.sh
-generated: {by: "codex", at: "2026-08-26T19:56:05.892Z"}
+  - id: openwiki-source-e08dc6155c081d7928029e27
+    resource: repo://scripts/test-operator-recovery.sh
+generated: {by: "codex", at: "2026-08-26T21:07:26.522Z"}
 ---
 
 # Product and architecture boundaries
@@ -191,9 +191,13 @@ Platform backup is a separate operator responsibility from cursor recovery.
 The implemented drill restores the PostgreSQL application schema and
 representative identity, social, inbox, game, report, suspension, and audit
 state into an isolated database, then starts the production server and proves a
-pre-suspension token remains invalid. `OGS_MFA_ENCRYPTION_KEY` is outside the
-database and must be protected and restored separately. Provider authority
-uses its own database and independent recovery procedure.
+pre-suspension token remains invalid. It also requires the restored server's
+public UUID to match the source, because that continuity identity belongs to
+the platform database. Copying or forking the database therefore copies the
+UUID too; intentional fork or rotation tooling remains future work.
+`OGS_MFA_ENCRYPTION_KEY` is outside the database and must be protected and
+restored separately. Provider authority uses its own database and independent
+recovery procedure.
 
 ## Ordered identity work
 
@@ -225,12 +229,15 @@ recovery without treating WebSocket delivery as durable truth. Door Legends v1
 adds one operator-pinned remote authority pilot with platform-owned result and
 achievement projections. Player reporting, the database-local report and invitation queues,
 reversible account containment, immutable platform audit, and an isolated
-platform backup/restore proof are also implemented. Gate stage 22 proves the
+platform backup/restore proof are also implemented. The public discovery
+contract and QML client now provide stable UUID continuity, protocol/capability
+negotiation, and bounded public-only profiles for selecting independent
+communities without sharing credentials or persona authority. Gate stage 22 proves the
 software path for private-alpha admission, but it does not substitute for the
 first human event's documented issue, trusted delivery, onboarding, gameplay,
-safety, and evidence sequence. Remote administration,
-signed-cartridge main-client launch, and external-provider onboarding remain
-later slices.
+safety, and evidence sequence. Federation, server identity fork/rotation,
+remote administration, marketplace synchronization, signed-cartridge
+main-client launch, and external-provider onboarding remain later slices.
 
 The current server is a local development slice. Bearer tokens require
 production TLS in transit, and public login requires distributed attempt
@@ -313,6 +320,11 @@ community trust domain. Its standard server owns the accounts, personas,
 social state, catalog and launch policy, platform envelopes, projections,
 audit, and recovery created there. Compatible servers do not implicitly share
 identity, moderation, or history; federation remains a separate future design.
+The official client can now save and explicitly select up to sixteen exact
+public-only profiles. A remembered canonical origin must present the same UUID
+before account access, and switching origins clears all live bearer, MFA,
+username, and persona authority before a request. These profiles are isolated
+connection choices, not a global account or federated community layer.
 
 The planned marketplace is distribution and review infrastructure rather than
 a global gameplay or catalog authority. Publisher integrity, optional

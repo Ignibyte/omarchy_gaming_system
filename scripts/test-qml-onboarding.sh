@@ -86,6 +86,9 @@ chmod 0700 "$ogs_config_dir"
 exec 9>"$ogs_config_dir/fixture.lock"
 flock 9
 start_fixture normal normal
+start_fixture server_two server_two
+start_fixture identity_changed identity_changed
+start_fixture incompatible incompatible
 start_fixture malformed malformed
 start_fixture wrong_identity wrong_identity
 start_fixture slow slow
@@ -94,18 +97,38 @@ start_fixture oversized oversized
 export QT_QPA_PLATFORM=offscreen
 export QT_QUICK_BACKEND=software
 export QML_XHR_ALLOW_FILE_READ=1
+export XDG_CONFIG_HOME="$ogs_temp_dir/xdg-config"
+mkdir -p "$XDG_CONFIG_HOME"
+chmod 0700 "$XDG_CONFIG_HOME"
 
 jq -nc \
   --arg server_url "${ogs_fixture_urls[normal]}" \
+  --arg server_two_url "${ogs_fixture_urls[server_two]}" \
+  --arg identity_changed_url "${ogs_fixture_urls[identity_changed]}" \
+  --arg incompatible_url "${ogs_fixture_urls[incompatible]}" \
   --arg malformed_url "${ogs_fixture_urls[malformed]}" \
   --arg wrong_identity_url "${ogs_fixture_urls[wrong_identity]}" \
   --arg slow_url "${ogs_fixture_urls[slow]}" \
   --arg oversized_url "${ogs_fixture_urls[oversized]}" \
-  '{server_url: $server_url, malformed_url: $malformed_url,
+  '{server_url: $server_url, server_two_url: $server_two_url,
+    identity_changed_url: $identity_changed_url, incompatible_url: $incompatible_url,
+    malformed_url: $malformed_url,
     wrong_identity_url: $wrong_identity_url, slow_url: $slow_url,
     oversized_url: $oversized_url}' \
   | python3 "$ogs_root/client/qml/tests/fixture_server.py" \
       --write-config "$ogs_fixture_config"
+
+"$ogs_qml_test_runner" \
+  -input "$ogs_root/client/qml/tests/profiles-write" \
+  -import "$ogs_root/client/qml" \
+  -eventdelay 0 \
+  -keydelay 0
+
+"$ogs_qml_test_runner" \
+  -input "$ogs_root/client/qml/tests/profiles-read" \
+  -import "$ogs_root/client/qml" \
+  -eventdelay 0 \
+  -keydelay 0
 
 "$ogs_qml_test_runner" \
   -input "$ogs_root/client/qml/tests/fixture" \
@@ -113,7 +136,7 @@ jq -nc \
   -eventdelay 0 \
   -keydelay 0
 
-for ogs_name in normal malformed wrong_identity slow oversized; do
+for ogs_name in normal server_two identity_changed incompatible malformed wrong_identity slow oversized; do
   if ! curl --fail --silent "${ogs_fixture_urls[$ogs_name]}/__fixture__/status" \
     | jq -e '.violations == []' >/dev/null; then
     echo "QML fixture $ogs_name observed a request-contract violation" >&2

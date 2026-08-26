@@ -10,6 +10,9 @@ QtObject {
     property string suggestedUsername: ""
     property string statusText: "Choose a server to begin."
     property string errorText: ""
+    readonly property var serverProfiles: profileStore.profiles
+    property var currentServer: null
+    property string selectedProfileId: ""
     property bool busy: api.requestInFlight
     property var personas: []
     property var selectedPersona: null
@@ -27,6 +30,10 @@ QtObject {
     property string _pendingUsername: ""
     property string _deviceName: "Omarchy QML"
     property int _expectedGeneration: 0
+    property string _expectedServerId: ""
+    property bool _rememberServer: false
+
+    property ServerProfiles _profileStore: ServerProfiles { id: profileStore }
 
     property ApiClient _api: ApiClient {
         id: api
@@ -44,11 +51,15 @@ QtObject {
     }
 
     function initialize(candidate) {
-        connectToServer(candidate || serverUrl)
+        connectToServer(candidate || serverUrl, false)
     }
 
-    function connectToServer(candidate) {
+    function connectToServer(candidate, remember) {
         _clearAuthority()
+        currentServer = null
+        selectedProfileId = ""
+        _expectedServerId = ""
+        _rememberServer = remember === true
         errorText = ""
         statusText = "Checking the server..."
         state = "connection"
@@ -61,12 +72,48 @@ QtObject {
             return false
         }
         serverUrl = configured.url
-        _expectedGeneration = api.request("health", "GET", "/health", null, false)
+        const remembered = profileStore.profileForOrigin(serverUrl)
+        if (remembered !== null) {
+            _expectedServerId = remembered.server_id
+            selectedProfileId = remembered.server_id
+        }
+        _expectedGeneration = api.request(
+                    "discovery", "GET", "/.well-known/omarchygs", null, false)
         return _expectedGeneration !== 0
     }
 
+    function connectSavedProfile(index) {
+        if (!Number.isInteger(index) || index < 0 || index >= serverProfiles.length || busy)
+            return false
+        const profile = serverProfiles[index]
+        const started = connectToServer(profile.origin, false)
+        if (started) {
+            _expectedServerId = profile.server_id
+            selectedProfileId = profile.server_id
+        }
+        return started
+    }
+
+    function removeServerProfile(index) {
+        if (!Number.isInteger(index) || index < 0 || index >= serverProfiles.length)
+            return false
+        const removed = serverProfiles[index]
+        _clearAuthority()
+        if (!profileStore.removeProfile(index))
+            return false
+        if (selectedProfileId === removed.server_id) {
+            selectedProfileId = ""
+            currentServer = null
+        }
+        state = "connection"
+        connectionState = "idle"
+        statusText = "Saved server removed."
+        errorText = ""
+        return true
+    }
+
     function retryHealth() {
-        return connectToServer(serverUrl)
+        return connectToServer(serverUrl, false)
     }
 
     function showServerConfiguration() {
@@ -247,16 +294,44 @@ QtObject {
         }
         const document = parsed.document
 
-        if (operation === "health") {
-            if (status === 200 && _validHealth(document)) {
+        if (operation === "discovery") {
+            const discovery = status === 200 ? _validatedDiscovery(document) : {"ok": false}
+            if (status === 200 && discovery.ok) {
+                if (discovery.incompatible) {
+                    state = "connection"
+                    connectionState = "incompatible"
+                    statusText = "Server protocol is incompatible."
+                    errorText = "This client requires OmarchyGS protocol 1 onboarding support."
+                    return
+                }
+                if (_expectedServerId !== ""
+                        && discovery.profile.server_id !== _expectedServerId) {
+                    state = "connection"
+                    connectionState = "identity_mismatch"
+                    statusText = "Saved server identity changed."
+                    errorText = "Remove the saved server before trusting this replacement."
+                    return
+                }
+                if ((_rememberServer || _expectedServerId !== "")
+                        && !profileStore.saveProfile(discovery.profile)) {
+                    state = "connection"
+                    connectionState = "profile_error"
+                    statusText = "Server profile was not saved."
+                    errorText = "Remove a conflicting or unneeded saved server and try again."
+                    return
+                }
+                currentServer = discovery.profile
+                selectedProfileId = discovery.profile.server_id
                 connectionState = "ready"
                 state = "access"
                 accessMode = "sign_in"
-                statusText = "Server ready. Sign in or create an account."
+                statusText = discovery.profile.server_name + " ready. Sign in or create an account."
                 errorText = ""
             } else {
-                connectionState = "protocol_error"
-                statusText = "The server did not identify as OmarchyGS."
+                state = "connection"
+                connectionState = status === 503 ? "offline" : "protocol_error"
+                statusText = status === 503 ? "Server discovery unavailable."
+                                           : "The server did not identify as OmarchyGS."
                 errorText = "Check the address or try again."
             }
             return
@@ -354,7 +429,7 @@ QtObject {
               : transportError === "unexpected_redirect"
                 ? "The server redirected outside the selected endpoint."
                 : "The server could not be reached."
-        if (operation === "health") {
+        if (operation === "discovery") {
             connectionState = "offline"
             state = "connection"
             statusText = "Server offline."
@@ -366,7 +441,7 @@ QtObject {
     }
 
     function _handleProtocolFailure(operation) {
-        if (operation === "health") {
+        if (operation === "discovery") {
             state = "connection"
             connectionState = "protocol_error"
             statusText = "The server returned invalid JSON."
@@ -413,6 +488,8 @@ QtObject {
         api.cancel()
         api.clearBearer()
         _clearMfa()
+        suggestedUsername = ""
+        _pendingUsername = ""
         personas = []
         selectedPersona = null
         _expectedGeneration = 0
@@ -450,11 +527,48 @@ QtObject {
         }
     }
 
-    function _validHealth(document) {
-        return api.exactKeys(document, ["service", "version", "status", "database"])
-                && document.service === "omarchy-gaming-system"
-                && _boundedString(document.version, 64)
-                && document.status === "ok" && document.database === "ok"
+    function _validatedDiscovery(document) {
+        if (!api.exactKeys(document, ["service", "server_id", "server_name",
+                                      "protocol_version", "capabilities"])
+                || document.service !== "omarchy-gaming-system"
+                || !_validUuid(document.server_id)
+                || !_boundedPublicString(document.server_name, 64, 1)
+                || !Number.isInteger(document.protocol_version)
+                || !Array.isArray(document.capabilities)
+                || document.capabilities.length > 32)
+            return {"ok": false}
+        let previous = ""
+        for (let index = 0; index < document.capabilities.length; index++) {
+            const capability = document.capabilities[index]
+            if (typeof capability !== "string"
+                    || !/^[a-z0-9][a-z0-9.-]{0,63}$/.test(capability)
+                    || (index > 0 && previous >= capability))
+                return {"ok": false}
+            previous = capability
+        }
+        const required = ["accounts.invite-registration.v1",
+                          "auth.device-sessions.v1", "identity.personas.v1"]
+        const incompatible = document.protocol_version !== 1
+                || !required.every(function(capability) {
+                    return document.capabilities.indexOf(capability) !== -1
+                })
+        return {
+            "ok": true,
+            "incompatible": incompatible,
+            "profile": {
+                "origin": serverUrl,
+                "server_id": document.server_id,
+                "server_name": document.server_name,
+                "protocol_version": document.protocol_version,
+                "capabilities": document.capabilities.slice()
+            }
+        }
+    }
+
+    function _boundedPublicString(value, maximum, minimum) {
+        return _boundedString(value, maximum, minimum)
+                && value.trim() === value
+                && !/[\u0000-\u001f\u007f-\u009f]/.test(value)
     }
 
     function _validAccount(document) {

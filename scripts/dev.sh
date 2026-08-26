@@ -157,6 +157,7 @@ docker compose up -d --wait db
 
 export DATABASE_URL="${DATABASE_URL:-postgres://omarchy_gaming_system:omarchy_gaming_system@127.0.0.1:5432/omarchy_gaming_system}"
 export OGS_BIND_ADDRESS="${OGS_BIND_ADDRESS:-127.0.0.1:8080}"
+export OGS_SERVER_NAME="${OGS_SERVER_NAME:-OmarchyGS Development}"
 export RUST_LOG="${RUST_LOG:-omarchy_gaming_system_server=debug,tower_http=debug}"
 
 mise exec -- cargo build -p omarchy-gaming-system-server --bin omarchygs-admin
@@ -190,6 +191,21 @@ if ! jq -e \
   '.service == "omarchy-gaming-system" and .status == "ok" and .database == "ok"' \
   <<<"$ogs_health_response" >/dev/null; then
   echo "Health smoke returned an unexpected gaming-system identity" >&2
+  exit 1
+fi
+
+ogs_discovery_response=$(curl --fail --silent \
+  "http://$OGS_BIND_ADDRESS/.well-known/omarchygs")
+if ! jq -e --arg server_name "$OGS_SERVER_NAME" '
+  (keys | sort) == ["capabilities", "protocol_version", "server_id", "server_name", "service"] and
+  .service == "omarchy-gaming-system" and
+  .server_name == $server_name and
+  .protocol_version == 1 and
+  (.server_id | test("^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")) and
+  (.capabilities == (.capabilities | sort | unique)) and
+  (.capabilities | contains(["accounts.invite-registration.v1", "auth.device-sessions.v1", "identity.personas.v1"]))
+' <<<"$ogs_discovery_response" >/dev/null; then
+  echo "Server discovery smoke returned an unexpected contract" >&2
   exit 1
 fi
 

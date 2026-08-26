@@ -9,6 +9,23 @@ TestCase {
 
     Component { id: controllerComponent; App.OnboardingController {} }
     Component { id: apiComponent; App.ApiClient {} }
+    Component { id: profileStoreComponent; App.ServerProfiles {} }
+
+    function capabilities() {
+        return [
+            "accounts.invite-registration.v1",
+            "auth.device-sessions.v1",
+            "auth.totp.v1",
+            "games.challenges.v1",
+            "games.sessions.v1",
+            "identity.personas.v1",
+            "social.connections.v1",
+            "social.private-inbox.v1",
+            "social.reporting.v1",
+            "sync.cursor.v1",
+            "sync.websocket-hints.v1"
+        ]
+    }
 
     function loadConfig() {
         const request = new XMLHttpRequest()
@@ -45,7 +62,7 @@ TestCase {
         compare(api.normalizeEndpoint("https://games.example.net:65536").ok, false)
     }
 
-    function test_health_protocol_failures() {
+    function test_discovery_protocol_failures() {
         let controller = controllerAt(fixtureConfig.malformed_url)
         tryCompare(controller, "connectionState", "protocol_error", 5000)
         compare(controller.hasSession, false)
@@ -57,7 +74,7 @@ TestCase {
         controller.destroy()
     }
 
-    function test_health_timeout_and_size_bound() {
+    function test_discovery_timeout_and_size_bound() {
         let controller = createTemporaryObject(controllerComponent, testCase)
         controller.requestTimeoutMilliseconds = 100
         controller.initialize(fixtureConfig.slow_url)
@@ -72,6 +89,101 @@ TestCase {
         tryCompare(controller, "connectionState", "offline", 5000)
         verify(controller.errorText.indexOf("exceeded") !== -1)
         controller.destroy()
+    }
+
+    function test_discovery_negotiates_unknown_and_incompatible_capabilities() {
+        let controller = controllerAt(fixtureConfig.server_two_url)
+        tryCompare(controller, "state", "access", 5000)
+        compare(controller.connectionState, "ready")
+        verify(controller.currentServer.capabilities.indexOf("future.arcade-mode.v1") !== -1)
+        controller.destroy()
+
+        controller = controllerAt(fixtureConfig.incompatible_url)
+        tryCompare(controller, "connectionState", "incompatible", 5000)
+        compare(controller.state, "connection")
+        verify(!controller.hasSession)
+        controller.destroy()
+    }
+
+    function test_profiles_are_isolated_and_identity_replacement_fails_closed() {
+        const controller = createTemporaryObject(controllerComponent, testCase)
+        verify(controller !== null)
+        controller._profileStore.clearProfiles()
+
+        verify(controller.connectToServer(fixtureConfig.server_url, true))
+        tryCompare(controller, "state", "access", 5000)
+        compare(controller.serverProfiles.length, 1)
+        verify(controller.signIn(
+                   "normal_user", "TEST-ONLY-registration-passphrase", "Omarchy QML"))
+        tryCompare(controller, "state", "personas", 5000)
+        verify(controller.hasSession)
+
+        verify(controller.connectToServer(fixtureConfig.server_two_url, true))
+        compare(controller.hasSession, false)
+        compare(controller.hasMfaChallenge, false)
+        compare(controller.personas.length, 0)
+        compare(controller.selectedPersona, null)
+        compare(controller.suggestedUsername, "")
+        tryCompare(controller, "state", "access", 5000)
+        compare(controller.serverProfiles.length, 2)
+        verify(controller._profileStore.serializedProfiles().indexOf("ogs1_") === -1)
+        verify(controller._profileStore.serializedProfiles().indexOf("password") === -1)
+
+        controller._profileStore.clearProfiles()
+        verify(controller._profileStore.saveProfile({
+            "origin": fixtureConfig.identity_changed_url,
+            "server_id": "15151515-1515-4515-8515-151515151515",
+            "server_name": "Pinned Fixture",
+            "protocol_version": 1,
+            "capabilities": capabilities()
+        }))
+        verify(controller.connectSavedProfile(0))
+        tryCompare(controller, "connectionState", "identity_mismatch", 5000)
+        compare(controller.state, "connection")
+        verify(!controller.hasSession)
+        compare(controller.serverProfiles.length, 1)
+        compare(controller.serverProfiles[0].server_id,
+                "15151515-1515-4515-8515-151515151515")
+        controller._profileStore.clearProfiles()
+        controller.destroy()
+    }
+
+    function test_hostile_profile_state_is_discarded_without_connection() {
+        const store = createTemporaryObject(profileStoreComponent, testCase)
+        verify(store !== null)
+        store.clearProfiles()
+        const base = {
+            "origin": fixtureConfig.server_url,
+            "server_id": "12121212-1212-4212-8212-121212121212",
+            "server_name": "Fixture Community",
+            "protocol_version": 1,
+            "capabilities": capabilities()
+        }
+
+        const withCredential = Object.assign({}, base, {"token": "ogs1_" + "A".repeat(43)})
+        store._settings.setValue("profiles", JSON.stringify([withCredential]))
+        store._settings.sync()
+        verify(!store.reload())
+        compare(store.profiles.length, 0)
+        compare(store.serializedProfiles(), "[]")
+
+        store._settings.setValue("profiles", JSON.stringify([base, base]))
+        store._settings.sync()
+        verify(!store.reload())
+        compare(store.profiles.length, 0)
+
+        store._settings.setValue("profiles", "[" + "x".repeat(17000) + "]")
+        store._settings.sync()
+        verify(!store.reload())
+        compare(store.profiles.length, 0)
+
+        const unsupported = Object.assign({}, base, {"protocol_version": 2})
+        store._settings.setValue("profiles", JSON.stringify([unsupported]))
+        store._settings.sync()
+        verify(!store.reload())
+        compare(store.profiles.length, 0)
+        store.clearProfiles()
+        store.destroy()
     }
 
     function test_malformed_success_and_authenticated_shape_fail_closed() {
@@ -221,10 +333,12 @@ TestCase {
                                           {"target": api, "signalName": "finished"})
         verify(api.configure(fixtureConfig.slow_url).ok)
         api.timeoutMilliseconds = 2000
-        const slowGeneration = api.request("slow", "GET", "/health", null, false)
+        const slowGeneration = api.request(
+                    "slow", "GET", "/.well-known/omarchygs", null, false)
         verify(slowGeneration > 0)
         verify(api.configure(fixtureConfig.server_url).ok)
-        const fastGeneration = api.request("fast", "GET", "/health", null, false)
+        const fastGeneration = api.request(
+                    "fast", "GET", "/.well-known/omarchygs", null, false)
         verify(fastGeneration > slowGeneration)
         tryCompare(spy, "count", 1, 5000)
         compare(spy.signalArguments[0][0], fastGeneration)

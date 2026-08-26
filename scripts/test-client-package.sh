@@ -236,9 +236,9 @@ env \
 ogs_fixture_status="$(curl --fail --silent "$ogs_fixture_url/__fixture__/status")"
 jq -e '
   .violations == [] and
-  .calls == ["GET /health", "GET /__fixture__/status"]
+  .calls == ["GET /.well-known/omarchygs", "GET /__fixture__/status"]
 ' <<<"$ogs_fixture_status" >/dev/null \
-  || fail "extracted client package violated the health request contract"
+  || fail "extracted client package violated the discovery request contract"
 
 echo "native Omarchy client package passed"
 printf 'OGS_CLIENT_PACKAGE_TEST artifact=%s sha256=%s runtime_files=%s\n' \

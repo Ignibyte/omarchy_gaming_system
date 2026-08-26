@@ -7,14 +7,14 @@ sources:
     resource: repo://bin/gate.sh
   - id: openwiki-source-cfb5585994628fc6aaff1dd4
     resource: repo://client/qml/cartridge/nodes/TrustedImageNode.qml
-  - id: openwiki-source-f73ad44f40942d16dc369861
-    resource: repo://client/qml/OnboardingController.qml
-  - id: openwiki-source-a89f426477ef71ce555d4a7e
-    resource: repo://client/qml/screens/AccessScreen.qml
-  - id: openwiki-source-93421eb71ebe4d41b6a9af26
-    resource: repo://client/qml/tests/fixture/tst_onboarding.qml
+  - id: openwiki-source-77962cc0ed2673a227f6eaee
+    resource: repo://client/qml/tests/fixture/tst_transport.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
+  - id: openwiki-source-02e110beb8feacd3eb92631d
+    resource: repo://client/qml/tests/profiles-read/tst_profiles_read.qml
+  - id: openwiki-source-9f9d6bb10dd10b1b90651868
+    resource: repo://client/qml/tests/profiles-write/tst_profiles_write.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
   - id: openwiki-source-fdf115002c4aabad0babec70
@@ -25,10 +25,12 @@ sources:
     resource: repo://crates/game-cartridge/tests/conformance.rs
   - id: openwiki-source-358b091c74e2027615ce8f4c
     resource: repo://crates/game-cartridge/tests/sdk_release.rs
+  - id: openwiki-source-fea3ada71e31ee06122151f5
+    resource: repo://crates/game-provider/tests/conformance.rs
+  - id: openwiki-source-522c1bcb889a85d7a91b25af
+    resource: repo://crates/game-provider/tests/registry.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
-  - id: openwiki-source-ba203ea2e600f294ab58ef02
-    resource: repo://crates/server/src/bin/omarchygs-admin.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
     resource: repo://crates/server/src/challenge_api_tests.rs
   - id: openwiki-source-9ba5739252220892895a7a47
@@ -37,18 +39,16 @@ sources:
     resource: repo://crates/server/src/game_api_tests.rs
   - id: openwiki-source-b2c7af59f511c4ed8a004fb0
     resource: repo://crates/server/src/inbox_api_tests.rs
-  - id: openwiki-source-94ddb58f2dc1a71ed1959533
-    resource: repo://crates/server/src/operator_admin.rs
   - id: openwiki-source-22753602a862c32d10560204
     resource: repo://crates/server/src/persona_api_tests.rs
-  - id: openwiki-source-5c708d75b561203e4ad4312a
-    resource: repo://crates/server/src/registration_api_tests.rs
+  - id: openwiki-source-1b621f94587f7516bb90c07a
+    resource: repo://crates/server/src/server_discovery_api_tests.rs
   - id: openwiki-source-76060b846b9222af2c790243
     resource: repo://crates/server/src/signal_siege_api_tests.rs
   - id: openwiki-source-46fb4135d6a71efad1062c0d
     resource: repo://crates/server/src/sync_api_tests.rs
-  - id: openwiki-source-617c314455b6ad7778b62ccf
-    resource: repo://crates/server/tests/operator_cli.rs
+  - id: openwiki-source-449de92825ee702b9aa05d2a
+    resource: repo://packaging/arch/client-runtime-files.txt
   - id: openwiki-source-6ef5cb9ff978eb09c62cd313
     resource: repo://scripts/build-client-package.sh
   - id: openwiki-source-1951c64828cbf175c78556c4
@@ -83,7 +83,7 @@ sources:
     resource: repo://scripts/test-provider-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
-generated: {by: "codex", at: "2026-08-26T19:56:05.892Z"}
+generated: {by: "codex", at: "2026-08-26T21:07:26.522Z"}
 ---
 
 # Development and validation
@@ -106,8 +106,10 @@ development convenience.
 The executable path uses the `omarchy-gaming-system-server` Cargo package,
 `OGS_BIND_ADDRESS`, the `omarchy_gaming_system` development database, and the
 gaming-system log target. Smoke mode requires `/health.service` to equal
-`omarchy-gaming-system` and requires newly issued bearer tokens to start with
-`ogs1_` before exercising authenticated operations.
+`omarchy-gaming-system`, then requires the exact public discovery service,
+UUID, protocol 1, development server name, and implemented capability set. It
+also requires newly issued bearer tokens to start with `ogs1_` before
+exercising authenticated operations.
 
 In smoke mode the script first requires public `GET /v1/games` to return
 exactly Signal Siege v1 and v2. It uses the real local operator executable to
@@ -145,8 +147,9 @@ requires ordered REST invalidations for the exercised social and inbox writes;
 it deliberately leaves the richer WebSocket matrix to the real-TCP integration
 suite.
 
-The QML client starts from a selectable server origin and requires exact healthy
-OmarchyGS identity before exposing registration or sign-in. It then supports
+The QML client starts from a direct or saved server origin and requires an exact
+OmarchyGS discovery document, protocol-1 onboarding capabilities, and any
+remembered UUID pin before exposing registration or sign-in. It then supports
 password or MFA authentication, owned-persona loading, persona creation or
 selection, and an authenticated home. The authenticated shell also exposes
 keyboard-first social, inbox, games, challenges, and gameplay routes for exact-
@@ -159,17 +162,21 @@ after a fifteen-second watchdog.
 
 `scripts/test-qml-onboarding.sh` is the focused client entrypoint. It owns a
 mode-0700 test configuration directory, forces deterministic headless Qt, and
-runs the real screens and controller against normal, malformed, wrong-identity,
-slow, and oversized fixture responders. Before Qt starts, it runs
+runs the real screens and controller against two compatible servers plus
+changed-identity, incompatible, malformed, wrong-service, slow, and oversized
+fixture responders. Before the main fixture, separate QML writer and reader
+processes prove two public profiles survive process restart in the isolated
+configuration location. Before Qt starts, it runs
 `scripts/check-qml-style.py`: the 33-file visual policy centralizes six-digit
 colors in `OgsTheme`, requires every visual `Text` block to select
 `Text.PlainText`, rejects automatic/rich text modes, and verifies the shared
-theme contract. The 41-case Qt corpus covers contrast, semantic headings and
+theme contract. The 44-case Qt corpus covers contrast, semantic headings and
 status, deterministic initial focus and reversible traversal, settled deferred
 focus before input, Escape authority, persistent keyboard and pointer exit,
 session preservation on window close, keyboard behavior, field bounds,
-endpoint admission, exact response shapes, conflicts, timeouts, response
-limits, request supersession, MFA terminal and local expiry, social inventories
+endpoint admission, exact discovery and capability negotiation, identity
+replacement, hostile profile state, authority isolation, conflicts, timeouts,
+response limits, request supersession, MFA terminal and local expiry, social inventories
 and actions, retry-safe report submission and hostile report receipts, private
 message history, pagination, send/read, plain-text rendering, game discovery
 and challenge lifecycle, authoritative solo/versus commands, exact retry
@@ -214,7 +221,7 @@ drift, invalid launcher Bash, and an invalid desktop entry.
 The builder computes source-revision, dirty-state, and aggregate-digest
 provenance and serializes `makepkg` through a private, owner-checked stable
 workspace so identical source on one Omarchy build host produces identical
-package bytes. The artifact installs only the exact 37-file QML inventory,
+package bytes. The artifact installs only the exact 38-file QML inventory,
 `/usr/bin/omarchygs`, one application-menu entry, and the provenance record.
 It depends on `qt6-declarative` and excludes the Rust server, PostgreSQL,
 migrations, test fixtures, provider code, credentials, and keys.
@@ -225,7 +232,7 @@ source fixtures; builds twice without changing Git status; compares the
 packages byte-for-byte; and checks exact Arch metadata, payload, types, modes,
 provenance, checksum, and desktop fields. It then extracts the artifact without
 `pacman -U` and launches packaged `Main.qml` through the real relocatable
-launcher against the bounded loopback health fixture under deterministic
+launcher against the bounded loopback discovery fixture under deterministic
 offscreen Qt.
 
 Useful commands:
@@ -273,7 +280,7 @@ The gate currently covers:
 7. the native client source contract in every mode plus two reproducible Arch
    builds, exact package inspection, and extracted production-QML smoke in
    diff/full modes;
-8. fifty ignored router tests against SQLx-managed PostgreSQL databases
+8. fifty-one ignored server tests against SQLx-managed PostgreSQL databases
    in diff/full modes;
 9. the live Signal Siege catalog, idempotent launch, bounded completed match,
    final replay/history/sync, health, registration, duplicate-conflict,
@@ -281,7 +288,7 @@ The gate currently covers:
    movement, connection, fail-closed unavailable-game challenge rejection,
    private inbox, player reporting, synchronization recovery, and block
    lifecycle, TOTP enrollment, challenged login, recovery replay rejection, MFA disablement,
-   session revocation, rejected-token, the 41-case hostile/accessibility QML
+   session revocation, rejected-token, the two-process profile proof and 44-case hostile/accessibility QML
    fixture corpus,
    real QML registration/persona, social/report/inbox, MFA/persona, and two-authority
    Signal Siege challenge/versus/recovery flows, and the standalone QML shell
@@ -311,10 +318,10 @@ suspend an account and resolve a report. It writes a private custom-format
 PostgreSQL dump, restores into the isolated target with `--exit-on-error` and
 `--no-owner`, and compares every public application-table count.
 
-The restored database must retain the account suspension, session revocation,
-report disposition, linked immutable audit, and representative platform
-history. The drill starts the production server on loopback against that
-restore and requires the pre-suspension raw token to fail with
+The restored database must retain the source server UUID, account suspension,
+session revocation, report disposition, linked immutable audit, and
+representative platform history. The drill starts the production server on
+loopback against that restore and requires the pre-suspension raw token to fail with
 `invalid_session`. Cleanup drops only the two exact validated database names;
 the ordinary development database is untouched. See
 `docs/operators/operator-safety-and-recovery.md` for production key custody,
@@ -324,7 +331,7 @@ backup protection, restore review, and current limitations.
 
 `scripts/test-private-alpha.sh` is gate 22. It creates a fresh isolated
 database, issues two invitations through the real local `omarchygs-admin`
-executable, and starts the production server after applying all 17 migrations.
+executable, and starts the production server after applying all 18 migrations.
 Its bounded startup wait allows up to 30 seconds for a cold migration path and
 fails immediately if the server process exits.
 
@@ -482,13 +489,15 @@ no-store failures, and concurrent send/read behavior. Four MFA integration
 tests prove encrypted pending enrollment, confirmation and
 status privacy, TOTP/recovery/challenge replay resistance, account inactivity,
 independent bounded challenge issuance, cross-challenge attempt locks, and
-dual-proof disablement with cleanup. Together with two registration and three
-session tests plus three persona tests, five game tests, seven challenge tests,
-and six synchronization tests, plus four Signal Siege cases, one Door Legends
-authority case, and two report cases, these make forty-seven PostgreSQL-backed
-server tests. Three additional operator-domain database tests cover the local
-queue, account containment, report disposition, concurrency, replay, and
-append-only audit; one integration test executes the real CLI adapter.
+dual-proof disablement with cleanup. Together with two account-registration
+router cases, three invitation-registration cases, three session tests, three
+persona tests, five game tests, seven challenge tests, six synchronization
+tests, four Signal Siege cases, one Door Legends authority case, two report
+cases, and one server-discovery case, these make fifty-one PostgreSQL-backed
+server tests. Five additional operator-domain database tests cover the local
+queues, account containment, invitation lifecycle, report disposition,
+concurrency, replay, and append-only audit; two integration tests execute the
+real CLI adapters.
 The synchronization cases
 exercise durable baseline/incremental/reset behavior, mutation-coupled event
 delivery, owner privacy, and real-TCP WebSocket authentication, hinting, frame
@@ -581,8 +590,9 @@ server, so absent or stale provenance fails closed.
   temporarily locked or ten live challenges already exist. Use
   `mfa_api_tests.rs` before changing those distinctions.
 - QML client failure: run `scripts/test-qml-onboarding.sh`; inspect the
-  selected endpoint, exact health identity, response-size/timeout/redirect
-  outcome, exact success or error shape, selected-persona gateway, game
+  selected endpoint, exact discovery identity and capabilities, saved UUID
+  expectation, profile parser, response-size/timeout/redirect outcome, exact
+  success or error shape, selected-persona gateway, game
   participant/cardinality and state invariants, and whether Bearer, MFA, social,
   or game authority was cleared on the terminal path. Use
   `scripts/dev.sh --smoke-test` when the fixture passes but the real migrated

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     Json, Router,
     body::Bytes,
@@ -37,6 +39,7 @@ use crate::mfa::{
 use crate::personas::{self, CreatePersonaInput, Persona, PersonaError, UpdatePersonaInput};
 use crate::provider_games::{self, CallbackApplyOutcome, ProviderRuntime};
 use crate::reports::{self, CreateReportInput, PlayerReportReceipt, ReportError, ReportOutcome};
+use crate::server_discovery;
 use crate::sessions::{self, CreateSessionInput, DeviceSession, SessionCreation, SessionError};
 use crate::sync::{self, SyncError, SyncEvent, SyncEventKind, SyncHub};
 
@@ -49,6 +52,7 @@ pub struct AppState {
     sync_hub: SyncHub,
     game_registry: GameRegistry,
     provider_runtime: Option<ProviderRuntime>,
+    server_name: Arc<str>,
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -563,7 +567,30 @@ pub(crate) fn router_with_runtime(
     sync_hub: SyncHub,
     game_registry: GameRegistry,
 ) -> Router {
-    router_with_provider_runtime(pool, mfa_cipher, sync_hub, game_registry, None)
+    router_with_provider_runtime(
+        pool,
+        mfa_cipher,
+        sync_hub,
+        game_registry,
+        None,
+        Arc::from(crate::config::DEFAULT_SERVER_NAME),
+    )
+}
+
+#[cfg(test)]
+pub(crate) fn router_with_server_name(
+    pool: PgPool,
+    mfa_cipher: MfaCipher,
+    server_name: Arc<str>,
+) -> Router {
+    router_with_provider_runtime(
+        pool,
+        mfa_cipher,
+        SyncHub::new(),
+        GameRegistry::empty(),
+        None,
+        server_name,
+    )
 }
 
 pub(crate) fn router_with_provider_runtime(
@@ -572,7 +599,11 @@ pub(crate) fn router_with_provider_runtime(
     sync_hub: SyncHub,
     game_registry: GameRegistry,
     provider_runtime: Option<ProviderRuntime>,
+    server_name: Arc<str>,
 ) -> Router {
+    let discovery_routes = Router::new()
+        .route("/.well-known/omarchygs", get(discover_server))
+        .layer(middleware::map_response(inbox_no_store));
     let registration_routes = Router::new()
         .route(
             "/v1/accounts",
@@ -652,6 +683,7 @@ pub(crate) fn router_with_provider_runtime(
 
     Router::new()
         .route("/health", get(health))
+        .merge(discovery_routes)
         .route("/v1/games", get(list_games))
         .route(
             "/v1/provider-events/{release_id}",
@@ -726,8 +758,31 @@ pub(crate) fn router_with_provider_runtime(
             sync_hub,
             game_registry,
             provider_runtime,
+            server_name,
         })
         .layer(TraceLayer::new_for_http())
+}
+
+async fn discover_server(State(state): State<AppState>) -> Response {
+    match server_discovery::document(
+        &state.pool,
+        &state.server_name,
+        state.provider_runtime.is_some(),
+    )
+    .await
+    {
+        Ok(document) => (StatusCode::OK, Json(document)).into_response(),
+        Err(_) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorEnvelope {
+                error: ErrorBody {
+                    code: "server_discovery_unavailable",
+                    message: "server identity is temporarily unavailable",
+                },
+            }),
+        )
+            .into_response(),
+    }
 }
 
 async fn register_account(

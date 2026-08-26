@@ -3,6 +3,46 @@
 Omarchy Gaming System uses versioned JSON endpoints for durable commands and queries.
 The server remains authoritative for validation and persistence.
 
+## Discover a server
+
+`GET /.well-known/omarchygs`
+
+This public unauthenticated endpoint returns `Cache-Control: no-store` and an
+exact compatibility document:
+
+```json
+{
+  "service": "omarchy-gaming-system",
+  "server_id": "58ee076d-0216-422c-b1e2-48ee7fa648bb",
+  "server_name": "OmarchyGS Community",
+  "protocol_version": 1,
+  "capabilities": [
+    "accounts.invite-registration.v1",
+    "auth.device-sessions.v1",
+    "auth.totp.v1",
+    "games.challenges.v1",
+    "games.sessions.v1",
+    "identity.personas.v1",
+    "social.connections.v1",
+    "social.private-inbox.v1",
+    "social.reporting.v1",
+    "sync.cursor.v1",
+    "sync.websocket-hints.v1"
+  ]
+}
+```
+
+The UUID is generated once by migration `0018`, is immutable in ordinary
+database operation, and survives PostgreSQL dump/restore. The public name is
+the independently changeable `OGS_SERVER_NAME`. Capabilities are unique and
+lexically ordered; `games.registered-provider.v1` is added only when that
+runtime is configured. The response contains no account, credential,
+provider-secret, database-location, or private operator data.
+
+If the singleton identity cannot be read, the endpoint returns `503` with
+`server_discovery_unavailable`. `/health` remains the operational liveness
+contract and is not a compatibility API.
+
 ## Register an account
 
 `POST /v1/accounts`

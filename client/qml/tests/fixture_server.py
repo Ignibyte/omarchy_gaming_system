@@ -46,6 +46,22 @@ CHALLENGE = "ogm1_" + "C" * 43
 CREATED_AT = "2026-08-25T20:00:00.000Z"
 EXPIRES_AT = "2099-08-25T20:05:00.000Z"
 INVITE_CODE = "ogsi_" + "I" * 43
+SERVER_ID = "12121212-1212-4212-8212-121212121212"
+SECOND_SERVER_ID = "13131313-1313-4313-8313-131313131313"
+REPLACEMENT_SERVER_ID = "14141414-1414-4414-8414-141414141414"
+DISCOVERY_CAPABILITIES = [
+    "accounts.invite-registration.v1",
+    "auth.device-sessions.v1",
+    "auth.totp.v1",
+    "games.challenges.v1",
+    "games.sessions.v1",
+    "identity.personas.v1",
+    "social.connections.v1",
+    "social.private-inbox.v1",
+    "social.reporting.v1",
+    "sync.cursor.v1",
+    "sync.websocket-hints.v1",
+]
 
 
 def persona(persona_id: str, handle: str, display_name: str) -> dict[str, Any]:
@@ -166,6 +182,45 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/__fixture__/reset-social":
             self.state.reset_social()
             self._json(200, {"ok": True})
+            return
+        if path == "/.well-known/omarchygs":
+            self._require_no_authorization("server discovery")
+            if self.state.mode == "slow":
+                time.sleep(0.6)
+            if self.state.mode == "malformed":
+                self._raw(200, b"{not-json", "application/json")
+                return
+            if self.state.mode == "oversized":
+                oversized = self._discovery_document(SERVER_ID, "Oversized Fixture")
+                oversized["padding"] = "x" * 300_000
+                self._json(200, oversized)
+                return
+            if self.state.mode == "wrong_identity":
+                document = self._discovery_document(SERVER_ID, "Wrong Service")
+                document["service"] = "not-omarchygs"
+                self._json(200, document)
+                return
+            if self.state.mode == "incompatible":
+                document = self._discovery_document(SERVER_ID, "Future Fixture")
+                document["protocol_version"] = 2
+                self._json(200, document)
+                return
+            if self.state.mode == "identity_changed":
+                self._json(200, self._discovery_document(
+                    REPLACEMENT_SERVER_ID, "Replacement Fixture"
+                ))
+                return
+            if self.state.mode == "server_two":
+                document = self._discovery_document(
+                    SECOND_SERVER_ID, "Second Fixture Community"
+                )
+                document["capabilities"].append("future.arcade-mode.v1")
+                document["capabilities"].sort()
+                self._json(200, document)
+                return
+            self._json(200, self._discovery_document(
+                SERVER_ID, "Fixture Community"
+            ))
             return
         if path == "/health":
             self._require_no_authorization("health")
@@ -858,6 +913,16 @@ class Handler(BaseHTTPRequestHandler):
             },
         }
 
+    @staticmethod
+    def _discovery_document(server_id: str, server_name: str) -> dict[str, Any]:
+        return {
+            "service": "omarchy-gaming-system",
+            "server_id": server_id,
+            "server_name": server_name,
+            "protocol_version": 1,
+            "capabilities": DISCOVERY_CAPABILITIES.copy(),
+        }
+
     def _require_no_authorization(self, context: str) -> None:
         if self.headers.get("Authorization") is not None:
             self.state.violate(f"{context} unexpectedly carried Authorization")
@@ -973,7 +1038,10 @@ def main() -> int:
         return 2
     port_file = Path(sys.argv[1])
     mode = sys.argv[2]
-    if mode not in {"normal", "slow", "malformed", "wrong_identity", "oversized"}:
+    if mode not in {
+        "normal", "server_two", "identity_changed", "incompatible", "slow",
+        "malformed", "wrong_identity", "oversized",
+    }:
         print(f"unsupported fixture mode: {mode}", file=sys.stderr)
         return 2
 

@@ -11,6 +11,7 @@ mod personas;
 mod provider_games;
 mod registration_invites;
 mod reports;
+mod server_discovery;
 mod sessions;
 mod sync;
 
@@ -32,6 +33,8 @@ mod provider_game_api_tests;
 mod registration_api_tests;
 #[cfg(test)]
 mod report_api_tests;
+#[cfg(test)]
+mod server_discovery_api_tests;
 #[cfg(test)]
 mod session_api_tests;
 #[cfg(test)]
@@ -88,6 +91,7 @@ async fn main() -> Result<()> {
             sync_hub,
             game_registry,
             provider_runtime,
+            Arc::from(config.server_name),
         ),
     )
     .with_graceful_shutdown(shutdown_signal())

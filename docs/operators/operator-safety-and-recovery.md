@@ -137,8 +137,11 @@ pg_restore --exit-on-error --no-owner \
 
 Before switching traffic, compare table counts and focused security/history
 state, start the production server against the isolated restore, prove revoked
-and suspended sessions remain denied, and exercise the operator immutability
-guards. A deployment switch should be an explicit, monitored infrastructure
+and suspended sessions remain denied, compare the public `server_id` from
+`/.well-known/omarchygs`, and exercise the operator/identity immutability guards.
+A restore of the same community must retain that UUID. A database fork creates
+two deployments claiming the same identity and is not a supported multi-server
+setup. A deployment switch should be an explicit, monitored infrastructure
 change with the old database retained read-only long enough for rollback.
 Schema rollback uses a later forward migration, not a down script.
 
@@ -153,7 +156,8 @@ It applies the embedded migrations through the production server, seeds
 representative identity/social/inbox/game/report state, drives the real sysop
 command, performs `pg_dump`/`pg_restore`, compares every public application
 table, checks linked audit and immutability, and rejects a pre-suspension token
-through the restored production server.
+through the restored production server. It also proves the singleton server
+UUID is exactly equal before and after the dump/restore.
 
 ## External key custody
 

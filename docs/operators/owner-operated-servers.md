@@ -1,9 +1,10 @@
 # Owner-operated OmarchyGS servers
 
-Status: product and trust direction accepted by
+Status: the stable identity/discovery and isolated flagship-client profile
+foundation is implemented. The direction is accepted by
 [`ADR-0003`](../architecture/adr-0003-owner-operated-server-and-extension-boundary.md);
-the marketplace, custom-content, and module administration surfaces are not
-implemented yet.
+marketplace, custom-content, and module administration surfaces are not yet
+implemented.
 
 ## Operating model
 
@@ -13,6 +14,26 @@ manages availability and backups, selects catalog releases, moderates its
 community, and invites players. Accounts, personas, sessions, connections,
 catalog policy, achievements, audit, and history belong to that deployment.
 The same handle on another server is not the same identity.
+
+Migration `0018` gives the deployment one immutable random UUID in PostgreSQL.
+`GET /.well-known/omarchygs` publishes that UUID, the bounded public
+`OGS_SERVER_NAME`, protocol 1, and the deterministic set of implemented
+capabilities. Backups and restored deployments retain the UUID. Changing a
+hostname, TLS certificate, or public name does not rotate it; identity rotation
+and database-fork handling remain future operator workflows.
+
+The flagship QML client stores at most 16 public profiles in
+`omarchygs-server-profiles.ini` under the platform configuration directory.
+Each record contains only canonical origin, UUID, public name, protocol, and
+capabilities. Selecting or replacing a server clears live session/persona and
+dependent social/game authority before another-origin traffic. If a remembered
+origin presents a different UUID, the client refuses account access and
+requires explicit removal of the prior profile.
+
+This UUID pin is a continuity check, not a cryptographic identity proof. Remote
+origins still require valid HTTPS, and a player must verify a newly entered
+origin through an appropriate trusted channel. Multiple profiles are choices
+among independent communities; they do not federate accounts or data.
 
 The OmarchyGS project supplies software, signed release/provenance mechanisms,
 and security guidance. It does not remotely operate, continuously monitor,

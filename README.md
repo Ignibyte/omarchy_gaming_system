@@ -84,10 +84,29 @@ Expected response:
 {"service":"omarchy-gaming-system","version":"0.1.0","status":"ok","database":"ok"}
 ```
 
+Players identify and negotiate a community through the separate public
+discovery endpoint:
+
+```bash
+curl http://127.0.0.1:8080/.well-known/omarchygs
+```
+
+It returns the database-backed stable server UUID, `OGS_SERVER_NAME`, protocol
+version, and implemented capabilities. The QML client can save up to 16 such
+public profiles, connect once without saving, or deliberately select/remove a
+saved server. It persists no password, invitation, bearer, MFA, account, or
+persona authority. A saved origin that later reports another UUID fails closed
+until the old profile is removed.
+
 `OGS_BIND_ADDRESS` configures the listener. During the local rebrand
 transition, `BBS_BIND_ADDRESS` remains a lower-priority fallback for existing
 developer environments; new configuration should use only the gaming-system
 name.
+
+`OGS_SERVER_NAME` is the public 1–64 character community label and defaults to
+`OmarchyGS Community`. Changing it does not change the server UUID. The UUID is
+part of PostgreSQL state and must travel with normal database backup/restore;
+it is not derived from a hostname, TLS certificate, or display name.
 
 The server also requires `OGS_MFA_ENCRYPTION_KEY`, a base64url-encoded 32-byte
 key used to encrypt opt-in TOTP secrets. `scripts/dev.sh` creates and reuses a

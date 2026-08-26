@@ -15,6 +15,7 @@ ogs_report_id="a0000000-0000-4000-8000-000000000001"
 ogs_subject_account_id="20000000-0000-4000-8000-000000000001"
 ogs_session_id="70000000-0000-4000-8000-000000000001"
 ogs_raw_token="ogs1_UlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlI"
+ogs_source_server_id=""
 
 stop_server() {
   if [[ -n "$ogs_active_server_pid" ]] && kill -0 "$ogs_active_server_pid" 2>/dev/null; then
@@ -66,7 +67,7 @@ start_server() {
     RUST_LOG=omarchy_gaming_system_server=warn \
     "$ogs_server_binary" >"$ogs_log" 2>&1 &
   ogs_active_server_pid=$!
-  # A cold 17-migration database can exceed ten seconds after the gate's
+  # A cold 18-migration database can exceed ten seconds after the gate's
   # compile/provider load. Keep the wait bounded without making that load a
   # false recovery failure.
   for _ in {1..300}; do
@@ -131,6 +132,8 @@ psql "$ogs_admin_url" -v ON_ERROR_STOP=1 \
 ogs_mfa_key=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n')
 ogs_source_port=$(reserve_port)
 start_server "$ogs_source_url" "$ogs_source_port" "$ogs_temp/source-server.log"
+ogs_source_server_id=$(curl --fail --silent \
+  "http://127.0.0.1:$ogs_source_port/.well-known/omarchygs" | jq -er '.server_id')
 stop_server
 
 ogs_token_digest=$(printf '%s' "$ogs_raw_token" | sha256sum | cut -d ' ' -f 1)
@@ -348,6 +351,12 @@ fi
 
 ogs_restore_port=$(reserve_port)
 start_server "$ogs_restore_url" "$ogs_restore_port" "$ogs_temp/restore-server.log"
+ogs_restore_server_id=$(curl --fail --silent \
+  "http://127.0.0.1:$ogs_restore_port/.well-known/omarchygs" | jq -er '.server_id')
+if [[ "$ogs_restore_server_id" != "$ogs_source_server_id" ]]; then
+  echo "restored server identity differs from the source" >&2
+  exit 1
+fi
 ogs_auth_status=$(curl --silent --output "$ogs_temp/restored-auth.json" \
   --write-out '%{http_code}' \
   --header "Authorization: Bearer $ogs_raw_token" \

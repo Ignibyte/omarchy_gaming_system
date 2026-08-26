@@ -8,10 +8,12 @@ use crate::mfa::MfaCipher;
 const DEFAULT_BIND_ADDRESS: &str = "127.0.0.1:8080";
 const DEFAULT_DATABASE_URL: &str =
     "postgres://omarchy_gaming_system:omarchy_gaming_system@127.0.0.1:5432/omarchy_gaming_system";
+pub(crate) const DEFAULT_SERVER_NAME: &str = "OmarchyGS Community";
 
 pub struct Config {
     pub bind_address: SocketAddr,
     pub database_url: String,
+    pub server_name: String,
     pub mfa_cipher: MfaCipher,
     pub provider: Option<ProviderConfig>,
 }
@@ -32,6 +34,7 @@ impl Config {
 
         let database_url =
             env::var("DATABASE_URL").unwrap_or_else(|_| DEFAULT_DATABASE_URL.to_owned());
+        let server_name = parse_server_name(env::var("OGS_SERVER_NAME").ok())?;
         let encoded_mfa_key = env::var("OGS_MFA_ENCRYPTION_KEY").context(
             "OGS_MFA_ENCRYPTION_KEY is required and must be a base64url-encoded 32-byte key",
         )?;
@@ -46,10 +49,25 @@ impl Config {
         Ok(Self {
             bind_address,
             database_url,
+            server_name,
             mfa_cipher,
             provider,
         })
     }
+}
+
+fn parse_server_name(value: Option<String>) -> Result<String> {
+    let value = value.unwrap_or_else(|| DEFAULT_SERVER_NAME.to_owned());
+    if value.is_empty()
+        || value.chars().count() > 64
+        || value.trim() != value
+        || value.chars().any(char::is_control)
+    {
+        return Err(anyhow!(
+            "OGS_SERVER_NAME must be 1-64 trimmed characters without control characters"
+        ));
+    }
+    Ok(value)
 }
 
 fn parse_provider_config(values: [Option<String>; 4]) -> Result<Option<ProviderConfig>> {
@@ -162,8 +180,8 @@ mod tests {
     use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 
     use super::{
-        DEFAULT_BIND_ADDRESS, DEFAULT_DATABASE_URL, parse_mfa_cipher, parse_provider_config,
-        resolve_bind_address,
+        DEFAULT_BIND_ADDRESS, DEFAULT_DATABASE_URL, DEFAULT_SERVER_NAME, parse_mfa_cipher,
+        parse_provider_config, parse_server_name, resolve_bind_address,
     };
 
     #[test]
@@ -171,6 +189,23 @@ mod tests {
         assert!(DEFAULT_BIND_ADDRESS.starts_with("127.0.0.1:"));
         assert!(DEFAULT_DATABASE_URL.contains("@127.0.0.1:"));
         assert!(DEFAULT_DATABASE_URL.contains("omarchy_gaming_system"));
+    }
+
+    #[test]
+    fn public_server_name_defaults_and_rejects_ambiguous_values() {
+        assert_eq!(
+            parse_server_name(None).expect("default server name should be valid"),
+            DEFAULT_SERVER_NAME
+        );
+        assert_eq!(
+            parse_server_name(Some("Arcade Friends".to_owned()))
+                .expect("bounded public name should be valid"),
+            "Arcade Friends"
+        );
+        assert!(parse_server_name(Some(String::new())).is_err());
+        assert!(parse_server_name(Some(" padded".to_owned())).is_err());
+        assert!(parse_server_name(Some("line\nbreak".to_owned())).is_err());
+        assert!(parse_server_name(Some("x".repeat(65))).is_err());
     }
 
     #[test]

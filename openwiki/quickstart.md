@@ -3,8 +3,6 @@ type: "Reference"
 title: "Omarchy Gaming System engineering quickstart"
 openwiki_generated: true
 sources:
-  - id: openwiki-source-0bb8016edf4f4744d3a09cf4
-    resource: repo://bin/gate.sh
   - id: openwiki-source-998b0f5a7b56d7475101b7a2
     resource: repo://client/qml/components/OgsTheme.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
@@ -13,24 +11,22 @@ sources:
     resource: repo://client/qml/Main.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
-  - id: openwiki-source-a89f426477ef71ce555d4a7e
-    resource: repo://client/qml/screens/AccessScreen.qml
   - id: openwiki-source-fb3bac0b93c3046f977a1023
     resource: repo://client/qml/screens/SocialScreen.qml
+  - id: openwiki-source-7ea06d71b0299905dc0706ce
+    resource: repo://client/qml/ServerProfiles.qml
   - id: openwiki-source-4f5334e859a4d83e2a196fcf
     resource: repo://client/qml/SocialController.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
-  - id: openwiki-source-93421eb71ebe4d41b6a9af26
-    resource: repo://client/qml/tests/fixture/tst_onboarding.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
-  - id: openwiki-source-66facc66e34ad7f2a74321e1
-    resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
+  - id: openwiki-source-ba203ea2e600f294ab58ef02
+    resource: repo://crates/server/src/bin/omarchygs-admin.rs
   - id: openwiki-source-a3892e0554790e3efc606fe1
     resource: repo://crates/server/src/challenges.rs
   - id: openwiki-source-4b133589ca70bd174cf19eb9
@@ -51,6 +47,8 @@ sources:
     resource: repo://crates/server/src/provider_games.rs
   - id: openwiki-source-e4423ee4de83f38bd240bf8b
     resource: repo://crates/server/src/reports.rs
+  - id: openwiki-source-42fe6bf463fcb01dc5566e16
+    resource: repo://crates/server/src/server_discovery.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
   - id: openwiki-source-76060b846b9222af2c790243
@@ -63,14 +61,22 @@ sources:
     resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
     resource: repo://docs/architecture/game-cartridges.md
+  - id: openwiki-source-872141f77f71851168245852
+    resource: repo://docs/architecture/system-overview.md
   - id: openwiki-source-831ed1de42e0dff0edb87b3b
     resource: repo://docs/client-installation.md
+  - id: openwiki-source-36d583174a7a0018316f71c7
+    resource: repo://docs/operators/owner-operated-servers.md
   - id: openwiki-source-c3d1d450d3a3561b368e5307
     resource: repo://docs/planning/ROADMAP.md
   - id: openwiki-source-85dba8f87dd5947de337aca5
     resource: repo://docs/product-charter.md
   - id: openwiki-source-cb6494f7cbf0d5d23ffe082a
     resource: repo://migrations/0012_game_challenges.sql
+  - id: openwiki-source-4331166a21e12c8c40994c1e
+    resource: repo://migrations/0016_operator_reporting_and_audit.sql
+  - id: openwiki-source-29dc4177717fc3b17f932290
+    resource: repo://migrations/0018_server_identity.sql
   - id: openwiki-source-449de92825ee702b9aa05d2a
     resource: repo://packaging/arch/client-runtime-files.txt
   - id: openwiki-source-d85e6ea816d7c91e9828f7b2
@@ -85,11 +91,9 @@ sources:
     resource: repo://scripts/test-game-cartridge-sdk.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-  - id: openwiki-source-a0a026a4d434d1b48884aa8e
-    resource: repo://scripts/test-private-alpha.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-26T19:56:05.892Z"}
+generated: {by: "codex", at: "2026-08-26T21:07:26.522Z"}
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -125,7 +129,8 @@ export, signed release and catalog-policy verification, and a secure local
 cartridge importer. When the optional provider runtime is configured, the
 server also exposes the operator-pinned Door Legends v1 release and routes its
 player operations to a separate provider process and database. The main QML
-connector now handles server selection, masked invitation entry and account registration, password or MFA
+connector now handles direct or saved server selection through exact public
+discovery, masked invitation entry and account registration, password or MFA
 sign-in, and owned-persona creation or selection before entering an
 authenticated home. From there it can manage persona connections and private
 blocks, submit a report by exact persona handle, browse private conversations,
@@ -147,12 +152,14 @@ device session, or clear the selected persona through controller logic.
 
 The same flagship client is now available as the native
 `omarchy-gaming-system-client` Arch package for private-alpha testing. The
-`any` package contains the exact 37-file production QML inventory, a
+`any` package contains the exact 38-file production QML inventory, a
 relocatable `omarchygs` launcher, one Game desktop entry, and non-secret build
 provenance; it depends only on Omarchy's `qt6-declarative` runtime and contains
 no Rust server. These locally built artifacts are unsigned. Public package
-repository publication, release signing, automatic updates, and saved
-multi-server profiles remain future work.
+repository publication, release signing, and automatic updates remain future
+work. The package includes bounded public-only profiles for deliberately
+selecting among independent compatible servers; it does not persist credentials
+or federate their identity, moderation, catalog, or history.
 
 The private-alpha operator path is deliberately separate from the player API.
 `omarchygs-admin` uses a reviewed local `DATABASE_URL` to list a bounded report
@@ -177,7 +184,10 @@ The accepted long-term deployment unit is an independently owner-operated
 OmarchyGS community. An individual or group runs the standard server, curates
 its game library, and invites players into server-local accounts, personas,
 policy, and history. Supporting multiple compatible servers therefore means
-isolated community profiles, not implicit federation or shared identity.
+isolated community profiles, not implicit federation or shared identity. Each
+server publishes one database-owned UUID and bounded public compatibility
+document. The UUID survives ordinary restart and database backup/restore and is
+a continuity check, not a replacement for HTTPS server authentication.
 
 The first playable now spans account, authentication, persona, connection,
 private inbox, durable synchronization, two-person challenge-to-session
@@ -217,10 +227,10 @@ plugin runtime is authorized today.
 
 | Engineering intent | Read first | Primary source entrypoints | Narrow validation |
 |---|---|---|---|
-| Change server startup, configuration, migrations, or health behavior | [Runtime foundation](runtime-foundation.md) | `crates/server/src/main.rs`, `config.rs`, `app.rs`; `migrations/` | `cargo test -p omarchy-gaming-system-server`; health smoke |
+| Change server startup, configuration, migrations, health, or public discovery | [Runtime foundation](runtime-foundation.md) | `crates/server/src/main.rs`, `config.rs`, `app.rs`, `server_discovery.rs`; `migrations/` | focused discovery/configuration tests; `scripts/test-database.sh`; live smoke |
 | Change account registration, invitations, device sessions, MFA, personas, or connections | [Runtime foundation](runtime-foundation.md) | `accounts.rs`, `registration_invites.rs`, `credentials.rs`, `sessions.rs`, `mfa.rs`, `personas.rs`, `connections.rs`; migrations `0001`–`0005` and `0017`; `docs/api.md` | Domain tests plus multi-account PostgreSQL evidence; `scripts/test-private-alpha.sh` for admission changes |
 | Change player reporting, account suspension, report disposition, invitation administration, operator audit, or platform restore | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `reports.rs`, `operator_admin.rs`, `bin/omarchygs-admin.rs`; migrations `0016`–`0017`; `docs/operators/operator-safety-and-recovery.md`; `docs/operators/private-alpha.md` | Report API and operator-domain PostgreSQL tests; real CLI test; recovery and private-alpha drills |
-| Change QML endpoint selection, appearance/accessibility, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/components/`, `client/qml/screens/`, `client/qml/game/` | `scripts/check-qml-style.py`; `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
+| Change QML endpoint/profile selection, appearance/accessibility, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `ServerProfiles.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/components/`, `client/qml/screens/`, `client/qml/game/` | `scripts/check-qml-style.py`; `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
 | Change cartridge packaging, trusted rendering, SDK portability, or provider integration | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `client/qml/cartridge`; migrations `0014`–`0015`; ADR-0002; Tickets 015–019 | `scripts/test-game-cartridge.sh`; `scripts/test-game-cartridge-renderer.sh`; `scripts/test-game-cartridge-sdk.sh`; `scripts/test-provider-conformance.sh`; `scripts/test-provider-authority-pilot.sh`; threat/authority review and constitutional authority check |
 | Change owner-operated server, marketplace, custom-content, Provider SDK, or module/hook direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | Current-versus-future audit; provenance/authority review; official-client containment; extension isolation and lifecycle evidence before executable implementation |
@@ -249,11 +259,15 @@ registration mode masks the invitation bearer secret, includes it only in the
 registration request, and clears it after completion, mode changes, and server
 changes. It
 accepts a bare server origin, allows HTTP only for exact loopback hosts, and
-requires HTTPS remotely. An exact healthy OmarchyGS response unlocks account
-registration or sign-in; successful password or MFA authentication then loads
-owned personas, permits creation when needed, and requires explicit selection
-before the authenticated home. Bearer tokens and MFA challenges remain only in
-process memory and are cleared on endpoint changes, logout, challenge expiry,
+requires HTTPS remotely. Before account access it requires the exact public
+OmarchyGS discovery fields, protocol 1, the implemented onboarding capability
+subset, and any UUID already remembered for that canonical origin. Players may
+connect once or save up to sixteen exact public-only profiles; incompatible or
+replacement identities stay on the connection screen. Successful password or
+MFA authentication then loads owned personas, permits creation when needed, and
+requires explicit selection before the authenticated home. Bearer tokens, MFA
+challenges, usernames, and persona authority remain only in process memory and
+are cleared before endpoint changes, as well as on logout, challenge expiry,
 terminal authentication failures, invalid sessions, or malformed authenticated
 success responses.
 
