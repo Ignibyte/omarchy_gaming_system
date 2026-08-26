@@ -43,6 +43,7 @@ check_shell_syntax() {
   done < <(
     find bin scripts .codex/hooks -type f -name '*.sh' -print | LC_ALL=C sort
   )
+  bash -n packaging/arch/omarchygs
 }
 
 check_changed_secrets() {
@@ -83,12 +84,14 @@ run_gate 11 "production Game Cartridge contract" ./scripts/test-game-cartridge.s
 run_gate 12 "trusted Game Cartridge renderer" ./scripts/test-game-cartridge-renderer.sh
 run_gate 13 "Game Cartridge SDK release" ./scripts/test-game-cartridge-sdk.sh
 run_gate 14 "Game Cartridge architecture proof" ./scripts/test-game-cartridge-spike.sh
+run_gate 15 "native Omarchy client package source" ./scripts/check-client-package-source.sh
 
 if [[ "$ogs_mode" != "fast" ]]; then
-  run_gate 15 "PostgreSQL integration tests" ./scripts/test-database.sh
-  run_gate 16 "PostgreSQL + Rust API + QML smoke" ./scripts/dev.sh --smoke-test
-  run_gate 17 "remote provider security conformance" ./scripts/test-provider-conformance.sh
-  run_gate 18 "first-party remote-provider authority pilot" ./scripts/test-provider-authority-pilot.sh
+  run_gate 16 "native Omarchy client package" ./scripts/test-client-package.sh
+  run_gate 17 "PostgreSQL integration tests" ./scripts/test-database.sh
+  run_gate 18 "PostgreSQL + Rust API + QML smoke" ./scripts/dev.sh --smoke-test
+  run_gate 19 "remote provider security conformance" ./scripts/test-provider-conformance.sh
+  run_gate 20 "first-party remote-provider authority pilot" ./scripts/test-provider-authority-pilot.sh
 fi
 
 if ((ogs_failures > 0)); then

@@ -84,6 +84,10 @@ and in this register.
 | `PR-omarchy-gaming-system-wait-for-deferred-qml-focus-before-input-001` | When a QML mode change schedules a deferred focus handoff, wait for the documented target to own active focus before injecting test input. | `aar/AAR-026-explicit-qml-application-exit-control.md` |
 | `PR-omarchy-gaming-system-reconcile-foundation-docs-when-activated-001` | When a dormant foundation becomes an executable product path, reconcile every foundation architecture/current-state summary in the same delivery. | `aar/AAR-027-owner-operated-servers-cartridge-distribution-and-extension-roadmap.md` |
 | `PR-omarchy-gaming-system-separate-publisher-marketplace-server-attestations-001` | Model publisher integrity, marketplace review, and server admission as separate attestations with independent issuers, meanings, and absence states. | `aar/AAR-027-owner-operated-servers-cartridge-distribution-and-extension-roadmap.md` |
+| `PR-omarchy-gaming-system-resolve-runtime-executables-directly-001` | Resolve the actual executable promised by a runtime dependency; do not infer its location from a sibling tool's internal layout. | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
+| `PR-omarchy-gaming-system-stabilize-package-build-paths-for-reproducibility-001` | When package metadata records build paths, use a private owner-checked serialized stable root or remove or normalize the path before claiming byte reproducibility. | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
+| `PR-omarchy-gaming-system-enforce-line-manifest-termination-001` | Define and test final-record termination before multiple line-oriented consumers rely on a manifest. | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
+| `PR-omarchy-gaming-system-bind-terminal-scan-document-identities-001` | Before terminal security finalization, bind manifest, findings, and coverage to one explicit scan ID and verify equality. | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
 
 ## Register
 
@@ -265,3 +269,12 @@ and in this register.
 | `PR-omarchy-gaming-system-reconcile-foundation-docs-when-activated-001` | rule | `aar/AAR-027-owner-operated-servers-cartridge-distribution-and-extension-roadmap.md` |
 | `PR-omarchy-gaming-system-separate-publisher-marketplace-server-attestations-001` | rule | `aar/AAR-027-owner-operated-servers-cartridge-distribution-and-extension-roadmap.md` |
 | `AD-omarchy-gaming-system-owner-operated-server-extension-boundary-001` | decision | `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md` |
+| `BF-omarchy-gaming-system-qml-runtime-location-assumption-001` | failure | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
+| `BF-omarchy-gaming-system-arch-buildinfo-path-nondeterminism-001` | failure | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
+| `BF-omarchy-gaming-system-line-manifest-termination-mismatch-001` | failure | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
+| `BF-omarchy-gaming-system-terminal-scan-document-id-omission-001` | failure | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
+| `PR-omarchy-gaming-system-resolve-runtime-executables-directly-001` | rule | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
+| `PR-omarchy-gaming-system-stabilize-package-build-paths-for-reproducibility-001` | rule | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
+| `PR-omarchy-gaming-system-enforce-line-manifest-termination-001` | rule | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
+| `PR-omarchy-gaming-system-bind-terminal-scan-document-identities-001` | rule | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
+| `AD-omarchy-gaming-system-native-client-package-boundary-001` | decision | `../../architecture/system-overview.md` |

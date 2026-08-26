@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ogs_client_bin_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+ogs_client_qml_root="$ogs_client_bin_dir/../share/omarchy-gaming-system/qml"
+
+if [[ ! -d "$ogs_client_qml_root" || -L "$ogs_client_qml_root" ]]; then
+  echo "OmarchyGS client data directory is missing or invalid." >&2
+  exit 1
+fi
+ogs_client_qml_root="$(cd -- "$ogs_client_qml_root" && pwd -P)"
+
+if [[ ! -f "$ogs_client_qml_root/Main.qml" || -L "$ogs_client_qml_root/Main.qml" ]]; then
+  echo "OmarchyGS production QML root is missing or invalid." >&2
+  exit 1
+fi
+if ! command -v qml6 >/dev/null 2>&1; then
+  echo "OmarchyGS requires the Qt 6 QML runtime (qt6-declarative)." >&2
+  exit 1
+fi
+
+exec qml6 "$ogs_client_qml_root/Main.qml" -- "$@"

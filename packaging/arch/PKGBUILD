@@ -1,0 +1,51 @@
+pkgname=omarchy-gaming-system-client
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Keyboard-first OmarchyGS social gaming client"
+arch=(any)
+url="https://github.com/Ignibyte/omarchy_gaming_system"
+license=(custom)
+depends=(qt6-declarative)
+options=(!debug !strip)
+source=()
+sha256sums=()
+
+package() {
+  local ogs_source_root="${OMARCHYGS_SOURCE_ROOT:?missing reviewed source root}"
+  local ogs_source_digest="${OMARCHYGS_SOURCE_DIGEST:?missing reviewed source digest}"
+  local ogs_source_revision="${OMARCHYGS_SOURCE_REVISION:?missing source revision}"
+  local ogs_source_dirty="${OMARCHYGS_SOURCE_DIRTY:?missing source dirty state}"
+  local ogs_runtime_path
+  local ogs_runtime_relative
+
+  [[ "$ogs_source_root" == /* && -d "$ogs_source_root" && ! -L "$ogs_source_root" ]] \
+    || return 1
+  [[ "$ogs_source_digest" =~ ^[0-9a-f]{64}$ ]] || return 1
+  [[ "$ogs_source_revision" =~ ^([0-9a-f]{40}|unversioned)$ ]] || return 1
+  [[ "$ogs_source_dirty" == "true" || "$ogs_source_dirty" == "false" ]] || return 1
+
+  while IFS= read -r ogs_runtime_path; do
+    ogs_runtime_relative="${ogs_runtime_path#client/qml/}"
+    install -Dm0644 -- \
+      "$ogs_source_root/$ogs_runtime_path" \
+      "$pkgdir/usr/share/omarchy-gaming-system/qml/$ogs_runtime_relative"
+  done <"$ogs_source_root/packaging/arch/client-runtime-files.txt"
+
+  install -Dm0755 -- \
+    "$ogs_source_root/packaging/arch/omarchygs" \
+    "$pkgdir/usr/bin/omarchygs"
+  install -Dm0644 -- \
+    "$ogs_source_root/packaging/arch/com.ignibyte.OmarchyGS.desktop" \
+    "$pkgdir/usr/share/applications/com.ignibyte.OmarchyGS.desktop"
+
+  install -d -m0755 -- "$pkgdir/usr/share/doc/omarchy-gaming-system-client"
+  printf '%s\n' \
+    'format=omarchygs-client-build-provenance-v1' \
+    "package_version=$pkgver-$pkgrel" \
+    "source_revision=$ogs_source_revision" \
+    "source_dirty=$ogs_source_dirty" \
+    "source_sha256=$ogs_source_digest" \
+    >"$pkgdir/usr/share/doc/omarchy-gaming-system-client/BUILD-PROVENANCE"
+  chmod 0644 -- \
+    "$pkgdir/usr/share/doc/omarchy-gaming-system-client/BUILD-PROVENANCE"
+}

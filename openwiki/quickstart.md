@@ -47,12 +47,20 @@ sources:
     resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
     resource: repo://docs/architecture/game-cartridges.md
+  - id: openwiki-source-831ed1de42e0dff0edb87b3b
+    resource: repo://docs/client-installation.md
   - id: openwiki-source-c3d1d450d3a3561b368e5307
     resource: repo://docs/planning/ROADMAP.md
   - id: openwiki-source-85dba8f87dd5947de337aca5
     resource: repo://docs/product-charter.md
   - id: openwiki-source-cb6494f7cbf0d5d23ffe082a
     resource: repo://migrations/0012_game_challenges.sql
+  - id: openwiki-source-449de92825ee702b9aa05d2a
+    resource: repo://packaging/arch/client-runtime-files.txt
+  - id: openwiki-source-d85e6ea816d7c91e9828f7b2
+    resource: repo://packaging/arch/omarchygs
+  - id: openwiki-source-c909643e4ac6a14f500d178e
+    resource: repo://packaging/arch/PKGBUILD
   - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
     resource: repo://scripts/check-qml-style.py
   - id: openwiki-source-d69dbacb0ae7fe382ee46161
@@ -63,10 +71,10 @@ sources:
     resource: repo://scripts/test-game-cartridge.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-26T15:15:44.851Z"}
+generated: {by: "codex", at: "2026-08-26T16:57:43.335Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-26T15:18:17.322Z
+    at: 2026-08-26T16:57:43.335Z
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -118,6 +126,15 @@ One persistent shell-owned EXIT button requests a normal window close from
 every route. Keyboard and pointer tests prove that it remains visible,
 accessible, and bounded and that closing does not log out, revoke the durable
 device session, or clear the selected persona through controller logic.
+
+The same flagship client is now available as the native
+`omarchy-gaming-system-client` Arch package for private-alpha testing. The
+`any` package contains the exact 37-file production QML inventory, a
+relocatable `omarchygs` launcher, one Game desktop entry, and non-secret build
+provenance; it depends only on Omarchy's `qt6-declarative` runtime and contains
+no Rust server. These locally built artifacts are unsigned. Public package
+repository publication, release signing, automatic updates, and saved
+multi-server profiles remain future work.
 
 The product is game-first: connections, private inboxes, challenges, and
 persistent game history define the intended experience. A public message board
@@ -174,6 +191,7 @@ plugin runtime is authorized today.
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
 | Change cartridge packaging, trusted rendering, SDK portability, or provider integration | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `client/qml/cartridge`; migrations `0014`–`0015`; ADR-0002; Tickets 015–019 | `scripts/test-game-cartridge.sh`; `scripts/test-game-cartridge-renderer.sh`; `scripts/test-game-cartridge-sdk.sh`; `scripts/test-provider-conformance.sh`; `scripts/test-provider-authority-pilot.sh`; threat/authority review and constitutional authority check |
 | Change owner-operated server, marketplace, custom-content, Provider SDK, or module/hook direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | Current-versus-future audit; provenance/authority review; official-client containment; extension isolation and lifecycle evidence before executable implementation |
+| Build, inspect, install, upgrade, remove, or diagnose the native player package | [Development and validation](development-and-validation.md) and `docs/client-installation.md` | `packaging/arch/`; `scripts/check-client-package-source.sh`; `scripts/build-client-package.sh`; `scripts/test-client-package.sh` | Source-contract check; extracted-package conformance; `bin/gate.sh --diff` before delivery |
 | Run or diagnose the local stack and quality gate | [Development and validation](development-and-validation.md) | `scripts/dev.sh`; `bin/gate.sh`; `client/qml/Main.qml` | `bin/gate.sh --fast` or `--diff` |
 | Start or resume a non-trivial change | [Codex workflow](codex-workflow.md) | `AGENTS.md`; `$omarchy-workflow`; active pipeline | Phase receipts and canonical gate |
 

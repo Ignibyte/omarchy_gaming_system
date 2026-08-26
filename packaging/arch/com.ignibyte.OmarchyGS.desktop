@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Omarchy Gaming System
+GenericName=Social Gaming Client
+Comment=Connect to an OmarchyGS gaming community
+Exec=omarchygs
+Icon=applications-games
+Terminal=false
+Categories=Game;
+Keywords=Games;BBS;Omarchy;
+StartupNotify=true

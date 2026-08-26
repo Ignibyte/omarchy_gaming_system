@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ec2aea5656db5bef1fdb1ff6825fe0a0dac9cd61a8fd617d258acefc2845c7d7",
+  "pageVersion": "sha256:29964e53c569be28d36cde19d13d9cf47a4275fadc9125f4ebc7cd0c488c7afc",
   "claims": [
     {
       "id": "claim_e75f82f846ca444594c51ed0f48b894b",
@@ -36,11 +36,15 @@
     },
     {
       "id": "claim_171e3e64173941df995e2a10f63d4c51",
-      "statement": "The canonical diff gate runs production static and documentation checks, cartridge contract, renderer, SDK, isolated proof, sequential PostgreSQL tests, the live Rust/API/QML first-playable smoke, provider conformance, and the Door Legends authority pilot before writing a worktree receipt.",
+      "statement": "The canonical diff gate runs 20 stages covering production static and documentation checks, cartridge contract, renderer, SDK and isolated proof, native client source admission and extracted-package smoke, sequential PostgreSQL tests, the live Rust/API/QML first-playable smoke, provider conformance, and the Door Legends authority pilot before writing a worktree receipt.",
       "evidence": [
         {
-          "resource": "repo://bin/gate.sh",
-          "version": "repo-file-v1:sha256:0c9edbf8c0e6832dd56acbdc837dcd4590c15a932190ec2b2d6b219907e4747a"
+          "resource": "repo://bin/gate.sh#L73-L110",
+          "version": "repo-lines-v1:sha256:093cbd282a018ae223bb7f06f080bb9d45f2cdb2aea4da875bfbe50f4caa8310:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3YmY1ZmE0ZGMyMDc5YWUyNzRhMmVmMjBkODllMjUzMGEwZTg0NTZhMTM2ODA4NGZjNDViZjhhNjc4ZWRhYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1MjA1NzJmMGVmNWMyMzZhMWE5N2NmZDdkMWJjZmEzZTNkNzU2OGExODc1OGMxNjljMWU0N2Q5NDAzZWI0NjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1OGI4NzEwNzI3NGZiN2I2NmFkMzM1ODg4M2IyODQ2ODNiYWJjMzllNDcwM2JjY2JjM2Y0NDZmNzA5MTgxMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://scripts/test-client-package.sh#L20-L247",
+          "version": "repo-lines-v1:sha256:d666b792b163789dcdcc07bfcdb33e777d16000292a3a5271889be7588a9a676:eyJzZWxlY3RlZExpbmVDb3VudCI6MjI4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NTFlYTU4Yzc2YTNhMGZiYWI3YWFkOWJkMjNkMWFhNjk2YWUyMmNmNDVmZjkwODcxNjM3NTA1OGMyNzdlNDJlIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4NGE4MWMzOWY3ZTNlNmIwYjE4NWM4ZDgzMDBlZWYwM2JlYjhjYTljNWQ3NjJlMDM3MTIxNDUwMjQ0NWMwYzFlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyNDU5OTBjMDRkN2IxNDA0ZmMwNDZiMDM1ZTAwMjNhZTQ5YjYzNGRiZTZjNTdiZWVjNWRmOGJhYmEyMDIwODMzIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         },
         {
           "resource": "repo://scripts/test-database.sh",
@@ -65,12 +69,12 @@
       "statement": "A successful non-fast gate writes a receipt derived from the gated worktree, and later gated edits invalidate that delivery evidence.",
       "evidence": [
         {
-          "resource": "repo://bin/gate.sh#L93-L99",
-          "version": "repo-lines-v1:sha256:1792c1c8a09d8b8fbf4385465a5e15e6793531368b1ad6d51ee48354808290c0:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTM0N2E0ZGU3NDcxZGYxY2MxZWJhYTBlOTk2YjQ2OTk4YTlkYjA4MDNjNjExZTNiYTI1YWI5ZWIxYzA3Yjc0NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzc2OWQyMzdjZDQyMGI5ZDM4Yjk4MWEwYTRmNjc3MDE5MGE0YTgzZGNhMWZlNTZjNGY1YmExZTJjYmMwZWY3NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzFjZTFhYTExNjk1ZDliNTE1NzBkYTE1ZjIzOWQ3MGQyZjVjYWQ1OGE3ODUwZDJhOGRhOWNlZDU4NjFkNDgzMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDA1YTIyMGQ5ZmUyMWQ0NDgzM2IyZTA0MWI0ZDBkZWVmYjI1MGJjMTAzY2M5ZDJhNGJhOWQ4NjNhM2IxZWY4NiJ9"
+          "resource": "repo://bin/gate.sh#L97-L110",
+          "version": "repo-lines-v1:sha256:84da8a07a32d52bcdefa1c500ec486f3fc3b36e8e756b806f5edd8c8686f0fc7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkYzkxOTk0YmMwZDYzYjdmMTcxNjViNDM2ZWU4YjAxNDZmNGUzZTg0M2NiYWVmZTAzMjQzODFjYTExMTYzNGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1MjA1NzJmMGVmNWMyMzZhMWE5N2NmZDdkMWJjZmEzZTNkNzU2OGExODc1OGMxNjljMWU0N2Q5NDAzZWI0NjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0MmE0ODU5ZDM3ZTc0YmNjYzk0ZTMzYmY5ZWE3YmVjZjZiOTdmNjZiY2E0OTIyOWYwMDg0NGNiNThhYWNjYjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://CONSTITUTION.md#L100-L114",
-          "version": "repo-lines-v1:sha256:bbfc0c5e9e69555343b0ab4a12f3e2f2e3d0734c28e5586e03e0c8a362e58caa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1YmU1MTA0YWVkMWE2NGE3MzU0MGYyNGU5NWZjMzlhZDNmODUwNmRmODE5OGU3OTdiMGVmM2RmMDU0NTBmZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5YWE2MDgwOGYxMzEyYmNlMGQ0OTEzNTY4MmQ2MThiMzlhYmNiNWRmYjNjYmUxZjg1YWIyNzYxNmE3ZTAwNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIxYjM3YmMwZmM1MGZkNDBjYTVlMjI3ZTZjZGZkNzY3NjZmOTg0MTlhMDVmMjNhYzMwN2IxOTFmMDNlOTllNjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ2Zjc0ZjUyZjFlZTc3NmVkNmI1ZWRkY2Y2MmNjNDlhNDM1NmI0ZWVjNTY5OGEyNGNiMGUzNWQ0ZTg1YzI0ZTkifQ"
+          "version": "repo-lines-v1:sha256:9135f5ae552e88ff52a4d93ff75b6142a29b395793936161f519045848ccf0b7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlOTAzMjY2NWUwMDQ4MDRlMzgzNjllOGEyZTI2YjBlMTE5MTc1MGY2OTZiMDg4NDhmMjM1MzM0ZTE5MDMzNGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxOTUxZTk3NzdjOGQ0ZWI1MTc3YjQwYTYzYWVlNzU1ZjMzYzY3MDZkODY1NjZlNmM0N2YzYjUwNzI3NDU3NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcyNzRkOTMyODMxYzMwNjUwMmRkZWNiMzExNTQzYmIwMzJkNGVhYTYxMzFiNDExNjA1MGU4ZjYzNmQwNTFhNjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk3YmQ5NzBlODZiOTc4YjU1ZmM4NTdmOWM4NWQyNzA3MWY5YjM5OWIyNTc3YWYxZWE5Yjc0ZGJkYTFkODRkOTIifQ"
         }
       ]
     },
@@ -364,11 +368,11 @@
     },
     {
       "id": "claim_0561f320c18d4f72a106612ea6bfa8e1",
-      "statement": "Gate 17 runs provider unit and public protocol tests plus ignored CLI, PostgreSQL registry, separate-process TLS, replay, race, quota, lifecycle, and audit conformance sequentially against migrated PostgreSQL.",
+      "statement": "Gate 19 runs provider unit and public protocol tests plus ignored CLI, PostgreSQL registry, separate-process TLS, replay, race, quota, lifecycle, and audit conformance sequentially against migrated PostgreSQL.",
       "evidence": [
         {
-          "resource": "repo://bin/gate.sh",
-          "version": "repo-file-v1:sha256:0c9edbf8c0e6832dd56acbdc837dcd4590c15a932190ec2b2d6b219907e4747a"
+          "resource": "repo://bin/gate.sh#L89-L95",
+          "version": "repo-lines-v1:sha256:5a51a6f11454f7bb8a0991bb9323af60c38514c9580ad389856c275500edebb0:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTM0N2E0ZGU3NDcxZGYxY2MxZWJhYTBlOTk2YjQ2OTk4YTlkYjA4MDNjNjExZTNiYTI1YWI5ZWIxYzA3Yjc0NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzc2OWQyMzdjZDQyMGI5ZDM4Yjk4MWEwYTRmNjc3MDE5MGE0YTgzZGNhMWZlNTZjNGY1YmExZTJjYmMwZWY3NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGY0NTllYTVkM2ZiYTUzYzExZTY2N2IwOTc2OTI1ZjdkMmU4NTM3ZTI0MjYzYWY5YzdhOTFlMmMzMGIwMzViMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjA3MzNlZjRkYzQ4NDI1Zjg1OTU0MjI4YTc5ZjFhMDg0Y2YxZGU2ZmU3YTQ0MjBiYzJkNmEzMzZjMjQ4Y2NmOSJ9"
         },
         {
           "resource": "repo://scripts/test-provider-conformance.sh",
@@ -433,10 +437,44 @@
           "version": "repo-lines-v1:sha256:d73b6a6b38862bf96b9a7d5a204d97474378bf9c2e5adca923ae802b8b4851f2:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjZjNTFiYTk5MTU4ZWMzNjNkNDBiNzc4ZWYyNzExMjZkYTNmZDgzMTVlZTUyMzgyMjQyMDQ2OWI1MjlhMGI5NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2MzOGQwNjE0ODk2MTFhNDdkZTQ2NjVmYTIwMzA0YzZiMWE0ZGI1YTQ2MjlhNGEzOGM2Njk4N2IyMTlkY2Y0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2ViYWE4ZmI4ODgzYjZiMGM4YzRlOGZlZDE1OGI2ZjU3NGU5MGU1ZGE4OTVkNmFiY2VhZDZmYjQ5OWUxNWEzMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2RjN2QwNzU5N2YzMzA3ZGFiMWZiODA5NzU0M2Y4YjZlZDA4ZWU5N2NiYzFiMDRkYmRkNzNhMTMxZjk0NjNlYyJ9"
         }
       ]
+    },
+    {
+      "id": "claim_b91a886c765a45dd99eff7a3f74e1e81",
+      "statement": "The native client source checker admits only a newline-terminated sorted unique manifest that exactly matches non-test production QML, rejects unsafe paths and symlink or non-regular inputs, binds the package version to the workspace, and validates the launcher and desktop entry before build work.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/check-client-package-source.sh#L27-L118",
+          "version": "repo-lines-v1:sha256:d94988c7398581b6ff797bddfc7123f115bf5e2f1511b3e17b692faa54793c17:eyJzZWxlY3RlZExpbmVDb3VudCI6OTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzMDQ0NDMwYjY2ODRmZjIxZDhlNWFiYTY5NGMyNmMzYmVjNDYxYTJkZmY4ZjRhMjNmMDM5MDlhM2JjMmJkMjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlZTIyZGI5ZDM1Y2ViZjU3ZDM2MDkyNDc3NmZmNmM5Y2U5ZmJjZTU0MjA1ODM4MmZiZmUwOTFlOTdiODVlZWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0MDY5NzQ4YWU3MjI3MTI2ZDhkOTljYThiYjg1YzliYmM5YzUwMDI3ODE0ZTkyYjkyYWUxMjNmYmZjZDk3NmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4d67ac8bd5fd4769b7f98f1e0f464dec",
+      "statement": "The native client builder validates source first, computes source and revision provenance, serializes makepkg in a private owner-checked stable workspace, installs nothing, and atomically publishes exactly one package plus its SHA-256 sidecar.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/build-client-package.sh#L36-L149",
+          "version": "repo-lines-v1:sha256:ec7deae7712a32b7b68054046f13ca7c3b97f1b70b95d657049156c23c671b67:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwZGRmNTRiZDQwZGU3ZDE2MTcwMDAwNjkzNDAwYTAyZTRiY2ZiYzM2ODliY2I3YzcyMTI4ZmY3YTE0YjE4YWVkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5OWVlM2M2OTJkZjQ4N2U0ODkyNWQ2M2RlODA3ZTA2NmU3MTE3MDI1ODMxM2RkOTY5NmUxY2JiZjgxOGUyNjU3IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhZDNkZjdmYzY3N2VhYTdkNWQ2ODE2YWM3ZDEyMzgwNGQzYTFlZTI4NzIyZTFkOGY1ODE1YjhiZGY0OWMyNDcyIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        }
+      ]
+    },
+    {
+      "id": "claim_726f38b2d1574758bc4d315732b5fe48",
+      "statement": "The native client package smoke rejects seven hostile source fixtures, proves two builds byte-identical without changing source status, checks exact metadata, payload, modes, provenance and desktop behavior, then launches the extracted production QML root against the bounded health fixture without pacman installation.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/test-client-package.sh#L20-L138",
+          "version": "repo-lines-v1:sha256:a299ea2c45139f35acee319a6a0fd7fc3a1bba6958c44669335d318b2901d93d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NTFlYTU4Yzc2YTNhMGZiYWI3YWFkOWJkMjNkMWFhNjk2YWUyMmNmNDVmZjkwODcxNjM3NTA1OGMyNzdlNDJlIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4ZjQ1YjIyNGRhNTgyNzc2ODYyMTk5NGMzZDExZDgyMTY2NjEwODdkN2JiYTkwNTZkZGVhNjhjMWI0MTdjNDMwIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyNDU5OTBjMDRkN2IxNDA0ZmMwNDZiMDM1ZTAwMjNhZTQ5YjYzNGRiZTZjNTdiZWVjNWRmOGJhYmEyMDIwODMzIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhZGNkYWQzYzRhMzI1NTJjMzViNjFlZjdiMzQ1ZGYzZDFiOGE3NGE3OTJjOTUwMDgyOTA0OWM3N2ZlZWY0YjhkIn0"
+        },
+        {
+          "resource": "repo://scripts/test-client-package.sh#L140-L247",
+          "version": "repo-lines-v1:sha256:ab1f7a3dd05820f26d9a69b286707ba8d54bd0a70dc5265e90460d3446bd4d8e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyZjBhMTJjY2NlNmQ1M2JhNzEyNDlmNTc3NTcyNTViY2RlZWI0OTY0NGFhZjQ5ZDk4NmIzZDJjZTJlZWQyYzVhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4NGE4MWMzOWY3ZTNlNmIwYjE4NWM4ZDgzMDBlZWYwM2JlYjhjYTljNWQ3NjJlMDM3MTIxNDUwMjQ0NWMwYzFlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlOTBlZjhkNzRhMWQwMGVmNDJhMjk3MDhkNDJlMmQxZDdiYjRjMTBmMmExZjA1Y2YzOGQxMjgxNzQ1ZmZjNjYyIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T13:49:04.179Z"
+    "at": "2026-08-26T16:57:43.335Z"
   }
 }

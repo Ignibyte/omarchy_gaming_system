@@ -35,6 +35,8 @@ result recorded.
 - Keyboard-first QML connector for Omarchy with one accessible semantic theme,
   deterministic focus/traversal, explicit plain-text presentation, and
   minimum-window containment across the complete player flow
+- Native client-only Arch package with an Omarchy application entry, exact
+  trusted-QML payload, and extracted-artifact launch proof
 - Sysop audit, suspension, and reporting basics
 
 ## Explicit non-goals for the first alpha
@@ -51,6 +53,8 @@ result recorded.
 
 - Rust modular monolith backed by PostgreSQL
 - Versioned JSON API plus WebSocket notifications
+- A native Omarchy player package consumes the system Qt QML runtime and ships
+  no server, credential, provider executable, or publisher-supplied code
 - Account and persona identities remain separate
 - Every game session has one server-side authority. OmarchyGS owns compiled
   games; an operator-pinned registered provider may own one remote game's

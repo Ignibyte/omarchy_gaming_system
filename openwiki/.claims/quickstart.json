@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c426478abf05d11f709bf90a80a454fc5ae84981239d158c824064959a811cbf",
+  "pageVersion": "sha256:952fe77241ea4d8dd54160dd03c427d8d4411677ef28f234e590934af86b7dca",
   "claims": [
     {
       "id": "claim_cfd815337fbb4c508371651403a7fecb",
@@ -419,10 +419,46 @@
           "version": "repo-lines-v1:sha256:3582705f9141ac261b2b699541eb003fc8c6cafe258857fe59bd2b6fcc868d92:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmODA1ZWMwYTgzMzliNzc5ZjQwYTYzOThlNGNiNmMwMWMyZDA2YWI0NWExZmY0ZDc0ZjJkZGIxZTJhODk1ODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4YmEwNGViMmRlMzE0ODVhYWIxYjNjYTA0NGNiODFlMzI3ODlmN2Q4NGVjOWYzZjg3ZTM4MTc1OWNkOTk3YTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2MGFiN2UwNWI0MzlkYmFmYmJkNGYwYTg3NWJhY2IyZWI3MzY4ODg4YTU5ZmE1MmU2MWM0ZTk3YTI4MTU4OTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_e459fda61c8949b2ab0f46529954667b",
+      "statement": "The flagship QML connector is available as an Arch any-architecture player-device package that installs an exact 37-file production QML inventory, a relocatable omarchygs launcher, one Game desktop entry, and non-secret provenance while depending only on qt6-declarative and excluding the server.",
+      "evidence": [
+        {
+          "resource": "repo://packaging/arch/PKGBUILD#L1-L50",
+          "version": "repo-lines-v1:sha256:ea6dab73fe7f7841eb9c6487dd5456af587d76ecffa335d3bec50d0f59155e09:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0MWY0YmU5OTNlMTliMzZjODUxYzNkOTJmNjIwZjgxNWFjOTMwMzRkMDI4ZTAwYmUzMWVjNGQxY2JiNDJlYjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1MjljMGZlNGQ0ZjQ2MGUwZGMwMWQxMWY2MGI2NWI2NWIxMWZlYWIwNGFmZDYwNzZkNWJlYjc1M2YzYzczNmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        },
+        {
+          "resource": "repo://packaging/arch/client-runtime-files.txt#L1-L37",
+          "version": "repo-lines-v1:sha256:f243509423a8ccbac50956824de0575425ceeecf28364caf44133d081bd03bc2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwODBiZThhYmY0N2NjNThlMzdmMmFhYTRlMTU5ZmViZmFjZTdiMGIzZGM1MzJlYzUzODNkMTkwNTE5NmY4NjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyNWZlOWVhNGQ4NGRlZmZkZWI2YWRhZjMxMDA4ZmJlYjU3OGUzZDlkN2JjODU4MDJiMmEwMTJhZjc3MjU0ZjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://packaging/arch/omarchygs#L4-L22",
+          "version": "repo-lines-v1:sha256:aa63872f8e111b5213a4e45e51e9386e20682ddd7703616c856b8517c4050739:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMDZiYTMwNzYwODkxOWI5NjQ2OTQ1MTI3M2M2M2I0MzllNDgxNzNkOWEzNDY5ZjdkNGFkMGExODA4ZTM1MmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5ODk4ZDNmNmU1NTExNTYxYzNhYzdiMGZhY2JkNGRmYzEyNWU0MGIzYTMzMjUyNGNhNjU4NzYxYTkwZDA3MTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkzZDY2NmJkMWZmZTVjZDdkZjdiMWNkMzE1NWFlZGEyZWQ5YTcxZjFlZDUzMTI4ZWJiODcxNjk3OTdmYjI5ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a8fda3deb0bd4be993b2eae0d369dc2e",
+      "statement": "Native client artifacts are unsigned private-alpha builds: the documented lifecycle uses a reviewed checkout to build and inspect, pacman to install or upgrade, and pacman removal, while public repository publication, signing, automatic updates, and saved multi-server profiles remain unimplemented.",
+      "evidence": [
+        {
+          "resource": "repo://docs/client-installation.md#L1-L5",
+          "version": "repo-lines-v1:sha256:1bbb22272020c6818f53504ca620498cdcf2f460d06090063ad196cbfb8563db:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWIxZDBhMDBmZjBmYzhmMGJmMzVhMGI2OTE2OGNkYzMyZTViZjI2NmViNGY4ZjRkZDY0YjM1YjFiODQ3Mzg1MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTQ5ZjIwMTBiNmM3YzM5NzA2NDg0OWRjMzk3MGYwOTBkZWIzMzczZDcwMDQ2ODg0ZjM0NzBlMzFlY2MzOTY4OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2VmNmNiZjAzZTAzMDRlODA1Y2NlYmIyMWUzN2VjMDhmNzczZTgxZjY1MGU2ZDA3MjdkMTk4MDFhNzg3MDRlZCJ9"
+        },
+        {
+          "resource": "repo://docs/client-installation.md#L21-L44",
+          "version": "repo-lines-v1:sha256:b220e7899684a163856b4c43603a8c4dab698b8f89883530504f0a37def89485:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmNTBlZjhiNmZiOTI3ZjJiMGFhODkxZTEwMThkZWE4NjdmMGU4YzUxYWRhY2VhMzQ4NTQ3MGUyNGY3NjBmMDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3NWMwYjMyOWMxMGYzMjkwMWE3ZmQwODNhYTg5ZmUxMmE5YzI2YTQ4MmJlYjk5NjNjZWQ4MWZlZWZmMmI0MDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3ZDU1ZTIxMmM4NmNiMWViYzYxNjdkM2UwZTk5YTE4NWExMTg5Zjk1ZGFjMDlkMTVjN2NjODBmN2NlZmE3NzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc5NzFlNTRkZTNlNWUwNTllYjcyYWM0NDAwYTczNDM3YTJmZDY4OWMwMjEwNDViOWRjZGVhMjc4YzYxYjg0ZTAifQ"
+        },
+        {
+          "resource": "repo://docs/client-installation.md#L46-L103",
+          "version": "repo-lines-v1:sha256:6083301a4603e5fc707b56dd008ad949f2eca621f0475699fa8aada1e2ed174b:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4NjI5MzUxN2E2ZWQ5YzFiYmU2NzU5YTdmODgwYWM1MjM2MmZmMDM4YzJlZGE3OGMzNDU1MTFhODU1MDMyODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA2YTIwZGM4ZGE0NzFjMGU3ODA4MjRmYmJkZGQ2OGNjOThmMDk5ZWNiOWY0NTYzODc5OTI5MzcxMWI4MWIyNDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYyN2JlYTg0ZmU2MjMzNGRlMzNhMjg4MzYwODU2NmYwNzJhYmY2NDI3MTg4MGVkZTIwOTQ3N2MzYWU3MzBlM2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T15:18:17.322Z"
+    "at": "2026-08-26T16:57:43.335Z"
   }
 }

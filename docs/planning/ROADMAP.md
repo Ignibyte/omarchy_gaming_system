@@ -45,7 +45,8 @@ server-authoritative game runtime below.
 - [x] Keyboard-first connections and private inbox screens
 - [x] Keyboard-first challenge and gameplay screens
 - [x] End-to-end accessibility and visual polish across the complete player flow
-- Installer/package path for Omarchy
+- [x] Native client-only Arch package, desktop launcher, exact payload
+  inspection, and extracted-package smoke on Omarchy
 - Reporting, suspension, audit records, backups, and restore drill
 - Invite-only external testing
 

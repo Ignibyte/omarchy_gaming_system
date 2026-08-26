@@ -47,6 +47,10 @@ PostgreSQL
   operator-custom content. Provenance and support expectations differ, but the
   official client never accepts raw server-supplied QML, JavaScript, native
   code, credentials, or arbitrary network destinations from either class.
+- The player-device deployment unit is a native Arch package containing only
+  the exact platform-owned QML client, command launcher, desktop entry, and
+  non-secret build provenance. It consumes Omarchy's system Qt runtime and is
+  separate from community-server, provider, and cartridge deployment units.
 
 ## Current slices
 
@@ -100,6 +104,14 @@ the first identity HTTP surfaces:
   EXIT control requests the normal application-window close lifecycle on every
   route; it does not log out, revoke the durable device session, or dispatch
   API, social, game, or cartridge actions.
+- the private-alpha Omarchy package installs that same production QML root
+  under `/usr/share/omarchy-gaming-system/qml`, exposes `/usr/bin/omarchygs`,
+  and registers a non-terminal Game application entry. A fail-closed manifest
+  binds the complete non-test runtime tree, and the package gate proves two
+  identical Arch builds, exact metadata/payload/modes/provenance, hostile
+  source rejection, and an offscreen launch from the extracted artifact. The
+  package carries no server code or credential; public repository/signing and
+  persistent OS-keyring login remain separate future boundaries.
 - a dedicated QML social controller uses that same credential-owning API
   object only through a session-gated request function and completion signal;
   it never receives the bearer. Every connection, block, conversation,

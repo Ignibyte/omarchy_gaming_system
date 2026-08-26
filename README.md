@@ -15,6 +15,29 @@ QML connector -> GET /health -> Rust/Axum -> PostgreSQL
 See [the product charter](docs/product-charter.md) for the first playable scope
 and architectural commitments.
 
+## Install the player client on Omarchy
+
+The private-alpha client now builds as a native Arch package. From a reviewed
+checkout on Omarchy:
+
+```bash
+./scripts/build-client-package.sh
+cd target/packages
+sha256sum --check omarchy-gaming-system-client-*.pkg.tar.zst.sha256
+pacman -Qip omarchy-gaming-system-client-*.pkg.tar.zst
+sudo pacman -U ./omarchy-gaming-system-client-*.pkg.tar.zst
+```
+
+Launch **Omarchy Gaming System** from the application menu or run
+`omarchygs`. The package contains only the trusted QML player client and uses
+Omarchy's `qt6-declarative` runtime; it does not install the Rust server,
+PostgreSQL, Cargo, or Docker. These locally built private-alpha artifacts are
+unsigned, so inspect the package and verify its SHA-256 sidecar through the
+same trusted channel as the source before installing it.
+
+See [client installation](docs/client-installation.md) for server selection,
+updates, removal, provenance, and the current trust boundaries.
+
 ## Quick start on Omarchy
 
 Requirements currently present on a standard development machine:

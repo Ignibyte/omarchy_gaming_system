@@ -80,9 +80,6 @@ sources:
   - id: openwiki-source-8df9ad1a3495f8360740ff03
     resource: repo://scripts/test-game-cartridge-sdk.sh
 generated: {by: "codex", at: "2026-08-26T15:15:44.851Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-26T15:18:17.322Z
 ---
 
 # Product and architecture boundaries

@@ -49,6 +49,10 @@ sources:
     resource: repo://crates/server/src/sync_api_tests.rs
   - id: openwiki-source-48f66dd7218861d7dccea840
     resource: repo://docs/planning/pipeline/completed/signal-siege-versus-and-keyboard-first-game-flow.notes.md
+  - id: openwiki-source-6ef5cb9ff978eb09c62cd313
+    resource: repo://scripts/build-client-package.sh
+  - id: openwiki-source-1951c64828cbf175c78556c4
+    resource: repo://scripts/check-client-package-source.sh
   - id: openwiki-source-d35448de763d92d5820dbaad
     resource: repo://scripts/check-pipeline-tools.sh
   - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
@@ -59,6 +63,8 @@ sources:
     resource: repo://scripts/mcp-openwiki.sh
   - id: openwiki-source-037d6d04880b10f227f0ac17
     resource: repo://scripts/setup-pipeline-tools.sh
+  - id: openwiki-source-b88b0812532ef24df7a88f1e
+    resource: repo://scripts/test-client-package.sh
   - id: openwiki-source-77975b35449f204d64ad5930
     resource: repo://scripts/test-database.sh
   - id: openwiki-source-d69dbacb0ae7fe382ee46161
@@ -75,10 +81,10 @@ sources:
     resource: repo://scripts/test-provider-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
-generated: {by: "codex", at: "2026-08-26T13:49:04.179Z"}
+generated: {by: "codex", at: "2026-08-26T16:57:43.335Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-26T13:49:04.179Z
+    at: 2026-08-26T16:57:43.335Z
 ---
 
 # Development and validation
@@ -191,14 +197,55 @@ Useful commands:
 docker compose down
 ```
 
+## Native client package
+
+`scripts/build-client-package.sh` builds the player-device client as
+`omarchy-gaming-system-client-0.1.0-1-any.pkg.tar.zst` plus a SHA-256 sidecar.
+It installs nothing and does not change the system package database. Before
+`makepkg`, `scripts/check-client-package-source.sh` requires a safe, sorted,
+unique, newline-terminated manifest that exactly matches the non-test
+production QML tree; it also rejects symlink and non-regular inputs, version
+drift, invalid launcher Bash, and an invalid desktop entry.
+
+The builder computes source-revision, dirty-state, and aggregate-digest
+provenance and serializes `makepkg` through a private, owner-checked stable
+workspace so identical source on one Omarchy build host produces identical
+package bytes. The artifact installs only the exact 37-file QML inventory,
+`/usr/bin/omarchygs`, one application-menu entry, and the provenance record.
+It depends on `qt6-declarative` and excludes the Rust server, PostgreSQL,
+migrations, test fixtures, provider code, credentials, and keys.
+
+`scripts/test-client-package.sh` is the focused artifact entrypoint. It rejects
+missing, extra, duplicate, traversal, unsorted, unterminated, and symlink
+source fixtures; builds twice without changing Git status; compares the
+packages byte-for-byte; and checks exact Arch metadata, payload, types, modes,
+provenance, checksum, and desktop fields. It then extracts the artifact without
+`pacman -U` and launches packaged `Main.qml` through the real relocatable
+launcher against the bounded loopback health fixture under deterministic
+offscreen Qt.
+
+Useful commands:
+
+```bash
+./scripts/check-client-package-source.sh
+./scripts/build-client-package.sh
+./scripts/test-client-package.sh
+```
+
+See `docs/client-installation.md` for inspection, `pacman -U` installation and
+upgrade, launch, and `pacman -Rns` removal. Current artifacts are unsigned
+private-alpha output; a neighboring checksum is integrity evidence, not
+publisher authentication.
+
 ## Canonical gate
 
 `bin/gate.sh --fast` runs the static development loop without writing a receipt.
-`bin/gate.sh --diff` adds isolated migrated PostgreSQL tests plus the live
-PostgreSQL → Rust game-catalog/health/account/session/persona/social/inbox/
-challenge/sync/MFA API → QML smoke, provider security conformance, and the
-Door Legends authority pilot, then writes a receipt for the exact gated
-worktree at
+It includes native client package source admission. `bin/gate.sh --diff` adds
+the full native artifact conformance, isolated migrated PostgreSQL tests, and
+the live PostgreSQL → Rust game-catalog/health/account/session/persona/
+social/inbox/challenge/sync/MFA API → QML smoke, provider security
+conformance, and the Door Legends authority pilot, then writes a receipt for
+the exact gated worktree at
 `.git/omarchy-gaming-system-gate-receipt`.
 
 The gate currently covers:
@@ -219,24 +266,27 @@ The gate currently covers:
 6. the isolated Game Cartridge workspace format, Clippy, tests, binaries,
    rustdoc, signed package, broker/provider/probe exchange, privacy assertions,
    trusted-QML smoke, and frame/memory/package measurements;
-7. forty-five ignored router tests against SQLx-managed PostgreSQL databases
-   in diff/full modes; and
-8. the live Signal Siege catalog, idempotent launch, bounded completed match,
+7. the native client source contract in every mode plus two reproducible Arch
+   builds, exact package inspection, and extracted production-QML smoke in
+   diff/full modes;
+8. forty-five ignored router tests against SQLx-managed PostgreSQL databases
+   in diff/full modes;
+9. the live Signal Siege catalog, idempotent launch, bounded completed match,
    final replay/history/sync, health, registration, duplicate-conflict,
    session creation/list, persona creation/list/public lookup/edit/handle
    movement, connection, fail-closed unavailable-game challenge rejection,
    private inbox, synchronization recovery, and block lifecycle, TOTP
    enrollment, challenged login, recovery replay rejection, MFA disablement,
-   session revocation, rejected-token, the 38-case hostile/accessibility QML
+   session revocation, rejected-token, the 40-case hostile/accessibility QML
    fixture corpus,
    real QML registration/persona, social/inbox, MFA/persona, and two-authority
    Signal Siege challenge/versus/recovery flows, and the standalone QML shell
-   smoke.
-9. the production provider boundary's operator registry, lifecycle,
+   smoke;
+10. the production provider boundary's operator registry, lifecycle,
    grants, fixed signed messages, public-only pinned HTTPS egress, replay and
    callback deduplication, quotas, concurrency leases, audit, and fail-closed
    behavior against migrated PostgreSQL and a separate TLS provider process.
-10. the first-party Door Legends authority pilot built from a clean clone,
+11. the first-party Door Legends authority pilot built from a clean clone,
     running through the real player-server bridge against an independent
     provider database, with replay, revision races, callbacks, projection,
     outage/restart/reconciliation, lifecycle, privacy, and backup/restore proof.
@@ -315,7 +365,7 @@ for the boundary and remaining production work.
 ### Remote-provider security foundation
 
 `scripts/test-provider-conformance.sh` is the Ticket 018 production security
-entrypoint and gate 17 in diff/full modes. It runs provider unit and public
+entrypoint and gate 19 in diff/full modes. It runs provider unit and public
 protocol tests, then serializes the ignored operator CLI, PostgreSQL registry,
 separate-process TLS egress, and end-to-end broker conformance cases against the
 migrated database. The corpus covers immutable release registration and key
@@ -325,15 +375,15 @@ pinning; strict body/time limits; idempotent replay and concurrent callback
 deduplication; quota and lease races; retry-after-unknown behavior; and safe
 audit records.
 
-Gate 17 proves the reusable provider security/control-plane boundary. The
+Gate 19 proves the reusable provider security/control-plane boundary. The
 player server instantiates that crate only when its all-or-none provider
-configuration is present; gate 18 owns the separately reviewed player-route
+configuration is present; gate 20 owns the separately reviewed player-route
 and authority proof.
 
 ### First-party remote-provider authority pilot
 
 `scripts/test-provider-authority-pilot.sh` is the Ticket 019 entrypoint and gate
-18 in diff/full modes. It packages the public provider protocol, copies the
+20 in diff/full modes. It packages the public provider protocol, copies the
 Door Legends example into a fresh Git repository, clones it, and builds its TLS
 provider with default platform features disabled. The script rejects a
 platform-only dependency or source-tree path in the resulting binary.
@@ -484,6 +534,11 @@ server, so absent or stale provenance fails closed.
   or game authority was cleared on the terminal path. Use
   `scripts/dev.sh --smoke-test` when the fixture passes but the real migrated
   API flow fails.
+- Native client package failure: run `scripts/check-client-package-source.sh`
+  first, then `scripts/test-client-package.sh`. Repair the named source
+  manifest, version, launcher, desktop, reproducibility, archive, provenance,
+  or extracted-QML contract; do not bypass gates 15 or 16 and do not install an
+  uninspected artifact.
 - Production cartridge failure: run `scripts/test-game-cartridge.sh` and fix the
   named canonical archive, signature, schema/media, capability, bounded-input,
   store, or revocation contract; do not bypass gate 11.
@@ -501,11 +556,11 @@ server, so absent or stale provenance fails closed.
 - Provider-security failure: run `scripts/test-provider-conformance.sh` and fix
   the named registration, lifecycle, signature, egress, replay, callback,
   quota/lease, audit, TLS-process, or PostgreSQL race failure; do not bypass
-  gate 17.
+  gate 19.
 - Provider-authority failure: run `scripts/test-provider-authority-pilot.sh`
   and fix the named clean-clone dependency, authority shape, player route,
   replay/revision race, callback projection, lifecycle, independent database,
-  reconciliation, restart, or restore failure; do not bypass gate 18 or widen
+  reconciliation, restart, or restore failure; do not bypass gate 20 or widen
   the pilot to another provider.
 - Pipeline structure failure: repair the ticket/spec/AAR/skill or Codex wiring
   named by `scripts/check-pipeline.sh`.
