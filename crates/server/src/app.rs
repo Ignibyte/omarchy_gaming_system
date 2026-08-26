@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 use omarchy_game_runtime::{GameManifest, GameRegistry};
 
-use crate::accounts::{self, RegistrationError, RegistrationInput};
+use crate::accounts::{self, RegistrationError, RegistrationInput, RegistrationOutcome};
 use crate::challenges::{
     self, ChallengeDirection, ChallengeError, ChallengeOutcome, CreateChallengeInput, GameChallenge,
 };
@@ -60,7 +60,9 @@ pub struct HealthResponse {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct RegistrationRequest {
+    invite_code: String,
     username: String,
     password: String,
 }
@@ -571,6 +573,12 @@ pub(crate) fn router_with_provider_runtime(
     game_registry: GameRegistry,
     provider_runtime: Option<ProviderRuntime>,
 ) -> Router {
+    let registration_routes = Router::new()
+        .route(
+            "/v1/accounts",
+            post(register_account).layer(DefaultBodyLimit::max(1024)),
+        )
+        .layer(middleware::map_response(inbox_no_store));
     let report_routes = Router::new()
         .route(
             "/v1/personas/{persona_id}/reports",
@@ -649,10 +657,7 @@ pub(crate) fn router_with_provider_runtime(
             "/v1/provider-events/{release_id}",
             post(receive_provider_event).layer(DefaultBodyLimit::max(512 * 1024)),
         )
-        .route(
-            "/v1/accounts",
-            post(register_account).layer(DefaultBodyLimit::max(1024)),
-        )
+        .merge(registration_routes)
         .route(
             "/v1/sessions",
             get(list_sessions)
@@ -732,6 +737,7 @@ async fn register_account(
     let account = accounts::register_account(
         &state.pool,
         RegistrationInput {
+            invite_code: request.invite_code,
             username: request.username,
             password: request.password,
         },
@@ -739,8 +745,12 @@ async fn register_account(
     .await
     .map_err(ApiError::Registration)?;
 
+    let (status, account) = match account {
+        RegistrationOutcome::Created(account) => (StatusCode::CREATED, account),
+        RegistrationOutcome::Existing(account) => (StatusCode::OK, account),
+    };
     Ok((
-        StatusCode::CREATED,
+        status,
         Json(RegistrationResponse {
             id: account.id,
             username: account.username,
@@ -1997,6 +2007,11 @@ impl IntoResponse for ApiError {
                 "invalid_password",
                 "password must be 12-128 bytes",
             ),
+            ApiError::Registration(RegistrationError::InvalidInvitation) => (
+                StatusCode::FORBIDDEN,
+                "invalid_invitation",
+                "registration invitation is invalid",
+            ),
             ApiError::Registration(RegistrationError::UsernameTaken) => (
                 StatusCode::CONFLICT,
                 "username_taken",
@@ -2459,7 +2474,7 @@ mod tests {
     use sqlx::{PgPool, postgres::PgPoolOptions};
     use tower::ServiceExt;
 
-    use crate::mfa::MfaCipher;
+    use crate::{accounts, mfa::MfaCipher};
 
     use super::{HealthResponse, health_document, router};
 
@@ -2490,6 +2505,7 @@ mod tests {
             .connect_lazy("postgres://test:test@127.0.0.1:5432/test")
             .expect("test database URL should parse without connecting");
         let oversized_payload = json!({
+            "invite_code": "ogsi_invalid",
             "username": "valid_player",
             "password": "x".repeat(1024)
         });
@@ -2511,9 +2527,14 @@ mod tests {
     #[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
     async fn registration_persists_a_canonical_argon2id_account(pool: PgPool) {
         let password = "TEST-ONLY-registration-passphrase";
+        let invite_code = accounts::create_test_invite(&pool).await;
         let (status, document) = post_registration(
             pool.clone(),
-            json!({"username": "  Player_One  ", "password": password}),
+            json!({
+                "invite_code": invite_code,
+                "username": "  Player_One  ",
+                "password": password
+            }),
         )
         .await;
 
@@ -2543,9 +2564,11 @@ mod tests {
                 .is_ok()
         );
 
+        let duplicate_invite = accounts::create_test_invite(&pool).await;
         let (duplicate_status, duplicate_document) = post_registration(
             pool.clone(),
             json!({
+                "invite_code": duplicate_invite,
                 "username": "PLAYER_ONE",
                 "password": "TEST-ONLY-a-different-passphrase"
             }),
@@ -2567,7 +2590,7 @@ mod tests {
     #[sqlx::test(migrations = "../../migrations")]
     #[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
     async fn registration_rejects_invalid_input_without_inserting(pool: PgPool) {
-        for (payload, expected_code) in [
+        for (mut payload, expected_code) in [
             (
                 json!({
                     "username": "-invalid",
@@ -2580,6 +2603,7 @@ mod tests {
                 "invalid_password",
             ),
         ] {
+            payload["invite_code"] = accounts::create_test_invite(&pool).await.into();
             let (status, document) = post_registration(pool.clone(), payload).await;
             assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
             assert_eq!(document["error"]["code"], expected_code);

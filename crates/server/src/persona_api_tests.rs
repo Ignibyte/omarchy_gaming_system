@@ -396,11 +396,16 @@ async fn persona_validation_and_input_allowlists_preserve_storage(pool: PgPool) 
 }
 
 async fn register_account(pool: &PgPool, username: &str, password: &str) {
+    let invite_code = crate::accounts::create_test_invite(pool).await;
     let response = request(
         pool,
         Method::POST,
         "/v1/accounts",
-        Some(json!({"username": username, "password": password})),
+        Some(json!({
+            "invite_code": invite_code,
+            "username": username,
+            "password": password
+        })),
         None,
     )
     .await;

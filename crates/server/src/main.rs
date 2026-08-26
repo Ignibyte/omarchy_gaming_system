@@ -9,6 +9,7 @@ mod inboxes;
 mod mfa;
 mod personas;
 mod provider_games;
+mod registration_invites;
 mod reports;
 mod sessions;
 mod sync;
@@ -27,6 +28,8 @@ mod mfa_api_tests;
 mod persona_api_tests;
 #[cfg(test)]
 mod provider_game_api_tests;
+#[cfg(test)]
+mod registration_api_tests;
 #[cfg(test)]
 mod report_api_tests;
 #[cfg(test)]

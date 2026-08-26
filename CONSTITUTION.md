@@ -65,6 +65,13 @@ The current gates are:
     independent provider database, including replay, conflict, callback,
     projection, outage, reconciliation, lifecycle, privacy, and restore proof
     (DIFF/FULL only)
+21. The database-local platform operator safety and backup/isolated-restore
+    drill, including reporting, audited suspension, session containment, and
+    restored authorization denial (DIFF/FULL only)
+22. The invite-only private-alpha admission drill, including real local
+    issuance, digest-only persistence, atomic registration, exact replay,
+    one-use denial, revocation, metadata-only inventory, login, and audit
+    (DIFF/FULL only)
 
 Repository-local CodeGraph and OpenWiki are workflow instruments, not CI
 dependencies. `scripts/setup-pipeline-tools.sh` prepares their pinned generated

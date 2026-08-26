@@ -10,10 +10,12 @@ use std::{
 
 #[path = "../operator_admin.rs"]
 mod operator_admin;
+#[path = "../registration_invites.rs"]
+mod registration_invites;
 
 use operator_admin::{
-    MAX_OPERATOR_DOCUMENT_BYTES, OperatorCommand, OperatorError, ReportFilter, apply_command,
-    list_reports,
+    InvitationFilter, MAX_OPERATOR_DOCUMENT_BYTES, OperatorCommand, OperatorError, ReportFilter,
+    apply_command, list_invitations, list_reports,
 };
 use sqlx::postgres::PgPoolOptions;
 
@@ -65,6 +67,33 @@ async fn run() -> Result<(), OperatorError> {
             return Err(OperatorError::InvalidInput);
         }
         serde_json::to_value(list_reports(&pool, filter, limit).await?)
+            .map_err(|_| OperatorError::Internal)?
+    } else if action == OsStr::new("invites") {
+        let filter = arguments
+            .next()
+            .map(|value| {
+                value
+                    .to_str()
+                    .ok_or(OperatorError::InvalidInput)
+                    .and_then(InvitationFilter::parse)
+            })
+            .transpose()?
+            .unwrap_or(InvitationFilter::Issued);
+        let limit = arguments
+            .next()
+            .map(|value| {
+                value
+                    .to_str()
+                    .ok_or(OperatorError::InvalidInput)?
+                    .parse::<u16>()
+                    .map_err(|_| OperatorError::InvalidInput)
+            })
+            .transpose()?
+            .unwrap_or(100);
+        if arguments.next().is_some() {
+            return Err(OperatorError::InvalidInput);
+        }
+        serde_json::to_value(list_invitations(&pool, filter, limit).await?)
             .map_err(|_| OperatorError::Internal)?
     } else if action == OsStr::new("apply") {
         let document_path = arguments

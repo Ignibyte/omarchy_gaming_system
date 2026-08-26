@@ -905,11 +905,16 @@ fn assert_one_created_and_one_limited(first: &TestResponse, second: &TestRespons
 }
 
 async fn register_account(pool: &PgPool, username: &str, password: &str) {
+    let invite_code = crate::accounts::create_test_invite(pool).await;
     let response = request(
         pool,
         Method::POST,
         "/v1/accounts",
-        Some(json!({"username": username, "password": password})),
+        Some(json!({
+            "invite_code": invite_code,
+            "username": username,
+            "password": password
+        })),
         None,
     )
     .await;

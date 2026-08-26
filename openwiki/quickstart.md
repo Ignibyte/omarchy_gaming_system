@@ -3,6 +3,8 @@ type: "Reference"
 title: "Omarchy Gaming System engineering quickstart"
 openwiki_generated: true
 sources:
+  - id: openwiki-source-0bb8016edf4f4744d3a09cf4
+    resource: repo://bin/gate.sh
   - id: openwiki-source-998b0f5a7b56d7475101b7a2
     resource: repo://client/qml/components/OgsTheme.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
@@ -11,20 +13,24 @@ sources:
     resource: repo://client/qml/Main.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
+  - id: openwiki-source-a89f426477ef71ce555d4a7e
+    resource: repo://client/qml/screens/AccessScreen.qml
   - id: openwiki-source-fb3bac0b93c3046f977a1023
     resource: repo://client/qml/screens/SocialScreen.qml
   - id: openwiki-source-4f5334e859a4d83e2a196fcf
     resource: repo://client/qml/SocialController.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
+  - id: openwiki-source-93421eb71ebe4d41b6a9af26
+    resource: repo://client/qml/tests/fixture/tst_onboarding.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
+  - id: openwiki-source-66facc66e34ad7f2a74321e1
+    resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
-  - id: openwiki-source-ba203ea2e600f294ab58ef02
-    resource: repo://crates/server/src/bin/omarchygs-admin.rs
   - id: openwiki-source-a3892e0554790e3efc606fe1
     resource: repo://crates/server/src/challenges.rs
   - id: openwiki-source-4b133589ca70bd174cf19eb9
@@ -57,8 +63,6 @@ sources:
     resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
     resource: repo://docs/architecture/game-cartridges.md
-  - id: openwiki-source-872141f77f71851168245852
-    resource: repo://docs/architecture/system-overview.md
   - id: openwiki-source-831ed1de42e0dff0edb87b3b
     resource: repo://docs/client-installation.md
   - id: openwiki-source-c3d1d450d3a3561b368e5307
@@ -67,8 +71,6 @@ sources:
     resource: repo://docs/product-charter.md
   - id: openwiki-source-cb6494f7cbf0d5d23ffe082a
     resource: repo://migrations/0012_game_challenges.sql
-  - id: openwiki-source-4331166a21e12c8c40994c1e
-    resource: repo://migrations/0016_operator_reporting_and_audit.sql
   - id: openwiki-source-449de92825ee702b9aa05d2a
     resource: repo://packaging/arch/client-runtime-files.txt
   - id: openwiki-source-d85e6ea816d7c91e9828f7b2
@@ -83,14 +85,11 @@ sources:
     resource: repo://scripts/test-game-cartridge-sdk.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-  - id: openwiki-source-e08dc6155c081d7928029e27
-    resource: repo://scripts/test-operator-recovery.sh
+  - id: openwiki-source-a0a026a4d434d1b48884aa8e
+    resource: repo://scripts/test-private-alpha.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-26T17:59:41.119Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-26T17:59:41.119Z
+generated: {by: "codex", at: "2026-08-26T19:56:05.892Z"}
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -98,7 +97,7 @@ verified:
 Omarchy Gaming System is an API-first social gaming system with a keyboard-first QML
 connector as its flagship client. The implemented runtime now starts
 PostgreSQL, applies migrations, exposes database-backed `/health`, accepts
-account registration at `POST /v1/accounts`, provides revocable Bearer device
+invitation-required account registration at `POST /v1/accounts`, provides revocable Bearer device
 sessions, offers opt-in TOTP two-factor authentication with single-use recovery
 codes, supports account-owned personas with public exact-handle lookup, and
 supports persona-scoped connection requests, accepted connections, and private
@@ -126,7 +125,7 @@ export, signed release and catalog-policy verification, and a secure local
 cartridge importer. When the optional provider runtime is configured, the
 server also exposes the operator-pinned Door Legends v1 release and routes its
 player operations to a separate provider process and database. The main QML
-connector now handles server selection, account registration, password or MFA
+connector now handles server selection, masked invitation entry and account registration, password or MFA
 sign-in, and owned-persona creation or selection before entering an
 authenticated home. From there it can manage persona connections and private
 blocks, submit a report by exact persona handle, browse private conversations,
@@ -157,12 +156,17 @@ multi-server profiles remain future work.
 
 The private-alpha operator path is deliberately separate from the player API.
 `omarchygs-admin` uses a reviewed local `DATABASE_URL` to list a bounded report
-queue, resolve or dismiss an open report, and reversibly suspend or reactivate
-an account. Every mutation carries an operation UUID, actor, and reason and
-commits an immutable audit event with the state change. Suspension revokes all
-current device sessions; reactivation never resurrects them. The isolated
-recovery drill proves that report, audit, suspension, and representative
-platform history survive a custom PostgreSQL dump and restore.
+queue, resolve or dismiss an open report, reversibly suspend or reactivate an
+account, and issue, inventory, or revoke registration invitations. Every
+mutation carries an operation UUID, actor, and reason and commits an immutable
+audit event with the state change. An invitation's 48-character raw bearer code
+is delivered only on its first successful issue receipt; PostgreSQL retains
+only its digest, and later inventory never exposes code or credential material.
+Suspension revokes all current device sessions; reactivation never resurrects
+them. The isolated recovery drill proves that report, audit, suspension, and
+representative platform history survive a custom PostgreSQL dump and restore.
+Gate stage 22 separately proves the complete invite-only admission lifecycle
+and software readiness for a private-alpha event.
 
 The product is game-first: connections, private inboxes, challenges, and
 persistent game history define the intended experience. A public message board
@@ -214,8 +218,8 @@ plugin runtime is authorized today.
 | Engineering intent | Read first | Primary source entrypoints | Narrow validation |
 |---|---|---|---|
 | Change server startup, configuration, migrations, or health behavior | [Runtime foundation](runtime-foundation.md) | `crates/server/src/main.rs`, `config.rs`, `app.rs`; `migrations/` | `cargo test -p omarchy-gaming-system-server`; health smoke |
-| Change accounts, device sessions, MFA, personas, or connections | [Runtime foundation](runtime-foundation.md) | `accounts.rs`, `credentials.rs`, `sessions.rs`, `mfa.rs`, `personas.rs`, `connections.rs`; `docs/api.md` | Domain tests plus multi-account PostgreSQL evidence |
-| Change player reporting, account suspension, report disposition, operator audit, or platform restore | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `reports.rs`, `operator_admin.rs`, `bin/omarchygs-admin.rs`; migration `0016`; `docs/operators/operator-safety-and-recovery.md` | Report API and operator-domain PostgreSQL tests; real CLI test; `scripts/test-operator-recovery.sh` |
+| Change account registration, invitations, device sessions, MFA, personas, or connections | [Runtime foundation](runtime-foundation.md) | `accounts.rs`, `registration_invites.rs`, `credentials.rs`, `sessions.rs`, `mfa.rs`, `personas.rs`, `connections.rs`; migrations `0001`–`0005` and `0017`; `docs/api.md` | Domain tests plus multi-account PostgreSQL evidence; `scripts/test-private-alpha.sh` for admission changes |
+| Change player reporting, account suspension, report disposition, invitation administration, operator audit, or platform restore | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `reports.rs`, `operator_admin.rs`, `bin/omarchygs-admin.rs`; migrations `0016`–`0017`; `docs/operators/operator-safety-and-recovery.md`; `docs/operators/private-alpha.md` | Report API and operator-domain PostgreSQL tests; real CLI test; recovery and private-alpha drills |
 | Change QML endpoint selection, appearance/accessibility, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/components/`, `client/qml/screens/`, `client/qml/game/` | `scripts/check-qml-style.py`; `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
 | Change cartridge packaging, trusted rendering, SDK portability, or provider integration | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `client/qml/cartridge`; migrations `0014`–`0015`; ADR-0002; Tickets 015–019 | `scripts/test-game-cartridge.sh`; `scripts/test-game-cartridge-renderer.sh`; `scripts/test-game-cartridge-sdk.sh`; `scripts/test-provider-conformance.sh`; `scripts/test-provider-authority-pilot.sh`; threat/authority review and constitutional authority check |
@@ -226,17 +230,24 @@ plugin runtime is authorized today.
 
 ## Current boundary
 
-The database-backed health, account-registration, revocable-device-session,
-opt-in TOTP MFA, and persona slices are executable today. Registration creates
-no session or persona implicitly: clients exchange credentials for an opaque
-token, then use that account authority to manage its devices, optional MFA,
-and one or more personas. Once MFA is enabled, correct primary credentials
+The database-backed health, invite-only account-registration,
+revocable-device-session, opt-in TOTP MFA, and persona slices are executable
+today. Registration atomically consumes a valid invitation and creates no
+session or persona implicitly. A first submission returns `201`; only an exact
+canonical-username and password replay of the same used invitation recovers the
+same receipt with `200`. Other unavailable or mismatched invitations share one
+generic denial. Clients then exchange credentials for an opaque token and use
+that account authority to manage its devices, optional MFA, and one or more
+personas. Once MFA is enabled, correct primary credentials
 return a short-lived challenge rather than a session; a TOTP or unused recovery
 code must complete that challenge before a new device token is issued.
 Persona responses expose only public profile fields. Exact canonical handle
 lookup is public, while the owning account remains private.
 
-The keyboard-first QML connector now exercises that complete entry path. It
+The keyboard-first QML connector now exercises that complete entry path. Its
+registration mode masks the invitation bearer secret, includes it only in the
+registration request, and clears it after completion, mode changes, and server
+changes. It
 accepts a bare server origin, allows HTTP only for exact loopback hosts, and
 requires HTTPS remotely. An exact healthy OmarchyGS response unlocks account
 registration or sign-in; successful password or MFA authentication then loads

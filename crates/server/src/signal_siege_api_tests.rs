@@ -582,6 +582,7 @@ async fn create_test_persona(pool: &PgPool, username: &str, handle: &str) -> Tes
     accounts::register_account(
         pool,
         RegistrationInput {
+            invite_code: accounts::create_test_invite(pool).await,
             username: username.to_owned(),
             password: "correct horse battery staple".to_owned(),
         },

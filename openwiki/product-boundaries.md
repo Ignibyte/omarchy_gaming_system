@@ -3,6 +3,8 @@ type: "Reference"
 title: "Product and architecture boundaries"
 openwiki_generated: true
 sources:
+  - id: openwiki-source-0bb8016edf4f4744d3a09cf4
+    resource: repo://bin/gate.sh
   - id: openwiki-source-0d99cc708822fd795c83ba12
     resource: repo://client/qml/cartridge/CartridgePreview.qml
   - id: openwiki-source-c566a55d52a9744f7b26b7c4
@@ -67,22 +69,21 @@ sources:
     resource: repo://docs/architecture/system-overview.md
   - id: openwiki-source-36d583174a7a0018316f71c7
     resource: repo://docs/operators/owner-operated-servers.md
+  - id: openwiki-source-cf57125ee481ca29c99adcb8
+    resource: repo://docs/operators/private-alpha.md
   - id: openwiki-source-c3d1d450d3a3561b368e5307
     resource: repo://docs/planning/ROADMAP.md
   - id: openwiki-source-85dba8f87dd5947de337aca5
     resource: repo://docs/product-charter.md
   - id: openwiki-source-674113ba65eebb6f842b2dda
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
-  - id: openwiki-source-4331166a21e12c8c40994c1e
-    resource: repo://migrations/0016_operator_reporting_and_audit.sql
+  - id: openwiki-source-75e44c1b77422917d3f6c324
+    resource: repo://migrations/0017_invite_only_registration.sql
   - id: openwiki-source-8df9ad1a3495f8360740ff03
     resource: repo://scripts/test-game-cartridge-sdk.sh
-  - id: openwiki-source-e08dc6155c081d7928029e27
-    resource: repo://scripts/test-operator-recovery.sh
-generated: {by: "codex", at: "2026-08-26T17:59:41.119Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-26T17:59:41.119Z
+  - id: openwiki-source-a0a026a4d434d1b48884aa8e
+    resource: repo://scripts/test-private-alpha.sh
+generated: {by: "codex", at: "2026-08-26T19:56:05.892Z"}
 ---
 
 # Product and architecture boundaries
@@ -122,6 +123,13 @@ only successful TOTP or unused recovery-code verification creates the new
 device session. Enabling or disabling MFA does not rename personas, reveal
 account ownership, or revoke existing sessions.
 
+Account admission is controlled by the community owner through the
+database-local operator executable. It issues bounded, expiring invitation
+bearer codes for trusted-channel delivery; the server stores only their
+digests, consumes one atomically with account creation, and permits revocation
+only before use. Invitation inventory and audit remain operator-only and never
+become player-network administration routes.
+
 That account authority now creates, inventories, and edits personas without
 accepting a client owner field. Inventory filters by the authenticated account,
 and mutation predicates on both account and persona IDs. Persona responses
@@ -134,9 +142,10 @@ may file a bounded report about another public persona, but the player receipt
 contains no account ownership, operator state, other reports, or report queue.
 The subject account identifier and report detail are available only to the
 trusted database-local operator command. Operator mutations are not network
-API routes: private alpha permits only reversible account suspension/
-reactivation and terminal report disposition with an immutable same-transaction
-audit event. Suspension revokes current sessions without deleting personas,
+API routes: private alpha permits reversible account suspension/reactivation,
+terminal report disposition, and registration-invitation issue or pre-use
+revocation with an immutable same-transaction audit event. Suspension revokes
+current sessions without deleting personas,
 messages, games, MFA state, reports, or provider state.
 
 The implemented social graph also stays on the persona side of this boundary.
@@ -190,8 +199,9 @@ uses its own database and independent recovery procedure.
 
 The four roadmap identity outcomes are intentionally sequenced:
 
-1. Account registration establishes normalized account identity and Argon2id
-   password storage. It creates neither a session nor a persona.
+1. Invitation-gated account registration atomically consumes a valid bearer,
+   establishes normalized account identity and Argon2id password storage, and
+   creates neither a session nor a persona.
 2. Revocable device sessions now establish account authentication without
    storing raw tokens.
 3. Opt-in TOTP MFA adds encrypted authenticator secrets, single-use recovery
@@ -213,9 +223,12 @@ The keyboard-first QML connector now covers catalog discovery, challenge
 creation and acceptance, authoritative turns, terminal result, and refetch
 recovery without treating WebSocket delivery as durable truth. Door Legends v1
 adds one operator-pinned remote authority pilot with platform-owned result and
-achievement projections. Player reporting, the database-local report queue,
+achievement projections. Player reporting, the database-local report and invitation queues,
 reversible account containment, immutable platform audit, and an isolated
-platform backup/restore proof are also implemented. Remote administration,
+platform backup/restore proof are also implemented. Gate stage 22 proves the
+software path for private-alpha admission, but it does not substitute for the
+first human event's documented issue, trusted delivery, onboarding, gameplay,
+safety, and evidence sequence. Remote administration,
 signed-cartridge main-client launch, and external-provider onboarding remain
 later slices.
 
@@ -225,12 +238,14 @@ throttling. The in-process four-job Argon2 limit bounds memory-heavy work but is
 not a substitute for either deployment control. TOTP also requires protected,
 replicated encryption-key management and does not provide phishing resistance.
 
-Public registration currently distinguishes an existing canonical username
-with HTTP 409. That makes account-name enumeration a known, temporarily
-accepted private-alpha risk. A public deployment must either accept that
-contract deliberately or introduce a separately designed verifiable private
-registration channel before replacing it with a generic response; MFA does not
-remove the registration-side disclosure.
+Random registration callers cannot probe usernames because malformed, absent,
+expired, revoked, and mismatched used invitations all receive the same generic
+denial. A holder of a valid unused invitation can still distinguish an existing
+canonical username through HTTP 409; the failed attempt does not consume the
+invitation. That narrower account-name enumeration risk is accepted for the
+controlled private alpha. Public deployment still requires deliberate edge
+rate limits and a fresh decision about whether the conflict contract is
+appropriate; MFA does not remove this registration-side disclosure.
 
 ## Game authority boundaries
 

@@ -88,14 +88,15 @@ QtObject {
         return true
     }
 
-    function registerAccount(username, password) {
+    function registerAccount(inviteCode, username, password) {
         if (state !== "access" || accessMode !== "register" || busy)
             return false
         errorText = ""
         statusText = "Creating the account..."
         _expectedGeneration = api.request(
                     "register", "POST", "/v1/accounts",
-                    {"username": String(username), "password": String(password)}, false)
+                    {"invite_code": String(inviteCode),
+                     "username": String(username), "password": String(password)}, false)
         return _expectedGeneration !== 0
     }
 
@@ -262,7 +263,7 @@ QtObject {
         }
 
         if (operation === "register") {
-            if (status === 201 && _validAccount(document)) {
+            if ((status === 200 || status === 201) && _validAccount(document)) {
                 suggestedUsername = document.username
                 accessMode = "sign_in"
                 statusText = "Account created. Sign in to continue."
@@ -519,6 +520,7 @@ QtObject {
         const messages = {
             "invalid_username": "Use 3–32 letters, numbers, underscores, or hyphens.",
             "invalid_password": "Use a password between 12 and 128 characters.",
+            "invalid_invitation": "That invitation is invalid, expired, revoked, or already used.",
             "username_taken": "That username is already registered.",
             "invalid_credentials": "The username or password was not accepted.",
             "invalid_device_name": "Use a device label between 1 and 64 characters.",

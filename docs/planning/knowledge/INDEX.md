@@ -88,6 +88,11 @@ and in this register.
 | `PR-omarchy-gaming-system-stabilize-package-build-paths-for-reproducibility-001` | When package metadata records build paths, use a private owner-checked serialized stable root or remove or normalize the path before claiming byte reproducibility. | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
 | `PR-omarchy-gaming-system-enforce-line-manifest-termination-001` | Define and test final-record termination before multiple line-oriented consumers rely on a manifest. | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
 | `PR-omarchy-gaming-system-bind-terminal-scan-document-identities-001` | Before terminal security finalization, bind manifest, findings, and coverage to one explicit scan ID and verify equality. | `aar/AAR-028-native-omarchy-client-package-and-clean-install-smoke.md` |
+| `PR-omarchy-gaming-system-refresh-dependent-projections-after-blocked-lock-001` | After a row-lock wait changes the root lifecycle, end the stale transaction and reload dependent joined projections before replay authorization. | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `PR-omarchy-gaming-system-declare-editable-qml-accessibility-role-001` | Shared styled text inputs must declare and fixture-test their explicit editable accessibility role. | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `PR-omarchy-gaming-system-inventory-callers-after-exact-contract-break-001` | After an intentional exact-schema break, inventory every production, fixture, script, and peer caller and execute the complete vertical slice. | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `PR-omarchy-gaming-system-equalize-secret-replay-credential-work-001` | Once a bearer secret resolves a credential-linked row, perform the same password-verification work before combining any attacker-controlled identity predicate into denial. | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `PR-omarchy-gaming-system-budget-readiness-for-measured-cold-path-001` | Bound process readiness with a deadline that covers measured cold migration under full-gate load plus margin, while retaining immediate process-death detection. | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
 
 ## Register
 
@@ -287,3 +292,14 @@ and in this register.
 | `PR-omarchy-gaming-system-pin-default-run-when-adding-package-binary-001` | rule | `aar/AAR-029-operator-reporting-suspension-audit-and-recovery-drill.md` |
 | `PR-omarchy-gaming-system-reconstruct-idempotent-creation-receipts-from-immutable-fields-001` | rule | `aar/AAR-029-operator-reporting-suspension-audit-and-recovery-drill.md` |
 | `AD-omarchy-gaming-system-database-local-operator-safety-boundary-001` | decision | `../../architecture/system-overview.md` |
+| `BF-omarchy-gaming-system-blocked-lock-joined-projection-stale-001` | failure | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `BF-omarchy-gaming-system-qml-editable-accessible-role-gap-001` | failure | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `BF-omarchy-gaming-system-registration-contract-caller-drift-001` | failure | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `BF-omarchy-gaming-system-used-invite-username-timing-oracle-001` | failure | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `BF-omarchy-gaming-system-cold-migration-readiness-deadline-001` | failure | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `PR-omarchy-gaming-system-refresh-dependent-projections-after-blocked-lock-001` | rule | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `PR-omarchy-gaming-system-declare-editable-qml-accessibility-role-001` | rule | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `PR-omarchy-gaming-system-inventory-callers-after-exact-contract-break-001` | rule | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `PR-omarchy-gaming-system-equalize-secret-replay-credential-work-001` | rule | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `PR-omarchy-gaming-system-budget-readiness-for-measured-cold-path-001` | rule | `aar/AAR-030-invite-only-registration-and-private-alpha-readiness.md` |
+| `AD-omarchy-gaming-system-invite-only-account-admission-001` | decision | `../../architecture/system-overview.md` |

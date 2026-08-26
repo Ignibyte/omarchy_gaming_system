@@ -55,6 +55,10 @@ sources:
     resource: repo://crates/server/src/personas.rs
   - id: openwiki-source-0e10f198b5749ecebf761185
     resource: repo://crates/server/src/provider_games.rs
+  - id: openwiki-source-5c708d75b561203e4ad4312a
+    resource: repo://crates/server/src/registration_api_tests.rs
+  - id: openwiki-source-08416461d8a4ab0fe642ee32
+    resource: repo://crates/server/src/registration_invites.rs
   - id: openwiki-source-e4423ee4de83f38bd240bf8b
     resource: repo://crates/server/src/reports.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
@@ -67,8 +71,6 @@ sources:
     resource: repo://crates/server/src/sync.rs
   - id: openwiki-source-72d1d6cc0f49cdc59cc77234
     resource: repo://migrations/0001_identity_foundation.sql
-  - id: openwiki-source-cc81194d2be7a8c404889b15
-    resource: repo://migrations/0002_canonical_account_usernames.sql
   - id: openwiki-source-358c515ea0211d4b7f4f722a
     resource: repo://migrations/0003_device_session_metadata.sql
   - id: openwiki-source-80556fe53504b4a8da1cd08a
@@ -89,12 +91,11 @@ sources:
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
+  - id: openwiki-source-75e44c1b77422917d3f6c324
+    resource: repo://migrations/0017_invite_only_registration.sql
   - id: openwiki-source-a5928e7ee39885995efdc170
     resource: repo://scripts/dev.sh
-generated: {by: "codex", at: "2026-08-26T17:59:41.119Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-26T17:59:41.119Z
+generated: {by: "codex", at: "2026-08-26T19:56:05.892Z"}
 ---
 
 # Runtime foundation
@@ -146,22 +147,36 @@ serialization, and the QML consumer work together.
 ## Account registration flow
 
 `app::router` also installs `POST /v1/accounts` with a 1 KiB request-body cap.
-The handler translates JSON and delegates to `accounts::register_account`; it
-returns only the created account ID and canonical username.
+The exact request fields are `invite_code`, `username`, and `password`. The
+handler delegates the admission and credential work to
+`accounts::register_account`, returns only the account ID and canonical
+username, and marks both successful and error responses `no-store`.
 
 The account domain owns the sensitive work:
 
 - usernames are trimmed, ASCII-lowercased, and restricted to a 3–32 byte ASCII
   namespace beginning with a letter or digit;
 - passwords are not trimmed and must contain 12–128 bytes;
+- invitation codes must be the canonical 48-character `ogsi_` bearer format;
 - shared credential code runs password hashing through `spawn_blocking` with an
   OS-random salt and Argon2id v19 parameters `m=19456`, `t=2`, and `p=1`;
-- the resulting PHC string is inserted into PostgreSQL, and only the named
-  username uniqueness violation becomes the public `409` conflict outcome.
+- the invitation is resolved by its SHA-256 digest, and raw codes are never
+  persisted;
+- account insertion and invitation consumption commit in one transaction under
+  an invitation row lock, so concurrent consumers create exactly one account;
+- the resulting PHC string is inserted into PostgreSQL, and only a valid,
+  unused invitation can reach the named username uniqueness check and its
+  public `409` conflict outcome. That conflict rolls back without consuming the
+  invitation.
 
-Validation failures become stable `422` errors. Unexpected database, task, or
-hashing failures collapse to a generic `500` response rather than exposing
-internal or password-derived data.
+The first successful consumption returns `201`. Repeating the same used code
+with the exact canonical username and password performs Argon2 verification and
+recovers the same account receipt with `200`; a different username still takes
+the same password-verification path before denial. Malformed, absent, expired,
+revoked, concurrent-losing, and changed-credential invitations all collapse to
+the same `403 invalid_invitation` response. Validation failures become stable
+`422` errors. Unexpected database, task, or hashing failures collapse to a
+generic `500` response rather than exposing internal or password-derived data.
 
 Registration and login share a four-permit semaphore before entering their
 memory-hard blocking work. Missing-account login still performs a dummy Argon2
@@ -269,7 +284,9 @@ either response model. Successful authenticated persona responses carry
 `client/qml/Main.qml` is now a keyboard-first onboarding shell rather than a
 health-only connector. Its controller moves through connection, account access,
 optional MFA, persona inventory or creation, and an authenticated home. Account
-registration deliberately returns to sign-in; session creation immediately
+registration includes a masked invitation field, transmits the bearer only in
+the registration request, and clears it after completion, mode changes, and
+server changes. Registration deliberately returns to sign-in; session creation immediately
 loads the owned persona inventory; and either an owned selection or successful
 persona creation establishes the active persona for the home screen.
 
@@ -664,14 +681,22 @@ keyboard, accessibility, and 640×420 containment checks.
 
 `omarchygs-admin` is a separate PostgreSQL-local executable, not an Axum route,
 account role, administrator token, or listener. It reads only `DATABASE_URL`,
-lists a filtered newest-first queue of at most 100 reports, or applies one
-bounded non-symlink regular JSON command file. Account actions permit only
+lists a filtered newest-first queue of at most 100 reports or invitations, or
+applies one bounded non-symlink regular JSON command file. Account actions permit only
 `active` ↔ `suspended`; suspension revokes every live device session in the
 same transaction, reactivation never clears `revoked_at`, and `disabled`
 remains outside this reversible command. Report actions permit one `open` →
 `resolved` or `dismissed` transition. Both target roots are locked, exact
 operation retries return the original receipt, conflicting retries or terminal
 state changes fail, and the state transition plus audit append commit together.
+
+Invitation actions issue 1–720 hour bearer codes, revoke only a live unused
+invitation, and cap the community at 500 simultaneously live invitations. Issue
+is serialized and idempotent by operation UUID: exactly one first delivery
+contains the raw code, while replays and inventory expose only bounded metadata
+and lifecycle state. Revocation is also exact-replay idempotent, and used,
+expired, or already-revoked invitations cannot move into another terminal
+state.
 
 The operator audit records only the bounded actor/reason, target, action,
 previous/resulting state, operation UUID, and timestamp—not report detail or
@@ -735,7 +760,10 @@ views, immutable result and achievement projections, and terminal lifecycle
 guards. Migration `0016` adds retained persona reports with reporter-scoped
 idempotency, fixed category/status and terminal-time constraints, plus
 exact-target operator audit with target-scoped operation uniqueness. Database
-triggers make audit append-only and deny report deletion. Add later
+triggers make audit append-only and deny report deletion. Migration `0017`
+adds digest-only registration invitations with exact expiry, use, revocation,
+and single-terminal-state constraints and extends the immutable operator audit
+target/action contract to invitation issue and revocation. Add later
 capabilities through domain modules and thin handlers rather than placing policy
 directly in SQL or transport code.
 
@@ -745,7 +773,9 @@ Start with the owning domain behavior and tests, then update thin routes and
 persistence. Never rewrite a migration after it may have run; add a numbered
 forward migration. Validate database-sensitive behavior against PostgreSQL and
 finish with `bin/gate.sh --diff`. Registration's narrow proof is the account
-unit tests plus the ignored SQLx router tests run by `scripts/test-database.sh`.
+and invitation unit tests plus three ignored SQLx router scenarios for first
+use/replay, unavailable-state equivalence/conflict rollback, and concurrent
+consumption. The full admission proof is `scripts/test-private-alpha.sh`.
 Session changes additionally use the dedicated multi-account lifecycle tests.
 Persona changes use `persona_api_tests.rs`, whose migrated router tests cover
 multiple owners, exact public field sets, foreign-object denial, public lookup,

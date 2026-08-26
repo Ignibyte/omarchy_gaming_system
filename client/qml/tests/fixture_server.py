@@ -45,6 +45,7 @@ TOKEN_X = "ogs1_" + "X" * 43
 CHALLENGE = "ogm1_" + "C" * 43
 CREATED_AT = "2026-08-25T20:00:00.000Z"
 EXPIRES_AT = "2099-08-25T20:05:00.000Z"
+INVITE_CODE = "ogsi_" + "I" * 43
 
 
 def persona(persona_id: str, handle: str, display_name: str) -> dict[str, Any]:
@@ -373,10 +374,16 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self.path == "/v1/accounts":
             self._require_no_authorization("account registration")
-            if set(document) != {"username", "password"}:
+            if set(document) != {"invite_code", "username", "password"}:
                 self.state.violate("registration body did not have exact keys")
+            invite_code = str(document.get("invite_code", ""))
             username = str(document.get("username", "")).strip().lower()
-            if username == "taken_user":
+            if invite_code == "ogsi_invalid_fixture":
+                self._error(403, "invalid_invitation", "registration invitation is invalid")
+            elif invite_code != INVITE_CODE:
+                self.state.violate("registration did not send the expected invitation code")
+                self._error(403, "invalid_invitation", "registration invitation is invalid")
+            elif username == "taken_user":
                 self._error(409, "username_taken", "username is already registered")
             elif username == "malformed_register":
                 self._json(201, {"id": ACCOUNT_ID, "username": username, "password_hash": "no"})
@@ -944,8 +951,8 @@ def main() -> int:
         values = sys.stdin.buffer.read().split(b"\0")
         if values and values[-1] == b"":
             values.pop()
-        if len(values) != 10:
-            print("live fixture config requires ten NUL-delimited values", file=sys.stderr)
+        if len(values) != 11:
+            print("live fixture config requires eleven NUL-delimited values", file=sys.stderr)
             return 2
         try:
             decoded = [value.decode("utf-8") for value in values]
@@ -954,7 +961,7 @@ def main() -> int:
             return 2
         document = dict(zip(
             ["server_url", "scenario", "username", "password", "persona_handle", "factor",
-             "peer_handle", "message_body", "peer_username", "peer_password"],
+             "peer_handle", "message_body", "peer_username", "peer_password", "invite_code"],
             decoded,
             strict=True,
         ))

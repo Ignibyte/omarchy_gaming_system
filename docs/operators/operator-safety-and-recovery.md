@@ -23,6 +23,20 @@ Build the local command with:
 cargo build -p omarchy-gaming-system-server --bin omarchygs-admin
 ```
 
+## Manage registration invitations
+
+Private-alpha account creation requires one operator-issued invitation per
+account. Issue, inventory, deliver, and revoke those codes through the
+[private-alpha runbook](private-alpha.md). The first successful issue receipt
+is the only output containing the raw code; PostgreSQL, audit, later operation
+replays, and `invites` inventories retain metadata and a digest only. If first
+delivery is lost, revoke that invitation and issue another rather than trying
+to recover it from the database or a backup.
+
+Invitation issue and revocation use the same bounded mode-0600 JSON command
+files and immutable audit boundary as report/account actions. They do not add
+a remote admin endpoint or grant an account administrator authority.
+
 ## Review reports
 
 Players file persona-targeted reports from the Social screen. List up to 100
@@ -99,7 +113,8 @@ editing audit or report rows.
 
 ## Backup and isolated restore
 
-The platform database includes accounts, hashed credentials, encrypted MFA
+The platform database includes invitation digests and lifecycle metadata,
+accounts, hashed credentials, encrypted MFA
 state, session digests, personas, social/inbox data, game history, reports, and
 operator audit. Protect dumps as secrets, encrypt them at rest, restrict file
 permissions, retain off-host copies, and define a tested retention/deletion

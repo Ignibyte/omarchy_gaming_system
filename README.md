@@ -95,17 +95,21 @@ mode-0600 development key under ignored `.dev/` state when the variable is
 absent. Deployments must supply and back up their own stable key; losing it
 locks enrolled accounts out of TOTP verification.
 
-Register an account through the versioned JSON API:
+Account creation is invitation-only. A trusted server operator first issues a
+single-account code through the database-local procedure in the
+[private-alpha runbook](docs/operators/private-alpha.md). Present that code
+only in the versioned JSON registration body:
 
 ```bash
 curl --header 'Content-Type: application/json' \
-  --data '{"username":"player_one","password":"TEST-ONLY-change-this-passphrase"}' \
+  --data '{"invite_code":"ogsi_<operator-issued-code>","username":"player_one","password":"TEST-ONLY-change-this-passphrase"}' \
   http://127.0.0.1:8080/v1/accounts
 ```
 
 See [the HTTP API reference](docs/api.md) for validation rules and response
-contracts. Registration creates a private account only; device sessions and
-public personas remain separate resources.
+contracts. PostgreSQL retains only the invitation digest, and successful
+registration atomically consumes it. Registration creates a private account
+only; device sessions and public personas remain separate resources.
 
 After registration, `POST /v1/sessions` exchanges the username and password for
 a revocable device Bearer token. The API reference documents creation, listing,
@@ -128,12 +132,12 @@ the validation, privacy, and owner-authorization contract.
 The shipped QML connector now provides the first keyboard-first player access
 slice rather than only a health probe. It accepts HTTPS servers plus loopback
 HTTP for development, distinguishes configuration/offline/protocol states,
-supports account registration, password login, existing TOTP or recovery-code
-challenges, and owned-persona creation or selection. Passwords and factor input
-are masked and cleared after submission; bearer and MFA challenge tokens live
-only in process memory and are erased on logout, endpoint changes, invalid
-sessions, or protocol failure. Persistent sign-in waits for a reviewed OS
-keyring boundary. The selected persona can now open keyboard-first social and
+supports invitation-only account registration, password login, existing TOTP
+or recovery-code challenges, and owned-persona creation or selection.
+Invitation, password, and factor input are masked and cleared after submission;
+bearer and MFA challenge tokens live only in process memory and are erased on
+logout, endpoint changes, invalid sessions, or protocol failure. Persistent
+sign-in waits for a reviewed OS keyring boundary. The selected persona can now open keyboard-first social and
 private-inbox screens through that same credential owner. Exact-handle
 requests and reports, connection and private-block lifecycle, bounded ascending
 history, body-only sends, and monotonic read receipts use explicit durable REST
@@ -178,8 +182,9 @@ persists its snapshot, one-step revision, status, private replay receipt, and a
 minimal sync invalidation. Connected, unblocked personas can also create
 exact-version inbox challenges for games that admit two humans. Challenge
 history, server-owned expiry, retry/race safety, typed inbox events, and
-reconnect-safe invalidations are durable. QML gameplay/challenge screens and a
-production two-human game remain later roadmap slices.
+reconnect-safe invalidations are durable. The QML game screens can start solo
+Signal Siege, create/respond to challenges, play the two-person versus rules,
+and recover the exact terminal history through the authoritative REST paths.
 
 ## Development checks
 
@@ -199,7 +204,8 @@ Run the full server/database/QML player path without opening a window:
 ```
 
 The smoke includes deterministic hostile HTTP fixtures, keyboard-only social,
-report, and inbox interactions, real QML registration/persona creation, an
+report, and inbox interactions, a real locally issued invitation plus QML
+registration/persona creation, an
 enrolled MFA recovery login, and a migrated two-account QML connection/
 conversation/message/report path before the API/game/social/reconnect checks
 complete.
@@ -211,6 +217,17 @@ pre-suspension token against the restored production server:
 ```bash
 ./scripts/test-operator-recovery.sh
 ```
+
+The invite-only admission rehearsal owns an isolated generated database and
+drives the real operator CLI, production server, account registration/replay,
+ordinary sign-in, revocation, metadata-only inventory, and audit boundary:
+
+```bash
+./scripts/test-private-alpha.sh
+```
+
+This deterministic rehearsal is software evidence, not a claim that the
+external two-clean-installation acceptance run has occurred.
 
 The delivery gate combines both levels and writes a worktree-bound commit
 receipt:

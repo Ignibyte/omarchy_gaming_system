@@ -503,11 +503,16 @@ async fn enabled_account(
 }
 
 async fn register_and_login(pool: &PgPool, username: &str, password: &str) -> String {
+    let invite_code = crate::accounts::create_test_invite(pool).await;
     let registration = request(
         pool,
         Method::POST,
         "/v1/accounts",
-        Some(json!({"username": username, "password": password})),
+        Some(json!({
+            "invite_code": invite_code,
+            "username": username,
+            "password": password
+        })),
         None,
     )
     .await;

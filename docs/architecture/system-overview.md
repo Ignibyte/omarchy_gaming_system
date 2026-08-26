@@ -61,9 +61,12 @@ the first identity HTTP surfaces:
 - `GET /health` proves database readiness; the QML connector consumes its exact
   identity before enabling account access and distinguishes connecting,
   ready, offline, configuration-error, and protocol-error states.
-- `POST /v1/accounts` delegates to the account domain, which canonicalizes the
-  private account username, bounds the password, hashes it with salted Argon2id
-  off the async executor, and relies on PostgreSQL for unique insertion.
+- `POST /v1/accounts` requires an operator-issued 256-bit invitation, then
+  delegates to the account domain, which canonicalizes the private username,
+  bounds the password, rejects unavailable invitation digests before Argon2id
+  work, and atomically inserts the salted-Argon2id account plus one invitation
+  consumption. A credential-proven exact retry returns the immutable public
+  receipt; changed intent receives the uniform invitation denial.
 - `POST /v1/sessions` verifies account credentials with bounded Argon2id work
   and either issues an opaque device Bearer token or, for an MFA-enabled
   account, creates one of at most ten independent five-minute digest-only
@@ -94,17 +97,20 @@ the first identity HTTP surfaces:
   receipt. Reports do not generate sync hints or notify the subject.
 - the separate `omarchygs-admin` process is a PostgreSQL-local operator
   adapter, not an HTTP route or reusable administrator credential. It lists a
-  bounded report queue and applies only reversible account suspension/
-  reactivation or terminal report disposition. Account/report root locks,
-  target-scoped operation UUIDs, same-transaction session revocation, and
-  insert-only audit serialize every action. Reactivation cannot resurrect old
-  tokens, and the stronger `disabled` state remains outside this command.
+  bounded report queue and invitation inventory, issues digest-only expiring
+  one-account codes, revokes unused codes, and applies only reversible account
+  suspension/reactivation or terminal report disposition. Target locks,
+  operation UUIDs, same-transaction state changes, and insert-only audit
+  serialize every action. Raw invitations appear only in the first issue
+  receipt; reactivation cannot resurrect old tokens, and the stronger
+  `disabled` state remains outside this command.
 - the keyboard-first QML access shell composes those unchanged REST endpoints
   through one finite connection/access/MFA/persona/home state machine. Its API
   object serializes one bounded request generation, rejects stale completions,
   validates exact response shapes, and is the only client object that retains
-  a raw bearer. Password and factor fields clear on submission; bearer and MFA
-  challenge values remain in process memory only and are cleared with every
+  a raw bearer. Invitation, password, and factor fields are masked and clear
+  on submission or terminal form transitions; bearer and MFA challenge values
+  remain in process memory only and are cleared with every
   terminal authority transition. Remote endpoints require HTTPS while
   loopback HTTP remains the explicit development exception. The shell and all
   ten routed screens share repository-owned semantic theme, heading, status,

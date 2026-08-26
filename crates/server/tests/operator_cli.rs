@@ -165,6 +165,168 @@ async fn local_operator_cli_lists_and_dispositions_reports_without_secret_output
     assert_eq!(rejected.stderr, b"operator_invalid_input\n");
 }
 
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+async fn local_operator_cli_issues_lists_replays_and_revokes_registration_invites(pool: PgPool) {
+    let database_url = isolated_database_url(&pool).await;
+    let temp = TempDir::new().expect("private invite command directory should create");
+    let operation_id = Uuid::new_v4();
+    let issue_path = temp.path().join("issue-invite.json");
+    write_private_json(
+        &issue_path,
+        &json!({
+            "command": "issue_registration_invite",
+            "idempotency_key": operation_id,
+            "label": "CLI alpha tester",
+            "valid_for_hours": 72,
+            "actor": "cli-smoke-sysop",
+            "reason": "Admit one CLI alpha fixture"
+        }),
+    );
+    let issued = run_admin(
+        &database_url,
+        &["apply", issue_path.to_str().expect("path is UTF-8")],
+    );
+    assert!(
+        issued.status.success(),
+        "invite issue failed: {}",
+        String::from_utf8_lossy(&issued.stderr)
+    );
+    assert!(issued.stderr.is_empty());
+    let issue_receipt: Value =
+        serde_json::from_slice(&issued.stdout).expect("issue receipt should be JSON");
+    exact_keys(
+        &issue_receipt,
+        &[
+            "action",
+            "created_at",
+            "expires_at",
+            "first_delivery",
+            "id",
+            "invite_code",
+            "label",
+            "operation_id",
+            "previous_state",
+            "resulting_state",
+            "target_id",
+            "target_kind",
+        ],
+    );
+    assert_eq!(issue_receipt["target_kind"], "registration_invite");
+    assert_eq!(issue_receipt["first_delivery"], true);
+    let invite_id = Uuid::parse_str(
+        issue_receipt["target_id"]
+            .as_str()
+            .expect("invite ID should be a string"),
+    )
+    .expect("invite ID should be a UUID");
+    let invite_code = issue_receipt["invite_code"]
+        .as_str()
+        .expect("first issue should include code")
+        .to_owned();
+    assert!(invite_code.starts_with("ogsi_"));
+    assert_eq!(invite_code.len(), 48);
+
+    let replayed = run_admin(
+        &database_url,
+        &["apply", issue_path.to_str().expect("path is UTF-8")],
+    );
+    assert!(replayed.status.success());
+    let replay: Value = serde_json::from_slice(&replayed.stdout).expect("replay should be JSON");
+    exact_keys(
+        &replay,
+        &[
+            "action",
+            "created_at",
+            "expires_at",
+            "first_delivery",
+            "id",
+            "label",
+            "operation_id",
+            "previous_state",
+            "resulting_state",
+            "target_id",
+            "target_kind",
+        ],
+    );
+    assert_eq!(replay["id"], issue_receipt["id"]);
+    assert_eq!(replay["first_delivery"], false);
+
+    let listed = run_admin(&database_url, &["invites", "issued", "10"]);
+    assert!(listed.status.success());
+    assert!(listed.stderr.is_empty());
+    let inventory: Value =
+        serde_json::from_slice(&listed.stdout).expect("invite inventory should be JSON");
+    exact_keys(&inventory, &["invitations"]);
+    assert_eq!(inventory["invitations"].as_array().map(Vec::len), Some(1));
+    exact_keys(
+        &inventory["invitations"][0],
+        &[
+            "created_at",
+            "expires_at",
+            "id",
+            "label",
+            "redeemed_username",
+            "revoked_at",
+            "state",
+            "used_at",
+        ],
+    );
+    assert_eq!(inventory["invitations"][0]["id"], invite_id.to_string());
+    assert_eq!(inventory["invitations"][0]["state"], "issued");
+    let inventory_text = String::from_utf8(listed.stdout).expect("inventory should be UTF-8");
+    for forbidden in [
+        invite_code.as_str(),
+        "code_hash",
+        "issued_reason",
+        "password_hash",
+        "account_sessions",
+    ] {
+        assert!(!inventory_text.contains(forbidden));
+    }
+
+    let revoke_path = temp.path().join("revoke-invite.json");
+    write_private_json(
+        &revoke_path,
+        &json!({
+            "command": "revoke_registration_invite",
+            "idempotency_key": Uuid::new_v4(),
+            "invite_id": invite_id,
+            "actor": "cli-smoke-sysop",
+            "reason": "Invitation delivery was canceled"
+        }),
+    );
+    let revoked = run_admin(
+        &database_url,
+        &["apply", revoke_path.to_str().expect("path is UTF-8")],
+    );
+    assert!(revoked.status.success());
+    let receipt: Value =
+        serde_json::from_slice(&revoked.stdout).expect("revoke receipt should be JSON");
+    exact_keys(
+        &receipt,
+        &[
+            "action",
+            "created_at",
+            "id",
+            "operation_id",
+            "previous_state",
+            "resulting_state",
+            "target_id",
+            "target_kind",
+        ],
+    );
+    assert_eq!(receipt["previous_state"], "issued");
+    assert_eq!(receipt["resulting_state"], "revoked");
+    let revoked_list = run_admin(&database_url, &["invites", "revoked", "10"]);
+    assert!(revoked_list.status.success());
+    assert_eq!(
+        serde_json::from_slice::<Value>(&revoked_list.stdout)
+            .expect("revoked inventory should be JSON")["invitations"][0]["state"],
+        "revoked"
+    );
+}
+
 fn exact_keys(value: &Value, expected: &[&str]) {
     let actual: BTreeSet<&str> = value
         .as_object()
@@ -173,6 +335,24 @@ fn exact_keys(value: &Value, expected: &[&str]) {
         .map(String::as_str)
         .collect();
     assert_eq!(actual, expected.iter().copied().collect());
+}
+
+fn write_private_json(path: &std::path::Path, document: &Value) {
+    std::fs::write(
+        path,
+        serde_json::to_vec(document).expect("command should serialize"),
+    )
+    .expect("command should write");
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
+        .expect("command permissions should restrict");
+}
+
+fn run_admin(database_url: &url::Url, arguments: &[&str]) -> std::process::Output {
+    Command::new(env!("CARGO_BIN_EXE_omarchygs-admin"))
+        .args(arguments)
+        .env("DATABASE_URL", database_url.as_str())
+        .output()
+        .expect("operator CLI should execute")
 }
 
 async fn isolated_database_url(pool: &PgPool) -> url::Url {

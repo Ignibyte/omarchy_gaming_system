@@ -241,6 +241,17 @@ TestCase {
         assertScreen("access", "usernameField")
         assertTabRoundTrip(object("usernameField"))
 
+        activate(object("registerModeButton"))
+        tryCompare(applicationWindow.onboardingController, "accessMode", "register")
+        const inviteCode = object("inviteCodeField")
+        assertScreen("access", "inviteCodeField", inviteCode)
+        compare(inviteCode.Accessible.role, Accessible.EditableText)
+        compare(inviteCode.Accessible.name, "Registration invitation code")
+        compare(inviteCode.echoMode, TextInput.Password)
+        assertTabRoundTrip(inviteCode)
+        activate(object("signInModeButton"))
+        tryCompare(applicationWindow.onboardingController, "accessMode", "sign_in")
+
         applicationWindow.onboardingController.showServerConfiguration()
         tryCompare(applicationWindow.onboardingController, "state", "connection")
         assertScreen("connection", "serverUrlField")

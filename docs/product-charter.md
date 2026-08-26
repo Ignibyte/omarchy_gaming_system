@@ -25,7 +25,8 @@ result recorded.
 
 ## Private-alpha scope
 
-- Accounts, opt-in TOTP two-factor authentication, and revocable sessions
+- Operator-invited accounts, opt-in TOTP two-factor authentication, and
+  revocable sessions
 - Persona creation and profiles
 - Connection requests and blocking
 - Inbox threads and typed game messages
@@ -40,6 +41,8 @@ result recorded.
 - Persona reporting plus a database-local sysop queue, reversible account
   suspension with session containment, immutable audit, and isolated platform
   backup/restore proof
+- Expiring one-account invitation codes, local audited issue/revoke/inventory,
+  masked QML registration, and an external-alpha operator/tester runbook
 
 ## Explicit non-goals for the first alpha
 
@@ -85,5 +88,7 @@ result recorded.
 ## Definition of private-alpha done
 
 Two clean Omarchy installations can connect to one server, create personas,
-connect, exchange messages, finish a challenged match, reconnect after going
-offline, and observe the correct match result without developer intervention.
+register with distinct operator-issued invitations, connect, exchange messages,
+finish a challenged match, reconnect after going offline, and observe the
+correct match result without developer intervention. Deterministic software
+rehearsal does not replace recording that real external acceptance run.

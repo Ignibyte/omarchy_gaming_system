@@ -2,7 +2,11 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
+use crate::registration_invites;
+
 pub const MAX_OPERATOR_DOCUMENT_BYTES: usize = 32 * 1024;
+const MAX_LIVE_REGISTRATION_INVITES: i64 = 500;
+const REGISTRATION_INVITE_ADVISORY_LOCK: i64 = 0x4f47_5349_4e56_4954;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperatorError {
@@ -74,6 +78,19 @@ pub enum OperatorCommand {
         actor: String,
         reason: String,
     },
+    IssueRegistrationInvite {
+        idempotency_key: Uuid,
+        label: String,
+        valid_for_hours: u16,
+        actor: String,
+        reason: String,
+    },
+    RevokeRegistrationInvite {
+        idempotency_key: Uuid,
+        invite_id: Uuid,
+        actor: String,
+        reason: String,
+    },
 }
 
 impl OperatorCommand {
@@ -93,6 +110,29 @@ impl OperatorCommand {
                 reason,
                 ..
             } => (idempotency_key, report_id, actor, reason),
+            Self::IssueRegistrationInvite {
+                idempotency_key,
+                label,
+                valid_for_hours,
+                actor,
+                reason,
+            } => {
+                if idempotency_key.is_nil()
+                    || !valid_text(label, 64)
+                    || !(1..=720).contains(valid_for_hours)
+                    || !valid_text(actor, 64)
+                    || !valid_text(reason, 500)
+                {
+                    return Err(OperatorError::InvalidInput);
+                }
+                return Ok(());
+            }
+            Self::RevokeRegistrationInvite {
+                idempotency_key,
+                invite_id,
+                actor,
+                reason,
+            } => (idempotency_key, invite_id, actor, reason),
         };
         if operation_id.is_nil()
             || target_id.is_nil()
@@ -116,6 +156,14 @@ pub struct AuditReceipt {
     pub previous_state: String,
     pub resulting_state: String,
     pub created_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invite_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_delivery: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -148,6 +196,23 @@ pub struct ReportInventory {
     pub reports: Vec<OperatorReport>,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct OperatorInvitation {
+    pub id: Uuid,
+    pub label: String,
+    pub state: String,
+    pub redeemed_username: Option<String>,
+    pub created_at: String,
+    pub expires_at: String,
+    pub used_at: Option<String>,
+    pub revoked_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct InvitationInventory {
+    pub invitations: Vec<OperatorInvitation>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReportFilter {
     Open,
@@ -172,6 +237,38 @@ impl ReportFilter {
             Self::Open => Some("open"),
             Self::Resolved => Some("resolved"),
             Self::Dismissed => Some("dismissed"),
+            Self::All => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InvitationFilter {
+    Issued,
+    Used,
+    Expired,
+    Revoked,
+    All,
+}
+
+impl InvitationFilter {
+    pub fn parse(value: &str) -> Result<Self, OperatorError> {
+        match value {
+            "issued" => Ok(Self::Issued),
+            "used" => Ok(Self::Used),
+            "expired" => Ok(Self::Expired),
+            "revoked" => Ok(Self::Revoked),
+            "all" => Ok(Self::All),
+            _ => Err(OperatorError::InvalidInput),
+        }
+    }
+
+    const fn query_value(self) -> Option<&'static str> {
+        match self {
+            Self::Issued => Some("issued"),
+            Self::Used => Some("used"),
+            Self::Expired => Some("expired"),
+            Self::Revoked => Some("revoked"),
             Self::All => None,
         }
     }
@@ -215,6 +312,35 @@ struct AuditRow {
     previous_state: String,
     resulting_state: String,
     created_at: String,
+}
+
+#[derive(FromRow)]
+struct InvitationInventoryRow {
+    id: Uuid,
+    label: String,
+    state: String,
+    redeemed_username: Option<String>,
+    created_at: String,
+    expires_at: String,
+    used_at: Option<String>,
+    revoked_at: Option<String>,
+}
+
+#[derive(FromRow)]
+struct IssuedInvitationRow {
+    id: Uuid,
+    label: String,
+    valid_for_hours: i16,
+    issued_by: String,
+    issued_reason: String,
+    expires_at: String,
+}
+
+#[derive(FromRow)]
+struct InvitationStateRow {
+    used: bool,
+    revoked: bool,
+    expired: bool,
 }
 
 pub async fn list_reports(
@@ -271,6 +397,67 @@ pub async fn list_reports(
     })
 }
 
+pub async fn list_invitations(
+    pool: &PgPool,
+    filter: InvitationFilter,
+    limit: u16,
+) -> Result<InvitationInventory, OperatorError> {
+    if !(1..=100).contains(&limit) {
+        return Err(OperatorError::InvalidInput);
+    }
+    let rows = sqlx::query_as::<_, InvitationInventoryRow>(
+        r#"
+        SELECT id, label, state, redeemed_username,
+               created_at, expires_at, used_at, revoked_at
+        FROM (
+            SELECT invitation.id,
+                   invitation.label,
+                   CASE
+                       WHEN invitation.used_at IS NOT NULL THEN 'used'
+                       WHEN invitation.revoked_at IS NOT NULL THEN 'revoked'
+                       WHEN invitation.expires_at <= clock_timestamp() THEN 'expired'
+                       ELSE 'issued'
+                   END AS state,
+                   account.username AS redeemed_username,
+                   to_char(invitation.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at,
+                   to_char(invitation.expires_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS expires_at,
+                   CASE WHEN invitation.used_at IS NULL THEN NULL ELSE
+                       to_char(invitation.used_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+                   END AS used_at,
+                   CASE WHEN invitation.revoked_at IS NULL THEN NULL ELSE
+                       to_char(invitation.revoked_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+                   END AS revoked_at
+            FROM registration_invites AS invitation
+            LEFT JOIN accounts AS account ON account.id = invitation.used_by_account_id
+        ) AS inventory
+        WHERE ($1::text IS NULL OR state = $1)
+        ORDER BY created_at DESC, id DESC
+        LIMIT $2
+        "#,
+    )
+    .bind(filter.query_value())
+    .bind(i64::from(limit))
+    .fetch_all(pool)
+    .await
+    .map_err(|_| OperatorError::Internal)?;
+
+    Ok(InvitationInventory {
+        invitations: rows
+            .into_iter()
+            .map(|row| OperatorInvitation {
+                id: row.id,
+                label: row.label,
+                state: row.state,
+                redeemed_username: row.redeemed_username,
+                created_at: row.created_at,
+                expires_at: row.expires_at,
+                used_at: row.used_at,
+                revoked_at: row.revoked_at,
+            })
+            .collect(),
+    })
+}
+
 pub async fn apply_command(
     pool: &PgPool,
     command: &OperatorCommand,
@@ -291,7 +478,244 @@ pub async fn apply_command(
             actor,
             reason,
         } => set_report_status(pool, *idempotency_key, *report_id, *status, actor, reason).await,
+        OperatorCommand::IssueRegistrationInvite {
+            idempotency_key,
+            label,
+            valid_for_hours,
+            actor,
+            reason,
+        } => {
+            issue_registration_invitation(
+                pool,
+                *idempotency_key,
+                label,
+                *valid_for_hours,
+                actor,
+                reason,
+            )
+            .await
+        }
+        OperatorCommand::RevokeRegistrationInvite {
+            idempotency_key,
+            invite_id,
+            actor,
+            reason,
+        } => {
+            revoke_registration_invitation(pool, *idempotency_key, *invite_id, actor, reason).await
+        }
     }
+}
+
+async fn issue_registration_invitation(
+    pool: &PgPool,
+    operation_id: Uuid,
+    label: &str,
+    valid_for_hours: u16,
+    actor: &str,
+    reason: &str,
+) -> Result<AuditReceipt, OperatorError> {
+    let mut transaction = begin(pool).await?;
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(REGISTRATION_INVITE_ADVISORY_LOCK)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|_| OperatorError::Internal)?;
+
+    let replay = sqlx::query_as::<_, IssuedInvitationRow>(
+        r#"
+        SELECT id, label, valid_for_hours, issued_by, issued_reason,
+               to_char(expires_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS expires_at
+        FROM registration_invites
+        WHERE issued_operation_id = $1
+        "#,
+    )
+    .bind(operation_id)
+    .fetch_optional(&mut *transaction)
+    .await
+    .map_err(|_| OperatorError::Internal)?;
+    if let Some(replay) = replay {
+        if replay.label != label
+            || replay.valid_for_hours
+                != i16::try_from(valid_for_hours).map_err(|_| OperatorError::InvalidInput)?
+            || replay.issued_by != actor
+            || replay.issued_reason != reason
+        {
+            return Err(OperatorError::Conflict);
+        }
+        let audit = invitation_replay(&mut transaction, replay.id, operation_id)
+            .await?
+            .ok_or(OperatorError::Internal)?;
+        let receipt = decorate_invitation_issue(
+            receipt_from_audit(audit),
+            replay.label,
+            replay.expires_at,
+            None,
+            false,
+        );
+        transaction
+            .commit()
+            .await
+            .map_err(|_| OperatorError::Internal)?;
+        return Ok(receipt);
+    }
+
+    let live_count: i64 = sqlx::query_scalar(
+        r#"
+        SELECT count(*)
+        FROM registration_invites
+        WHERE used_at IS NULL
+          AND revoked_at IS NULL
+          AND expires_at > clock_timestamp()
+        "#,
+    )
+    .fetch_one(&mut *transaction)
+    .await
+    .map_err(|_| OperatorError::Internal)?;
+    if live_count >= MAX_LIVE_REGISTRATION_INVITES {
+        return Err(OperatorError::Denied);
+    }
+
+    let (invite_code, code_hash) =
+        registration_invites::generate().map_err(|_| OperatorError::Internal)?;
+    let invitation = sqlx::query_as::<_, IssuedInvitationRow>(
+        r#"
+        WITH moment AS (SELECT clock_timestamp() AS created_at)
+        INSERT INTO registration_invites (
+            code_hash, label, valid_for_hours, issued_operation_id,
+            issued_by, issued_reason, created_at, expires_at
+        )
+        SELECT $1, $2, $3, $4, $5, $6,
+               created_at,
+               created_at + make_interval(hours => $3)
+        FROM moment
+        RETURNING id, label, valid_for_hours, issued_by, issued_reason,
+                  to_char(expires_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS expires_at
+        "#,
+    )
+    .bind(code_hash.as_slice())
+    .bind(label)
+    .bind(i16::try_from(valid_for_hours).map_err(|_| OperatorError::InvalidInput)?)
+    .bind(operation_id)
+    .bind(actor)
+    .bind(reason)
+    .fetch_one(&mut *transaction)
+    .await
+    .map_err(|_| OperatorError::Internal)?;
+    let receipt = insert_audit(
+        &mut transaction,
+        operation_id,
+        "registration_invite",
+        invitation.id,
+        "issue_registration_invite",
+        actor,
+        reason,
+        "absent",
+        "issued",
+    )
+    .await?;
+    transaction
+        .commit()
+        .await
+        .map_err(|_| OperatorError::Internal)?;
+    Ok(decorate_invitation_issue(
+        receipt,
+        invitation.label,
+        invitation.expires_at,
+        Some(invite_code),
+        true,
+    ))
+}
+
+async fn revoke_registration_invitation(
+    pool: &PgPool,
+    operation_id: Uuid,
+    invitation_id: Uuid,
+    actor: &str,
+    reason: &str,
+) -> Result<AuditReceipt, OperatorError> {
+    let mut transaction = begin(pool).await?;
+    let state = sqlx::query_as::<_, InvitationStateRow>(
+        r#"
+        SELECT used_at IS NOT NULL AS used,
+               revoked_at IS NOT NULL AS revoked,
+               expires_at <= clock_timestamp() AS expired
+        FROM registration_invites
+        WHERE id = $1
+        FOR UPDATE
+        "#,
+    )
+    .bind(invitation_id)
+    .fetch_optional(&mut *transaction)
+    .await
+    .map_err(|_| OperatorError::Internal)?
+    .ok_or(OperatorError::NotFound)?;
+
+    if let Some(replay) = invitation_replay(&mut transaction, invitation_id, operation_id).await? {
+        let receipt = exact_replay(replay, "revoked", actor, reason)?;
+        transaction
+            .commit()
+            .await
+            .map_err(|_| OperatorError::Internal)?;
+        return Ok(receipt);
+    }
+    if state.used || state.revoked || state.expired {
+        return Err(OperatorError::Denied);
+    }
+
+    let revoked = sqlx::query(
+        r#"
+        UPDATE registration_invites
+        SET revoked_at = clock_timestamp(),
+            revoked_by = $2,
+            revoked_reason = $3,
+            revoked_operation_id = $4
+        WHERE id = $1
+          AND used_at IS NULL
+          AND revoked_at IS NULL
+          AND expires_at > clock_timestamp()
+        "#,
+    )
+    .bind(invitation_id)
+    .bind(actor)
+    .bind(reason)
+    .bind(operation_id)
+    .execute(&mut *transaction)
+    .await
+    .map_err(|_| OperatorError::Internal)?;
+    if revoked.rows_affected() != 1 {
+        return Err(OperatorError::Denied);
+    }
+    let receipt = insert_audit(
+        &mut transaction,
+        operation_id,
+        "registration_invite",
+        invitation_id,
+        "revoke_registration_invite",
+        actor,
+        reason,
+        "issued",
+        "revoked",
+    )
+    .await?;
+    transaction
+        .commit()
+        .await
+        .map_err(|_| OperatorError::Internal)?;
+    Ok(receipt)
+}
+
+fn decorate_invitation_issue(
+    mut receipt: AuditReceipt,
+    label: String,
+    expires_at: String,
+    invite_code: Option<String>,
+    first_delivery: bool,
+) -> AuditReceipt {
+    receipt.label = Some(label);
+    receipt.expires_at = Some(expires_at);
+    receipt.invite_code = invite_code;
+    receipt.first_delivery = Some(first_delivery);
+    receipt
 }
 
 async fn set_account_status(
@@ -469,6 +893,30 @@ async fn report_replay(
     .map_err(|_| OperatorError::Internal)
 }
 
+async fn invitation_replay(
+    transaction: &mut Transaction<'_, Postgres>,
+    target_id: Uuid,
+    operation_id: Uuid,
+) -> Result<Option<AuditRow>, OperatorError> {
+    sqlx::query_as::<_, AuditRow>(
+        r#"
+        SELECT id, operation_id, target_kind,
+               target_registration_invite_id AS target_id,
+               action, actor, reason, previous_state, resulting_state,
+               to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at
+        FROM operator_audit_events
+        WHERE target_kind = 'registration_invite'
+          AND target_registration_invite_id = $1
+          AND operation_id = $2
+        "#,
+    )
+    .bind(target_id)
+    .bind(operation_id)
+    .fetch_optional(&mut **transaction)
+    .await
+    .map_err(|_| OperatorError::Internal)
+}
+
 fn exact_replay(
     row: AuditRow,
     resulting_state: &str,
@@ -493,20 +941,26 @@ async fn insert_audit(
     previous_state: &str,
     resulting_state: &str,
 ) -> Result<AuditReceipt, OperatorError> {
-    let (account_id, report_id) = if target_kind == "account" {
-        (Some(target_id), None)
-    } else {
-        (None, Some(target_id))
+    let (account_id, report_id, invitation_id) = match target_kind {
+        "account" => (Some(target_id), None, None),
+        "report" => (None, Some(target_id), None),
+        "registration_invite" => (None, None, Some(target_id)),
+        _ => return Err(OperatorError::Internal),
     };
     let row = sqlx::query_as::<_, AuditRow>(
         r#"
         INSERT INTO operator_audit_events (
             operation_id, target_kind, target_account_id, target_report_id,
-            action, actor, reason, previous_state, resulting_state, created_at
+            target_registration_invite_id, action, actor, reason,
+            previous_state, resulting_state, created_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now())
         RETURNING id, operation_id, target_kind,
-                  COALESCE(target_account_id, target_report_id) AS target_id,
+                  COALESCE(
+                      target_account_id,
+                      target_report_id,
+                      target_registration_invite_id
+                  ) AS target_id,
                   action, actor, reason, previous_state, resulting_state,
                   to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at
         "#,
@@ -515,6 +969,7 @@ async fn insert_audit(
     .bind(target_kind)
     .bind(account_id)
     .bind(report_id)
+    .bind(invitation_id)
     .bind(action)
     .bind(actor)
     .bind(reason)
@@ -536,6 +991,10 @@ fn receipt_from_audit(row: AuditRow) -> AuditReceipt {
         previous_state: row.previous_state,
         resulting_state: row.resulting_state,
         created_at: row.created_at,
+        label: None,
+        expires_at: None,
+        invite_code: None,
+        first_delivery: None,
     }
 }
 
@@ -583,8 +1042,8 @@ mod tests {
     use uuid::Uuid;
 
     use super::{
-        AccountStatus, OperatorCommand, OperatorError, ReportFilter, ReportStatus, apply_command,
-        list_reports,
+        AccountStatus, InvitationFilter, OperatorCommand, OperatorError, ReportFilter,
+        ReportStatus, apply_command, list_invitations, list_reports,
     };
 
     #[test]
@@ -631,6 +1090,298 @@ mod tests {
         ] {
             assert_eq!(invalid.validate(), Err(OperatorError::InvalidInput));
         }
+        assert_eq!(
+            OperatorCommand::IssueRegistrationInvite {
+                idempotency_key: operation_id,
+                label: "Private alpha".to_owned(),
+                valid_for_hours: 24,
+                actor: "local-sysop".to_owned(),
+                reason: "Invite one external tester".to_owned(),
+            }
+            .validate(),
+            Ok(())
+        );
+        for invalid in [
+            OperatorCommand::IssueRegistrationInvite {
+                idempotency_key: Uuid::nil(),
+                label: "Private alpha".to_owned(),
+                valid_for_hours: 24,
+                actor: "local-sysop".to_owned(),
+                reason: "Invite one external tester".to_owned(),
+            },
+            OperatorCommand::IssueRegistrationInvite {
+                idempotency_key: operation_id,
+                label: " Private alpha".to_owned(),
+                valid_for_hours: 24,
+                actor: "local-sysop".to_owned(),
+                reason: "Invite one external tester".to_owned(),
+            },
+            OperatorCommand::IssueRegistrationInvite {
+                idempotency_key: operation_id,
+                label: "Private alpha".to_owned(),
+                valid_for_hours: 0,
+                actor: "local-sysop".to_owned(),
+                reason: "Invite one external tester".to_owned(),
+            },
+            OperatorCommand::IssueRegistrationInvite {
+                idempotency_key: operation_id,
+                label: "Private alpha".to_owned(),
+                valid_for_hours: 721,
+                actor: "local-sysop".to_owned(),
+                reason: "Invite one external tester".to_owned(),
+            },
+        ] {
+            assert_eq!(invalid.validate(), Err(OperatorError::InvalidInput));
+        }
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    #[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+    async fn invitation_actions_deliver_once_inventory_without_secrets_and_revoke(pool: PgPool) {
+        let operation_id = Uuid::new_v4();
+        let issue = OperatorCommand::IssueRegistrationInvite {
+            idempotency_key: operation_id,
+            label: "Alpha tester one".to_owned(),
+            valid_for_hours: 48,
+            actor: "local-sysop".to_owned(),
+            reason: "Admit one reviewed external tester".to_owned(),
+        };
+        let (first, replay) =
+            tokio::join!(apply_command(&pool, &issue), apply_command(&pool, &issue));
+        let first = first.expect("first concurrent issue should succeed");
+        let replay = replay.expect("second concurrent issue should replay");
+        assert_eq!(first.id, replay.id);
+        assert_eq!(first.target_id, replay.target_id);
+        assert_eq!(first.target_kind, "registration_invite");
+        assert_eq!(first.action, "issue_registration_invite");
+        assert_eq!(first.previous_state, "absent");
+        assert_eq!(first.resulting_state, "issued");
+        assert_eq!(first.label.as_deref(), Some("Alpha tester one"));
+        assert_eq!(first.expires_at, replay.expires_at);
+        assert_eq!(
+            usize::from(first.invite_code.is_some()) + usize::from(replay.invite_code.is_some()),
+            1,
+            "the raw code must be delivered by exactly one concurrent response"
+        );
+        assert_eq!(
+            [first.first_delivery, replay.first_delivery]
+                .into_iter()
+                .filter(|value| *value == Some(true))
+                .count(),
+            1
+        );
+        let invite_code = first
+            .invite_code
+            .as_ref()
+            .or(replay.invite_code.as_ref())
+            .expect("one response should carry the code")
+            .clone();
+        assert!(invite_code.starts_with("ogsi_"));
+        assert_eq!(invite_code.len(), 48);
+
+        let (stored_hash, audits): (Vec<u8>, i64) = sqlx::query_as(
+            r#"
+            SELECT code_hash,
+                   (SELECT count(*) FROM operator_audit_events
+                    WHERE target_registration_invite_id = registration_invites.id)
+            FROM registration_invites
+            WHERE id = $1
+            "#,
+        )
+        .bind(first.target_id)
+        .fetch_one(&pool)
+        .await
+        .expect("issued invitation should persist");
+        assert_eq!(stored_hash.len(), 32);
+        assert_ne!(stored_hash, invite_code.as_bytes());
+        assert_eq!(audits, 1);
+
+        let inventory = list_invitations(&pool, InvitationFilter::Issued, 10)
+            .await
+            .expect("issued invitation should list");
+        assert_eq!(inventory.invitations.len(), 1);
+        assert_eq!(inventory.invitations[0].id, first.target_id);
+        assert_eq!(inventory.invitations[0].state, "issued");
+        assert_eq!(inventory.invitations[0].redeemed_username, None);
+        let inventory_text = serde_json::to_string(&inventory).expect("inventory should serialize");
+        for forbidden in [
+            invite_code.as_str(),
+            "code_hash",
+            "issued_reason",
+            "password_hash",
+            "account_sessions",
+            "used_by_account_id",
+        ] {
+            assert!(!inventory_text.contains(forbidden));
+        }
+
+        let collision = OperatorCommand::IssueRegistrationInvite {
+            idempotency_key: operation_id,
+            label: "Different tester".to_owned(),
+            valid_for_hours: 48,
+            actor: "local-sysop".to_owned(),
+            reason: "Admit one reviewed external tester".to_owned(),
+        };
+        assert_eq!(
+            apply_command(&pool, &collision).await,
+            Err(OperatorError::Conflict)
+        );
+
+        let revoke = OperatorCommand::RevokeRegistrationInvite {
+            idempotency_key: Uuid::new_v4(),
+            invite_id: first.target_id,
+            actor: "local-sysop".to_owned(),
+            reason: "Invitation delivery channel was uncertain".to_owned(),
+        };
+        let revoked = apply_command(&pool, &revoke)
+            .await
+            .expect("issued invitation should revoke");
+        assert_eq!(revoked.target_kind, "registration_invite");
+        assert_eq!(revoked.previous_state, "issued");
+        assert_eq!(revoked.resulting_state, "revoked");
+        assert_eq!(
+            apply_command(&pool, &revoke).await,
+            Ok(revoked.clone()),
+            "exact revocation should replay"
+        );
+        assert_eq!(
+            list_invitations(&pool, InvitationFilter::Revoked, 10)
+                .await
+                .expect("revoked inventory should load")
+                .invitations
+                .len(),
+            1
+        );
+        assert!(
+            sqlx::query("UPDATE operator_audit_events SET reason = 'changed' WHERE id = $1")
+                .bind(revoked.id)
+                .execute(&pool)
+                .await
+                .is_err()
+        );
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    #[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+    async fn used_expired_absent_and_live_cap_invitation_actions_are_denied(pool: PgPool) {
+        let used_issue = issue_invitation(&pool, "Used invite", 24).await;
+        let account_id = seed_account(&pool, "used_invitation_account", "active").await;
+        sqlx::query(
+            "UPDATE registration_invites SET used_at = clock_timestamp(), used_by_account_id = $2 WHERE id = $1",
+        )
+        .bind(used_issue.target_id)
+        .bind(account_id)
+        .execute(&pool)
+        .await
+        .expect("invitation should be marked used");
+        assert_eq!(
+            list_invitations(&pool, InvitationFilter::Used, 10)
+                .await
+                .expect("used inventory should load")
+                .invitations[0]
+                .redeemed_username
+                .as_deref(),
+            Some("used_invitation_account")
+        );
+        assert_eq!(
+            apply_command(
+                &pool,
+                &OperatorCommand::RevokeRegistrationInvite {
+                    idempotency_key: Uuid::new_v4(),
+                    invite_id: used_issue.target_id,
+                    actor: "local-sysop".to_owned(),
+                    reason: "Used invitation must stay terminal".to_owned(),
+                }
+            )
+            .await,
+            Err(OperatorError::Denied)
+        );
+
+        let expired = issue_invitation(&pool, "Expired invite", 1).await;
+        sqlx::query(
+            r#"
+            UPDATE registration_invites
+            SET created_at = created_at - interval '2 hours',
+                expires_at = expires_at - interval '2 hours'
+            WHERE id = $1
+            "#,
+        )
+        .bind(expired.target_id)
+        .execute(&pool)
+        .await
+        .expect("invitation should expire");
+        assert_eq!(
+            apply_command(
+                &pool,
+                &OperatorCommand::RevokeRegistrationInvite {
+                    idempotency_key: Uuid::new_v4(),
+                    invite_id: expired.target_id,
+                    actor: "local-sysop".to_owned(),
+                    reason: "Expired invitation cannot transition".to_owned(),
+                }
+            )
+            .await,
+            Err(OperatorError::Denied)
+        );
+        assert_eq!(
+            apply_command(
+                &pool,
+                &OperatorCommand::RevokeRegistrationInvite {
+                    idempotency_key: Uuid::new_v4(),
+                    invite_id: Uuid::new_v4(),
+                    actor: "local-sysop".to_owned(),
+                    reason: "Absent invitation cannot transition".to_owned(),
+                }
+            )
+            .await,
+            Err(OperatorError::NotFound)
+        );
+
+        sqlx::query(
+            r#"
+            WITH needed AS (
+                SELECT generate_series(
+                    1,
+                    500 - (
+                        SELECT count(*)::integer
+                        FROM registration_invites
+                        WHERE used_at IS NULL AND revoked_at IS NULL
+                          AND expires_at > clock_timestamp()
+                    )
+                ) AS marker
+            ), moment AS (SELECT clock_timestamp() AS created_at)
+            INSERT INTO registration_invites (
+                code_hash, label, valid_for_hours, issued_operation_id,
+                issued_by, issued_reason, created_at, expires_at
+            )
+            SELECT decode(md5(marker::text) || md5('invite-' || marker::text), 'hex'),
+                   'cap fixture ' || marker, 24, gen_random_uuid(),
+                   'test-suite', 'Reach the bounded live invitation cap',
+                   created_at, created_at + interval '24 hours'
+            FROM needed CROSS JOIN moment
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .expect("live cap fixtures should insert");
+        assert_eq!(
+            apply_command(
+                &pool,
+                &OperatorCommand::IssueRegistrationInvite {
+                    idempotency_key: Uuid::new_v4(),
+                    label: "Over cap".to_owned(),
+                    valid_for_hours: 24,
+                    actor: "local-sysop".to_owned(),
+                    reason: "This must remain denied".to_owned(),
+                }
+            )
+            .await,
+            Err(OperatorError::Denied)
+        );
+        assert_eq!(
+            list_invitations(&pool, InvitationFilter::All, 0).await,
+            Err(OperatorError::InvalidInput)
+        );
     }
 
     #[sqlx::test(migrations = "../../migrations")]
@@ -711,7 +1462,9 @@ mod tests {
                 OperatorCommand::SetAccountStatus {
                     idempotency_key, ..
                 } => *idempotency_key,
-                OperatorCommand::SetReportStatus { .. } => unreachable!(),
+                OperatorCommand::SetReportStatus { .. }
+                | OperatorCommand::IssueRegistrationInvite { .. }
+                | OperatorCommand::RevokeRegistrationInvite { .. } => unreachable!(),
             },
             account_id,
             status: AccountStatus::Suspended,
@@ -832,7 +1585,9 @@ mod tests {
                         OperatorCommand::SetReportStatus {
                             idempotency_key, ..
                         } => *idempotency_key,
-                        OperatorCommand::SetAccountStatus { .. } => unreachable!(),
+                        OperatorCommand::SetAccountStatus { .. }
+                        | OperatorCommand::IssueRegistrationInvite { .. }
+                        | OperatorCommand::RevokeRegistrationInvite { .. } => unreachable!(),
                     },
                     report_id,
                     status: ReportStatus::Dismissed,
@@ -919,6 +1674,25 @@ mod tests {
         .fetch_one(pool)
         .await
         .expect("account should seed")
+    }
+
+    async fn issue_invitation(
+        pool: &PgPool,
+        label: &str,
+        valid_for_hours: u16,
+    ) -> super::AuditReceipt {
+        apply_command(
+            pool,
+            &OperatorCommand::IssueRegistrationInvite {
+                idempotency_key: Uuid::new_v4(),
+                label: label.to_owned(),
+                valid_for_hours,
+                actor: "test-sysop".to_owned(),
+                reason: "Create invitation lifecycle fixture".to_owned(),
+            },
+        )
+        .await
+        .expect("invitation should issue")
     }
 
     async fn seed_persona(pool: &PgPool, handle: &str, display_name: &str) -> (Uuid, Uuid) {

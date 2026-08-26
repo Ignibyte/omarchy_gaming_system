@@ -691,13 +691,18 @@ async fn websocket_revalidates_sessions_without_extending_idle_lifetime(pool: Pg
 
 async fn create_test_persona(pool: &PgPool, username: &str, handle: &str) -> TestPersona {
     let password = "TEST-ONLY-sync-passphrase";
+    let invite_code = crate::accounts::create_test_invite(pool).await;
     assert_eq!(
         request(
             pool,
             Method::POST,
             "/v1/accounts",
             "",
-            Some(json!({"username": username, "password": password})),
+            Some(json!({
+                "invite_code": invite_code,
+                "username": username,
+                "password": password
+            })),
         )
         .await
         .status,

@@ -48,7 +48,10 @@ server-authoritative game runtime below.
 - [x] Native client-only Arch package, desktop launcher, exact payload
   inspection, and extracted-package smoke on Omarchy
 - [x] Reporting, suspension, audit records, backups, and restore drill
-- Invite-only external testing
+- [x] Invite-only registration, operator/tester runbook, and isolated
+  admission drill
+- [ ] Execute and record the first external two-clean-installation acceptance
+  run without developer intervention
 
 ## Owner-operated server ecosystem
 

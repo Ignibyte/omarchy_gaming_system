@@ -28,6 +28,7 @@ TestCase {
         const scenario = liveConfig.scenario
         const username = liveConfig.username
         const password = liveConfig.password
+        const inviteCode = liveConfig.invite_code || ""
         const personaHandle = liveConfig.persona_handle || ""
         const factor = liveConfig.factor || ""
         const peerHandle = liveConfig.peer_handle || ""
@@ -45,8 +46,9 @@ TestCase {
 
         if (scenario === "register") {
             verify(personaHandle !== "")
+            verify(inviteCode !== "")
             controller.chooseAccessMode("register")
-            verify(controller.registerAccount(username, password))
+            verify(controller.registerAccount(inviteCode, username, password))
             tryVerify(function() {
                 return !controller.busy && controller.accessMode === "sign_in"
                         && controller.suggestedUsername === username

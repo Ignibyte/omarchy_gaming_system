@@ -7,12 +7,12 @@ sources:
     resource: repo://bin/gate.sh
   - id: openwiki-source-cfb5585994628fc6aaff1dd4
     resource: repo://client/qml/cartridge/nodes/TrustedImageNode.qml
-  - id: openwiki-source-fc035ef77d2451c6e8138211
-    resource: repo://client/qml/tests/fixture/tst_accessibility.qml
-  - id: openwiki-source-152956378e80408d69d9dfb7
-    resource: repo://client/qml/tests/fixture/tst_games.qml
-  - id: openwiki-source-4f6d9bd2b8e769f9585e0296
-    resource: repo://client/qml/tests/fixture/tst_social.qml
+  - id: openwiki-source-f73ad44f40942d16dc369861
+    resource: repo://client/qml/OnboardingController.qml
+  - id: openwiki-source-a89f426477ef71ce555d4a7e
+    resource: repo://client/qml/screens/AccessScreen.qml
+  - id: openwiki-source-93421eb71ebe4d41b6a9af26
+    resource: repo://client/qml/tests/fixture/tst_onboarding.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
@@ -25,12 +25,10 @@ sources:
     resource: repo://crates/game-cartridge/tests/conformance.rs
   - id: openwiki-source-358b091c74e2027615ce8f4c
     resource: repo://crates/game-cartridge/tests/sdk_release.rs
-  - id: openwiki-source-fea3ada71e31ee06122151f5
-    resource: repo://crates/game-provider/tests/conformance.rs
-  - id: openwiki-source-522c1bcb889a85d7a91b25af
-    resource: repo://crates/game-provider/tests/registry.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
+  - id: openwiki-source-ba203ea2e600f294ab58ef02
+    resource: repo://crates/server/src/bin/omarchygs-admin.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
     resource: repo://crates/server/src/challenge_api_tests.rs
   - id: openwiki-source-9ba5739252220892895a7a47
@@ -39,14 +37,18 @@ sources:
     resource: repo://crates/server/src/game_api_tests.rs
   - id: openwiki-source-b2c7af59f511c4ed8a004fb0
     resource: repo://crates/server/src/inbox_api_tests.rs
+  - id: openwiki-source-94ddb58f2dc1a71ed1959533
+    resource: repo://crates/server/src/operator_admin.rs
   - id: openwiki-source-22753602a862c32d10560204
     resource: repo://crates/server/src/persona_api_tests.rs
+  - id: openwiki-source-5c708d75b561203e4ad4312a
+    resource: repo://crates/server/src/registration_api_tests.rs
   - id: openwiki-source-76060b846b9222af2c790243
     resource: repo://crates/server/src/signal_siege_api_tests.rs
   - id: openwiki-source-46fb4135d6a71efad1062c0d
     resource: repo://crates/server/src/sync_api_tests.rs
-  - id: openwiki-source-005a34a3eca7415b5fdce574
-    resource: repo://docs/planning/pipeline/active/operator-reporting-suspension-audit-and-recovery-drill.notes.md
+  - id: openwiki-source-617c314455b6ad7778b62ccf
+    resource: repo://crates/server/tests/operator_cli.rs
   - id: openwiki-source-6ef5cb9ff978eb09c62cd313
     resource: repo://scripts/build-client-package.sh
   - id: openwiki-source-1951c64828cbf175c78556c4
@@ -75,16 +77,13 @@ sources:
     resource: repo://scripts/test-game-cartridge.sh
   - id: openwiki-source-e08dc6155c081d7928029e27
     resource: repo://scripts/test-operator-recovery.sh
-  - id: openwiki-source-31a4e9d026860da100c233f9
-    resource: repo://scripts/test-provider-authority-pilot.sh
+  - id: openwiki-source-a0a026a4d434d1b48884aa8e
+    resource: repo://scripts/test-private-alpha.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
-generated: {by: "codex", at: "2026-08-26T17:59:41.119Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-26T17:59:41.119Z
+generated: {by: "codex", at: "2026-08-26T19:56:05.892Z"}
 ---
 
 # Development and validation
@@ -111,9 +110,11 @@ gaming-system log target. Smoke mode requires `/health.service` to equal
 `ogs1_` before exercising authenticated operations.
 
 In smoke mode the script first requires public `GET /v1/games` to return
-exactly Signal Siege v1 and v2. It then creates a uniquely named account
-through `POST /v1/accounts`, verifies the success response omits password-
-derived data, and repeats the request to require `username_taken` with HTTP 409.
+exactly Signal Siege v1 and v2. It uses the real local operator executable to
+issue a one-use invitation, creates a uniquely named account through
+`POST /v1/accounts`, verifies the success response omits password- and
+invitation-derived data, and repeats the exact request to recover the same
+receipt with HTTP 200.
 It then creates a device session and verifies the authenticated inventory.
 Before revocation it creates a persona, proves the exact public field set and
 private-field absence, checks owned inventory and public lookup, edits the
@@ -173,7 +174,8 @@ and actions, retry-safe report submission and hostile report receipts, private
 message history, pagination, send/read, plain-text rendering, game discovery
 and challenge lifecycle, authoritative solo/versus commands, exact retry
 identity, revision refetch, hostile game-envelope
-rejection, invalid-session cleanup, and fixture-observed request contracts.
+rejection, invalid-session cleanup, masked invitation entry and clearing, and
+fixture-observed request contracts.
 Social and game tests run the production root at the
 640×420 minimum and reject extra private fields, oversized responses, and
 body-bearing requests to bodyless mutation endpoints.
@@ -247,7 +249,7 @@ the full native artifact conformance, isolated migrated PostgreSQL tests, and
 the live PostgreSQL → Rust game-catalog/health/account/session/persona/
 social/report/inbox/challenge/sync/MFA API → QML smoke, provider security
 conformance, the Door Legends authority pilot, and the isolated platform
-operator recovery drill, then writes a receipt for the exact gated worktree at
+operator recovery and private-alpha admission drills, then writes a receipt for the exact gated worktree at
 `.git/omarchy-gaming-system-gate-receipt`.
 
 The gate currently covers:
@@ -271,7 +273,7 @@ The gate currently covers:
 7. the native client source contract in every mode plus two reproducible Arch
    builds, exact package inspection, and extracted production-QML smoke in
    diff/full modes;
-8. forty-seven ignored router tests against SQLx-managed PostgreSQL databases
+8. fifty ignored router tests against SQLx-managed PostgreSQL databases
    in diff/full modes;
 9. the live Signal Siege catalog, idempotent launch, bounded completed match,
    final replay/history/sync, health, registration, duplicate-conflict,
@@ -295,6 +297,9 @@ The gate currently covers:
 12. the database-local operator boundary's report inventory and action tests,
     real CLI adapter test, and isolated full-schema platform dump/restore drill,
     including immutable audit/report checks and restored old-token denial.
+13. the invite-only private-alpha boundary's issue, first-use registration,
+    exact replay, changed-intent denial, sign-in, revocation, secret-free
+    inventory, digest-only persistence, and log-secret hygiene.
 
 ### Platform operator recovery
 
@@ -314,6 +319,23 @@ restore and requires the pre-suspension raw token to fail with
 the ordinary development database is untouched. See
 `docs/operators/operator-safety-and-recovery.md` for production key custody,
 backup protection, restore review, and current limitations.
+
+### Private-alpha admission
+
+`scripts/test-private-alpha.sh` is gate 22. It creates a fresh isolated
+database, issues two invitations through the real local `omarchygs-admin`
+executable, and starts the production server after applying all 17 migrations.
+Its bounded startup wait allows up to 30 seconds for a cold migration path and
+fails immediately if the server process exits.
+
+The drill consumes the first invitation, requires an exact canonical replay to
+recover the original receipt, denies changed username or password intent, and
+proves ordinary device sign-in. It revokes the second invitation before use and
+requires the same generic denial. The final evidence checks exact used and
+revoked inventory without raw codes or credential fields, 32-byte digest-only
+persistence, linked operator audit rows, and server logs free of both invitation
+codes and the submitted password. This is software-readiness evidence; the
+operator still must run the human event in `docs/operators/private-alpha.md`.
 
 ### Production Game Cartridge conformance
 
@@ -509,8 +531,12 @@ server, so absent or stale provenance fails closed.
   private empty output directory, and selected Core/Rich-2D budget. Run
   `scripts/test-game-cartridge-renderer.sh` for the full trusted handoff.
 - HTTP 503: verify the database and the `SELECT 1` path.
-- Registration 422: compare the request with `docs/api.md`; registration 409
-  means the canonical username is already stored.
+- Registration 422: compare the request with `docs/api.md`; registration 403
+  means the invitation is malformed, absent, expired, revoked, already used by
+  different credentials, or lost a concurrent consumption race. Registration
+  409 means a valid unused invitation reached a canonical username that is
+  already stored; the invitation remains usable. Diagnose the full lifecycle
+  with `scripts/test-private-alpha.sh` without logging the raw code.
 - Login 401: credentials or account status failed generically. Authenticated
   API 401: the Bearer token is malformed, expired, idle, revoked, or belongs to
   an inactive account. Session revocation 404 also covers foreign IDs.

@@ -75,8 +75,9 @@ Before inviting players, an operator is responsible for at least:
 - complying with the laws and contractual obligations that apply to their
   jurisdiction, users, and data.
 
-The implemented private-alpha report, suspension, immutable-audit, and
-platform restore workflow is documented in
+The implemented private-alpha invitation, report, suspension,
+immutable-audit, and platform restore workflows are documented in the
+[private-alpha runbook](private-alpha.md) and
 [operator safety and platform recovery](operator-safety-and-recovery.md).
 
 This document is engineering and product guidance, not legal advice. Public

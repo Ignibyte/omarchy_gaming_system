@@ -11,17 +11,27 @@ Request:
 
 ```json
 {
+  "invite_code": "ogsi_<base64url-encoded-random-value>",
   "username": "Player_One",
   "password": "a-long-private-passphrase"
 }
 ```
+
+Registration is invitation-only. A database-local operator issues one
+`ogsi_` code for one account as described in the
+[private-alpha runbook](operators/private-alpha.md). The 48-character code
+contains 256 random bits; PostgreSQL stores only its 32-byte SHA-256 digest.
+It expires after its operator-selected 1–720 hour lifetime and cannot be used
+after revocation or consumption.
 
 Usernames are trimmed and converted to ASCII lowercase. The canonical value
 must be 3–32 bytes, begin with an ASCII letter or digit, and contain only ASCII
 letters, digits, underscores, or hyphens. Passwords are not trimmed and must be
 12–128 bytes. Registration request bodies are limited to 1 KiB.
 
-A successful request returns `201 Created`:
+A valid unused invitation and available username create and link one account
+in the same transaction. Success returns `201 Created` under
+`Cache-Control: no-store`:
 
 ```json
 {
@@ -30,8 +40,16 @@ A successful request returns `201 Created`:
 }
 ```
 
-The response never contains the password or its hash. Passwords are stored as
+The response never contains the invitation, password, or either digest/hash.
+Passwords are stored as
 uniquely salted Argon2id v19 PHC strings with `m=19456`, `t=2`, and `p=1`.
+
+If the first response is lost, retrying the same code with the same canonical
+username and password returns the original two-field receipt with `200 OK`.
+That recovery does not make the code reusable: another username or password
+returns `403 Forbidden` with `invalid_invitation`. A canonical username
+conflict on an otherwise unused invitation returns 409 and leaves that
+invitation unused so the player can choose another username.
 
 Validation failures return `422 Unprocessable Entity`, and canonical username
 conflicts return `409 Conflict`. Errors use a stable envelope:
@@ -45,8 +63,11 @@ conflicts return `409 Conflict`. Errors use a stable envelope:
 }
 ```
 
-Current registration error codes are `invalid_username`, `invalid_password`,
-`username_taken`, and `internal_error`.
+Malformed, absent, expired, revoked, already-used, and changed-intent codes all
+return the same `invalid_invitation` response and disclose no lifecycle or
+operator metadata. Current registration error codes are `invalid_username`,
+`invalid_password`, `invalid_invitation`, `username_taken`, and
+`internal_error`.
 
 ## Create a device session
 
@@ -414,7 +435,10 @@ The production QML connector composes the existing endpoints above without a
 separate client protocol. It begins with exact `/health`, then uses
 `POST /v1/accounts`, `POST /v1/sessions`, optional
 `POST /v1/sessions/mfa`, authenticated `GET /v1/personas`, and authenticated
-`POST /v1/personas`. Registration does not implicitly authenticate; the
+`POST /v1/personas`. Registration shows a masked invitation field only in
+create-account mode and sends its value only in the JSON body to the already
+admitted origin. The invitation and password fields clear on submission,
+Escape, mode change, or server change. Registration does not implicitly authenticate; the
 canonical returned username is carried back to the sign-in form and the player
 must submit credentials explicitly.
 

@@ -58,6 +58,7 @@ run_live_qml_onboarding() {
   local ogs_message_body="${7:-}"
   local ogs_peer_username="${8:-}"
   local ogs_peer_password="${9:-}"
+  local ogs_invite_code="${10:-}"
   local ogs_qt_bins
   local ogs_qml_test_runner
   local ogs_live_lock_fd
@@ -73,7 +74,7 @@ run_live_qml_onboarding() {
   chmod 0700 "$(dirname "$ogs_qml_live_config")"
   exec {ogs_live_lock_fd}>"$ogs_log_dir/qml-onboarding/live.lock"
   flock "$ogs_live_lock_fd"
-  printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' \
+  printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' \
     "http://$OGS_BIND_ADDRESS" \
     "$ogs_scenario" \
     "$ogs_username" \
@@ -84,6 +85,7 @@ run_live_qml_onboarding() {
     "$ogs_message_body" \
     "$ogs_peer_username" \
     "$ogs_peer_password" \
+    "$ogs_invite_code" \
     | python3 "$ogs_root/client/qml/tests/fixture_server.py" \
         --write-live-config "$ogs_qml_live_config"
 
@@ -98,6 +100,39 @@ run_live_qml_onboarding() {
       -keydelay 0
   rm -f -- "$ogs_qml_live_config"
   flock -u "$ogs_live_lock_fd"
+}
+
+issue_smoke_invite() {
+  local ogs_label="$1"
+  local ogs_operation_id
+  local ogs_command_file
+  local ogs_receipt
+
+  ogs_operation_id=$(python3 -c 'import uuid; print(uuid.uuid4())')
+  ogs_command_file=$(mktemp "$ogs_log_dir/invite-command.XXXXXX.json")
+  chmod 600 "$ogs_command_file"
+  jq -nc \
+    --arg idempotency_key "$ogs_operation_id" \
+    --arg label "$ogs_label" \
+    '{command: "issue_registration_invite",
+      idempotency_key: $idempotency_key,
+      label: $label,
+      valid_for_hours: 24,
+      actor: "development-smoke",
+      reason: "Exercise invite-only registration through the live smoke"}' \
+    >"$ogs_command_file"
+  if ! ogs_receipt=$("$ogs_root/target/debug/omarchygs-admin" apply "$ogs_command_file"); then
+    rm -f -- "$ogs_command_file"
+    echo "Could not issue the live smoke registration invitation" >&2
+    return 1
+  fi
+  rm -f -- "$ogs_command_file"
+  jq -er \
+    'select(.target_kind == "registration_invite" and
+            .resulting_state == "issued" and
+            .first_delivery == true) | .invite_code |
+     select(startswith("ogsi_") and length == 48)' \
+    <<<"$ogs_receipt"
 }
 
 cd "$ogs_root"
@@ -124,6 +159,7 @@ export DATABASE_URL="${DATABASE_URL:-postgres://omarchy_gaming_system:omarchy_ga
 export OGS_BIND_ADDRESS="${OGS_BIND_ADDRESS:-127.0.0.1:8080}"
 export RUST_LOG="${RUST_LOG:-omarchy_gaming_system_server=debug,tower_http=debug}"
 
+mise exec -- cargo build -p omarchy-gaming-system-server --bin omarchygs-admin
 mise exec -- cargo run -p omarchy-gaming-system-server >"$ogs_log_dir/server.log" 2>&1 &
 ogs_server_pid=$!
 
@@ -195,18 +231,26 @@ if [[ "$ogs_smoke_test" == true ]]; then
   ogs_qml_registration_username="qml_$(date +%s)_$$"
   ogs_qml_registration_password="TEST-ONLY-qml-registration-passphrase"
   ogs_qml_persona_handle="q$(date +%s)_$$"
+  ogs_qml_invite_code=$(issue_smoke_invite "QML live registration")
   run_live_qml_onboarding \
     register \
     "$ogs_qml_registration_username" \
     "$ogs_qml_registration_password" \
     "$ogs_qml_persona_handle" \
-    ""
+    "" \
+    "" \
+    "" \
+    "" \
+    "" \
+    "$ogs_qml_invite_code"
 
   ogs_registration_username="smoke_$(date +%s)_$$"
   ogs_registration_password="TEST-ONLY-registration-passphrase"
+  ogs_registration_invite=$(issue_smoke_invite "Curl live registration")
   ogs_registration_url="http://$OGS_BIND_ADDRESS/v1/accounts"
   ogs_registration_payload=$(printf \
-    '{"username":"%s","password":"%s"}' \
+    '{"invite_code":"%s","username":"%s","password":"%s"}' \
+    "$ogs_registration_invite" \
     "$ogs_registration_username" \
     "$ogs_registration_password")
 
@@ -228,18 +272,57 @@ if [[ "$ogs_smoke_test" == true ]]; then
     exit 1
   fi
 
-  ogs_duplicate_status=$(curl \
+  ogs_replay_status=$(curl \
     --silent \
-    --output "$ogs_log_dir/duplicate-registration.json" \
+    --output "$ogs_log_dir/replayed-registration.json" \
     --write-out '%{http_code}' \
     --header "Content-Type: application/json" \
     --data "$ogs_registration_payload" \
     "$ogs_registration_url")
 
-  if [[ "$ogs_duplicate_status" != 409 ]] \
+  if [[ "$ogs_replay_status" != 200 ]] \
+    || ! cmp -s \
+      <(printf '%s' "$ogs_registration_response") \
+      "$ogs_log_dir/replayed-registration.json"; then
+    echo "Exact registration replay did not recover the original account receipt" >&2
+    exit 1
+  fi
+
+  ogs_conflict_invite=$(issue_smoke_invite "Curl username conflict")
+  ogs_conflict_payload=$(printf \
+    '{"invite_code":"%s","username":"%s","password":"%s"}' \
+    "$ogs_conflict_invite" \
+    "$ogs_registration_username" \
+    "TEST-ONLY-a-different-registration-passphrase")
+  ogs_conflict_status=$(curl \
+    --silent \
+    --output "$ogs_log_dir/conflicting-registration.json" \
+    --write-out '%{http_code}' \
+    --header "Content-Type: application/json" \
+    --data "$ogs_conflict_payload" \
+    "$ogs_registration_url")
+  if [[ "$ogs_conflict_status" != 409 ]] \
     || ! grep -Fq '"code":"username_taken"' \
-      "$ogs_log_dir/duplicate-registration.json"; then
-    echo "Duplicate registration smoke did not return username_taken (409)" >&2
+      "$ogs_log_dir/conflicting-registration.json"; then
+    echo "Fresh invitation did not retain canonical username conflict behavior" >&2
+    exit 1
+  fi
+
+  ogs_conflict_recovery_username="${ogs_registration_username}_retry"
+  ogs_conflict_recovery_payload=$(printf \
+    '{"invite_code":"%s","username":"%s","password":"%s"}' \
+    "$ogs_conflict_invite" \
+    "$ogs_conflict_recovery_username" \
+    "TEST-ONLY-a-different-registration-passphrase")
+  ogs_conflict_recovery_status=$(curl \
+    --silent \
+    --output /dev/null \
+    --write-out '%{http_code}' \
+    --header "Content-Type: application/json" \
+    --data "$ogs_conflict_recovery_payload" \
+    "$ogs_registration_url")
+  if [[ "$ogs_conflict_recovery_status" != 201 ]]; then
+    echo "Username conflict consumed its otherwise reusable invitation" >&2
     exit 1
   fi
 
@@ -588,10 +671,12 @@ if [[ "$ogs_smoke_test" == true ]]; then
 
   ogs_peer_username="peer_$(date +%s)_$$"
   ogs_peer_password="TEST-ONLY-peer-passphrase"
+  ogs_peer_invite=$(issue_smoke_invite "Curl live peer registration")
   ogs_peer_registration_payload=$(jq -nc \
+    --arg invite_code "$ogs_peer_invite" \
     --arg username "$ogs_peer_username" \
     --arg password "$ogs_peer_password" \
-    '{username: $username, password: $password}')
+    '{invite_code: $invite_code, username: $username, password: $password}')
   curl \
     --fail \
     --silent \

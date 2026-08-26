@@ -66,7 +66,10 @@ start_server() {
     RUST_LOG=omarchy_gaming_system_server=warn \
     "$ogs_server_binary" >"$ogs_log" 2>&1 &
   ogs_active_server_pid=$!
-  for _ in {1..100}; do
+  # A cold 17-migration database can exceed ten seconds after the gate's
+  # compile/provider load. Keep the wait bounded without making that load a
+  # false recovery failure.
+  for _ in {1..300}; do
     if ! kill -0 "$ogs_active_server_pid" 2>/dev/null; then
       echo "operator recovery server stopped during startup" >&2
       sed -n '1,160p' "$ogs_log" >&2

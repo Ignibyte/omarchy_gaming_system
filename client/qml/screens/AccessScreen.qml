@@ -11,20 +11,26 @@ Item {
     Components.OgsTheme { id: theme }
 
     function focusInitial() {
-        usernameField.forceActiveFocus()
+        if (controller.accessMode === "register")
+            inviteCodeField.forceActiveFocus()
+        else
+            usernameField.forceActiveFocus()
     }
 
     function submit() {
         const username = usernameField.text
         const password = passwordField.text
+        const inviteCode = inviteCodeField.text
+        inviteCodeField.clear()
         passwordField.clear()
         if (controller.accessMode === "register")
-            controller.registerAccount(username, password)
+            controller.registerAccount(inviteCode, username, password)
         else
             controller.signIn(username, password, deviceField.text)
     }
 
     Keys.onEscapePressed: function(event) {
+        inviteCodeField.clear()
         passwordField.clear()
         if (controller.accessMode === "register")
             controller.chooseAccessMode("sign_in")
@@ -40,6 +46,8 @@ Item {
                 usernameField.text = controller.suggestedUsername
         }
         function onAccessModeChanged() {
+            inviteCodeField.clear()
+            passwordField.clear()
             Qt.callLater(root.focusInitial)
         }
     }
@@ -93,6 +101,31 @@ Item {
                     enabled: !controller.busy
                     onClicked: controller.chooseAccessMode("register")
                 }
+            }
+
+            Components.OgsSectionLabel {
+                Layout.fillWidth: true
+                Layout.maximumWidth: 560
+                Layout.alignment: Qt.AlignHCenter
+                visible: controller.accessMode === "register"
+                text: "INVITATION CODE"
+                tone: "info"
+            }
+
+            Components.OgsTextField {
+                id: inviteCodeField
+                objectName: "inviteCodeField"
+                Layout.fillWidth: true
+                Layout.maximumWidth: 560
+                Layout.alignment: Qt.AlignHCenter
+                visible: controller.accessMode === "register"
+                accessibleName: "Registration invitation code"
+                echoMode: TextInput.Password
+                passwordCharacter: "●"
+                placeholderText: "ogsi_..."
+                maximumLength: 48
+                enabled: !controller.busy
+                onAccepted: usernameField.forceActiveFocus()
             }
 
             Components.OgsSectionLabel {
@@ -183,6 +216,7 @@ Item {
                 accessibleName: "Change OmarchyGS server"
                 enabled: !controller.busy
                 onClicked: {
+                    inviteCodeField.clear()
                     passwordField.clear()
                     controller.showServerConfiguration()
                 }

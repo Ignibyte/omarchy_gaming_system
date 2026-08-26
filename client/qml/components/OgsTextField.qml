@@ -9,6 +9,7 @@ TextField {
 
     Accessible.name: accessibleName
     Accessible.description: accessibleDescription
+    Accessible.role: Accessible.EditableText
     activeFocusOnTab: true
     focusPolicy: Qt.StrongFocus
     selectByMouse: true

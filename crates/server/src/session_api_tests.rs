@@ -331,11 +331,16 @@ async fn session_revocation_is_owner_scoped_idempotent_and_immediate(pool: PgPoo
 }
 
 async fn register_account(pool: &PgPool, username: &str, password: &str) {
+    let invite_code = crate::accounts::create_test_invite(pool).await;
     let response = request(
         pool,
         Method::POST,
         "/v1/accounts",
-        Some(json!({"username": username, "password": password})),
+        Some(json!({
+            "invite_code": invite_code,
+            "username": username,
+            "password": password
+        })),
         None,
     )
     .await;

@@ -100,12 +100,14 @@ TestCase {
         tryCompare(controller, "state", "access", 5000)
         verify(controller.chooseAccessMode("register"))
         verify(controller.registerAccount(
+                   "ogsi_" + "I".repeat(43),
                    "taken_user", "TEST-ONLY-registration-passphrase"))
         tryVerify(function() { return !controller.busy }, 5000)
         compare(controller.errorText, "That username is already registered.")
         compare(controller.suggestedUsername, "")
 
         verify(controller.registerAccount(
+                   "ogsi_" + "I".repeat(43),
                    "malformed_register", "TEST-ONLY-registration-passphrase"))
         tryVerify(function() {
             return !controller.busy
@@ -113,6 +115,13 @@ TestCase {
         }, 5000)
         verify(!controller.hasSession)
         compare(controller.suggestedUsername, "")
+
+        verify(controller.registerAccount(
+                   "ogsi_invalid_fixture",
+                   "invalid_invite", "TEST-ONLY-registration-passphrase"))
+        tryVerify(function() { return !controller.busy }, 5000)
+        compare(controller.errorText,
+                "That invitation is invalid, expired, revoked, or already used.")
     }
 
     function test_mfa_terminal_error_clears_challenge_authority() {
