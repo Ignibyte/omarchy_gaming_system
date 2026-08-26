@@ -9,10 +9,6 @@ sources:
     resource: repo://client/qml/cartridge/nodes/TrustedImageNode.qml
   - id: openwiki-source-d392f8f0962c50f0d66e0629
     resource: repo://client/qml/Main.qml
-  - id: openwiki-source-77962cc0ed2673a227f6eaee
-    resource: repo://client/qml/tests/fixture/tst_transport.qml
-  - id: openwiki-source-3156e0b1532bb1d02a0118e1
-    resource: repo://client/qml/tests/live/tst_live_onboarding.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
   - id: openwiki-source-fdf115002c4aabad0babec70
@@ -63,9 +59,7 @@ sources:
     resource: repo://scripts/test-game-cartridge.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-  - id: openwiki-source-121d7623408fcbcd07e6d9fc
-    resource: repo://scripts/test-qml-onboarding.sh
-generated: {by: "codex", at: "2026-08-25T23:22:56.525Z"}
+generated: {by: "codex", at: "2026-08-26T00:20:22.247Z"}
 ---
 
 # Development and validation
@@ -109,9 +103,11 @@ request, incoming inventory, acceptance, and mutual inventory. Acceptance must
 also expose one private conversation with a typed system message. While the pair
 is connected, the smoke submits an unregistered game challenge and requires
 `game_unavailable` with no partial cursor event. The peer then sends a user
-message, the first persona reads ascending
-history and clears its unread state. Removal must preserve that history while
-rejecting another send.
+message, and the first persona reads ascending history and clears its unread
+state. The first persona next signs in through the production QML controllers,
+loads the accepted peer and conversation, sends a private reply, and the shell
+verifies both the committed message and one payload-minimal conversation
+invalidation. Removal must preserve that history while rejecting another send.
 The flow continues through block, private blocked-request rejection, private
 block inventory, unblock, re-request, and pending cancellation. It then enrolls
 and confirms TOTP, proves primary login creates no premature session, completes
@@ -126,24 +122,34 @@ suite.
 The QML client starts from a selectable server origin and requires exact healthy
 OmarchyGS identity before exposing registration or sign-in. It then supports
 password or MFA authentication, owned-persona loading, persona creation or
-selection, and an authenticated home. The standalone `Main.qml` smoke forces
-the offscreen software backend, exits after reaching the access screen, and
-fails after a fifteen-second watchdog.
+selection, and an authenticated home. The authenticated shell also exposes
+keyboard-first social and inbox routes for exact-handle connection requests,
+request/connection/private-block actions, conversation/history paging,
+plain-text message send, and unread acknowledgement. The standalone `Main.qml`
+smoke forces the offscreen software backend, exits after reaching the access
+screen, and fails after a fifteen-second watchdog.
 
 `scripts/test-qml-onboarding.sh` is the focused client entrypoint. It owns a
 mode-0700 test configuration directory, forces deterministic headless Qt, and
 runs the real screens and controller against normal, malformed, wrong-identity,
-slow, and oversized fixture responders. The 19-case corpus covers keyboard and
+slow, and oversized fixture responders. The 24-case corpus covers keyboard and
 focus behavior, field bounds, endpoint admission, exact response shapes,
 conflicts, timeouts, response limits, request supersession, MFA terminal and
-local expiry, invalid-session cleanup, and fixture-observed request contracts.
+local expiry, social inventories and actions, private message history,
+pagination, send/read, plain-text rendering, invalid-session cleanup, and
+fixture-observed request contracts. Social tests run the production root at the
+640×420 minimum and reject extra private fields, oversized responses, and
+body-bearing requests to bodyless mutation endpoints.
 Temporary configuration containing credentials is mode-0600, not passed on the
 command line, and removed after each run.
 
-The full development smoke additionally runs the QML controller against the
-real migrated Rust API twice: once through registration, password login,
-persona creation, selection, and logout, and once through an MFA recovery-code
-challenge, owned-persona selection, and authority cleanup.
+The full development smoke additionally runs the QML controllers against the
+real migrated Rust API three times: registration/password login/persona
+creation; selected-persona social inventory plus private history/send; and an
+MFA recovery-code challenge with owned-persona selection. Each scenario proves
+local logout and authority cleanup. Live values cross into QML through
+NUL-delimited standard input and a locked mode-0600 short-lived JSON file,
+never command-line arguments.
 
 Useful commands:
 
@@ -189,9 +195,9 @@ The gate currently covers:
    movement, connection, fail-closed unavailable-game challenge rejection,
    private inbox, synchronization recovery, and block lifecycle, TOTP
    enrollment, challenged login, recovery replay rejection, MFA disablement,
-   session revocation, rejected-token, the 19-case hostile QML fixture corpus,
-   real QML registration/persona and MFA/persona flows, and the standalone QML
-   shell smoke.
+   session revocation, rejected-token, the 24-case hostile QML fixture corpus,
+   real QML registration/persona, social/inbox, and MFA/persona flows, and the
+   standalone QML shell smoke.
 9. the production provider boundary's operator registry, lifecycle,
    grants, fixed signed messages, public-only pinned HTTPS egress, replay and
    callback deduplication, quotas, concurrency leases, audit, and fail-closed

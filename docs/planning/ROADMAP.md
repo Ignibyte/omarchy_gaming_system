@@ -42,7 +42,8 @@ server-authoritative game runtime below.
 ## Private alpha
 
 - [x] Keyboard-first account, password/MFA session, and persona onboarding
-- Keyboard-first connections, inbox, challenge, and gameplay screens
+- [x] Keyboard-first connections and private inbox screens
+- Keyboard-first challenge and gameplay screens
 - End-to-end accessibility and visual polish across the complete player flow
 - Installer/package path for Omarchy
 - Reporting, suspension, audit records, backups, and restore drill

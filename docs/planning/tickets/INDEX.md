@@ -4,7 +4,7 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `023`**
+- **Next ticket number: `024`**
 
 ## Open queue
 
@@ -12,6 +12,7 @@ No open tickets.
 
 ## Closed
 
+- [`TICKET-023` — Keyboard-first QML connections and private inbox](closed/TICKET-023-keyboard-first-qml-connections-and-private-inbox.md)
 - [`TICKET-022` — Keyboard-first QML account and persona onboarding](closed/TICKET-022-keyboard-first-qml-account-and-persona-onboarding.md)
 - [`TICKET-019` — First-party remote-provider migration pilot](closed/TICKET-019-first-party-remote-provider-migration-pilot.md)
 - [`TICKET-018` — Production remote-provider security foundation](closed/TICKET-018-production-remote-provider-security-foundation.md)

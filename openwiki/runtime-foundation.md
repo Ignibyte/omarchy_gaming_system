@@ -3,10 +3,6 @@ type: "Reference"
 title: "Runtime foundation"
 openwiki_generated: true
 sources:
-  - id: openwiki-source-a0d638052213a4621aa5ab44
-    resource: repo://client/qml/ApiClient.qml
-  - id: openwiki-source-f73ad44f40942d16dc369861
-    resource: repo://client/qml/OnboardingController.qml
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
@@ -67,7 +63,7 @@ sources:
     resource: repo://migrations/0012_game_challenges.sql
   - id: openwiki-source-926664a4167297129df76802
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
-generated: {by: "codex", at: "2026-08-25T23:22:56.525Z"}
+generated: {by: "codex", at: "2026-08-26T00:20:22.247Z"}
 ---
 
 # Runtime foundation
@@ -262,6 +258,43 @@ clears the applicable authority before returning to account access. A
 superseded request generation cannot update current state. This is a local
 client boundary, not a substitute for TLS certificate policy, server-side
 authentication and authorization, or public-edge rate limiting.
+
+After a valid owned persona is selected, the same authority controller
+allowlists home, social, and inbox navigation and exposes a player-prefixed
+request gateway without exposing its bearer. `SocialController` receives that
+gateway and the selected public persona, derives every authenticated actor path
+from that persona ID, and cancels and clears its state when the actor changes.
+The production root owns this one controller instance and refreshes social or
+inbox state when the corresponding screen becomes active.
+
+Social refresh serially loads incoming/outgoing requests, accepted
+connections, and the actor's private block inventory. Exact public-handle
+lookup is performed without a bearer but only from an established player
+session; a successful exact profile is then used for the UUID-scoped connection
+command. Accepted requests, pending/accepted removal, block, and unblock all
+reuse the server's durable REST commands and refresh the affected inventories.
+The client neither models another persona's private block direction nor
+interprets generic relationship-policy failures as hidden state.
+
+Inbox refresh loads at most 100 conversation summaries. Opening one replaces
+local history with an ascending page of at most 50 exact tagged messages;
+`next_before` is the only older-history cursor, and both page-local and
+cross-page sequence checks must pass before older messages are prepended. User
+sends contain only a trimmed, control-safe body of at most 4,000 Unicode
+characters. The committed response must be a user message from the selected
+actor with a newer sequence before it is appended, and unread state advances
+only through a validated loaded message ID.
+
+Every relationship, conversation, message, read receipt, public profile, and
+error response has an exact bounded client schema. Unknown system variants,
+extra private fields, unsafe integers, invalid timestamps, malformed JSON, and
+oversized responses are rejected without partially accepting state. Messages
+are converted only to allowlisted plain text. Request completion must match
+both generation and operation; a valid `401 invalid_session` clears the social
+controller before the authority owner clears bearer, persona inventory, and
+selection. This first client social slice refreshes durable REST truth on
+entry, action, or user request and deliberately introduces no polling or
+WebSocket lifetime.
 
 ## Persona connection and block flow
 

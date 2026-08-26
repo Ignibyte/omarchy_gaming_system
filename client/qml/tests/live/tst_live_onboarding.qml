@@ -8,6 +8,7 @@ TestCase {
     property var liveConfig: ({})
 
     Component { id: controllerComponent; App.OnboardingController {} }
+    Component { id: socialComponent; App.SocialController {} }
 
     function loadConfig() {
         const request = new XMLHttpRequest()
@@ -28,6 +29,8 @@ TestCase {
         const password = liveConfig.password
         const personaHandle = liveConfig.persona_handle || ""
         const factor = liveConfig.factor || ""
+        const peerHandle = liveConfig.peer_handle || ""
+        const messageBody = liveConfig.message_body || ""
         verify(serverUrl !== "")
         verify(username !== "")
         verify(password !== "")
@@ -63,6 +66,53 @@ TestCase {
             verify(controller.selectPersona(controller.personas[0]))
             compare(controller.state, "home")
             verify(!controller.hasMfaChallenge)
+        } else if (scenario === "social") {
+            verify(personaHandle !== "")
+            verify(peerHandle !== "")
+            verify(messageBody !== "")
+            verify(controller.signIn(username, password, "QML social smoke"))
+            tryCompare(controller, "state", "personas", 10000)
+            let selected = null
+            for (let index = 0; index < controller.personas.length; index++) {
+                if (controller.personas[index].handle === personaHandle) {
+                    selected = controller.personas[index]
+                    break
+                }
+            }
+            verify(selected !== null)
+            verify(controller.selectPersona(selected))
+
+            const social = createTemporaryObject(socialComponent, testCase, {
+                "sessionController": controller,
+                "actor": controller.selectedPersona
+            })
+            verify(social !== null)
+            verify(controller.showPlayerScreen("social"))
+            verify(social.refreshSocial())
+            tryVerify(function() { return !social.busy && social.loadState === "ready" }, 10000)
+            verify(social.connections.some(function(connection) {
+                return connection.persona.handle === peerHandle
+            }))
+
+            verify(controller.showPlayerScreen("inbox"))
+            verify(social.refreshInbox())
+            tryVerify(function() { return !social.busy && social.loadState === "ready" }, 10000)
+            let conversation = null
+            for (let index = 0; index < social.conversations.length; index++) {
+                if (social.conversations[index].other_persona.handle === peerHandle) {
+                    conversation = social.conversations[index]
+                    break
+                }
+            }
+            verify(conversation !== null)
+            verify(social.openConversation(conversation))
+            tryVerify(function() { return !social.busy && social.loadState === "ready" }, 10000)
+            verify(social.messages.length >= 2)
+            verify(social.sendMessage(messageBody))
+            tryVerify(function() { return !social.busy && social.loadState === "ready" }, 10000)
+            compare(social.messages[social.messages.length - 1].body, messageBody)
+            compare(social.messages[social.messages.length - 1].sender.id, selected.id)
+            social.destroy()
         } else {
             fail("unsupported live scenario")
         }

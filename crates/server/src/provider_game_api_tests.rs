@@ -295,6 +295,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         .await
         .expect("provider database should remain independently reachable");
     wait_for_result(&pool, &provider_pool, session_id).await;
+    wait_for_outbox_delivered(&provider_pool, session_id).await;
     sqlx::query(
         "UPDATE door_legends_event_outbox SET status = 'pending', delivered_at = NULL WHERE platform_session_id = $1",
     )

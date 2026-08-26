@@ -72,6 +72,8 @@ and in this register.
 | `PR-omarchy-gaming-system-reconcile-regression-claims-with-executed-cases-001` | Reconcile every claimed hostile fixture outcome with an invoked test case before accepting the inspection gate. | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
 | `PR-omarchy-gaming-system-compile-production-qml-root-after-control-edits-001` | Instantiate the production QML root after shared-control contract edits instead of relying only on isolated component assumptions. | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
 | `PR-omarchy-gaming-system-own-headless-qt-test-environment-001` | Headless QML gate entrypoints must set their platform and rendering backend unconditionally. | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
+| `PR-omarchy-gaming-system-preserve-bodyless-qml-requests-001` | When a QML request has no document, call `XMLHttpRequest.send()` with no argument; assert zero request bytes and immediately reuse the connection in a stateful fixture. | `aar/AAR-023-keyboard-first-qml-connections-and-private-inbox.md` |
+| `PR-omarchy-gaming-system-observe-delivery-before-requeue-001` | Before manually requeueing a durable outbox row in a replay test, wait for the producer's original attempt to reach its committed delivered state. | `aar/AAR-023-keyboard-first-qml-connections-and-private-inbox.md` |
 
 ## Register
 
@@ -224,3 +226,8 @@ and in this register.
 | `PR-omarchy-gaming-system-compile-production-qml-root-after-control-edits-001` | rule | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
 | `PR-omarchy-gaming-system-own-headless-qt-test-environment-001` | rule | `aar/AAR-022-keyboard-first-qml-account-and-persona-onboarding.md` |
 | `AD-omarchy-gaming-system-qml-onboarding-authority-boundary-001` | decision | `../../architecture/system-overview.md` |
+| `BF-omarchy-gaming-system-qml-bodyless-xhr-null-payload-001` | failure | `aar/AAR-023-keyboard-first-qml-connections-and-private-inbox.md` |
+| `BF-omarchy-gaming-system-provider-replay-requeue-race-001` | failure | `aar/AAR-023-keyboard-first-qml-connections-and-private-inbox.md` |
+| `PR-omarchy-gaming-system-preserve-bodyless-qml-requests-001` | rule | `aar/AAR-023-keyboard-first-qml-connections-and-private-inbox.md` |
+| `PR-omarchy-gaming-system-observe-delivery-before-requeue-001` | rule | `aar/AAR-023-keyboard-first-qml-connections-and-private-inbox.md` |
+| `AD-omarchy-gaming-system-qml-social-inbox-authority-boundary-001` | decision | `../../architecture/system-overview.md` |

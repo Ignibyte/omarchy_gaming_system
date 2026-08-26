@@ -11,14 +11,27 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, unquote, urlparse
 
 
 ACCOUNT_ID = "11111111-1111-4111-8111-111111111111"
 SESSION_ID = "22222222-2222-4222-8222-222222222222"
 PERSONA_A_ID = "33333333-3333-4333-8333-333333333333"
 PERSONA_B_ID = "44444444-4444-4444-8444-444444444444"
+SOCIAL_ACTOR_ID = "55555555-5555-4555-8555-555555555555"
+SOCIAL_PEER_ID = "66666666-6666-4666-8666-666666666666"
+SOCIAL_FRIEND_ID = "77777777-7777-4777-8777-777777777777"
+SOCIAL_OUTGOING_ID = "88888888-8888-4888-8888-888888888888"
+SOCIAL_BLOCKED_ID = "99999999-9999-4999-8999-999999999999"
+SOCIAL_LOST_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+CONVERSATION_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+MESSAGE_1_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+MESSAGE_2_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+MESSAGE_3_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"
+MESSAGE_4_ID = "ffffffff-ffff-4fff-8fff-ffffffffffff"
 TOKEN_A = "ogs1_" + "A" * 43
 TOKEN_M = "ogs1_" + "M" * 43
+TOKEN_S = "ogs1_" + "S" * 43
 TOKEN_U = "ogs1_" + "U" * 43
 TOKEN_X = "ogs1_" + "X" * 43
 CHALLENGE = "ogm1_" + "C" * 43
@@ -44,6 +57,21 @@ class FixtureState:
         self.lock = threading.Lock()
         self.calls: list[str] = []
         self.violations: list[str] = []
+        self.peer_accepted = False
+        self.outgoing_present = True
+        self.friend_connected = True
+        self.block_present = True
+        self.sent_body = ""
+        self.read_message_id = ""
+
+    def reset_social(self) -> None:
+        with self.lock:
+            self.peer_accepted = False
+            self.outgoing_present = True
+            self.friend_connected = True
+            self.block_present = True
+            self.sent_body = ""
+            self.read_message_id = ""
 
     def record_call(self, call: str) -> None:
         with self.lock:
@@ -67,10 +95,17 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         self.state.record_call(f"GET {self.path}")
+        parsed = urlparse(self.path)
+        path = parsed.path
+        query = parse_qs(parsed.query)
         if self.path == "/__fixture__/status":
             self._json(200, {"calls": self.state.calls, "violations": self.state.violations})
             return
-        if self.path == "/health":
+        if self.path == "/__fixture__/reset-social":
+            self.state.reset_social()
+            self._json(200, {"ok": True})
+            return
+        if path == "/health":
             self._require_no_authorization("health")
             if self.state.mode == "slow":
                 time.sleep(0.6)
@@ -99,7 +134,7 @@ class Handler(BaseHTTPRequestHandler):
                     "database": "ok",
                 })
             return
-        if self.path == "/v1/personas":
+        if path == "/v1/personas":
             token = self._bearer()
             if token == TOKEN_U:
                 self._error(401, "invalid_session", "device session is invalid")
@@ -112,11 +147,92 @@ class Handler(BaseHTTPRequestHandler):
                 leaked = persona(PERSONA_A_ID, "bad_shape", "Bad Shape")
                 leaked["account_id"] = ACCOUNT_ID
                 self._json(200, {"personas": [leaked]})
+            elif token == TOKEN_S:
+                self._json(200, {"personas": [self._social_persona(
+                    SOCIAL_ACTOR_ID, "social_actor", "Social Actor"
+                )]})
             elif token == TOKEN_A:
                 self._json(200, {"personas": []})
             else:
                 self.state.violate("persona inventory did not carry the expected bearer")
                 self._error(401, "invalid_session", "device session is invalid")
+            return
+        if path.startswith("/v1/personas/by-handle/"):
+            self._require_no_authorization("public persona lookup")
+            handle = unquote(path.removeprefix("/v1/personas/by-handle/"))
+            lookup = {
+                "social_peer": self._social_persona(SOCIAL_PEER_ID, "social_peer", "Social Peer"),
+                "session_lost": self._social_persona(SOCIAL_LOST_ID, "session_lost", "Lost Session"),
+                "malformed_peer": self._social_persona(SOCIAL_PEER_ID, "malformed_peer", "Malformed Peer"),
+                "oversized_peer": self._social_persona(SOCIAL_PEER_ID, "oversized_peer", "Oversized Peer"),
+            }.get(handle)
+            if lookup is None:
+                self._error(404, "persona_not_found", "persona was not found")
+            elif handle == "malformed_peer":
+                lookup["account_id"] = ACCOUNT_ID
+                self._json(200, lookup)
+            elif handle == "oversized_peer":
+                lookup["padding"] = "x" * 300_000
+                self._json(200, lookup)
+            else:
+                self._json(200, lookup)
+            return
+        if path == f"/v1/personas/{SOCIAL_ACTOR_ID}/connection-requests":
+            if not self._require_social_bearer():
+                return
+            incoming = [] if self.state.peer_accepted else [{
+                "persona": self._social_persona(SOCIAL_PEER_ID, "social_peer", "Social Peer"),
+                "created_at": CREATED_AT,
+            }]
+            outgoing = [] if not self.state.outgoing_present else [{
+                "persona": self._social_persona(SOCIAL_OUTGOING_ID, "outgoing_peer", "Outgoing Peer"),
+                "created_at": CREATED_AT,
+            }]
+            self._json(200, {"incoming": incoming, "outgoing": outgoing})
+            return
+        if path == f"/v1/personas/{SOCIAL_ACTOR_ID}/connections":
+            if not self._require_social_bearer():
+                return
+            items = []
+            if self.state.friend_connected:
+                items.append({
+                    "persona": self._social_persona(SOCIAL_FRIEND_ID, "social_friend", "Social Friend"),
+                    "connected_at": CREATED_AT,
+                })
+            if self.state.peer_accepted:
+                items.append({
+                    "persona": self._social_persona(SOCIAL_PEER_ID, "social_peer", "Social Peer"),
+                    "connected_at": CREATED_AT,
+                })
+            self._json(200, {"connections": items})
+            return
+        if path == f"/v1/personas/{SOCIAL_ACTOR_ID}/blocks":
+            if not self._require_social_bearer():
+                return
+            items = [] if not self.state.block_present else [{
+                "persona": self._social_persona(SOCIAL_BLOCKED_ID, "blocked_peer", "Blocked Peer"),
+                "created_at": CREATED_AT,
+            }]
+            self._json(200, {"blocks": items})
+            return
+        if path == f"/v1/personas/{SOCIAL_ACTOR_ID}/conversations":
+            if not self._require_social_bearer():
+                return
+            if query != {"limit": ["100"]}:
+                self.state.violate("conversation inventory did not use limit=100")
+            self._json(200, {"conversations": [self._conversation()]})
+            return
+        if path == f"/v1/personas/{SOCIAL_ACTOR_ID}/conversations/{CONVERSATION_ID}/messages":
+            if not self._require_social_bearer():
+                return
+            before = query.get("before", [""])[0]
+            if before == "2":
+                self._json(200, {"messages": [self._message_one()], "next_before": None})
+            else:
+                messages = [self._message_two(), self._message_three()]
+                if self.state.sent_body:
+                    messages.append(self._message_four())
+                self._json(200, {"messages": messages, "next_before": 2})
             return
         self._error(404, "fixture_not_found", "fixture route not found")
 
@@ -156,6 +272,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(201, self._session(TOKEN_U))
             elif username == "malformed_personas":
                 self._json(201, self._session(TOKEN_X))
+            elif username == "social_user":
+                self._json(201, self._session(TOKEN_S))
             else:
                 self._json(201, self._session(TOKEN_A))
             return
@@ -193,7 +311,145 @@ class Handler(BaseHTTPRequestHandler):
             response["status_message"] = str(document.get("status_message", "")).strip()
             self._json(201, response)
             return
+        if self.path == f"/v1/personas/{SOCIAL_ACTOR_ID}/conversations/{CONVERSATION_ID}/messages":
+            if not self._require_social_bearer():
+                return
+            if set(document) != {"body"}:
+                self.state.violate("private message body did not have exact keys")
+            self.state.sent_body = str(document.get("body", ""))
+            self._json(201, self._message_four())
+            return
         self._error(404, "fixture_not_found", "fixture route not found")
+
+    def do_PUT(self) -> None:  # noqa: N802
+        self.state.record_call(f"PUT {self.path}")
+        if not self._require_social_bearer():
+            return
+        if self.headers.get("Content-Length") not in {None, "0"}:
+            self.state.violate("bodyless social PUT carried a request body")
+        prefix = f"/v1/personas/{SOCIAL_ACTOR_ID}"
+        if self.path == f"{prefix}/connections/{SOCIAL_PEER_ID}":
+            self.state.peer_accepted = True
+            self._json(200, {
+                "persona": self._social_persona(SOCIAL_PEER_ID, "social_peer", "Social Peer"),
+                "connected_at": CREATED_AT,
+            })
+            return
+        if self.path == f"{prefix}/connection-requests/{SOCIAL_PEER_ID}":
+            self._json(201, {
+                "persona": self._social_persona(SOCIAL_PEER_ID, "social_peer", "Social Peer"),
+                "created_at": CREATED_AT,
+            })
+            return
+        if self.path == f"{prefix}/connection-requests/{SOCIAL_LOST_ID}":
+            self._error(401, "invalid_session", "device session is invalid")
+            return
+        if self.path == f"{prefix}/blocks/{SOCIAL_FRIEND_ID}":
+            self.state.friend_connected = False
+            self._json(201, {
+                "persona": self._social_persona(SOCIAL_FRIEND_ID, "social_friend", "Social Friend"),
+                "created_at": CREATED_AT,
+            })
+            return
+        if self.path == f"{prefix}/conversations/{CONVERSATION_ID}/read/{MESSAGE_3_ID}":
+            self.state.read_message_id = MESSAGE_3_ID
+            self._json(200, {"through_message_id": MESSAGE_3_ID, "unread_count": 0})
+            return
+        self._error(404, "fixture_not_found", "fixture route not found")
+
+    def do_DELETE(self) -> None:  # noqa: N802
+        self.state.record_call(f"DELETE {self.path}")
+        if not self._require_social_bearer():
+            return
+        prefix = f"/v1/personas/{SOCIAL_ACTOR_ID}"
+        if self.path == f"{prefix}/connections/{SOCIAL_OUTGOING_ID}":
+            self.state.outgoing_present = False
+            self._raw(204, b"", "application/json")
+            return
+        if self.path == f"{prefix}/connections/{SOCIAL_PEER_ID}":
+            self.state.peer_accepted = False
+            self._raw(204, b"", "application/json")
+            return
+        if self.path == f"{prefix}/blocks/{SOCIAL_BLOCKED_ID}":
+            self.state.block_present = False
+            self._raw(204, b"", "application/json")
+            return
+        self._raw(204, b"", "application/json")
+
+    def _social_persona(self, persona_id: str, handle: str, display_name: str) -> dict[str, Any]:
+        return persona(persona_id, handle, display_name)
+
+    def _conversation(self) -> dict[str, Any]:
+        return {
+            "id": CONVERSATION_ID,
+            "other_persona": self._social_persona(
+                SOCIAL_FRIEND_ID, "social_friend", "Social Friend"
+            ),
+            "unread_count": 2,
+            "latest_message": self._message_three(),
+            "created_at": CREATED_AT,
+            "updated_at": CREATED_AT,
+        }
+
+    def _message_one(self) -> dict[str, Any]:
+        return {
+            "type": "system",
+            "id": MESSAGE_1_ID,
+            "sequence": 1,
+            "system": {
+                "type": "connection_accepted",
+                "actor": self._social_persona(
+                    SOCIAL_FRIEND_ID, "social_friend", "Social Friend"
+                ),
+            },
+            "created_at": CREATED_AT,
+        }
+
+    def _message_two(self) -> dict[str, Any]:
+        return {
+            "type": "user",
+            "id": MESSAGE_2_ID,
+            "sequence": 2,
+            "sender": self._social_persona(
+                SOCIAL_FRIEND_ID, "social_friend", "Social Friend"
+            ),
+            "body": "Fixture hello <b>as plain text</b>",
+            "created_at": CREATED_AT,
+        }
+
+    def _message_three(self) -> dict[str, Any]:
+        return {
+            "type": "system",
+            "id": MESSAGE_3_ID,
+            "sequence": 3,
+            "system": {
+                "type": "game_challenge_created",
+                "actor": self._social_persona(
+                    SOCIAL_FRIEND_ID, "social_friend", "Social Friend"
+                ),
+                "challenge_id": SOCIAL_LOST_ID,
+            },
+            "created_at": CREATED_AT,
+        }
+
+    def _message_four(self) -> dict[str, Any]:
+        return {
+            "type": "user",
+            "id": MESSAGE_4_ID,
+            "sequence": 4,
+            "sender": self._social_persona(
+                SOCIAL_ACTOR_ID, "social_actor", "Social Actor"
+            ),
+            "body": self.state.sent_body,
+            "created_at": CREATED_AT,
+        }
+
+    def _require_social_bearer(self) -> bool:
+        if self._bearer() == TOKEN_S:
+            return True
+        self.state.violate("social request did not carry the expected bearer")
+        self._error(401, "invalid_session", "device session is invalid")
+        return False
 
     def _session(self, token: str) -> dict[str, Any]:
         return {
@@ -302,8 +558,8 @@ def main() -> int:
         values = sys.stdin.buffer.read().split(b"\0")
         if values and values[-1] == b"":
             values.pop()
-        if len(values) != 6:
-            print("live fixture config requires six NUL-delimited values", file=sys.stderr)
+        if len(values) != 8:
+            print("live fixture config requires eight NUL-delimited values", file=sys.stderr)
             return 2
         try:
             decoded = [value.decode("utf-8") for value in values]
@@ -311,7 +567,8 @@ def main() -> int:
             print("live fixture config must be UTF-8", file=sys.stderr)
             return 2
         document = dict(zip(
-            ["server_url", "scenario", "username", "password", "persona_handle", "factor"],
+            ["server_url", "scenario", "username", "password", "persona_handle", "factor",
+             "peer_handle", "message_body"],
             decoded,
             strict=True,
         ))

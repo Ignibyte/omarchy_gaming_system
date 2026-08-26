@@ -46,7 +46,8 @@ The current gates are:
 16. The real PostgreSQL migration → Rust API → keyboard-first QML client smoke
     path, including deterministic hostile-fixture tests plus live registration,
     password/MFA session creation, persona creation/selection, local logout,
-    and health recovery (DIFF/FULL only)
+    social connection inventory, private conversation/history/send/read, and
+    health recovery across two real accounts (DIFF/FULL only)
 17. The production remote-provider security foundation, including PostgreSQL
     registry/lifecycle races and a separately spawned TLS provider proving
     signed grants/messages, durable replay, expected revisions, bounded

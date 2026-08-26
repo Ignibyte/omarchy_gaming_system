@@ -3,12 +3,8 @@ type: "Reference"
 title: "Omarchy Gaming System engineering quickstart"
 openwiki_generated: true
 sources:
-  - id: openwiki-source-a0d638052213a4621aa5ab44
-    resource: repo://client/qml/ApiClient.qml
   - id: openwiki-source-d392f8f0962c50f0d66e0629
     resource: repo://client/qml/Main.qml
-  - id: openwiki-source-f73ad44f40942d16dc369861
-    resource: repo://client/qml/OnboardingController.qml
   - id: openwiki-source-25c2deb1d0664370b4037c40
     resource: repo://crates/game-provider/src/lib.rs
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
@@ -51,7 +47,7 @@ sources:
     resource: repo://scripts/test-game-cartridge.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-25T23:22:56.525Z"}
+generated: {by: "codex", at: "2026-08-26T00:20:22.247Z"}
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -86,7 +82,11 @@ server also exposes the operator-pinned Door Legends v1 release and routes its
 player operations to a separate provider process and database. The main QML
 connector now handles server selection, account registration, password or MFA
 sign-in, and owned-persona creation or selection before entering an
-authenticated home. It does not yet browse or launch cartridges.
+authenticated home. From there it can manage persona connections and private
+blocks, browse private conversations, page history, send messages, and clear
+unread state. It does not yet browse game definitions, create challenges,
+launch gameplay, render cartridges in the main shell, or subscribe to live
+WebSocket hints.
 
 The product is game-first: connections, private inboxes, challenges, and
 persistent game history define the intended experience. A public message board
@@ -96,9 +96,10 @@ private-alpha focus.
 The server-side first playable now spans account, authentication, persona,
 connection, private inbox, durable synchronization, challenge-to-session
 orchestration, and one completed asynchronous solo match with an explicit
-outcome. The flagship QML connector still has no game catalog, launch, or
-gameplay flow, and compiled Signal Siege outcome-derived achievements and
-rewards remain future work.
+outcome. The flagship QML connector now covers the account-to-persona-to-social
+and private-inbox path, but still has no challenge, game catalog, launch, or
+gameplay flow. Compiled Signal Siege outcome-derived achievements and rewards
+remain future work.
 
 ADR-0002 now accepts the **Game Cartridge** as the staged portable-game
 direction: a publisher-signed, data-only presentation package rendered by
@@ -124,7 +125,7 @@ remain later work.
 |---|---|---|---|
 | Change server startup, configuration, migrations, or health behavior | [Runtime foundation](runtime-foundation.md) | `crates/server/src/main.rs`, `config.rs`, `app.rs`; `migrations/` | `cargo test -p omarchy-gaming-system-server`; health smoke |
 | Change accounts, device sessions, MFA, personas, or connections | [Runtime foundation](runtime-foundation.md) | `accounts.rs`, `credentials.rs`, `sessions.rs`, `mfa.rs`, `personas.rs`, `connections.rs`; `docs/api.md` | Domain tests plus multi-account PostgreSQL evidence |
-| Change QML endpoint selection, account access, MFA sign-in, or persona onboarding | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `OnboardingController.qml`, `client/qml/screens/` | `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
+| Change QML endpoint selection, account access, MFA sign-in, persona onboarding, connections, blocks, or private inbox | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `OnboardingController.qml`, `SocialController.qml`, `client/qml/screens/` | `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
 | Change cartridge packaging, trusted rendering, SDK portability, or provider integration | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `client/qml/cartridge`; migrations `0014`–`0015`; ADR-0002; Tickets 015–019 | `scripts/test-game-cartridge.sh`; `scripts/test-game-cartridge-renderer.sh`; `scripts/test-game-cartridge-sdk.sh`; `scripts/test-provider-conformance.sh`; `scripts/test-provider-authority-pilot.sh`; threat/authority review and constitutional authority check |
 | Run or diagnose the local stack and quality gate | [Development and validation](development-and-validation.md) | `scripts/dev.sh`; `bin/gate.sh`; `client/qml/Main.qml` | `bin/gate.sh --fast` or `--diff` |
@@ -151,6 +152,21 @@ before the authenticated home. Bearer tokens and MFA challenges remain only in
 process memory and are cleared on endpoint changes, logout, challenge expiry,
 terminal authentication failures, invalid sessions, or malformed authenticated
 success responses.
+
+The same shell exposes explicit Social and Inbox routes only after a valid
+owned persona is selected. One bearer-owning transport stays behind the
+onboarding authority controller; the social controller receives a gated
+request function and derives actor paths from that selected persona. Social
+entry manually refreshes incoming/outgoing requests, accepted connections, and
+the actor's private block inventory. Inbox entry manually refreshes at most 100
+conversations, loads ascending bounded message pages, prepends older pages by
+the conversation-local cursor, sends trimmed control-safe text, and advances
+unread state through the latest loaded message. Exact public profiles and
+allowlisted user/system message shapes render as plain text. Malformed,
+oversized, stale, or invalid-session responses fail closed; the last case also
+clears bearer, personas, selection, and social state. The connector does not
+poll or open the persona-sync WebSocket yet, so screen entry, completed actions,
+and the visible refresh command recover durable REST truth.
 
 Connection commands authenticate the device session and require the acting
 persona to belong to that account. Requests are directional until the

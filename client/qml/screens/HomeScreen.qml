@@ -9,7 +9,7 @@ Item {
     required property var controller
 
     function focusInitial() {
-        logoutButton.forceActiveFocus()
+        socialButton.forceActiveFocus()
     }
 
     ScrollView {
@@ -89,7 +89,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.maximumWidth: 620
                 Layout.alignment: Qt.AlignHCenter
-                text: "Account access and persona selection are connected. Social, inbox, challenge, and game screens arrive in the next client slices."
+                text: "Your persona can now manage connections and exchange durable private messages. Challenges and games arrive in the next client slice."
                 textFormat: Text.PlainText
                 color: "#8aa4c0"
                 font.family: "monospace"
@@ -101,6 +101,22 @@ Item {
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter
                 spacing: 12
+
+                Components.OgsButton {
+                    id: socialButton
+                    objectName: "homeSocialButton"
+                    text: "SOCIAL"
+                    accessibleName: "Open persona social link"
+                    onClicked: controller.showPlayerScreen("social")
+                }
+
+                Components.OgsButton {
+                    id: inboxButton
+                    objectName: "homeInboxButton"
+                    text: "INBOX"
+                    accessibleName: "Open private inbox"
+                    onClicked: controller.showPlayerScreen("inbox")
+                }
 
                 Components.OgsButton {
                     id: logoutButton

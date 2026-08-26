@@ -77,6 +77,20 @@ the first identity HTTP surfaces:
   loopback HTTP remains the explicit development exception. Standard controls,
   visible focus, accessible names, Enter/Escape behavior, and scrollable
   minimum-size layouts provide keyboard-only onboarding at 640×420 and above.
+- a dedicated QML social controller uses that same credential-owning API
+  object only through a session-gated request function and completion signal;
+  it never receives the bearer. Every connection, block, conversation,
+  history, send, and read path derives its actor from the currently selected
+  owned persona. Exact schema allowlists reject partial, extra, unknown, or
+  oversized social/inbox responses while plain-text presentation keeps peer
+  and system content out of the QML rich-text boundary.
+- social and inbox screens refresh authoritative REST state on entry or
+  explicit player action. They expose exact-handle connection requests,
+  accept/decline/cancel/remove and private block lifecycle, bounded
+  conversations, ascending older-page recovery, body-only private sends, and
+  monotonic read acknowledgements. They deliberately do not start polling or
+  subscribe to `/sync/live`; concurrent live-hint lifetime and recovery remain
+  a separately reviewed client transport slice.
 - authenticated persona-scoped connection routes create and inventory pending
   requests, let only the addressee accept, list the resulting mutual
   connection, and let either participant idempotently remove pending or

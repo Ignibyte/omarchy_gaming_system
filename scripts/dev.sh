@@ -54,6 +54,8 @@ run_live_qml_onboarding() {
   local ogs_password="$3"
   local ogs_persona_handle="$4"
   local ogs_factor="$5"
+  local ogs_peer_handle="${6:-}"
+  local ogs_message_body="${7:-}"
   local ogs_qt_bins
   local ogs_qml_test_runner
   local ogs_live_lock_fd
@@ -69,13 +71,15 @@ run_live_qml_onboarding() {
   chmod 0700 "$(dirname "$ogs_qml_live_config")"
   exec {ogs_live_lock_fd}>"$ogs_log_dir/qml-onboarding/live.lock"
   flock "$ogs_live_lock_fd"
-  printf '%s\0%s\0%s\0%s\0%s\0%s\0' \
+  printf '%s\0%s\0%s\0%s\0%s\0%s\0%s\0%s\0' \
     "http://$OGS_BIND_ADDRESS" \
     "$ogs_scenario" \
     "$ogs_username" \
     "$ogs_password" \
     "$ogs_persona_handle" \
     "$ogs_factor" \
+    "$ogs_peer_handle" \
+    "$ogs_message_body" \
     | python3 "$ogs_root/client/qml/tests/fixture_server.py" \
         --write-live-config "$ogs_qml_live_config"
 
@@ -800,6 +804,47 @@ if [[ "$ogs_smoke_test" == true ]]; then
     exit 1
   fi
   ogs_sync_cursor=$(jq -er '.next_cursor' <<<"$ogs_inbox_sync")
+
+  ogs_qml_social_message="QML live social reply"
+  run_live_qml_onboarding \
+    social \
+    "$ogs_registration_username" \
+    "$ogs_registration_password" \
+    "$ogs_persona_updated_handle" \
+    "" \
+    "$ogs_peer_handle" \
+    "$ogs_qml_social_message"
+  ogs_qml_social_history=$(curl \
+    --fail \
+    --silent \
+    --header "Authorization: Bearer $ogs_session_token" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/conversations/$ogs_conversation_id/messages")
+  if ! jq -e \
+    --arg body "$ogs_qml_social_message" \
+    --arg persona_id "$ogs_persona_id" \
+    '.messages | length == 3 and
+     .[2].type == "user" and .[2].body == $body and
+     .[2].sender.id == $persona_id and
+     .[0].sequence < .[1].sequence and .[1].sequence < .[2].sequence' \
+    <<<"$ogs_qml_social_history" >/dev/null; then
+    echo "Live QML social smoke did not commit the expected private message" >&2
+    exit 1
+  fi
+  ogs_qml_social_sync=$(curl \
+    --fail \
+    --silent \
+    --header "Authorization: Bearer $ogs_session_token" \
+    "http://$OGS_BIND_ADDRESS/v1/personas/$ogs_persona_id/sync?after=$ogs_sync_cursor")
+  if ! jq -e \
+    --arg conversation_id "$ogs_conversation_id" \
+    '[.events[].type] == ["conversation_changed"] and
+     .events[0].conversation_id == $conversation_id and
+     (tostring | contains("QML live social reply") | not)' \
+    <<<"$ogs_qml_social_sync" >/dev/null; then
+    echo "Live QML social smoke emitted unexpected sync state" >&2
+    exit 1
+  fi
+  ogs_sync_cursor=$(jq -er '.next_cursor' <<<"$ogs_qml_social_sync")
 
   ogs_connection_remove_status=$(curl \
     --silent \

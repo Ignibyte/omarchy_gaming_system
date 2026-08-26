@@ -14,6 +14,7 @@ ApplicationWindow {
     color: "#070b12"
 
     readonly property alias onboardingController: onboarding
+    readonly property alias socialController: social
     property bool smokeTest: Qt.application.arguments.indexOf("--smoke-test") !== -1
 
     function argumentValue(prefix, fallback) {
@@ -31,6 +32,8 @@ ApplicationWindow {
         case "mfa": return mfaComponent
         case "personas": return personaComponent
         case "home": return homeComponent
+        case "social": return socialComponent
+        case "inbox": return inboxComponent
         default: return connectionComponent
         }
     }
@@ -40,7 +43,17 @@ ApplicationWindow {
         onStateChanged: {
             if (root.smokeTest && state === "access" && connectionState === "ready")
                 Qt.callLater(function() { Qt.exit(0) })
+            else if (state === "social")
+                Qt.callLater(function() { social.refreshSocial() })
+            else if (state === "inbox")
+                Qt.callLater(function() { social.refreshInbox() })
         }
+    }
+
+    SocialController {
+        id: social
+        sessionController: onboarding
+        actor: onboarding.selectedPersona
     }
 
     Component { id: connectionComponent; Screens.ConnectionScreen { controller: onboarding } }
@@ -48,6 +61,14 @@ ApplicationWindow {
     Component { id: mfaComponent; Screens.MfaScreen { controller: onboarding } }
     Component { id: personaComponent; Screens.PersonaScreen { controller: onboarding } }
     Component { id: homeComponent; Screens.HomeScreen { controller: onboarding } }
+    Component {
+        id: socialComponent
+        Screens.SocialScreen { controller: social; sessionController: onboarding }
+    }
+    Component {
+        id: inboxComponent
+        Screens.InboxScreen { controller: social; sessionController: onboarding }
+    }
 
     Component.onCompleted: {
         const initialUrl = argumentValue("--server-url=", "http://127.0.0.1:8080")
@@ -71,8 +92,9 @@ ApplicationWindow {
             id: statusRail
             width: parent.width
             height: 6
-            color: onboarding.errorText !== "" ? "#ff6b7a"
-                  : onboarding.state === "home" ? "#5ee6a8" : "#f4c95d"
+            color: onboarding.errorText !== "" || social.errorText !== "" ? "#ff6b7a"
+                  : onboarding.state === "home" || onboarding.state === "social"
+                    || onboarding.state === "inbox" ? "#5ee6a8" : "#f4c95d"
         }
 
         Text {

@@ -150,8 +150,10 @@ QtObject {
             request.setRequestHeader("Content-Type", "application/json")
 
         _timeoutTimer.restart()
-        request.send(document === undefined || document === null
-                     ? null : JSON.stringify(document))
+        if (document === undefined || document === null)
+            request.send()
+        else
+            request.send(JSON.stringify(document))
         return generation
     }
 

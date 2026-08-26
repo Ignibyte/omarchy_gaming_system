@@ -19,6 +19,9 @@ QtObject {
     property alias requestTimeoutMilliseconds: api.timeoutMilliseconds
     property alias maximumResponseBytes: api.maximumResponseBytes
 
+    signal playerRequestFinished(int generation, string operation, int status,
+                                 string body, string transportError)
+
     property string _mfaChallengeToken: ""
     property string _mfaExpiresAt: ""
     property string _pendingUsername: ""
@@ -29,6 +32,7 @@ QtObject {
         id: api
         onFinished: function(generation, operation, status, body, transportError) {
             root._handleFinished(generation, operation, status, body, transportError)
+            root.playerRequestFinished(generation, operation, status, body, transportError)
         }
     }
 
@@ -173,6 +177,38 @@ QtObject {
         statusText = "Persona link ready."
         errorText = ""
         return true
+    }
+
+    function showPlayerScreen(screen) {
+        if (!hasSession || !_validPersona(selectedPersona) || busy)
+            return false
+        if (screen !== "home" && screen !== "social" && screen !== "inbox")
+            return false
+        state = screen
+        statusText = screen === "social" ? "Social link ready."
+                   : screen === "inbox" ? "Private inbox ready."
+                   : "Persona link ready."
+        errorText = ""
+        return true
+    }
+
+    function playerRequest(operation, method, path, document, authenticated) {
+        if (!hasSession || !_validPersona(selectedPersona) || busy)
+            return 0
+        if (state !== "home" && state !== "social" && state !== "inbox")
+            return 0
+        if (typeof operation !== "string" || !operation.startsWith("player_")
+                || typeof path !== "string" || !path.startsWith("/v1/"))
+            return 0
+        return api.request(operation, method, path, document, authenticated !== false)
+    }
+
+    function cancelPlayerRequest() {
+        api.cancel()
+    }
+
+    function invalidatePlayerSession(message) {
+        _returnToAccess(String(message || "This device session is no longer valid."))
     }
 
     function logout() {
