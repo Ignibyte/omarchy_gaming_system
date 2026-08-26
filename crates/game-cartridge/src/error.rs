@@ -46,6 +46,8 @@ pub enum CartridgeError {
     InvalidCatalogPolicy,
     #[error("catalog lifecycle policy denies this operation")]
     LifecycleDenied,
+    #[error("marketplace snapshot is invalid")]
+    InvalidMarketplaceSnapshot,
     #[error("secure cartridge store is unsupported on this platform")]
     UnsupportedSecureStore,
     #[error("I/O operation failed")]
@@ -81,6 +83,7 @@ impl CartridgeError {
             Self::InvalidRelease => "invalid_cartridge_release",
             Self::InvalidCatalogPolicy => "invalid_catalog_policy",
             Self::LifecycleDenied => "cartridge_lifecycle_denied",
+            Self::InvalidMarketplaceSnapshot => "invalid_marketplace_snapshot",
             Self::UnsupportedSecureStore => "secure_store_unsupported",
             Self::Io(_) => "cartridge_io_failure",
             Self::Zip(_) => "invalid_zip_archive",

@@ -1,10 +1,11 @@
 # Owner-operated OmarchyGS servers
 
-Status: the stable identity/discovery and isolated flagship-client profile
-foundation is implemented. The direction is accepted by
+Status: stable identity/discovery, isolated flagship-client profiles, and the
+marketplace-vetted server catalog administration boundary are implemented. The
+direction is accepted by
 [`ADR-0003`](../architecture/adr-0003-owner-operated-server-and-extension-boundary.md);
-marketplace, custom-content, and module administration surfaces are not yet
-implemented.
+client cartridge acquisition, operator-custom content, and module
+administration remain follow-up work.
 
 ## Operating model
 
@@ -41,7 +42,8 @@ back up, moderate, or certify an independent administrator's deployment.
 
 ## Game provenance
 
-Planned server catalogs distinguish at least these sources:
+Server catalogs distinguish these provenance classes; the first is implemented
+and the other two remain staged work:
 
 - **marketplace-vetted:** the exact publisher release and review/provenance
   record came through the OmarchyGS marketplace, then the local operator chose
@@ -56,6 +58,46 @@ local operator's decision never turns custom content into marketplace-vetted
 content. Player-facing catalog and launch surfaces must keep the source and
 operator identity visible and must not collapse all three into a generic
 "verified" badge.
+
+## Marketplace synchronization and local admission
+
+The database-local `omarchygs-admin marketplace-sync` command synchronizes one
+operator-pinned marketplace. Its configuration is four independent trust
+inputs: a canonical HTTPS origin, an exact marketplace Ed25519 public-key
+document, an explicit DER TLS root, and a pre-provisioned descriptor-relative
+cartridge store. The guarded client rejects proxies, redirects, referers,
+transparent decompression, private or mixed DNS answers, non-success status,
+unbounded bodies, and release paths outside the configured origin.
+
+Each monotonic signed snapshot binds its marketplace authority, review facts,
+publisher public key, exact immutable release identities, relative component
+paths, and signed lifecycle policy. The command verifies production release
+and SDK conformance before staging accepted bytes. PostgreSQL publishes the
+reviewed inventory atomically only after all entries succeed; a failed or
+downgraded snapshot cannot partially replace the prior catalog.
+
+Synchronization is not admission. `omarchygs-admin cartridges` displays the
+reviewed inventory and effective state. `omarchygs-admin catalog-apply` uses an
+idempotency UUID plus exact expected and desired selections to activate,
+deactivate, upgrade, or explicitly roll back one game. Every successful change
+increments its admission revision and appends an immutable audit event in the
+same transaction. A stale expectation or changed replay conflicts.
+
+The authenticated `GET /v1/cartridges` response exposes only effective
+marketplace-vetted metadata. Marketplace suspension, removal from the current
+snapshot, local incompatibility, or loss of admission hides the selected
+release immediately and never falls back to another digest. Selecting a
+different release or rolling back always requires an explicit operator
+command. If a newer authenticated marketplace policy permits the same exact
+still-selected release again, it becomes effective without rewriting the
+server's retained selection. Marketplace outage does not prevent use of the
+last valid database snapshot or local catalog changes, but operators cannot
+treat stale review state as a fresh sync.
+
+The current command stages server-side immutable bytes as evidence and future
+distribution input. It does not yet make the QML client download, cache, mount,
+or launch a cartridge. Those player-side steps remain a separate trust-boundary
+slice.
 
 ## Custom cartridges and code
 
@@ -96,7 +138,7 @@ Before inviting players, an operator is responsible for at least:
 - complying with the laws and contractual obligations that apply to their
   jurisdiction, users, and data.
 
-The implemented private-alpha invitation, report, suspension,
+The implemented private-alpha invitation, report, suspension, catalog,
 immutable-audit, and platform restore workflows are documented in the
 [private-alpha runbook](private-alpha.md) and
 [operator safety and platform recovery](operator-safety-and-recovery.md).

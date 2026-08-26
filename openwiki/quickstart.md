@@ -13,20 +13,22 @@ sources:
     resource: repo://client/qml/OnboardingController.qml
   - id: openwiki-source-fb3bac0b93c3046f977a1023
     resource: repo://client/qml/screens/SocialScreen.qml
-  - id: openwiki-source-7ea06d71b0299905dc0706ce
-    resource: repo://client/qml/ServerProfiles.qml
   - id: openwiki-source-4f5334e859a4d83e2a196fcf
     resource: repo://client/qml/SocialController.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
+  - id: openwiki-source-20452fec62fdae4a8bc45707
+    resource: repo://crates/game-cartridge/src/marketplace.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-ba203ea2e600f294ab58ef02
     resource: repo://crates/server/src/bin/omarchygs-admin.rs
+  - id: openwiki-source-7243a317e3224aa82795a5fc
+    resource: repo://crates/server/src/cartridge_catalog.rs
   - id: openwiki-source-a3892e0554790e3efc606fe1
     resource: repo://crates/server/src/challenges.rs
   - id: openwiki-source-4b133589ca70bd174cf19eb9
@@ -37,6 +39,8 @@ sources:
     resource: repo://crates/server/src/inbox_api_tests.rs
   - id: openwiki-source-a13fe4db1eee073d0a7e2c4d
     resource: repo://crates/server/src/main.rs
+  - id: openwiki-source-f6dda000394ac1ba6bba8f65
+    resource: repo://crates/server/src/marketplace_sync.rs
   - id: openwiki-source-83e16151ac88c29a31cb79d2
     resource: repo://crates/server/src/mfa.rs
   - id: openwiki-source-94ddb58f2dc1a71ed1959533
@@ -65,18 +69,14 @@ sources:
     resource: repo://docs/architecture/system-overview.md
   - id: openwiki-source-831ed1de42e0dff0edb87b3b
     resource: repo://docs/client-installation.md
-  - id: openwiki-source-36d583174a7a0018316f71c7
-    resource: repo://docs/operators/owner-operated-servers.md
   - id: openwiki-source-c3d1d450d3a3561b368e5307
     resource: repo://docs/planning/ROADMAP.md
   - id: openwiki-source-85dba8f87dd5947de337aca5
     resource: repo://docs/product-charter.md
   - id: openwiki-source-cb6494f7cbf0d5d23ffe082a
     resource: repo://migrations/0012_game_challenges.sql
-  - id: openwiki-source-4331166a21e12c8c40994c1e
-    resource: repo://migrations/0016_operator_reporting_and_audit.sql
-  - id: openwiki-source-29dc4177717fc3b17f932290
-    resource: repo://migrations/0018_server_identity.sql
+  - id: openwiki-source-11256f84337d259ecf424a45
+    resource: repo://migrations/0019_marketplace_catalog.sql
   - id: openwiki-source-449de92825ee702b9aa05d2a
     resource: repo://packaging/arch/client-runtime-files.txt
   - id: openwiki-source-d85e6ea816d7c91e9828f7b2
@@ -91,9 +91,14 @@ sources:
     resource: repo://scripts/test-game-cartridge-sdk.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
+  - id: openwiki-source-e08dc6155c081d7928029e27
+    resource: repo://scripts/test-operator-recovery.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-26T21:07:26.522Z"}
+generated: {by: "codex", at: "2026-08-26T23:12:01.286Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-26T23:45:54.301Z
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -126,7 +131,11 @@ deterministic rules, durable completion, exact command replay, and retained
 history. Production also includes canonical signed Game Cartridges, an
 isolated trusted Core/Rich-2D renderer/preview CLI, a deterministic public SDK
 export, signed release and catalog-policy verification, and a secure local
-cartridge importer. When the optional provider runtime is configured, the
+cartridge importer. One owner-configured marketplace can now synchronize a
+canonical signed snapshot over guarded pinned HTTPS, stage exact reviewed
+releases, publish one atomic PostgreSQL inventory, and expose a separately
+admitted metadata-only catalog to authenticated players. When the optional
+provider runtime is configured, the
 server also exposes the operator-pinned Door Legends v1 release and routes its
 player operations to a separate provider process and database. The main QML
 connector now handles direct or saved server selection through exact public
@@ -164,9 +173,13 @@ or federate their identity, moderation, catalog, or history.
 The private-alpha operator path is deliberately separate from the player API.
 `omarchygs-admin` uses a reviewed local `DATABASE_URL` to list a bounded report
 queue, resolve or dismiss an open report, reversibly suspend or reactivate an
-account, and issue, inventory, or revoke registration invitations. Every
-mutation carries an operation UUID, actor, and reason and commits an immutable
-audit event with the state change. An invitation's 48-character raw bearer code
+account, issue, inventory, or revoke registration invitations, inspect reviewed
+cartridges, and apply exact expected-state catalog selections. Its separate
+`marketplace-sync` action also requires a canonical HTTPS origin, exact
+marketplace public key, bounded DER root, and pre-provisioned secure store.
+Every mutation carries an operation UUID, actor, and reason and commits an
+immutable audit event with the state change. An invitation's 48-character raw
+bearer code
 is delivered only on its first successful issue receipt; PostgreSQL retains
 only its digest, and later inventory never exposes code or credential material.
 Suspension revokes all current device sessions; reactivation never resurrects
@@ -211,13 +224,15 @@ egress, replay, quotas, leases, lifecycle, and audit. Ticket 019 connects that
 foundation to one narrowly authorized first-party pilot: compiled Signal Siege
 sessions retain OmarchyGS rules authority, while a Door Legends session pins
 one exact provider release as its only durable rules/state/revision authority.
-External providers, server-side cartridge ingestion, and main-client launch of
-signed cartridge packages remain later work.
+External-provider onboarding, operator-custom cartridge ingestion, and
+main-client acquisition/launch of signed packages remain later work.
 
-ADR-0003 adds the future owner-operated distribution and extension direction:
-a marketplace may vet exact cartridge releases, each server administrator
-separately decides which releases to admit, and the official client eventually
-acquires and caches that server's exact signed cartridges locally. An explicit
+ADR-0003 adds the owner-operated distribution and extension direction. Ticket
+032 implements its first server-side slice: one pinned marketplace can supply
+signed exact release policy, while each server administrator independently
+admits one exact release per game and authenticated players see only effective
+catalog metadata. The official client does not yet acquire, cache, mount, or
+launch those packages. An explicit
 operator-custom path may bypass marketplace review but cannot bypass the inert
 package or trusted-QML boundary. A public Provider SDK and a separate
 capability-scoped server module/hook system remain roadmap work; no general
@@ -232,8 +247,8 @@ plugin runtime is authorized today.
 | Change player reporting, account suspension, report disposition, invitation administration, operator audit, or platform restore | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `reports.rs`, `operator_admin.rs`, `bin/omarchygs-admin.rs`; migrations `0016`–`0017`; `docs/operators/operator-safety-and-recovery.md`; `docs/operators/private-alpha.md` | Report API and operator-domain PostgreSQL tests; real CLI test; recovery and private-alpha drills |
 | Change QML endpoint/profile selection, appearance/accessibility, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `ServerProfiles.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/components/`, `client/qml/screens/`, `client/qml/game/` | `scripts/check-qml-style.py`; `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
-| Change cartridge packaging, trusted rendering, SDK portability, or provider integration | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `client/qml/cartridge`; migrations `0014`–`0015`; ADR-0002; Tickets 015–019 | `scripts/test-game-cartridge.sh`; `scripts/test-game-cartridge-renderer.sh`; `scripts/test-game-cartridge-sdk.sh`; `scripts/test-provider-conformance.sh`; `scripts/test-provider-authority-pilot.sh`; threat/authority review and constitutional authority check |
-| Change owner-operated server, marketplace, custom-content, Provider SDK, or module/hook direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | Current-versus-future audit; provenance/authority review; official-client containment; extension isolation and lifecycle evidence before executable implementation |
+| Change cartridge packaging, trusted rendering, SDK portability, provider integration, marketplace synchronization, or server catalog admission | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `marketplace_egress.rs`; `marketplace_sync.rs`; `cartridge_catalog.rs`; `client/qml/cartridge`; migrations `0014`–`0015` and `0019`; ADR-0002; Tickets 015–019 and 032 | Cartridge/renderer/SDK/provider focused scripts; marketplace TLS and PostgreSQL lifecycle test; authenticated catalog and operator CLI tests; threat/authority review and constitutional authority check |
+| Change owner-operated server, client acquisition, custom-content, Provider SDK, or module/hook direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | Current-versus-future audit; provenance/authority review; official-client containment; extension isolation and lifecycle evidence before executable implementation |
 | Build, inspect, install, upgrade, remove, or diagnose the native player package | [Development and validation](development-and-validation.md) and `docs/client-installation.md` | `packaging/arch/`; `scripts/check-client-package-source.sh`; `scripts/build-client-package.sh`; `scripts/test-client-package.sh` | Source-contract check; extracted-package conformance; `bin/gate.sh --diff` before delivery |
 | Run or diagnose the local stack and quality gate | [Development and validation](development-and-validation.md) | `scripts/dev.sh`; `bin/gate.sh`; `client/qml/Main.qml` | `bin/gate.sh --fast` or `--diff` |
 | Start or resume a non-trivial change | [Codex workflow](codex-workflow.md) | `AGENTS.md`; `$omarchy-workflow`; active pipeline | Phase receipts and canonical gate |
@@ -347,17 +362,24 @@ signed `.ogsc`, report host compatibility, install/revoke it in a bounded
 same-user local store, validate a schema-conforming view, and compile a bounded
 Core or Rich-2D plan for platform-owned QML components. They also export and
 self-verify a deterministic public SDK, create and verify signed reproducible
-release attestations, enforce signed five-state lifecycle policy, and import a
-release through a Linux descriptor-relative secure store. The preview CLI
+release attestations, enforce signed five-state lifecycle policy, and stage a
+release through a Linux descriptor-relative secure store. The server-admin
+path now verifies one monotonic signed marketplace snapshot, retrieves each
+three-file release below a fixed guarded origin, and publishes current reviewed
+inventory only after the complete snapshot succeeds. Local selection remains a
+separate idempotent audited database command. Public discovery advertises
+`games.cartridge-catalog.v1`; authenticated `GET /v1/cartridges` returns only
+effective selected metadata, never a URL, local path, key, or executable
+document. The preview CLI
 writes only read-only plan/assets into a caller-created private directory and
 reports no provider, database, or credential use. The main QML connector's
 compiled Signal Siege surface is platform-owned trusted UI and does not claim a
 signed cartridge origin, digest, or render plan. It still does not acquire or
-launch signed cartridge packages, and the server does not ingest cartridge
-files directly. The `omarchy-game-provider` crate implements operator-pinned
-releases, signed pairwise grants and messages, public-only pinned HTTPS egress,
-and durable replay/quota/lease/audit controls. The optional production bridge
-instantiates it only for the Door Legends pilot. Migration 0015 prevents dual
+launch signed cartridge packages. The `omarchy-game-provider` crate implements
+operator-pinned releases, signed pairwise grants and messages, public-only
+pinned HTTPS egress, and durable replay/quota/lease/audit controls. The optional
+production bridge instantiates it only for the Door Legends pilot. Migration
+0015 prevents dual
 authority: compiled sessions require local object state and no provider release,
 whereas provider sessions require a release pin and null local rules state.
 Authenticated callbacks become results, achievements, views, audit, and sync

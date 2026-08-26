@@ -20,6 +20,7 @@ exact compatibility document:
     "accounts.invite-registration.v1",
     "auth.device-sessions.v1",
     "auth.totp.v1",
+    "games.cartridge-catalog.v1",
     "games.challenges.v1",
     "games.sessions.v1",
     "identity.personas.v1",
@@ -790,6 +791,56 @@ A missing, malformed, or cross-conversation message returns 404
 `message_not_found`. All inbox queries and writes require a valid Bearer token,
 owner-scope the acting persona before disclosing objects, and return
 `Cache-Control: no-store`, including on domain and request-parsing errors.
+
+## List admitted Game Cartridges
+
+`GET /v1/cartridges`
+
+This metadata-only endpoint requires a valid device-session Bearer token and
+returns `Cache-Control: no-store` on success and failure. It lists only exact
+server selections that are present in the current marketplace snapshot,
+imported, compatible with this host, and currently `active` or `deprecated`:
+
+```json
+{
+  "cartridges": [
+    {
+      "game_key": "door-legends",
+      "publisher_id": "ignibyte",
+      "rules_version": 1,
+      "cartridge_version": 2,
+      "display_name": "Door Legends",
+      "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "signed_identity_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "marketplace": {
+        "provenance_class": "marketplace_vetted",
+        "marketplace_id": "omarchygs-marketplace",
+        "marketplace_name": "OmarchyGS Marketplace",
+        "reviewed_by": "review-team",
+        "review_summary": "Bounded first-party review passed.",
+        "policy_version": 1,
+        "lifecycle_status": "deprecated"
+      },
+      "server_admission": {"revision": 4},
+      "warning": "Upgrade when practical."
+    }
+  ]
+}
+```
+
+`warning` is present only for a deprecated release and contains its public
+lifecycle reason. Suspended, denied, removed, incompatible, unimported, and
+locally inactive releases are omitted; the server never substitutes another
+version. The response deliberately excludes marketplace URLs, local paths,
+public-key material, raw signed records, operator identities/reasons, and
+download authority. Missing or invalid authentication returns the normal
+`invalid_session` envelope. A database read failure returns 500
+`internal_error`.
+
+This catalog describes inert presentation releases selected by the server. It
+does not replace public `GET /v1/games`, which describes currently implemented
+gameplay authorities and rules versions, and it does not yet download or mount
+cartridge bytes in the player client.
 
 ## List games
 

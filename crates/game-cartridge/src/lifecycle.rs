@@ -139,7 +139,7 @@ pub fn generate_catalog_keypair(
 }
 
 impl CatalogPrivateKey {
-    fn decode(&self) -> Result<SigningKey> {
+    pub(crate) fn decode(&self) -> Result<SigningKey> {
         self.validate()?;
         let bytes = URL_SAFE_NO_PAD
             .decode(&self.signing_key)
@@ -172,7 +172,7 @@ impl CatalogPrivateKey {
 }
 
 impl CatalogPublicKey {
-    fn decode(&self) -> Result<VerifyingKey> {
+    pub(crate) fn decode(&self) -> Result<VerifyingKey> {
         self.validate()?;
         let bytes = URL_SAFE_NO_PAD
             .decode(&self.verifying_key)

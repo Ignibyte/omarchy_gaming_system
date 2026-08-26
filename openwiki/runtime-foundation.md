@@ -15,8 +15,6 @@ sources:
     resource: repo://client/qml/Main.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
-  - id: openwiki-source-7ea06d71b0299905dc0706ce
-    resource: repo://client/qml/ServerProfiles.qml
   - id: openwiki-source-4f5334e859a4d83e2a196fcf
     resource: repo://client/qml/SocialController.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
@@ -59,10 +57,6 @@ sources:
     resource: repo://crates/server/src/provider_games.rs
   - id: openwiki-source-e4423ee4de83f38bd240bf8b
     resource: repo://crates/server/src/reports.rs
-  - id: openwiki-source-1b621f94587f7516bb90c07a
-    resource: repo://crates/server/src/server_discovery_api_tests.rs
-  - id: openwiki-source-42fe6bf463fcb01dc5566e16
-    resource: repo://crates/server/src/server_discovery.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
   - id: openwiki-source-76060b846b9222af2c790243
@@ -95,12 +89,8 @@ sources:
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-  - id: openwiki-source-29dc4177717fc3b17f932290
-    resource: repo://migrations/0018_server_identity.sql
   - id: openwiki-source-a5928e7ee39885995efdc170
     resource: repo://scripts/dev.sh
-  - id: openwiki-source-e08dc6155c081d7928029e27
-    resource: repo://scripts/test-operator-recovery.sh
 generated: {by: "codex", at: "2026-08-26T21:07:26.522Z"}
 ---
 

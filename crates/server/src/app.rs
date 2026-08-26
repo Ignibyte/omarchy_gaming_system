@@ -42,6 +42,7 @@ use crate::reports::{self, CreateReportInput, PlayerReportReceipt, ReportError, 
 use crate::server_discovery;
 use crate::sessions::{self, CreateSessionInput, DeviceSession, SessionCreation, SessionError};
 use crate::sync::{self, SyncError, SyncEvent, SyncEventKind, SyncHub};
+use omarchy_gaming_system_server::cartridge_catalog::{self, CatalogError, PlayerCartridgeRelease};
 
 const SYNC_SOCKET_MAX_CLIENT_BYTES: usize = 1024;
 
@@ -382,6 +383,11 @@ struct GameCatalogResponse {
 }
 
 #[derive(Serialize)]
+struct CartridgeCatalogResponse {
+    cartridges: Vec<PlayerCartridgeRelease>,
+}
+
+#[derive(Serialize)]
 struct GameManifestResponse {
     key: String,
     version: u32,
@@ -532,6 +538,7 @@ enum ApiError {
     Report(ReportError),
     Connection(ConnectionError),
     Challenge(ChallengeError),
+    Catalog(CatalogError),
     Inbox(InboxError),
     Game(GameError),
     Sync(SyncError),
@@ -610,6 +617,9 @@ pub(crate) fn router_with_provider_runtime(
             post(register_account).layer(DefaultBodyLimit::max(1024)),
         )
         .layer(middleware::map_response(inbox_no_store));
+    let cartridge_routes = Router::new()
+        .route("/v1/cartridges", get(list_cartridges))
+        .layer(middleware::map_response(inbox_no_store));
     let report_routes = Router::new()
         .route(
             "/v1/personas/{persona_id}/reports",
@@ -685,6 +695,7 @@ pub(crate) fn router_with_provider_runtime(
         .route("/health", get(health))
         .merge(discovery_routes)
         .route("/v1/games", get(list_games))
+        .merge(cartridge_routes)
         .route(
             "/v1/provider-events/{release_id}",
             post(receive_provider_event).layer(DefaultBodyLimit::max(512 * 1024)),
@@ -1351,6 +1362,22 @@ async fn list_games(State(state): State<AppState>) -> Result<Json<GameCatalogRes
         });
     }
     Ok(Json(GameCatalogResponse { games }))
+}
+
+async fn list_cartridges(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    sessions::authenticate(&state.pool, token)
+        .await
+        .map_err(ApiError::Session)?;
+    let cartridges = cartridge_catalog::list_player_catalog(&state.pool)
+        .await
+        .map_err(ApiError::Catalog)?;
+    Ok(no_store(
+        Json(CartridgeCatalogResponse { cartridges }).into_response(),
+    ))
 }
 
 async fn list_game_sessions(
@@ -2106,6 +2133,26 @@ impl IntoResponse for ApiError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "internal_error",
                 "device session operation failed",
+            ),
+            ApiError::Catalog(CatalogError::InvalidInput) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "catalog_invalid_input",
+                "cartridge catalog input is invalid",
+            ),
+            ApiError::Catalog(CatalogError::Conflict) => (
+                StatusCode::CONFLICT,
+                "catalog_conflict",
+                "cartridge catalog state changed",
+            ),
+            ApiError::Catalog(CatalogError::Denied) => (
+                StatusCode::FORBIDDEN,
+                "catalog_denied",
+                "cartridge catalog operation is not permitted",
+            ),
+            ApiError::Catalog(CatalogError::Internal) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal_error",
+                "cartridge catalog operation failed",
             ),
             ApiError::Mfa(MfaError::Unauthorized) => (
                 StatusCode::UNAUTHORIZED,

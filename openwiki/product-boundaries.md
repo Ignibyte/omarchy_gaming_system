@@ -13,8 +13,6 @@ sources:
     resource: repo://client/qml/GameController.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
-  - id: openwiki-source-7ea06d71b0299905dc0706ce
-    resource: repo://client/qml/ServerProfiles.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
   - id: openwiki-source-37af4c6b51c86b62db25f85f
@@ -77,8 +75,6 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-  - id: openwiki-source-29dc4177717fc3b17f932290
-    resource: repo://migrations/0018_server_identity.sql
   - id: openwiki-source-8df9ad1a3495f8360740ff03
     resource: repo://scripts/test-game-cartridge-sdk.sh
   - id: openwiki-source-e08dc6155c081d7928029e27

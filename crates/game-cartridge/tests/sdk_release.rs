@@ -339,6 +339,88 @@ fn secure_store_stays_descriptor_anchored_and_enforces_fresh_policy() {
 
 #[cfg(target_os = "linux")]
 #[test]
+fn reviewed_staging_never_writes_active_and_resolves_only_the_exact_digest() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let fixture = fixture();
+    let host = omarchygs_game_cartridge::core_host_profile();
+    let release =
+        verify_release_directory(&fixture.release, &fixture.public, &fixture.sdk, &host).unwrap();
+    let (catalog_private, catalog_public) =
+        generate_catalog_keypair("catalog-primary-v1", "omarchygs").unwrap();
+    let active = policy_bytes(&release, &catalog_private, 1, CatalogStatus::Active);
+    let suspended = policy_bytes(&release, &catalog_private, 2, CatalogStatus::Suspended);
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("store");
+    fs::create_dir(&root).unwrap();
+    fs::set_permissions(&root, fs::Permissions::from_mode(0o700)).unwrap();
+    let store = SecureCartridgeStore::open_existing(&root).unwrap();
+
+    let staged = store
+        .stage_reviewed_release(&release, &active, &catalog_public)
+        .unwrap();
+    assert!(staged.installed);
+    assert!(!staged.active_pointer_written);
+    assert!(!root.join("active/door-legends.json").exists());
+    assert!(
+        store
+            .resolve_exact(
+                "door-legends",
+                &release.payload().archive_sha256,
+                &fixture.public,
+                &host,
+                &active,
+                &catalog_public,
+                LifecycleUse::NewLaunch,
+            )
+            .is_ok()
+    );
+    assert!(matches!(
+        store.resolve_exact(
+            "door-legends",
+            &"0".repeat(64),
+            &fixture.public,
+            &host,
+            &active,
+            &catalog_public,
+            LifecycleUse::NewLaunch,
+        ),
+        Err(CartridgeError::InvalidCatalogPolicy) | Err(CartridgeError::InvalidActivation)
+    ));
+
+    let denied = store
+        .stage_reviewed_release(&release, &suspended, &catalog_public)
+        .unwrap();
+    assert!(!denied.installed);
+    assert!(!root.join("active/door-legends.json").exists());
+    assert!(matches!(
+        store.resolve_exact(
+            "door-legends",
+            &release.payload().archive_sha256,
+            &fixture.public,
+            &host,
+            &suspended,
+            &catalog_public,
+            LifecycleUse::NewLaunch,
+        ),
+        Err(CartridgeError::LifecycleDenied)
+    ));
+    assert!(matches!(
+        store.resolve_exact(
+            "door-legends",
+            &release.payload().archive_sha256,
+            &fixture.public,
+            &host,
+            &active,
+            &catalog_public,
+            LifecycleUse::NewLaunch,
+        ),
+        Err(CartridgeError::InvalidCatalogPolicy)
+    ));
+}
+
+#[cfg(target_os = "linux")]
+#[test]
 fn secure_store_rejects_group_or_world_writable_directories() {
     use std::os::unix::fs::PermissionsExt;
 

@@ -205,6 +205,77 @@ reconnect-safe invalidations are durable. The QML game screens can start solo
 Signal Siege, create/respond to challenges, play the two-person versus rules,
 and recover the exact terminal history through the authoritative REST paths.
 
+## Synchronize and curate Game Cartridges
+
+The database-local administrator command can synchronize one pinned
+marketplace and curate a server-owned cartridge catalog. Marketplace review
+does not activate a game: synchronization verifies and stages immutable bytes,
+then a separate audited command admits one exact release for this community.
+
+Provision an existing Linux directory owned by the account running the command
+and inaccessible to group or other users, then configure the exact HTTPS
+origin, Ed25519 public-key document, DER TLS root, and store root:
+
+```bash
+install -d -m 0700 /var/lib/omarchygs/cartridges
+export OGS_MARKETPLACE_ORIGIN=https://marketplace.example.com/v1/
+export OGS_MARKETPLACE_PUBLIC_KEY=/etc/omarchygs/marketplace-public.json
+export OGS_MARKETPLACE_TLS_ROOT_DER=/etc/omarchygs/marketplace-root.der
+export OGS_CARTRIDGE_STORE_ROOT=/var/lib/omarchygs/cartridges
+```
+
+The marketplace origin must be a canonical HTTPS domain origin. The sync
+client accepts only the configured TLS root, public DNS destinations, relative
+same-origin release paths, exact successful responses, and bounded bodies; it
+uses no proxy, redirect, referer, decompression, or connection reuse.
+
+Build the local command, synchronize, and inspect the complete operator
+inventory:
+
+```bash
+cargo build -p omarchy-gaming-system-server --bin omarchygs-admin
+DATABASE_URL="$DATABASE_URL" target/debug/omarchygs-admin marketplace-sync
+DATABASE_URL="$DATABASE_URL" target/debug/omarchygs-admin cartridges
+```
+
+To activate an exact reviewed digest, place a bounded mode-0600 command in
+`catalog-command.json`:
+
+```json
+{
+  "idempotency_key": "8d8f9f79-539d-4fa3-80bd-1ca9ae111857",
+  "game_key": "door-legends",
+  "expected": {"state": "inactive"},
+  "desired": {
+    "state": "release",
+    "archive_sha256": "<64-lowercase-hex-digest>"
+  },
+  "actor": "oncall-sysop",
+  "reason": "Admit the reviewed release for this community"
+}
+```
+
+Apply it with:
+
+```bash
+DATABASE_URL="$DATABASE_URL" target/debug/omarchygs-admin \
+  catalog-apply ./catalog-command.json
+```
+
+Deactivation uses the current exact release as `expected` and
+`{"state":"inactive"}` as `desired`. An upgrade or explicit rollback names
+the current digest in `expected` and the chosen digest in `desired`; exact
+replay returns the original receipt, while stale intent conflicts. A
+marketplace suspension, removal, or incompatibility makes a selected release
+ineffective without falling back to another version. Operators must explicitly
+choose recovery after a later valid snapshot. The authenticated metadata-only
+`GET /v1/cartridges` exposes effective admissions to players. Client download,
+cache, mount, and launch integration remain a later slice.
+
+See [owner-operated servers](docs/operators/owner-operated-servers.md) and
+[operator safety and platform recovery](docs/operators/operator-safety-and-recovery.md)
+for the authority, lifecycle, and backup boundaries.
+
 ## Development checks
 
 ```bash

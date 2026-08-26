@@ -67,7 +67,7 @@ start_server() {
     RUST_LOG=omarchy_gaming_system_server=warn \
     "$ogs_server_binary" >"$ogs_log" 2>&1 &
   ogs_active_server_pid=$!
-  # A cold 18-migration database can exceed ten seconds after the gate's
+  # A cold 19-migration database can exceed ten seconds after the gate's
   # compile/provider load. Keep the wait bounded without making that load a
   # false recovery failure.
   for _ in {1..300}; do
@@ -263,6 +263,53 @@ INSERT INTO persona_reports (
     'a1000000-0000-4000-8000-000000000001',
     'harassment', 'Recovery drill report detail'
 );
+
+INSERT INTO marketplace_sync_state (
+    marketplace_origin, authority_id, key_id, marketplace_name,
+    snapshot_version, snapshot_sha256
+) VALUES (
+    'https://market.example.test/v1/', 'omarchygs-marketplace',
+    'marketplace-primary-v1', 'OmarchyGS Marketplace', 7,
+    'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc'
+);
+
+INSERT INTO marketplace_releases (
+    id, game_key, publisher_id, publisher_key, rules_version,
+    cartridge_version, archive_sha256, signed_identity_sha256,
+    display_name, release_path, reviewed_by, review_summary,
+    signed_policy, policy_version, policy_status, policy_reason,
+    compatible, imported, first_seen_snapshot_version,
+    last_seen_snapshot_version
+) VALUES (
+    'c0000000-0000-4000-8000-000000000001',
+    'door-legends', 'ignibyte', '{"key_id":"publisher-primary-v1"}'::jsonb,
+    1, 2,
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    'Door Legends', 'releases/door-legends/2/', 'review-team',
+    'Recovery drill reviewed release.', '{"policy":"recovery-fixture"}'::jsonb,
+    5, 'active', 'Current reviewed release.', TRUE, TRUE, 3, 7
+);
+
+INSERT INTO server_cartridge_catalogs (
+    id, game_key, active_release_id, admission_revision
+) VALUES (
+    'c1000000-0000-4000-8000-000000000001', 'door-legends',
+    'c0000000-0000-4000-8000-000000000001', 3
+);
+
+INSERT INTO cartridge_catalog_audit_events (
+    id, operation_id, catalog_id, action, actor, reason,
+    previous_archive_sha256, resulting_archive_sha256,
+    admission_revision
+) VALUES (
+    'c2000000-0000-4000-8000-000000000001',
+    'c3000000-0000-4000-8000-000000000001',
+    'c1000000-0000-4000-8000-000000000001',
+    'activate_cartridge', 'recovery-drill-sysop',
+    'Prove cartridge admission survives restore', NULL,
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 3
+);
 SQL
 
 jq -nc \
@@ -309,6 +356,17 @@ assert_scalar "$ogs_source_url" \
   resolved:true "source report disposition"
 assert_scalar "$ogs_source_url" \
   "SELECT count(*) FROM operator_audit_events" 2 "source operator audit count"
+assert_scalar "$ogs_source_url" \
+  "SELECT snapshot_version || ':' || snapshot_sha256 FROM marketplace_sync_state WHERE singleton" \
+  "7:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" \
+  "source marketplace snapshot"
+assert_scalar "$ogs_source_url" \
+  "SELECT r.archive_sha256 || ':' || c.admission_revision FROM server_cartridge_catalogs c JOIN marketplace_releases r ON r.id = c.active_release_id WHERE c.game_key = 'door-legends'" \
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3" \
+  "source cartridge selection"
+assert_scalar "$ogs_source_url" \
+  "SELECT count(*) FROM cartridge_catalog_audit_events" 1 \
+  "source cartridge catalog audit count"
 
 write_table_counts "$ogs_source_url" "$ogs_temp/source-counts.tsv"
 pg_dump "$ogs_source_url" --format=custom --file="$ogs_temp/platform.backup"
@@ -337,6 +395,17 @@ assert_scalar "$ogs_restore_url" \
 assert_scalar "$ogs_restore_url" \
   "SELECT (SELECT count(*) FROM persona_connections) || ':' || (SELECT count(*) FROM inbox_messages) || ':' || (SELECT count(*) FROM game_session_commands) || ':' || (SELECT count(*) FROM persona_sync_events)" \
   1:1:1:4 "restored social inbox game and sync history"
+assert_scalar "$ogs_restore_url" \
+  "SELECT snapshot_version || ':' || snapshot_sha256 FROM marketplace_sync_state WHERE singleton" \
+  "7:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" \
+  "restored marketplace snapshot"
+assert_scalar "$ogs_restore_url" \
+  "SELECT r.archive_sha256 || ':' || c.admission_revision FROM server_cartridge_catalogs c JOIN marketplace_releases r ON r.id = c.active_release_id WHERE c.game_key = 'door-legends'" \
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3" \
+  "restored cartridge selection"
+assert_scalar "$ogs_restore_url" \
+  "SELECT count(*) FROM cartridge_catalog_audit_events WHERE catalog_id = 'c1000000-0000-4000-8000-000000000001'" \
+  1 "restored cartridge catalog audit"
 
 if psql "$ogs_restore_url" -v ON_ERROR_STOP=1 \
   -c "UPDATE operator_audit_events SET reason = 'forbidden'" >/dev/null 2>&1; then
@@ -346,6 +415,11 @@ fi
 if psql "$ogs_restore_url" -v ON_ERROR_STOP=1 \
   -c "DELETE FROM persona_reports WHERE id = '$ogs_report_id'" >/dev/null 2>&1; then
   echo "restored report accepted deletion" >&2
+  exit 1
+fi
+if psql "$ogs_restore_url" -v ON_ERROR_STOP=1 \
+  -c "UPDATE cartridge_catalog_audit_events SET reason = 'forbidden'" >/dev/null 2>&1; then
+  echo "restored cartridge catalog audit accepted mutation" >&2
   exit 1
 fi
 

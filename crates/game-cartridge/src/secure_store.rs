@@ -45,6 +45,24 @@ pub struct SecureImportReport {
     pub platform_credentials_read: bool,
 }
 
+/// Result of verifying and staging one reviewed release without granting
+/// server-local activation authority.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SecureStageReport {
+    pub report_format: String,
+    pub ok: bool,
+    pub installed: bool,
+    pub release: SecureActivationRecord,
+    pub decision: LifecycleDecision,
+    pub descriptor_relative: bool,
+    pub authoritative_policy_verified: bool,
+    pub active_pointer_written: bool,
+    pub provider_contacted: bool,
+    pub database_required: bool,
+    pub platform_credentials_read: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct SecureResolution {
     cartridge: VerifiedCartridge,
@@ -138,51 +156,70 @@ mod platform {
             signed_policy_bytes: &[u8],
             catalog_key: &CatalogPublicKey,
         ) -> Result<SecureImportReport> {
-            let policy = verify_catalog_policy_bytes(signed_policy_bytes, catalog_key, release)?;
-            let decision = lifecycle_decision(policy.status);
-            self.cache_policy(&policy, signed_policy_bytes, catalog_key)?;
-            ensure_allowed(&decision, LifecycleUse::NewLaunch)?;
-
-            let digest = release.payload().archive_sha256.as_str();
-            write_immutable(
-                &self.blobs,
-                &format!("{digest}.ogsc"),
-                release.cartridge().archive_bytes(),
-            )?;
-            write_immutable(
-                &self.releases,
-                &format!("{digest}.signed.json"),
-                release.attestation_bytes(),
-            )?;
-            write_immutable(
-                &self.conformance,
-                &format!("{digest}.json"),
-                release.conformance_bytes(),
-            )?;
-            let activation = SecureActivationRecord {
-                format_version: 1,
-                game_key: release.payload().game_key.clone(),
-                publisher_id: release.payload().publisher_id.clone(),
-                cartridge_version: release.payload().cartridge_version,
-                archive_sha256: release.payload().archive_sha256.clone(),
-                signed_identity_sha256: release.payload().signed_identity_sha256.clone(),
-                release_attestation_sha256: sha256_hex(release.attestation_bytes()),
-                conformance_sha256: sha256_hex(release.conformance_bytes()),
-                sdk: release.sdk().clone(),
-            };
+            let staged = self.stage_reviewed_release(release, signed_policy_bytes, catalog_key)?;
+            if !staged.installed {
+                return Err(CartridgeError::LifecycleDenied);
+            }
             atomic_replace(
                 &self.active,
-                &format!("{}.json", activation.game_key),
-                &canonical_json(&activation)?,
+                &format!("{}.json", staged.release.game_key),
+                &canonical_json(&staged.release)?,
             )?;
             Ok(SecureImportReport {
                 report_format: "omarchygs.cartridge.secure-import/v1".to_owned(),
                 ok: true,
                 installed: true,
-                activation,
+                activation: staged.release,
+                decision: staged.decision,
+                descriptor_relative: true,
+                authoritative_policy_verified: true,
+                provider_contacted: false,
+                database_required: false,
+                platform_credentials_read: false,
+            })
+        }
+
+        /// Verify and store immutable reviewed bytes without changing the
+        /// legacy per-game active pointer. A denied lifecycle policy is cached
+        /// monotonically and returns `installed: false`.
+        pub fn stage_reviewed_release(
+            &self,
+            release: &VerifiedRelease,
+            signed_policy_bytes: &[u8],
+            catalog_key: &CatalogPublicKey,
+        ) -> Result<SecureStageReport> {
+            let policy = verify_catalog_policy_bytes(signed_policy_bytes, catalog_key, release)?;
+            let decision = lifecycle_decision(policy.status);
+            self.cache_policy(&policy, signed_policy_bytes, catalog_key)?;
+            let release_record = release_record(release);
+            let installed = !matches!(decision.new_launch, NewLaunchDecision::Deny);
+            if installed {
+                let digest = release.payload().archive_sha256.as_str();
+                write_immutable(
+                    &self.blobs,
+                    &format!("{digest}.ogsc"),
+                    release.cartridge().archive_bytes(),
+                )?;
+                write_immutable(
+                    &self.releases,
+                    &format!("{digest}.signed.json"),
+                    release.attestation_bytes(),
+                )?;
+                write_immutable(
+                    &self.conformance,
+                    &format!("{digest}.json"),
+                    release.conformance_bytes(),
+                )?;
+            }
+            Ok(SecureStageReport {
+                report_format: "omarchygs.cartridge.secure-stage/v1".to_owned(),
+                ok: true,
+                installed,
+                release: release_record,
                 decision,
                 descriptor_relative: true,
                 authoritative_policy_verified: true,
+                active_pointer_written: false,
                 provider_contacted: false,
                 database_required: false,
                 platform_credentials_read: false,
@@ -212,10 +249,62 @@ mod platform {
             {
                 return Err(CartridgeError::InvalidActivation);
             }
+            self.resolve_checked(
+                game_key,
+                &activation.archive_sha256,
+                publisher_key,
+                host,
+                signed_policy_bytes,
+                catalog_key,
+                use_kind,
+                Some(&activation),
+            )
+        }
+
+        /// Resolve one exact immutable digest under the supplied current
+        /// marketplace policy. No per-game active pointer is consulted.
+        #[allow(clippy::too_many_arguments)]
+        pub fn resolve_exact(
+            &self,
+            game_key: &str,
+            archive_sha256: &str,
+            publisher_key: &PublisherPublicKey,
+            host: &HostProfile,
+            signed_policy_bytes: &[u8],
+            catalog_key: &CatalogPublicKey,
+            use_kind: LifecycleUse,
+        ) -> Result<SecureResolution> {
+            self.resolve_checked(
+                game_key,
+                archive_sha256,
+                publisher_key,
+                host,
+                signed_policy_bytes,
+                catalog_key,
+                use_kind,
+                None,
+            )
+        }
+
+        #[allow(clippy::too_many_arguments)]
+        fn resolve_checked(
+            &self,
+            game_key: &str,
+            archive_sha256: &str,
+            publisher_key: &PublisherPublicKey,
+            host: &HostProfile,
+            signed_policy_bytes: &[u8],
+            catalog_key: &CatalogPublicKey,
+            use_kind: LifecycleUse,
+            expected: Option<&SecureActivationRecord>,
+        ) -> Result<SecureResolution> {
+            if !valid_identifier(game_key) || !valid_sha256(archive_sha256) {
+                return Err(CartridgeError::InvalidActivation);
+            }
             let policy = verify_catalog_policy_signature(signed_policy_bytes, catalog_key)?;
-            if policy.game_key != activation.game_key
-                || policy.publisher_id != activation.publisher_id
-                || policy.archive_sha256 != activation.archive_sha256
+            if policy.game_key != game_key
+                || policy.publisher_id != publisher_key.publisher_id
+                || policy.archive_sha256 != archive_sha256
             {
                 return Err(CartridgeError::InvalidCatalogPolicy);
             }
@@ -223,13 +312,13 @@ mod platform {
             let decision = lifecycle_decision(policy.status);
             ensure_allowed(&decision, use_kind)?;
 
-            let digest = activation.archive_sha256.as_str();
+            let digest = archive_sha256;
             let archive = read_at(
                 &self.blobs,
                 &format!("{digest}.ogsc"),
                 crate::MAX_ARCHIVE_BYTES as u64,
             )?;
-            if sha256_hex(&archive) != activation.archive_sha256 {
+            if sha256_hex(&archive) != archive_sha256 {
                 return Err(CartridgeError::InvalidActivation);
             }
             let conformance = read_at(
@@ -242,24 +331,18 @@ mod platform {
                 &format!("{digest}.signed.json"),
                 MAX_RELEASE_RECORD_BYTES,
             )?;
-            if sha256_hex(&conformance) != activation.conformance_sha256
-                || sha256_hex(&attestation) != activation.release_attestation_sha256
-            {
-                return Err(CartridgeError::InvalidActivation);
-            }
             let release = verify_release_components(
                 &archive,
                 &conformance,
                 &attestation,
                 publisher_key,
-                &activation.sdk,
+                &crate::supported_sdk_identity()?,
                 host,
             )?;
-            if release.payload().game_key != activation.game_key
-                || release.payload().publisher_id != activation.publisher_id
-                || release.payload().cartridge_version != activation.cartridge_version
-                || release.payload().archive_sha256 != activation.archive_sha256
-                || release.payload().signed_identity_sha256 != activation.signed_identity_sha256
+            let activation = release_record(&release);
+            if activation.game_key != game_key
+                || activation.archive_sha256 != archive_sha256
+                || expected.is_some_and(|expected| expected != &activation)
             {
                 return Err(CartridgeError::InvalidActivation);
             }
@@ -306,6 +389,20 @@ mod platform {
                 }
             }
             atomic_replace(&self.policies, &name, bytes)
+        }
+    }
+
+    fn release_record(release: &VerifiedRelease) -> SecureActivationRecord {
+        SecureActivationRecord {
+            format_version: 1,
+            game_key: release.payload().game_key.clone(),
+            publisher_id: release.payload().publisher_id.clone(),
+            cartridge_version: release.payload().cartridge_version,
+            archive_sha256: release.payload().archive_sha256.clone(),
+            signed_identity_sha256: release.payload().signed_identity_sha256.clone(),
+            release_attestation_sha256: sha256_hex(release.attestation_bytes()),
+            conformance_sha256: sha256_hex(release.conformance_bytes()),
+            sdk: release.sdk().clone(),
         }
     }
 

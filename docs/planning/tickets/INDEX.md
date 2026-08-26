@@ -4,7 +4,7 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `032`**
+- **Next ticket number: `033`**
 
 ## Open queue
 
@@ -12,6 +12,7 @@ None.
 
 ## Closed
 
+- [`TICKET-032` — Marketplace synchronization and server catalog control](closed/TICKET-032-marketplace-sync-and-server-catalog-control.md)
 - [`TICKET-031` — Stable server discovery and isolated client profiles](closed/TICKET-031-stable-server-discovery-and-isolated-client-profiles.md)
 - [`TICKET-030` — Invite-only registration and private-alpha readiness](closed/TICKET-030-invite-only-registration-and-private-alpha-readiness.md)
 - [`TICKET-029` — Operator reporting, suspension, audit, and recovery drill](closed/TICKET-029-operator-reporting-suspension-audit-and-recovery-drill.md)

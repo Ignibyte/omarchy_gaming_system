@@ -208,7 +208,7 @@ fn validate_resolution(
         }
         let socket = SocketAddr::new(address, endpoint.port);
         let allowed = match mode {
-            ResolutionMode::Production => is_public_provider_ip(address),
+            ResolutionMode::Production => is_public_egress_ip(address),
             #[cfg(any(test, feature = "provider-conformance"))]
             ResolutionMode::Conformance(exact) => address.is_loopback() && socket == exact,
         };
@@ -232,11 +232,17 @@ fn validate_resolution(
 /// Every private, loopback, link-local, special-use, documentation, benchmark,
 /// multicast, and reserved range rejects.
 #[must_use]
-pub fn is_public_provider_ip(address: IpAddr) -> bool {
+pub fn is_public_egress_ip(address: IpAddr) -> bool {
     match address {
         IpAddr::V4(address) => is_public_ipv4(address),
         IpAddr::V6(address) => is_public_ipv6(address),
     }
+}
+
+/// Compatibility name retained for provider consumers.
+#[must_use]
+pub fn is_public_provider_ip(address: IpAddr) -> bool {
+    is_public_egress_ip(address)
 }
 
 fn is_public_ipv4(address: Ipv4Addr) -> bool {
@@ -294,6 +300,7 @@ fn is_public_ipv6(address: Ipv6Addr) -> bool {
         ("2001:db8::", 32),
         ("2002::", 16),
         ("2620:4f:8000::", 48),
+        ("3ffe::", 16),
         ("3fff::", 20),
     ]
     .iter()
@@ -357,6 +364,7 @@ mod tests {
             "2001:db8::1",
             "2002::1",
             "2620:4f:8000::1",
+            "3ffe::1",
             "3fff::1",
             "4000::1",
             "5f00::1",
@@ -365,11 +373,11 @@ mod tests {
             "ff02::1",
         ] {
             let parsed = denied.parse().expect("fixture IP should parse");
-            assert!(!is_public_provider_ip(parsed), "{denied} should reject");
+            assert!(!is_public_egress_ip(parsed), "{denied} should reject");
         }
         for allowed in ["1.1.1.1", "8.8.8.8", "2606:4700:4700::1111"] {
             let parsed = allowed.parse().expect("fixture IP should parse");
-            assert!(is_public_provider_ip(parsed), "{allowed} should pass");
+            assert!(is_public_egress_ip(parsed), "{allowed} should pass");
         }
     }
 

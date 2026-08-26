@@ -16,6 +16,8 @@ mod sessions;
 mod sync;
 
 #[cfg(test)]
+mod cartridge_catalog_api_tests;
+#[cfg(test)]
 mod challenge_api_tests;
 #[cfg(test)]
 mod connection_api_tests;

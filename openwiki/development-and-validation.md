@@ -7,14 +7,14 @@ sources:
     resource: repo://bin/gate.sh
   - id: openwiki-source-cfb5585994628fc6aaff1dd4
     resource: repo://client/qml/cartridge/nodes/TrustedImageNode.qml
-  - id: openwiki-source-77962cc0ed2673a227f6eaee
-    resource: repo://client/qml/tests/fixture/tst_transport.qml
+  - id: openwiki-source-fc035ef77d2451c6e8138211
+    resource: repo://client/qml/tests/fixture/tst_accessibility.qml
+  - id: openwiki-source-152956378e80408d69d9dfb7
+    resource: repo://client/qml/tests/fixture/tst_games.qml
+  - id: openwiki-source-4f6d9bd2b8e769f9585e0296
+    resource: repo://client/qml/tests/fixture/tst_social.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
-  - id: openwiki-source-02e110beb8feacd3eb92631d
-    resource: repo://client/qml/tests/profiles-read/tst_profiles_read.qml
-  - id: openwiki-source-9f9d6bb10dd10b1b90651868
-    resource: repo://client/qml/tests/profiles-write/tst_profiles_write.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
   - id: openwiki-source-fdf115002c4aabad0babec70
@@ -41,14 +41,12 @@ sources:
     resource: repo://crates/server/src/inbox_api_tests.rs
   - id: openwiki-source-22753602a862c32d10560204
     resource: repo://crates/server/src/persona_api_tests.rs
-  - id: openwiki-source-1b621f94587f7516bb90c07a
-    resource: repo://crates/server/src/server_discovery_api_tests.rs
   - id: openwiki-source-76060b846b9222af2c790243
     resource: repo://crates/server/src/signal_siege_api_tests.rs
   - id: openwiki-source-46fb4135d6a71efad1062c0d
     resource: repo://crates/server/src/sync_api_tests.rs
-  - id: openwiki-source-449de92825ee702b9aa05d2a
-    resource: repo://packaging/arch/client-runtime-files.txt
+  - id: openwiki-source-005a34a3eca7415b5fdce574
+    resource: repo://docs/planning/pipeline/active/operator-reporting-suspension-audit-and-recovery-drill.notes.md
   - id: openwiki-source-6ef5cb9ff978eb09c62cd313
     resource: repo://scripts/build-client-package.sh
   - id: openwiki-source-1951c64828cbf175c78556c4
@@ -77,8 +75,8 @@ sources:
     resource: repo://scripts/test-game-cartridge.sh
   - id: openwiki-source-e08dc6155c081d7928029e27
     resource: repo://scripts/test-operator-recovery.sh
-  - id: openwiki-source-a0a026a4d434d1b48884aa8e
-    resource: repo://scripts/test-private-alpha.sh
+  - id: openwiki-source-31a4e9d026860da100c233f9
+    resource: repo://scripts/test-provider-authority-pilot.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc

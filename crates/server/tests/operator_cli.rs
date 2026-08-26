@@ -9,6 +9,11 @@ use sqlx::PgPool;
 use tempfile::TempDir;
 use uuid::Uuid;
 
+use omarchygs_game_cartridge::generate_catalog_keypair;
+
+const CATALOG_ARCHIVE: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const CATALOG_IDENTITY: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
 #[sqlx::test(migrations = "../../migrations")]
 #[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
 async fn local_operator_cli_lists_and_dispositions_reports_without_secret_output(pool: PgPool) {
@@ -327,6 +332,209 @@ async fn local_operator_cli_issues_lists_replays_and_revokes_registration_invite
     );
 }
 
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+async fn local_operator_cli_lists_public_catalog_facts_and_deactivates_exact_release(pool: PgPool) {
+    let database_url = isolated_database_url(&pool).await;
+    let temp = TempDir::new().expect("catalog CLI directory should create");
+    let store_root = temp.path().join("store");
+    std::fs::create_dir(&store_root).expect("store root should create");
+    std::fs::set_permissions(&store_root, std::fs::Permissions::from_mode(0o700))
+        .expect("store permissions should restrict");
+    let (_, marketplace_public) =
+        generate_catalog_keypair("marketplace-primary-v1", "omarchygs-marketplace")
+            .expect("marketplace key should generate");
+    let key_path = temp.path().join("marketplace-public.json");
+    write_private_json(
+        &key_path,
+        &serde_json::to_value(&marketplace_public).expect("key should serialize"),
+    );
+
+    sqlx::query(
+        r#"
+        INSERT INTO marketplace_sync_state (
+            marketplace_origin, authority_id, key_id, marketplace_name,
+            snapshot_version, snapshot_sha256
+        ) VALUES (
+            'https://market.example.test/v1/', $1, $2,
+            'OmarchyGS Marketplace', 1, $3
+        )
+        "#,
+    )
+    .bind(&marketplace_public.authority_id)
+    .bind(&marketplace_public.key_id)
+    .bind("c".repeat(64))
+    .execute(&pool)
+    .await
+    .expect("sync state should seed");
+    let release_id: Uuid = sqlx::query_scalar(
+        r#"
+        INSERT INTO marketplace_releases (
+            game_key, publisher_id, publisher_key, rules_version,
+            cartridge_version, archive_sha256, signed_identity_sha256,
+            display_name, release_path, reviewed_by, review_summary,
+            signed_policy, policy_version, policy_status, policy_reason,
+            compatible, imported, first_seen_snapshot_version,
+            last_seen_snapshot_version
+        ) VALUES (
+            'door-legends', 'ignibyte', $1, 1, 2, $2, $3,
+            'Door Legends', 'releases/door-legends/2/', 'review-team',
+            'Bounded review passed.', $4, 1, 'active', 'Current release.',
+            TRUE, TRUE, 1, 1
+        ) RETURNING id
+        "#,
+    )
+    .bind(json!({"key_id": "publisher-primary-v1"}))
+    .bind(CATALOG_ARCHIVE)
+    .bind(CATALOG_IDENTITY)
+    .bind(json!({"policy": "public-but-not-returned"}))
+    .fetch_one(&pool)
+    .await
+    .expect("release should seed");
+    sqlx::query(
+        "INSERT INTO server_cartridge_catalogs (game_key, active_release_id, admission_revision) VALUES ('door-legends', $1, 1)",
+    )
+    .bind(release_id)
+    .execute(&pool)
+    .await
+    .expect("catalog should seed");
+
+    let listed = run_catalog_admin(&database_url, &["cartridges"], &key_path, &store_root);
+    assert!(
+        listed.status.success(),
+        "catalog inventory failed: {}",
+        String::from_utf8_lossy(&listed.stderr)
+    );
+    assert!(listed.stderr.is_empty());
+    let inventory: Value =
+        serde_json::from_slice(&listed.stdout).expect("catalog inventory should be JSON");
+    exact_keys(&inventory, &["releases", "snapshot"]);
+    exact_keys(
+        &inventory["snapshot"],
+        &[
+            "key_id",
+            "marketplace_id",
+            "marketplace_name",
+            "marketplace_origin",
+            "snapshot_sha256",
+            "snapshot_version",
+            "synchronized_at",
+        ],
+    );
+    assert_eq!(inventory["releases"].as_array().map(Vec::len), Some(1));
+    exact_keys(
+        &inventory["releases"][0],
+        &[
+            "admission_revision",
+            "archive_sha256",
+            "cartridge_version",
+            "compatible",
+            "display_name",
+            "effective",
+            "game_key",
+            "imported",
+            "policy_reason",
+            "policy_status",
+            "policy_version",
+            "present",
+            "publisher_id",
+            "publisher_key_id",
+            "review_summary",
+            "reviewed_by",
+            "rules_version",
+            "selected",
+            "signed_identity_sha256",
+        ],
+    );
+    assert_eq!(inventory["releases"][0]["effective"], true);
+    let inventory_text = String::from_utf8(listed.stdout).expect("inventory should be UTF-8");
+    for forbidden in [
+        "release_path",
+        "signed_policy",
+        "verifying_key",
+        "OGS_MARKETPLACE_PUBLIC_KEY",
+        store_root.to_str().expect("store path is UTF-8"),
+    ] {
+        assert!(!inventory_text.contains(forbidden), "leaked {forbidden}");
+    }
+
+    let operation_id = Uuid::new_v4();
+    let command_path = temp.path().join("deactivate.json");
+    write_private_json(
+        &command_path,
+        &json!({
+            "idempotency_key": operation_id,
+            "game_key": "door-legends",
+            "expected": {"state": "release", "archive_sha256": CATALOG_ARCHIVE},
+            "desired": {"state": "inactive"},
+            "actor": "cli-sysop",
+            "reason": "Temporarily remove this cartridge"
+        }),
+    );
+    let applied = run_catalog_admin(
+        &database_url,
+        &[
+            "catalog-apply",
+            command_path.to_str().expect("command path is UTF-8"),
+        ],
+        &key_path,
+        &store_root,
+    );
+    assert!(
+        applied.status.success(),
+        "catalog apply failed: {}",
+        String::from_utf8_lossy(&applied.stderr)
+    );
+    let receipt: Value =
+        serde_json::from_slice(&applied.stdout).expect("catalog receipt should be JSON");
+    exact_keys(
+        &receipt,
+        &[
+            "action",
+            "admission_revision",
+            "created_at",
+            "game_key",
+            "id",
+            "operation_id",
+            "previous_archive_sha256",
+            "resulting_archive_sha256",
+        ],
+    );
+    assert_eq!(receipt["operation_id"], operation_id.to_string());
+    assert_eq!(receipt["action"], "deactivate_cartridge");
+    assert_eq!(receipt["previous_archive_sha256"], CATALOG_ARCHIVE);
+    assert!(receipt["resulting_archive_sha256"].is_null());
+
+    let replay = run_catalog_admin(
+        &database_url,
+        &[
+            "catalog-apply",
+            command_path.to_str().expect("command path is UTF-8"),
+        ],
+        &key_path,
+        &store_root,
+    );
+    assert!(replay.status.success());
+    assert_eq!(
+        serde_json::from_slice::<Value>(&replay.stdout).unwrap()["id"],
+        receipt["id"]
+    );
+
+    let link_path = temp.path().join("catalog-link.json");
+    symlink(&command_path, &link_path).expect("catalog command symlink should create");
+    let rejected = run_catalog_admin(
+        &database_url,
+        &[
+            "catalog-apply",
+            link_path.to_str().expect("link path is UTF-8"),
+        ],
+        &key_path,
+        &store_root,
+    );
+    assert!(!rejected.status.success());
+    assert_eq!(rejected.stderr, b"operator_invalid_input\n");
+}
+
 fn exact_keys(value: &Value, expected: &[&str]) {
     let actual: BTreeSet<&str> = value
         .as_object()
@@ -353,6 +561,21 @@ fn run_admin(database_url: &url::Url, arguments: &[&str]) -> std::process::Outpu
         .env("DATABASE_URL", database_url.as_str())
         .output()
         .expect("operator CLI should execute")
+}
+
+fn run_catalog_admin(
+    database_url: &url::Url,
+    arguments: &[&str],
+    public_key: &std::path::Path,
+    store_root: &std::path::Path,
+) -> std::process::Output {
+    Command::new(env!("CARGO_BIN_EXE_omarchygs-admin"))
+        .args(arguments)
+        .env("DATABASE_URL", database_url.as_str())
+        .env("OGS_MARKETPLACE_PUBLIC_KEY", public_key)
+        .env("OGS_CARTRIDGE_STORE_ROOT", store_root)
+        .output()
+        .expect("catalog CLI should execute")
 }
 
 async fn isolated_database_url(pool: &PgPool) -> url::Url {

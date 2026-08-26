@@ -144,6 +144,16 @@ pub fn verify_sdk_directory(root: &Path) -> Result<SdkIdentity> {
     Ok(identity_from_lock(&lock, &lock_bytes))
 }
 
+/// Identity of the exact SDK contract embedded in this production verifier.
+///
+/// A server-side marketplace consumer uses this instead of trusting an SDK
+/// directory supplied by the marketplace or cartridge publisher.
+pub fn supported_sdk_identity() -> Result<SdkIdentity> {
+    let lock = expected_lock();
+    let lock_bytes = canonical_json(&lock)?;
+    Ok(identity_from_lock(&lock, &lock_bytes))
+}
+
 fn expected_lock() -> SdkLock {
     SdkLock {
         format: "omarchygs.cartridge-sdk-lock/v1".to_owned(),

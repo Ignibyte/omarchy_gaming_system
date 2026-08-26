@@ -71,6 +71,7 @@ async fn discovery_is_exact_stable_public_and_immutable(pool: PgPool) {
                 "accounts.invite-registration.v1",
                 "auth.device-sessions.v1",
                 "auth.totp.v1",
+                "games.cartridge-catalog.v1",
                 "games.challenges.v1",
                 "games.sessions.v1",
                 "identity.personas.v1",

@@ -15,6 +15,11 @@ production provider trust/protocol foundation. Ticket 019 connects Door
 Legends v1 as the sole operator-enabled remote authority pilot with an
 independent provider database, player routes, atomic projections, and tested
 recovery; this design never authorizes loading third-party code.
+Ticket 032 implements the first marketplace-vetted server half: guarded signed
+snapshot synchronization, production release verification, descriptor-relative
+staging, atomic reviewed inventory, independent audited local admission, and an
+authenticated metadata-only cartridge catalog. Player acquisition, cache,
+mount, and launch integration remain a gated follow-up.
 [`ADR-0003`](adr-0003-owner-operated-server-and-extension-boundary.md) now
 accepts the owner-operated server, server-curated marketplace, operator-custom
 trust, future Provider SDK, and separately gated server module/hook direction.
@@ -223,6 +228,15 @@ store opens it without following a symlink and retains descriptors for every
 fixed child. Blob, release, conformance, policy, and activation reads/writes use
 `openat`/`mkdirat`/descriptor-relative rename with no-follow, exclusive
 temporary creation, bounded reads, read-only publication, and directory sync.
+
+Ticket 032 composes that store with a separately authenticated marketplace
+snapshot. Synchronization stages exact reviewed bytes without changing the
+legacy active pointer, caches newer lifecycle policy monotonically, and commits
+one PostgreSQL inventory only after the entire snapshot succeeds. The local
+catalog selection is a distinct expected-state/idempotent transaction with an
+immutable audit receipt. Only a present, imported, compatible, locally selected
+`active` or `deprecated` release is effective; suspension, denial, snapshot
+removal, or incompatibility fails closed with no version fallback.
 The root and every fixed child must be owned by the opening process's effective
 user and cannot be writable by group or other. Each policy transition acquires
 an exclusive lock through a fresh descriptor-relative open of the retained
@@ -719,9 +733,12 @@ authority and policy decisions remain Ticket 019 work.
    start/command/reconcile APIs, atomic result/achievement callbacks, explicit
    availability/lifecycle states, and a separately built Door Legends TLS
    process with its own PostgreSQL database and callback outbox.
-4. **Owner-operated catalog and acquisition:** let an administrator synchronize
-   a vetted marketplace, import/activate exact releases, expose server-scoped
-   provenance, and let players verify/cache/mount those inert packages.
+4. **Owner-operated catalog — server half implemented:** Ticket 032 lets an
+   administrator synchronize one pinned vetted marketplace, stage exact
+   releases, independently activate/deactivate/upgrade/rollback them with
+   audit, and expose server-scoped authenticated metadata. Player
+   download/cache/mount/launch of those inert packages remains the acquisition
+   half of this stage.
 5. **Public backend SDK:** package the provider protocol as a supported starter
    server, versioned SDK, conformance suite, and operations contract.
 6. **Operator-custom trust:** add local cartridge signing/import, explicit

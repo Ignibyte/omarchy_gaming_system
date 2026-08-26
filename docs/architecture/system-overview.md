@@ -208,6 +208,14 @@ the first identity HTTP surfaces:
   a persona row lock serializes both duplicate and final-capacity races.
   Challenge acceptance invokes the same crate-private creation primitive for
   two-human games. Participant-owned routes expose bounded inventory/detail.
+- authenticated `GET /v1/cartridges` inventories only effective exact
+  marketplace-vetted presentation releases selected by this server. A pinned
+  signed marketplace snapshot and verified immutable bytes feed PostgreSQL
+  reviewed inventory; an independent expected-state operator transaction owns
+  activation, deactivation, upgrade, rollback, revision, and immutable audit.
+  Lifecycle suspension, removal, or incompatibility fails closed without
+  choosing another version. This metadata boundary does not yet acquire or
+  mount cartridges in the QML client.
 - durable two-person challenges pin one exact game key/version between a
   connected, unblocked, different-account persona pair. A challenger-scoped
   UUID makes creation retry-safe, a partial uniqueness constraint prevents an
@@ -309,19 +317,20 @@ identity.
 The accepted [OmarchyGS Game Cartridge](game-cartridges.md) model lets
 independently versioned games ship a signed declarative presentation package
 rendered by trusted OmarchyGS QML components. The v1 verifier, conformance SDK,
-same-user store, render-plan compiler, and first-party separate-repository proof
-exist; Signal Siege rules remain compiled into the trusted server for the
-private alpha. A future registered provider may own server-side gameplay only
-after the broker, operational controls, ADR, and Constitution amendment defined
-by that architecture are approved. Raw third-party QML, JavaScript, native
-plugins, device tokens, account identity, and direct database access remain
-outside the boundary.
+descriptor-relative store, render-plan compiler, first-party separate-repository
+proof, guarded marketplace sync, reviewed server inventory, local catalog
+control, and metadata-only player catalog exist; client acquisition/mount
+remains future work. Signal Siege rules remain compiled into the trusted server
+for the private alpha. The registered Door Legends pilot owns server-side
+gameplay only through the separately authenticated broker boundary. Raw
+third-party QML, JavaScript, native plugins, device tokens, account identity,
+and direct database access remain outside the boundary.
 
 [ADR-0003](adr-0003-owner-operated-server-and-extension-boundary.md) extends
-that direction to owner-operated communities. A vetted marketplace will
-publish exact signed releases, each server operator will choose what to import
-and activate, and players will acquire/cache the selected server's inert
-cartridges for trusted local rendering. A future Provider SDK packages the
+that direction to owner-operated communities. A vetted marketplace can publish
+exact signed releases, and each server operator now chooses what to synchronize
+and independently admit. Players will later acquire/cache the selected
+server's inert cartridges for trusted local rendering. A future Provider SDK packages the
 brokered backend contract; a separate future module base supplies typed,
 capability-scoped server hooks only after an isolation spike. Operator-custom
 server content must be visibly distinct from vetted content and remains

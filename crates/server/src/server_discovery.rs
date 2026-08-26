@@ -4,10 +4,11 @@ use uuid::Uuid;
 
 pub(crate) const PROTOCOL_VERSION: u16 = 1;
 
-const BASE_CAPABILITIES: [&str; 11] = [
+const BASE_CAPABILITIES: [&str; 12] = [
     "accounts.invite-registration.v1",
     "auth.device-sessions.v1",
     "auth.totp.v1",
+    "games.cartridge-catalog.v1",
     "games.challenges.v1",
     "games.sessions.v1",
     "identity.personas.v1",

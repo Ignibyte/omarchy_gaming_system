@@ -114,12 +114,13 @@ editing audit or report rows.
 ## Backup and isolated restore
 
 The platform database includes invitation digests and lifecycle metadata,
-accounts, hashed credentials, encrypted MFA
-state, session digests, personas, social/inbox data, game history, reports, and
-operator audit. Protect dumps as secrets, encrypt them at rest, restrict file
-permissions, retain off-host copies, and define a tested retention/deletion
-policy. The provider authority pilot uses a separate database and requires its
-own documented backup.
+accounts, hashed credentials, encrypted MFA state, session digests, personas,
+social/inbox data, game history, reports, the last verified marketplace
+snapshot, reviewed release inventory, local cartridge selections, and immutable
+operator/catalog audit. Protect dumps as secrets, encrypt them at rest,
+restrict file permissions, retain off-host copies, and define a tested
+retention/deletion policy. The provider authority pilot uses a separate
+database and requires its own documented backup.
 
 A production backup can use PostgreSQL custom format:
 
@@ -138,7 +139,11 @@ pg_restore --exit-on-error --no-owner \
 Before switching traffic, compare table counts and focused security/history
 state, start the production server against the isolated restore, prove revoked
 and suspended sessions remain denied, compare the public `server_id` from
-`/.well-known/omarchygs`, and exercise the operator/identity immutability guards.
+`/.well-known/omarchygs`, compare marketplace/catalog rows and admission
+revisions, and exercise the operator, catalog-audit, and identity immutability
+guards. The separately stored cartridge root and marketplace/TLS key material
+are not contained in PostgreSQL; restore them from their own protected backup
+and verify exact digests before resuming sync or distribution.
 A restore of the same community must retain that UUID. A database fork creates
 two deployments claiming the same identity and is not a supported multi-server
 setup. A deployment switch should be an explicit, monitored infrastructure
@@ -157,7 +162,8 @@ representative identity/social/inbox/game/report state, drives the real sysop
 command, performs `pg_dump`/`pg_restore`, compares every public application
 table, checks linked audit and immutability, and rejects a pre-suspension token
 through the restored production server. It also proves the singleton server
-UUID is exactly equal before and after the dump/restore.
+UUID, marketplace snapshot, reviewed releases, local selection, and catalog
+audit are exactly preserved before and after the dump/restore.
 
 ## External key custody
 
@@ -168,8 +174,12 @@ it prevents enrolled accounts from verifying TOTP; substituting another key
 does not decrypt existing authenticators. Do not place this key in a dump,
 operator JSON, shell history, repository, log, or support note.
 
-Provider grant/message secrets, TLS private keys, backup-encryption keys, and
-future marketplace/module signing keys are also separate custody domains.
+The marketplace public key and explicit TLS root are configuration trust
+anchors, while marketplace private signing keys never belong on a community
+server. The descriptor-relative cartridge store is separate persistent state;
+back it up with exact ownership/modes and content digests. Provider
+grant/message secrets, TLS private keys, backup-encryption keys, and future
+module signing keys are also separate custody domains.
 
 ## Current limitations
 

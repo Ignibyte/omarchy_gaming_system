@@ -96,6 +96,9 @@ and in this register.
 | `PR-omarchy-gaming-system-pin-qsettings-to-project-location-001` | Persistent QML state must use one explicit project-specific settings location and prove readback from a separate process under an isolated configuration root. | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
 | `PR-omarchy-gaming-system-preserve-qml-standardpaths-url-type-001` | Treat a QML `StandardPaths.writableLocation` result as a URL and append only the relative filename; never add a second URL scheme without inspecting the returned type. | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
 | `PR-omarchy-gaming-system-separate-database-tests-from-portable-loop-001` | Mark PostgreSQL-only tests with the repository's canonical ignore reason, then execute them through `scripts/test-database.sh` before relying on the portable fast gate. | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
+| `PR-omarchy-gaming-system-treat-discovery-capabilities-as-exact-contract-001` | When an implemented capability is added or removed, update every exact discovery-document fixture and capability consumer in the same change, then run the real migrated discovery test. | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
+| `PR-omarchy-gaming-system-test-reserved-prefix-interiors-at-shared-egress-boundary-001` | Deny complete special-purpose address prefixes in the shared production egress classifier and keep representative interior addresses in its direct regression corpus. | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
+| `PR-omarchy-gaming-system-preflight-isolated-build-storage-001` | Before a gate compiles an independent clean-clone source tree, verify that the filesystem backing its temporary target has enough headroom and remove only scoped rebuildable caches when it does not. | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
 
 ## Register
 
@@ -313,3 +316,10 @@ and in this register.
 | `PR-omarchy-gaming-system-preserve-qml-standardpaths-url-type-001` | rule | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
 | `PR-omarchy-gaming-system-separate-database-tests-from-portable-loop-001` | rule | `aar/AAR-031-stable-server-discovery-and-isolated-client-profiles.md` |
 | `AD-omarchy-gaming-system-stable-server-discovery-and-isolated-profiles-001` | decision | `../../architecture/system-overview.md` |
+| `BF-omarchy-gaming-system-discovery-capability-exact-fixture-drift-001` | failure | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
+| `BF-omarchy-gaming-system-reserved-6bone-egress-classification-gap-001` | failure | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
+| `BF-omarchy-gaming-system-isolated-build-tmpfs-capacity-001` | failure | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
+| `PR-omarchy-gaming-system-treat-discovery-capabilities-as-exact-contract-001` | rule | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
+| `PR-omarchy-gaming-system-test-reserved-prefix-interiors-at-shared-egress-boundary-001` | rule | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
+| `PR-omarchy-gaming-system-preflight-isolated-build-storage-001` | rule | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
+| `AD-omarchy-gaming-system-marketplace-sync-and-server-catalog-boundary-001` | decision | `../../architecture/game-cartridges.md` |

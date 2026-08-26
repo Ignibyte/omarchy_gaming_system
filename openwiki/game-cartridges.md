@@ -31,6 +31,8 @@ sources:
     resource: repo://crates/game-cartridge/src/contract.rs
   - id: openwiki-source-e6274a9b801981dbeca2a0b5
     resource: repo://crates/game-cartridge/src/lifecycle.rs
+  - id: openwiki-source-20452fec62fdae4a8bc45707
+    resource: repo://crates/game-cartridge/src/marketplace.rs
   - id: openwiki-source-a1b45828c3f97dd0a06fb618
     resource: repo://crates/game-cartridge/src/release.rs
   - id: openwiki-source-111e4189516b7f457a68f043
@@ -49,6 +51,14 @@ sources:
     resource: repo://crates/game-provider/src/egress.rs
   - id: openwiki-source-183d71a1a996865fb003e694
     resource: repo://crates/game-provider/src/registry.rs
+  - id: openwiki-source-e61b285fcaa489b63922f43f
+    resource: repo://crates/server/src/app.rs
+  - id: openwiki-source-7243a317e3224aa82795a5fc
+    resource: repo://crates/server/src/cartridge_catalog.rs
+  - id: openwiki-source-9a69a848b9d41472b0830bd4
+    resource: repo://crates/server/src/marketplace_egress.rs
+  - id: openwiki-source-f6dda000394ac1ba6bba8f65
+    resource: repo://crates/server/src/marketplace_sync.rs
   - id: openwiki-source-ff1ed569f105aff512baba65
     resource: repo://crates/server/src/provider_game_api_tests.rs
   - id: openwiki-source-0e10f198b5749ecebf761185
@@ -67,6 +77,8 @@ sources:
     resource: repo://migrations/0014_provider_security_foundation.sql
   - id: openwiki-source-c1f2a0cfcd9a603e8e6b291c
     resource: repo://migrations/0015_first_party_remote_provider_authority.sql
+  - id: openwiki-source-11256f84337d259ecf424a45
+    resource: repo://migrations/0019_marketplace_catalog.sql
   - id: openwiki-source-d69dbacb0ae7fe382ee46161
     resource: repo://scripts/test-game-cartridge-renderer.sh
   - id: openwiki-source-8df9ad1a3495f8360740ff03
@@ -75,10 +87,10 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-26T15:15:44.851Z"}
+generated: {by: "codex", at: "2026-08-26T23:12:01.286Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-26T15:18:17.322Z
+    at: 2026-08-26T23:45:54.301Z
 ---
 
 # Game Cartridges and portable provider direction
@@ -98,9 +110,12 @@ the operator-pinned Door Legends v1 first-party pilot and amends Constitution
 §10 to assign each session exactly one rules/state/revision authority. Compiled
 Signal Siege remains platform-authoritative; external providers remain
 unauthorized. [Runtime foundation](runtime-foundation.md) maps both paths.
-ADR-0003 additionally accepts the future owner-operated server, server-curated
-marketplace, operator-custom trust, public Provider SDK, and separately gated
-server module/hook direction. It does not authorize those runtime surfaces.
+Ticket 032 implements ADR-0003's first owner-operated distribution slice: one
+operator-pinned marketplace, immutable reviewed staging, atomic PostgreSQL
+inventory, independent audited server admission, and an authenticated
+metadata-only player catalog. It does not implement client acquisition,
+operator-custom trust, a public Provider SDK, external-provider onboarding, or
+server modules/hooks.
 
 Ticket 014 contributes an isolated executable architecture proof. Its broker,
 provider, and QML surface are not a public SDK or deployed runtime. Ticket 018
@@ -158,17 +173,21 @@ it does not manufacture a signed cartridge origin, content digest, or
 `omarchygs.render-plan/v1` document. The signed renderer remains reserved for
 packages that passed the verifier and content-addressed installation lifecycle.
 
-## Accepted owner-operated distribution direction
+## Owner-operated distribution status
 
-The future deployment unit is an independently owner-operated OmarchyGS
-community. A marketplace may publish a reviewed exact release, but the server
-administrator separately imports and activates it under that server's policy.
-Players see only the selected server's admitted library. The official client
-then acquires the exact `.ogsc` bytes through a bounded server-approved path,
-verifies publisher integrity, any marketplace-review attestation, server
-admission, compatibility, and digest, and stores the package in a local
-content-addressed read-only cache. Sessions pin the exact cartridge, rules,
-and authority identities; actions continue to travel only through the selected
+The deployment unit is an independently owner-operated OmarchyGS community.
+Ticket 032 lets that owner configure one canonical HTTPS marketplace origin,
+one exact Ed25519 marketplace key, one bounded DER TLS root, and one existing
+secure-store root. The owner can synchronize reviewed exact releases, inspect
+the resulting inventory, and independently select one permitted digest per
+game. Authenticated players see only the effective selected metadata.
+
+The official client does not yet acquire the exact `.ogsc` bytes. A later
+bounded server-approved path will verify publisher integrity, marketplace
+review, server admission, compatibility, and digest before storing a package
+in a local content-addressed read-only cache. Session pinning to the exact
+cartridge, rules, and authority identities also remains part of that later
+client/launch slice; actions continue to travel only through the selected
 OmarchyGS server.
 
 Those are three distinct trust claims: a publisher signature proves origin and
@@ -227,6 +246,51 @@ newer policy before enforcing a denial. This closes pathname-swap and
 cooperating-writer races, but the exact store UID remains the local authority;
 a future privileged or shared launcher still needs a dedicated service identity
 or equivalent external monotonic authority.
+
+### Implemented marketplace and server catalog flow
+
+The marketplace snapshot is bounded canonical JSON under its own signature
+domain. Strict Ed25519 verification binds one configured authority, a nonzero
+monotonic snapshot version, bounded review facts, exact publisher/release
+identities, signed lifecycle policy, and unique sorted relative release
+directories. The snapshot and cartridge data cannot choose a host, scheme,
+port, absolute path, query, fragment, or redirect target.
+
+The server constructs a fresh guarded HTTPS client for the configured origin.
+It rejects the complete DNS answer set if any address is private, local,
+special-use, documentation, multicast, or reserved; pins accepted sockets while
+retaining hostname verification; trusts only the configured DER root; and
+disables ambient proxies, redirects, referer, decompression, connection reuse,
+and unbounded response bodies. Tests alone can admit one exact generated
+loopback socket for the separately spawned TLS fixture.
+
+Synchronization first rejects stale or conflicting snapshot identity, then
+downloads each release's existing `cartridge.ogsc`, `conformance.json`, and
+`release.signed.json` beneath its relative directory. The production release
+verifier reconstructs publisher and conformance identity before
+`SecureCartridgeStore::stage_reviewed_release` retains immutable content without
+writing the legacy active pointer. Immutable unreferenced bytes may remain
+after a later failure, but the current reviewed inventory advances only after
+all entries are staged and one serialized PostgreSQL transaction publishes the
+complete snapshot. Omitted releases remain historical and ineffective.
+
+Marketplace lifecycle and server admission are separate facts. A local
+`catalog-apply` command carries an idempotency UUID, exact expected selection,
+exact desired selection, actor, and reason. It serializes one game, resolves
+the desired current permitted digest through the secure store, updates at most
+one selected release, increments the admission revision, and appends its
+immutable audit receipt in the same transaction. Marketplace suspension,
+removal, incompatibility, or local deactivation immediately hides the selection
+without falling back to another digest. A newer authenticated policy can make
+the same retained exact selection effective again; choosing another release or
+rolling back remains explicit.
+
+Public discovery advertises `games.cartridge-catalog.v1`. The authenticated
+`GET /v1/cartridges` endpoint returns only current imported, compatible,
+selected `active` or `deprecated` releases with bounded marketplace provenance,
+exact digests, admission revision, and any deprecation warning. It exposes no
+acquisition URL, local path, public-key material, raw signed record, operator
+reason, executable document, or alternate release fallback.
 
 Cartridges cannot contain or invoke publisher QML, JavaScript, native code,
 shell commands, arbitrary shaders, imports, dynamic remote assets, filesystem
@@ -303,13 +367,14 @@ Ticket 018 persists immutable registered releases, lifecycle scopes,
 append-only message-signing and TLS keys, grants, quota windows, concurrency
 leases, operation attempts, authenticated callback receipts, and safe audit
 events in PostgreSQL. Requests, responses, and callbacks use a fixed signed
-message profile over the exact body and context. Production egress accepts only
-an operator-pinned HTTPS DNS origin resolving entirely to public unicast
-addresses, pins the resolved sockets while retaining hostname verification,
-trusts only registered roots, and disables proxies, redirects, decompression,
-and unbounded responses. The compile-time conformance mode admits one exact
-generated loopback socket; it cannot create a production private-network
-allowlist.
+message profile over the exact body and context. Provider and marketplace
+production egress share the conservative public-unicast classifier. Each
+accepts only its operator-pinned HTTPS DNS origin, rejects the complete answer
+set when any address is not public, pins accepted sockets while retaining
+hostname verification, trusts only its explicit roots, and disables proxies,
+redirects, decompression, and unbounded responses. The compile-time conformance
+modes admit one exact generated loopback socket; they cannot create a
+production private-network allowlist.
 
 Ticket 019 adds the player-facing authority bridge without creating a second
 gameplay owner. Migration 0015 makes `platform_compiled` sessions require local
@@ -445,6 +510,20 @@ failure recovery, and restores the provider backup into a second database:
 scripts/test-provider-authority-pilot.sh
 ```
 
+Ticket 032 adds a real generated TLS marketplace fixture and migrated
+PostgreSQL lifecycle path. It proves pinned-root enforcement, redirect and body
+ceilings, signed snapshot replay/downgrade behavior, exact release staging,
+concurrent expected-state admission, rollback, lifecycle denial with no
+fallback, authenticated metadata filtering, operator CLI output, immutable
+audit, and isolated backup/restore. The portable package tests also cover
+canonical signature/schema rejection and the shared reserved-address egress
+corpus. Run the complete database portion with:
+
+```bash
+scripts/test-database.sh
+scripts/test-operator-recovery.sh
+```
+
 See [Development and validation](development-and-validation.md) for the full
 gate and failure routing.
 
@@ -466,10 +545,12 @@ gate and failure routing.
 6. Ticket 019 implements one first-party Door Legends remote-authority pilot
    and the required Constitution §10 amendment. External providers wait for a
    separate onboarding, operations, transparency, and support pipeline.
-7. The owner-operated ecosystem next adds stable server identity/profiles,
-   server marketplace import, and main-client exact cartridge
-   acquisition/cache/mounting.
-8. Later tickets publish the Provider SDK, add explicitly labeled
+7. Tickets 031 and 032 implement stable server identity/profiles followed by
+   one pinned marketplace, reviewed staging/inventory, independent audited
+   server admission, and authenticated catalog metadata.
+8. The next cartridge slice adds main-client exact acquisition, local
+   cache/mounting, and launch integration without weakening trusted rendering.
+9. Later tickets publish the Provider SDK, add explicitly labeled
    operator-custom cartridge trust, prove the server-module isolation model,
    and only then implement module administration and typed hooks.
 
@@ -496,4 +577,5 @@ decisions and monotonic policy versions.
 | Separate-repository SDK/release | `crates/game-cartridge/src/sdk.rs`, `release.rs`, `lifecycle.rs`, `secure_store.rs`; Ticket 017 | `scripts/test-game-cartridge-sdk.sh`; deterministic export, clean-clone reproducibility, signed provenance/policy, lifecycle matrix, descriptor-relative import, rollback/race/permission rejection |
 | Provider security foundation | `crates/game-provider`; migration `0014_provider_security_foundation.sql`; `docs/operators/provider-security.md`; Ticket 018 | `scripts/test-provider-conformance.sh`; TLS and sender authentication, public-only pinned egress, grant/replay/key/quota/lease/audit, lifecycle, race, and failure tests |
 | Remote authority migration | Constitution §10; ADR-0002; migration `0015`; `crates/server/src/provider_games.rs`; Ticket 019 | `scripts/test-provider-authority-pilot.sh`; one durable gameplay owner, exact replay/reconciliation, callback projection, lifecycle, independent database and restore evidence |
-| Owner-operated distribution and extension direction | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; roadmap | Current-versus-future audit; separate publisher/marketplace/server attestations; custom-content client containment; provider/module separation; extension isolation, lifecycle, audit, and operator-responsibility review |
+| Marketplace synchronization and server admission | `marketplace.rs`, `marketplace_egress.rs`, `marketplace_sync.rs`, `cartridge_catalog.rs`; migration `0019`; administrator CLI and authenticated catalog route; Ticket 032 | Canonical signature hostile corpus; real TLS root/redirect/size tests; PostgreSQL replay/race/rollback/lifecycle tests; exact API and CLI fixtures; recovery rehearsal; security and authority review |
+| Remaining owner-operated distribution and extension direction | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; roadmap | Client acquisition/cache/mount/launch containment; separate publisher/marketplace/server attestations; custom-content provenance; provider/module separation; extension isolation, lifecycle, audit, and operator-responsibility review |

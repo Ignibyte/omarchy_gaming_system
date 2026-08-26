@@ -10,6 +10,7 @@ mod error;
 mod io;
 mod keys;
 mod lifecycle;
+mod marketplace;
 mod release;
 mod sdk;
 mod secure_store;
@@ -26,6 +27,7 @@ pub use keys::{
     PublisherPrivateKey, PublisherPublicKey, generate_keypair, read_private_key, read_public_key,
 };
 pub use lifecycle::*;
+pub use marketplace::*;
 pub use release::*;
 pub use sdk::*;
 pub use secure_store::*;
