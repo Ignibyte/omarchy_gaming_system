@@ -7,7 +7,7 @@ mod render;
 mod service;
 
 pub use cache::{ClientCartridgeCache, MountRecord};
-pub use remote::{AcquireRequest, acquire};
+pub use remote::{AcquireRequest, SessionAcquireRequest, acquire, acquire_session};
 pub use render::{RenderRequest, compile_mounted_render_plan};
 pub use service::{CompanionState, router};
 
@@ -27,6 +27,8 @@ pub enum CompanionError {
     MarketplaceUntrusted,
     #[error("cartridge is no longer admitted")]
     AdmissionChanged,
+    #[error("the exact server-profile cartridge mount is absent")]
+    MountMissing,
     #[error("local cartridge cache operation failed")]
     Cache,
     #[error("trusted cartridge render-plan compilation failed")]
@@ -42,6 +44,7 @@ impl CompanionError {
             Self::Rejected => "companion_server_rejected",
             Self::MarketplaceUntrusted => "companion_marketplace_untrusted",
             Self::AdmissionChanged => "companion_admission_changed",
+            Self::MountMissing => "companion_mount_missing",
             Self::Cache => "companion_cache_failure",
             Self::Render => "companion_render_failure",
         }

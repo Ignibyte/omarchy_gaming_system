@@ -4,14 +4,15 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `035`**
+- **Next ticket number: `036`**
 
 ## Open queue
 
-- None.
+No open tickets.
 
 ## Closed
 
+- [`TICKET-035` — Historical session cartridge acquisition and multi-screen navigation](closed/TICKET-035-historical-session-cartridge-acquisition-and-multi-screen-navigation.md)
 - [`TICKET-034` — Session-pinned cartridge render plan and gameplay launch](closed/TICKET-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md)
 - [`TICKET-033` — Player cartridge acquisition, cache, and mount lifecycle](closed/TICKET-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md)
 - [`TICKET-032` — Marketplace synchronization and server catalog control](closed/TICKET-032-marketplace-sync-and-server-catalog-control.md)

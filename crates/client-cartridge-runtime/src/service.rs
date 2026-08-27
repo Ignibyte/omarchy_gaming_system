@@ -19,12 +19,12 @@ use zeroize::Zeroizing;
 
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use omarchygs_game_cartridge::CatalogPublicKey;
-use omarchygs_game_cartridge_renderer::{RenderPlan, valid_asset_token};
+use omarchygs_game_cartridge_renderer::{PreparedNavigation, RenderPlan, valid_asset_token};
 use rand_core::{OsRng, RngCore as _};
 
 use crate::{
-    AcquireRequest, ClientCartridgeCache, CompanionError, MountRecord, RenderRequest, acquire,
-    compile_mounted_render_plan,
+    AcquireRequest, ClientCartridgeCache, CompanionError, MountRecord, RenderRequest,
+    SessionAcquireRequest, acquire, acquire_session, compile_mounted_render_plan,
 };
 
 const MAX_RENDER_REQUEST_BYTES: usize = 512 * 1024;
@@ -72,6 +72,10 @@ pub fn router(state: CompanionState) -> Router {
         .route(
             "/v1/acquisitions",
             post(install).layer(DefaultBodyLimit::max(4 * 1024)),
+        )
+        .route(
+            "/v1/session-acquisitions",
+            post(install_session).layer(DefaultBodyLimit::max(4 * 1024)),
         )
         .route(
             "/v1/removals",
@@ -128,6 +132,28 @@ async fn install(
     Ok(Json(MountResponse { mount }))
 }
 
+async fn install_session(
+    State(state): State<CompanionState>,
+    headers: HeaderMap,
+    Json(request): Json<SessionAcquireRequest>,
+) -> std::result::Result<Json<MountResponse>, LocalError> {
+    authorize(&state, &headers)?;
+    let trusted_marketplace_key = state
+        .trusted_marketplace_key
+        .as_deref()
+        .ok_or(LocalError(CompanionError::MarketplaceUntrusted))?;
+    let acquired = acquire_session(request, trusted_marketplace_key)
+        .await
+        .map_err(LocalError)?;
+    let cache = state.cache.clone();
+    let mount =
+        tokio::task::spawn_blocking(move || cache.install(&acquired.verified, acquired.mount))
+            .await
+            .map_err(|_| LocalError(CompanionError::Cache))?
+            .map_err(LocalError)?;
+    Ok(Json(MountResponse { mount }))
+}
+
 async fn remove(
     State(state): State<CompanionState>,
     headers: HeaderMap,
@@ -145,6 +171,7 @@ async fn remove(
             server_id,
             &request.game_key,
             &request.archive_sha256,
+            request.admission_revision,
             &trusted_marketplace_key,
         )
     })
@@ -178,6 +205,10 @@ async fn render_plan(
         .insert(prepared.assets)
         .map_err(LocalError)?;
     Ok(Json(RenderPlanResponse {
+        format: "omarchygs.session-cartridge-render/v2",
+        screen_id: prepared.screen_id,
+        entry_screen_id: prepared.entry_screen_id,
+        navigation: prepared.navigation,
         plan: prepared.plan,
         asset_base_url: format!(
             "http://{}/v1/render-assets/{capability}",
@@ -287,6 +318,8 @@ struct RemoveRequest {
     server_id: String,
     game_key: String,
     archive_sha256: String,
+    #[serde(default)]
+    admission_revision: Option<u64>,
 }
 
 #[derive(Serialize)]
@@ -298,6 +331,10 @@ struct RemovalResponse {
 #[derive(Serialize)]
 #[serde(deny_unknown_fields)]
 struct RenderPlanResponse {
+    format: &'static str,
+    screen_id: String,
+    entry_screen_id: String,
+    navigation: Vec<PreparedNavigation>,
     plan: RenderPlan,
     asset_base_url: String,
 }
@@ -395,6 +432,7 @@ impl IntoResponse for LocalError {
             CompanionError::Unauthorized => StatusCode::UNAUTHORIZED,
             CompanionError::InvalidInput => StatusCode::UNPROCESSABLE_ENTITY,
             CompanionError::AdmissionChanged => StatusCode::CONFLICT,
+            CompanionError::MountMissing => StatusCode::NOT_FOUND,
             CompanionError::Unavailable => StatusCode::SERVICE_UNAVAILABLE,
             CompanionError::MarketplaceUntrusted => StatusCode::SERVICE_UNAVAILABLE,
             CompanionError::Rejected | CompanionError::Cache | CompanionError::Render => {

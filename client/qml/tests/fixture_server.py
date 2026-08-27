@@ -57,6 +57,7 @@ DISCOVERY_CAPABILITIES = [
     "games.cartridge-acquisition.v1",
     "games.cartridge-catalog.v1",
     "games.challenges.v1",
+    "games.session-cartridge-acquisition.v1",
     "games.sessions.v1",
     "identity.personas.v1",
     "social.connections.v1",
@@ -473,14 +474,49 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/v1/removals":
             if not self._require_companion_bearer():
                 return
-            if set(document) != {"server_id", "game_key", "archive_sha256"}:
+            if set(document) != {"server_id", "game_key", "archive_sha256",
+                                 "admission_revision"}:
                 self.state.violate("cartridge removal body did not have exact keys")
             if document.get("server_id") != SERVER_ID \
                     or document.get("game_key") != "door-legends" \
-                    or document.get("archive_sha256") != CARTRIDGE_DIGEST:
+                    or document.get("archive_sha256") != CARTRIDGE_DIGEST \
+                    or document.get("admission_revision") != 3:
                 self.state.violate("cartridge removal crossed profile authority")
             self.state.cartridge_mounted = False
             self._json(200, {"removed": True})
+            return
+        if self.path == "/v1/session-acquisitions":
+            if not self._require_companion_bearer():
+                return
+            if set(document) != {"server_origin", "server_id", "device_bearer",
+                                 "persona_id", "game_session_id"}:
+                self.state.violate("session acquisition body did not have exact keys")
+            if document.get("server_id") != SERVER_ID \
+                    or document.get("device_bearer") != TOKEN_S \
+                    or document.get("persona_id") != SOCIAL_ACTOR_ID \
+                    or document.get("game_session_id") != SOLO_GAME_SESSION_ID:
+                self.state.violate("session acquisition did not preserve participant authority")
+            self.state.cartridge_mounted = True
+            self._json(200, {"mount": self._cartridge_mount()})
+            return
+        if self.path == "/v1/render-plans":
+            if not self._require_companion_bearer():
+                return
+            if not self.state.cartridge_mounted:
+                self._error(404, "companion_mount_missing", "exact mount is absent")
+                return
+            allowed = {"server_origin", "server_id", "game_key", "archive_sha256",
+                       "admission_revision", "lifecycle_status", "active_session_policy",
+                       "view", "preferences"}
+            if "screen_id" in document:
+                allowed.add("screen_id")
+            if set(document) != allowed:
+                self.state.violate("render-plan body did not have exact keys")
+            screen_id = document.get("screen_id", "lobby")
+            if screen_id not in {"lobby", "chronicle"}:
+                self._error(422, "companion_render_failure", "unknown signed screen")
+                return
+            self._json(200, self._cartridge_render(screen_id))
             return
         if self.path == "/v1/accounts":
             self._require_no_authorization("account registration")
@@ -1006,6 +1042,57 @@ class Handler(BaseHTTPRequestHandler):
             "policy_version": release["marketplace"]["policy_version"],
             "lifecycle_status": release["marketplace"]["lifecycle_status"],
             "admission_revision": release["server_admission"]["revision"],
+        }
+
+    def _cartridge_render(self, screen_id: str) -> dict[str, Any]:
+        target = "chronicle" if screen_id == "lobby" else "lobby"
+        navigation_action = f"navigate.{target}"
+        navigation_label = ("Read the chronicle" if target == "chronicle"
+                            else "Return to the lobby")
+        return {
+            "format": "omarchygs.session-cartridge-render/v2",
+            "screen_id": screen_id,
+            "entry_screen_id": "lobby",
+            "navigation": [{
+                "action": navigation_action,
+                "target_screen": target,
+            }],
+            "plan": {
+                "format": "omarchygs.render-plan/v1",
+                "profile": "rich2d",
+                "state": "ready",
+                "state_message": "Ready",
+                "origin": {
+                    "publisher_id": "ignibyte",
+                    "game_key": "door-legends",
+                    "cartridge_version": 2,
+                    "archive_sha256": CARTRIDGE_DIGEST,
+                },
+                "title": ("Door Legends" if screen_id == "lobby"
+                          else "Door Legends Chronicle"),
+                "preferences": {
+                    "scale": 1.0,
+                    "high_contrast": False,
+                    "reduced_motion": False,
+                    "muted_audio": False,
+                },
+                "nodes": [{
+                    "kind": "button",
+                    "id": f"{screen_id}_enter",
+                    "label": "Enter the brass door",
+                    "action": "enter",
+                    "accessible_label": "Enter Door Legends",
+                }, {
+                    "kind": "button",
+                    "id": f"{screen_id}_navigation",
+                    "label": navigation_label,
+                    "action": navigation_action,
+                    "accessible_label": navigation_label,
+                }],
+                "requested_actions_are_unconfirmed": True,
+            },
+            "asset_base_url": (f"http://{self.headers.get('Host', '')}"
+                               f"/v1/render-assets/{'C' * 43}"),
         }
 
     def _session(self, token: str) -> dict[str, Any]:

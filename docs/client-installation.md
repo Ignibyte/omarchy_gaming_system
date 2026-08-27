@@ -145,22 +145,33 @@ lifecycle denial leaves the prior mount unchanged.
 Immutable cartridge content is shared by digest under
 `${XDG_DATA_HOME:-$HOME/.local/share}/omarchy-gaming-system/cartridges/content`.
 Read-only public mount records are stored separately under `profiles/` by the
-selected server UUID, so the same digest can be reused without sharing one
-server's admission with another. The cartridge supplies no filesystem
+selected server UUID. A profile retains up to 128 exact
+game/digest/admission-revision records, so historical and current releases can
+coexist and the same digest can be reused without sharing one server's
+admission with another. The cartridge supplies no filesystem
 destination, executable code, raw QML, credential, or network endpoint.
 
 Removal from the Games screen removes only that exact server-profile mount. It
 does not delete shared immutable bytes, remote account/game state, achievements,
 or the server operator's catalog admission. A mount still does not create or
 authorize a game session. When a separately created eligible session pins that
-exact release and admission revision, the companion compiles its signed entry
-screen from the authoritative REST view. The gameplay screen accepts only the
-matching bounded plan and uses platform-owned QML components; declared actions
-return to the selected OmarchyGS server. Signal Siege keeps its platform-owned
-presenter, while Door Legends proves the mounted portable path. Missing or
-mismatched mounts, origins, trust keys, revisions, or lifecycle policy fail
-closed. Historical auto-acquisition and multi-screen navigation are not yet
-implemented.
+exact release and admission revision, the companion compiles an exact signed
+screen from the authoritative REST view. If the mount is missing and the server
+advertises `games.session-cartridge-acquisition.v1`, the Gameplay screen offers
+`INSTALL PINNED CARTRIDGE`. This explicit operation participant-authorizes the
+session, acquires the immutable old release through retained marketplace
+evidence rather than today's catalog selection, verifies it under the client
+key, and rechecks the session before publishing the mount. Failure changes no
+authoritative game state or other mount.
+
+The gameplay screen accepts only the matching bounded plan and exact companion
+screen/navigation mapping, uses platform-owned QML components, and offers
+bounded Screen Back and Entry controls. `navigate.<screen>` is local-only and
+causes no server/provider request; real actions carry the accepted screen back
+to the selected OmarchyGS server. Signal Siege keeps its platform-owned
+presenter, while Door Legends cartridge v2 proves cyclic Lobby/Chronicle
+navigation plus real gameplay from either screen. Missing or mismatched mounts,
+origins, trust keys, revisions, screens, or lifecycle policy fail closed.
 
 ## Update and remove
 

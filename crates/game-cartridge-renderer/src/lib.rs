@@ -12,7 +12,7 @@ use std::{
 
 use omarchygs_game_cartridge::{
     AssetDescriptor, AssetMediaType, CapabilityFallback, ParticlePreset, PresentationNode,
-    VerifiedCartridge,
+    VerifiedCartridge, navigation_target,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -274,6 +274,18 @@ pub enum RenderedNode {
 pub struct PreparedPreview {
     pub plan: RenderPlan,
     pub assets: BTreeMap<String, Vec<u8>>,
+    pub screen_id: String,
+    pub entry_screen_id: String,
+    pub navigation: Vec<PreparedNavigation>,
+}
+
+/// One authenticated host-local destination emitted by a Button on the
+/// prepared screen.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct PreparedNavigation {
+    pub action: String,
+    pub target_screen: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -366,6 +378,22 @@ pub fn compile_render_plan(
         .iter()
         .find(|screen| screen.id == screen_id)
         .ok_or(RendererError::UnknownScreen)?;
+    let navigation = screen
+        .nodes
+        .iter()
+        .filter_map(|node| match node {
+            PresentationNode::Button { action, .. } => {
+                navigation_target(action).map(|target| (action.clone(), target.to_owned()))
+            }
+            _ => None,
+        })
+        .collect::<BTreeMap<_, _>>()
+        .into_iter()
+        .map(|(action, target_screen)| PreparedNavigation {
+            action,
+            target_screen,
+        })
+        .collect::<Vec<_>>();
     let origin = CartridgeOrigin {
         publisher_id: cartridge.manifest().publisher_id.clone(),
         game_key: cartridge.manifest().game_key.clone(),
@@ -388,6 +416,9 @@ pub fn compile_render_plan(
             },
             BTreeMap::new(),
             limits,
+            screen_id,
+            &cartridge.manifest().entry_screen,
+            Vec::new(),
         );
     }
     if !cartridge.compatibility().compatible {
@@ -458,6 +489,9 @@ pub fn compile_render_plan(
         },
         assets,
         limits,
+        screen_id,
+        &cartridge.manifest().entry_screen,
+        navigation,
     )
 }
 
@@ -465,11 +499,20 @@ fn finish_plan(
     plan: RenderPlan,
     assets: BTreeMap<String, Vec<u8>>,
     limits: ProfileLimits,
+    screen_id: &str,
+    entry_screen_id: &str,
+    navigation: Vec<PreparedNavigation>,
 ) -> Result<PreparedPreview> {
     if serialized_json_len(&plan)? > limits.max_plan_bytes {
         return Err(RendererError::BudgetExceeded);
     }
-    Ok(PreparedPreview { plan, assets })
+    Ok(PreparedPreview {
+        plan,
+        assets,
+        screen_id: screen_id.to_owned(),
+        entry_screen_id: entry_screen_id.to_owned(),
+        navigation,
+    })
 }
 
 fn validate_preferences(preferences: RendererPreferences) -> Result<()> {

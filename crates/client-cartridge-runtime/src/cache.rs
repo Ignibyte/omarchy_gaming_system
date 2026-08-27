@@ -10,8 +10,8 @@ use std::{
 };
 
 use omarchygs_game_cartridge::{
-    CatalogPublicKey, LifecycleUse, PublisherPublicKey, SecureCartridgeStore, SecureResolution,
-    VerifiedAcquisition, rich_2d_host_profile,
+    AcquisitionServerAdmission, CatalogPublicKey, CatalogStatus, LifecycleUse, PublisherPublicKey,
+    SecureCartridgeStore, SecureResolution, VerifiedAcquisition, rich_2d_host_profile,
 };
 use rand_core::{OsRng, RngCore as _};
 use rustix::{
@@ -121,13 +121,13 @@ impl ClientCartridgeCache {
                 return Err(CompanionError::Rejected);
             }
             self.write_publisher_key(&mount.archive_sha256, &verified.entry().publisher_key)?;
-            profile
-                .mounts
-                .retain(|existing| existing.game_key != mount.game_key);
+            profile.mounts.retain(|existing| {
+                existing.game_key != mount.game_key
+                    || existing.archive_sha256 != mount.archive_sha256
+                    || existing.admission_revision != mount.admission_revision
+            });
             profile.mounts.push(mount.clone());
-            profile
-                .mounts
-                .sort_by(|left, right| left.game_key.cmp(&right.game_key));
+            profile.mounts.sort_by(mount_order);
             if profile.mounts.len() > MAX_MOUNTS {
                 return Err(CompanionError::Cache);
             }
@@ -141,18 +141,25 @@ impl ClientCartridgeCache {
         server_id: Uuid,
         game_key: &str,
         digest: &str,
+        admission_revision: Option<u64>,
         trusted_marketplace_key: &CatalogPublicKey,
     ) -> Result<bool> {
-        if !valid_identifier(game_key) || !valid_sha256(digest) {
+        if !valid_identifier(game_key)
+            || !valid_sha256(digest)
+            || admission_revision.is_some_and(|revision| revision == 0)
+        {
             return Err(CompanionError::InvalidInput);
         }
         let trusted_key_sha256 = marketplace_key_sha256(trusted_marketplace_key)?;
         self.with_mount_lock(|| {
             let mut profile = self.read_profile(server_id, &trusted_key_sha256)?;
             let before = profile.mounts.len();
-            profile
-                .mounts
-                .retain(|mount| !(mount.game_key == game_key && mount.archive_sha256 == digest));
+            profile.mounts.retain(|mount| {
+                mount.game_key != game_key
+                    || mount.archive_sha256 != digest
+                    || admission_revision
+                        .is_some_and(|revision| mount.admission_revision != revision)
+            });
             if profile.mounts.len() == before {
                 return Ok(false);
             }
@@ -186,7 +193,7 @@ impl ClientCartridgeCache {
                         && mount.archive_sha256 == archive_sha256
                         && mount.admission_revision == admission_revision
                 })
-                .ok_or(CompanionError::AdmissionChanged)?;
+                .ok_or(CompanionError::MountMissing)?;
             let publisher_key = self.read_publisher_key(archive_sha256)?;
             if publisher_key.publisher_id != mount.publisher_id {
                 return Err(CompanionError::Cache);
@@ -451,6 +458,66 @@ impl MountRecord {
         Ok(mount)
     }
 
+    pub(crate) fn from_session_verified(
+        server_origin: String,
+        server_id: Uuid,
+        admission: &AcquisitionServerAdmission,
+        verified: &VerifiedAcquisition,
+    ) -> Result<Self> {
+        let release = verified.release();
+        let manifest = release.cartridge().manifest();
+        let payload = release.payload();
+        let snapshot = verified.snapshot();
+        let entry = verified.entry();
+        let policy = verified.policy();
+        if admission.server_id != server_id.to_string()
+            || admission.game_key != manifest.game_key
+            || admission.publisher_id != manifest.publisher_id
+            || admission.rules_version != manifest.rules_version
+            || admission.cartridge_version != manifest.cartridge_version
+            || admission.archive_sha256 != release.cartridge().archive_sha256()
+            || admission.signed_identity_sha256 != release.cartridge().signed_identity_sha256()
+            || admission.game_key != payload.game_key
+            || admission.publisher_id != payload.publisher_id
+            || admission.rules_version != payload.rules_version
+            || admission.cartridge_version != payload.cartridge_version
+            || admission.archive_sha256 != payload.archive_sha256
+            || admission.signed_identity_sha256 != payload.signed_identity_sha256
+            || admission.admission_revision == 0
+            || snapshot.authority_id != verified.marketplace_key().authority_id
+            || !matches!(
+                policy.status,
+                CatalogStatus::Active | CatalogStatus::Deprecated
+            )
+        {
+            return Err(CompanionError::Rejected);
+        }
+        let mount = Self {
+            format: MOUNT_FORMAT.to_owned(),
+            server_id: server_id.to_string(),
+            server_origin,
+            game_key: admission.game_key.clone(),
+            publisher_id: admission.publisher_id.clone(),
+            rules_version: admission.rules_version,
+            cartridge_version: admission.cartridge_version,
+            display_name: manifest.display_name.clone(),
+            archive_sha256: admission.archive_sha256.clone(),
+            signed_identity_sha256: admission.signed_identity_sha256.clone(),
+            marketplace_key_sha256: marketplace_key_sha256(verified.marketplace_key())?,
+            marketplace_id: snapshot.authority_id.clone(),
+            marketplace_name: snapshot.marketplace_name.clone(),
+            reviewed_by: entry.reviewed_by.clone(),
+            review_summary: entry.review_summary.clone(),
+            snapshot_version: snapshot.snapshot_version,
+            policy_version: policy.policy_version,
+            lifecycle_status: lifecycle_name(policy.status).to_owned(),
+            admission_revision: admission.admission_revision,
+            warning: (policy.status == CatalogStatus::Deprecated).then(|| policy.reason.clone()),
+        };
+        mount.validate()?;
+        Ok(mount)
+    }
+
     fn validate(&self) -> Result<()> {
         if self.format != MOUNT_FORMAT
             || exact_uuid(&self.server_id).is_err()
@@ -517,13 +584,25 @@ impl ProfileDocument {
             || !self
                 .mounts
                 .windows(2)
-                .all(|pair| pair[0].game_key < pair[1].game_key)
+                .all(|pair| mount_identity(&pair[0]) < mount_identity(&pair[1]))
         {
             Err(CompanionError::Cache)
         } else {
             Ok(())
         }
     }
+}
+
+fn mount_identity(mount: &MountRecord) -> (&str, &str, u64) {
+    (
+        mount.game_key.as_str(),
+        mount.archive_sha256.as_str(),
+        mount.admission_revision,
+    )
+}
+
+fn mount_order(left: &MountRecord, right: &MountRecord) -> std::cmp::Ordering {
+    mount_identity(left).cmp(&mount_identity(right))
 }
 
 fn canonical_origin(value: &str) -> Result<String> {
@@ -725,7 +804,8 @@ mod tests {
         );
 
         let first = mount(first_server, "game-one", 'a', &trusted_key_sha256);
-        let second = mount(first_server, "game-two", 'b', &trusted_key_sha256);
+        let mut second = mount(first_server, "game-one", 'b', &trusted_key_sha256);
+        second.admission_revision = 2;
         let wrong_server = mount(second_server, "game-one", 'a', &trusted_key_sha256);
         assert!(
             cache
@@ -788,7 +868,7 @@ mod tests {
                 first.admission_revision,
                 &trusted_marketplace_key,
             ),
-            Err(CompanionError::AdmissionChanged)
+            Err(CompanionError::MountMissing)
         ));
         assert!(
             cache
@@ -802,6 +882,7 @@ mod tests {
                     first_server,
                     &first.game_key,
                     &first.archive_sha256,
+                    Some(first.admission_revision),
                     &trusted_marketplace_key,
                 )
                 .expect("exact remove should work")
@@ -819,6 +900,7 @@ mod tests {
                     first_server,
                     &first.game_key,
                     &first.archive_sha256,
+                    Some(first.admission_revision),
                     &trusted_marketplace_key,
                 )
                 .expect("missing remove should be idempotent")

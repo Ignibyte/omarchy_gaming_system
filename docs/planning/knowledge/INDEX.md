@@ -347,3 +347,12 @@ and in this register.
 | `PR-omarchy-gaming-system-persist-action-admission-before-external-effects-001` | rule | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
 | `PR-omarchy-gaming-system-render-only-from-accepted-plan-state-001` | rule | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
 | `AD-omarchy-gaming-system-session-pinned-cartridge-gameplay-boundary-001` | decision | `../../architecture/game-cartridges.md`; `../../architecture/system-overview.md` |
+| `BF-omarchy-gaming-system-historical-evidence-current-policy-conflation-001` | failure | `aar/AAR-035-historical-session-cartridge-acquisition-and-multi-screen-navigation.md` |
+| `BF-omarchy-gaming-system-reserved-navigation-prefix-fallthrough-001` | failure | `aar/AAR-035-historical-session-cartridge-acquisition-and-multi-screen-navigation.md` |
+| `BF-omarchy-gaming-system-navigation-envelope-contract-drift-001` | failure | `aar/AAR-035-historical-session-cartridge-acquisition-and-multi-screen-navigation.md` |
+| `BF-omarchy-gaming-system-clean-clone-cartridge-version-drift-001` | failure | `aar/AAR-035-historical-session-cartridge-acquisition-and-multi-screen-navigation.md` |
+| `PR-omarchy-gaming-system-separate-historical-provenance-from-current-use-policy-001` | rule | `aar/AAR-035-historical-session-cartridge-acquisition-and-multi-screen-navigation.md` |
+| `PR-omarchy-gaming-system-fail-closed-on-reserved-action-namespaces-001` | rule | `aar/AAR-035-historical-session-cartridge-acquisition-and-multi-screen-navigation.md` |
+| `PR-omarchy-gaming-system-align-producer-consumer-limits-and-uniqueness-001` | rule | `aar/AAR-035-historical-session-cartridge-acquisition-and-multi-screen-navigation.md` |
+| `PR-omarchy-gaming-system-treat-clean-clone-fixtures-as-protocol-clients-001` | rule | `aar/AAR-035-historical-session-cartridge-acquisition-and-multi-screen-navigation.md` |
+| `AD-omarchy-gaming-system-historical-acquisition-and-host-navigation-boundary-001` | decision | `../../architecture/game-cartridges.md`; `../../architecture/system-overview.md` |

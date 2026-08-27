@@ -66,7 +66,7 @@ server-authoritative game runtime below.
 - [x] Bind exact admitted cartridges to authoritative sessions, compile matching
   mounted entry screens into trusted plans, and route declared actions through
   the session's existing compiled or registered-provider authority
-- [ ] Add historical-release acquisition and multi-screen cartridge navigation
+- [x] Add historical-release acquisition and multi-screen cartridge navigation
   without silently substituting the server's current catalog selection
 - [ ] Operator-local signing/import for inert custom cartridges that bypass the
   marketplace while remaining visibly distinct from vetted releases

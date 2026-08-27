@@ -61,6 +61,7 @@ fn document_for(
     if cartridge_runtime_enabled {
         capabilities.push("games.cartridge-acquisition.v1");
         capabilities.push("games.session-cartridge.v1");
+        capabilities.push("games.session-cartridge-acquisition.v1");
         capabilities.sort_unstable();
     }
 
@@ -116,6 +117,11 @@ mod tests {
             document
                 .capabilities
                 .contains(&"games.session-cartridge.v1")
+        );
+        assert!(
+            document
+                .capabilities
+                .contains(&"games.session-cartridge-acquisition.v1")
         );
         assert!(
             document

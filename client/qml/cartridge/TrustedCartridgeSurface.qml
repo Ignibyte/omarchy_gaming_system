@@ -175,8 +175,8 @@ Rectangle {
     function acceptPlan(plan) {
         const error = validatePlan(plan)
         if (error !== "") {
-            acceptedPlan = null
             planAccepted = false
+            acceptedPlan = null
             validationError = error
             return false
         }

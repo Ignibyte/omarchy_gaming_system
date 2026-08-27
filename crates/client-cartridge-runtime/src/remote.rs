@@ -15,6 +15,7 @@ use crate::{CompanionError, MountRecord, Result};
 
 const MAX_DISCOVERY_BYTES: usize = 16 * 1024;
 const MAX_CATALOG_BYTES: usize = 256 * 1024;
+const MAX_SESSION_BYTES: usize = 512 * 1024;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -25,6 +26,16 @@ pub struct AcquireRequest {
     pub game_key: String,
     pub archive_sha256: String,
     pub admission_revision: u64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SessionAcquireRequest {
+    pub server_origin: String,
+    pub server_id: String,
+    pub device_bearer: String,
+    pub persona_id: String,
+    pub game_session_id: String,
 }
 
 pub struct RemoteAcquisition {
@@ -119,6 +130,96 @@ pub async fn acquire(
     Ok(RemoteAcquisition { verified, mount })
 }
 
+pub async fn acquire_session(
+    mut request: SessionAcquireRequest,
+    trusted_marketplace_key: &CatalogPublicKey,
+) -> Result<RemoteAcquisition> {
+    let origin = selected_origin(&request.server_origin)?;
+    let server_id = exact_uuid(&request.server_id)?;
+    let persona_id = exact_uuid(&request.persona_id)?;
+    let session_id = exact_uuid(&request.game_session_id)?;
+    if !valid_bearer(&request.device_bearer) {
+        return Err(CompanionError::InvalidInput);
+    }
+    let bearer = Zeroizing::new(std::mem::take(&mut request.device_bearer));
+    let client = remote_client()?;
+    require_discovery_capability(
+        &client,
+        &origin,
+        server_id,
+        "games.session-cartridge-acquisition.v1",
+    )
+    .await?;
+    let initial = fetch_session(&client, &origin, &bearer, persona_id, session_id).await?;
+    let presentation = initial.exact_presentation(session_id)?.clone();
+    let expected = presentation.admission(server_id);
+    let acquisition_url = origin
+        .join(&format!(
+            "/v1/personas/{persona_id}/game-sessions/{session_id}/cartridge-acquisition"
+        ))
+        .map_err(|_| CompanionError::InvalidInput)?;
+    let bytes = get_bytes(
+        &client,
+        acquisition_url,
+        Some(&bearer),
+        MAX_ACQUISITION_DOCUMENT_BYTES,
+        CompanionError::AdmissionChanged,
+    )
+    .await?;
+    let sdk = supported_sdk_identity().map_err(|_| CompanionError::Rejected)?;
+    let verified = verify_acquisition_bytes(
+        &bytes,
+        &expected,
+        trusted_marketplace_key,
+        &sdk,
+        &rich_2d_host_profile(),
+    )
+    .map_err(|_| CompanionError::Rejected)?;
+    let final_session = fetch_session(&client, &origin, &bearer, persona_id, session_id).await?;
+    if final_session.exact_presentation(session_id)? != &presentation {
+        return Err(CompanionError::AdmissionChanged);
+    }
+    let mount = MountRecord::from_session_verified(
+        origin.origin().ascii_serialization(),
+        server_id,
+        &expected,
+        &verified,
+    )?;
+    Ok(RemoteAcquisition { verified, mount })
+}
+
+async fn require_discovery_capability(
+    client: &Client,
+    origin: &Url,
+    server_id: Uuid,
+    capability: &str,
+) -> Result<()> {
+    let discovery_url = origin
+        .join("/.well-known/omarchygs")
+        .map_err(|_| CompanionError::InvalidInput)?;
+    let discovery: DiscoveryDocument = get_json(
+        client,
+        discovery_url,
+        None,
+        MAX_DISCOVERY_BYTES,
+        CompanionError::Rejected,
+    )
+    .await?;
+    if discovery.service != "omarchy-gaming-system"
+        || discovery.server_id != server_id.to_string()
+        || discovery.protocol_version != 1
+        || !sorted_capabilities(&discovery.capabilities)
+        || !discovery
+            .capabilities
+            .iter()
+            .any(|value| value == capability)
+    {
+        Err(CompanionError::Rejected)
+    } else {
+        Ok(())
+    }
+}
+
 fn remote_client() -> Result<Client> {
     let _ = rustls::crypto::ring::default_provider().install_default();
     Client::builder()
@@ -144,6 +245,28 @@ async fn fetch_catalog(
         url,
         Some(bearer),
         MAX_CATALOG_BYTES,
+        CompanionError::AdmissionChanged,
+    )
+    .await
+}
+
+async fn fetch_session(
+    client: &Client,
+    origin: &Url,
+    bearer: &Zeroizing<String>,
+    persona_id: Uuid,
+    session_id: Uuid,
+) -> Result<SessionDocument> {
+    let url = origin
+        .join(&format!(
+            "/v1/personas/{persona_id}/game-sessions/{session_id}"
+        ))
+        .map_err(|_| CompanionError::InvalidInput)?;
+    get_json(
+        client,
+        url,
+        Some(bearer),
+        MAX_SESSION_BYTES,
         CompanionError::AdmissionChanged,
     )
     .await
@@ -324,6 +447,13 @@ fn valid_bearer(value: &str) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
 }
 
+fn valid_text(value: &str, maximum: usize) -> bool {
+    !value.is_empty()
+        && value.trim() == value
+        && value.chars().count() <= maximum
+        && !value.chars().any(char::is_control)
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct DiscoveryDocument {
@@ -333,6 +463,99 @@ struct DiscoveryDocument {
     server_name: String,
     protocol_version: u16,
     capabilities: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+#[allow(dead_code)]
+struct SessionDocument {
+    id: String,
+    game_key: String,
+    game_version: u32,
+    revision: i64,
+    status: String,
+    state: Option<serde_json::Value>,
+    authority: String,
+    provider_release_id: Option<String>,
+    availability: Option<String>,
+    presentation: Option<SessionPresentation>,
+    result: Option<serde_json::Value>,
+    participants: Vec<serde_json::Value>,
+    completed_at: Option<String>,
+    created_at: String,
+    updated_at: String,
+}
+
+impl SessionDocument {
+    fn exact_presentation(&self, expected_session_id: Uuid) -> Result<&SessionPresentation> {
+        if self.id != expected_session_id.to_string() {
+            return Err(CompanionError::AdmissionChanged);
+        }
+        let presentation = self
+            .presentation
+            .as_ref()
+            .ok_or(CompanionError::AdmissionChanged)?;
+        presentation.validate()?;
+        Ok(presentation)
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+struct SessionPresentation {
+    format: String,
+    publisher_id: String,
+    game_key: String,
+    rules_version: u32,
+    cartridge_version: u32,
+    archive_sha256: String,
+    signed_identity_sha256: String,
+    admission_revision: u64,
+    lifecycle_status: String,
+    active_session_policy: String,
+    #[serde(default)]
+    warning: Option<String>,
+}
+
+impl SessionPresentation {
+    fn validate(&self) -> Result<()> {
+        let warning_matches = match self.lifecycle_status.as_str() {
+            "active" | "retired" => self.warning.is_none(),
+            "deprecated" => self
+                .warning
+                .as_ref()
+                .is_some_and(|warning| valid_text(warning, 512)),
+            _ => false,
+        };
+        if self.format != "omarchygs.session-cartridge/v1"
+            || !valid_identifier(&self.publisher_id)
+            || !valid_identifier(&self.game_key)
+            || self.rules_version == 0
+            || self.cartridge_version == 0
+            || !valid_sha256(&self.archive_sha256)
+            || !valid_sha256(&self.signed_identity_sha256)
+            || self.admission_revision == 0
+            || self.active_session_policy != "continue"
+            || !warning_matches
+        {
+            Err(CompanionError::AdmissionChanged)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn admission(&self, server_id: Uuid) -> AcquisitionServerAdmission {
+        AcquisitionServerAdmission {
+            server_id: server_id.to_string(),
+            game_key: self.game_key.clone(),
+            publisher_id: self.publisher_id.clone(),
+            rules_version: self.rules_version,
+            cartridge_version: self.cartridge_version,
+            archive_sha256: self.archive_sha256.clone(),
+            signed_identity_sha256: self.signed_identity_sha256.clone(),
+            admission_revision: self.admission_revision,
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -425,6 +648,8 @@ mod tests {
     const REVISION: &str = "1111111111111111111111111111111111111111";
     const BUILDER_DIGEST: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const SERVER_ID: &str = "11111111-1111-4111-8111-111111111111";
+    const PERSONA_ID: &str = "22222222-2222-4222-8222-222222222222";
+    const SESSION_ID: &str = "33333333-3333-4333-8333-333333333333";
     const BEARER: &str = "ogs1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
     #[tokio::test]
@@ -450,9 +675,11 @@ mod tests {
             "lifecycle_status": "active",
             "active_session_policy": "continue",
             "view": {
+                "chronicle_label": "Read the chronicle",
                 "welcome": "Welcome to Door Legends. One choice opens the way.",
                 "status": "A weathered brass door waits in the dark.",
-                "enter_label": "Enter the brass door"
+                "enter_label": "Enter the brass door",
+                "lobby_label": "Return to the lobby"
             },
             "preferences": {
                 "scale": 1.0,
@@ -472,7 +699,26 @@ mod tests {
         assert_eq!(plan["origin"]["archive_sha256"], mounted.archive_sha256);
         assert_eq!(plan["nodes"][2]["kind"], "button");
         assert_eq!(plan["nodes"][2]["action"], "enter");
+        assert_eq!(prepared.screen_id, "lobby");
+        assert_eq!(prepared.entry_screen_id, "lobby");
+        assert_eq!(
+            prepared.navigation,
+            vec![omarchygs_game_cartridge_renderer::PreparedNavigation {
+                action: "navigate.chronicle".to_owned(),
+                target_screen: "chronicle".to_owned(),
+            }]
+        );
         assert!(prepared.assets.is_empty());
+        render_request.screen_id = Some("chronicle".to_owned());
+        let chronicle = crate::compile_mounted_render_plan(
+            &cache,
+            &render_request,
+            &fixture.marketplace_public,
+        )
+        .expect("signed secondary screen should compile");
+        assert_eq!(chronicle.screen_id, "chronicle");
+        assert_eq!(chronicle.entry_screen_id, "lobby");
+        assert_eq!(chronicle.navigation[0].target_screen, "lobby");
         render_request.server_origin = "https://other.example.test".to_owned();
         assert!(matches!(
             crate::compile_mounted_render_plan(
@@ -480,7 +726,7 @@ mod tests {
                 &render_request,
                 &fixture.marketplace_public,
             ),
-            Err(CompanionError::AdmissionChanged)
+            Err(CompanionError::MountMissing)
         ));
         assert_eq!(
             cache
@@ -519,6 +765,53 @@ mod tests {
         changed_server.abort();
     }
 
+    #[tokio::test]
+    async fn historical_session_acquisition_uses_the_exact_session_pin() {
+        let fixture = RemoteFixture::new();
+        let (origin, server) = fixture.spawn_session(false).await;
+        let acquired = acquire_session(
+            SessionAcquireRequest {
+                server_origin: origin,
+                server_id: SERVER_ID.to_owned(),
+                device_bearer: BEARER.to_owned(),
+                persona_id: PERSONA_ID.to_owned(),
+                game_session_id: SESSION_ID.to_owned(),
+            },
+            &fixture.marketplace_public,
+        )
+        .await
+        .expect("historical session acquisition should verify");
+        assert_eq!(acquired.mount.game_key, fixture.admission.game_key);
+        assert_eq!(
+            acquired.mount.archive_sha256,
+            fixture.admission.archive_sha256
+        );
+        assert_eq!(
+            acquired.mount.admission_revision,
+            fixture.admission.admission_revision
+        );
+        server.abort();
+
+        let (changed_origin, changed_server) = fixture.spawn_session(true).await;
+        let error = match acquire_session(
+            SessionAcquireRequest {
+                server_origin: changed_origin,
+                server_id: SERVER_ID.to_owned(),
+                device_bearer: BEARER.to_owned(),
+                persona_id: PERSONA_ID.to_owned(),
+                game_session_id: SESSION_ID.to_owned(),
+            },
+            &fixture.marketplace_public,
+        )
+        .await
+        {
+            Ok(_) => panic!("a changed final session pin must fail closed"),
+            Err(error) => error,
+        };
+        assert_eq!(error.code(), "companion_admission_changed");
+        changed_server.abort();
+    }
+
     #[test]
     fn selected_origin_accepts_only_canonical_https_or_loopback_http() {
         assert!(selected_origin("https://games.example.test").is_ok());
@@ -532,6 +825,23 @@ mod tests {
         ] {
             assert!(selected_origin(rejected).is_err(), "accepted {rejected}");
         }
+        let retired = SessionPresentation {
+            format: "omarchygs.session-cartridge/v1".to_owned(),
+            publisher_id: "publisher".to_owned(),
+            game_key: "game".to_owned(),
+            rules_version: 1,
+            cartridge_version: 1,
+            archive_sha256: "a".repeat(64),
+            signed_identity_sha256: "b".repeat(64),
+            admission_revision: 1,
+            lifecycle_status: "retired".to_owned(),
+            active_session_policy: "continue".to_owned(),
+            warning: None,
+        };
+        assert!(
+            retired.validate().is_ok(),
+            "retired releases remain acquirable only for continuing sessions"
+        );
     }
 
     struct RemoteFixture {
@@ -672,8 +982,11 @@ mod tests {
                 catalog: self.catalog.clone(),
                 catalog_calls: Arc::new(AtomicUsize::new(0)),
                 change_final_catalog,
+                session_calls: Arc::new(AtomicUsize::new(0)),
+                change_final_session: false,
                 game_key: self.admission.game_key.clone(),
                 digest: self.admission.archive_sha256.clone(),
+                admission: self.admission.clone(),
             };
             let app = Router::new()
                 .route("/.well-known/omarchygs", get(discovery))
@@ -681,6 +994,40 @@ mod tests {
                 .route(
                     "/v1/cartridges/{game_key}/{digest}/acquisition",
                     get(acquisition),
+                )
+                .with_state(state);
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let address = listener.local_addr().unwrap();
+            let handle = tokio::spawn(async move {
+                axum::serve(listener, app).await.unwrap();
+            });
+            (format!("http://{address}"), handle)
+        }
+
+        async fn spawn_session(
+            &self,
+            change_final_session: bool,
+        ) -> (String, tokio::task::JoinHandle<()>) {
+            let state = FixtureState {
+                acquisition: self.acquisition.clone(),
+                catalog: self.catalog.clone(),
+                catalog_calls: Arc::new(AtomicUsize::new(0)),
+                change_final_catalog: false,
+                session_calls: Arc::new(AtomicUsize::new(0)),
+                change_final_session,
+                game_key: self.admission.game_key.clone(),
+                digest: self.admission.archive_sha256.clone(),
+                admission: self.admission.clone(),
+            };
+            let app = Router::new()
+                .route("/.well-known/omarchygs", get(discovery))
+                .route(
+                    "/v1/personas/{persona_id}/game-sessions/{session_id}",
+                    get(session),
+                )
+                .route(
+                    "/v1/personas/{persona_id}/game-sessions/{session_id}/cartridge-acquisition",
+                    get(session_acquisition),
                 )
                 .with_state(state);
             let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -698,8 +1045,11 @@ mod tests {
         catalog: Value,
         catalog_calls: Arc<AtomicUsize>,
         change_final_catalog: bool,
+        session_calls: Arc<AtomicUsize>,
+        change_final_session: bool,
         game_key: String,
         digest: String,
+        admission: AcquisitionServerAdmission,
     }
 
     async fn discovery() -> Json<Value> {
@@ -710,7 +1060,8 @@ mod tests {
             "protocol_version": 1,
             "capabilities": [
                 "games.cartridge-acquisition.v1",
-                "games.cartridge-catalog.v1"
+                "games.cartridge-catalog.v1",
+                "games.session-cartridge-acquisition.v1"
             ]
         }))
     }
@@ -733,6 +1084,66 @@ mod tests {
         headers: HeaderMap,
     ) -> Response {
         if !authorized(&headers) || game_key != state.game_key || digest != state.digest {
+            return StatusCode::NOT_FOUND.into_response();
+        }
+        (
+            StatusCode::OK,
+            [(header::CONTENT_TYPE, "application/json")],
+            Body::from(state.acquisition.as_ref().clone()),
+        )
+            .into_response()
+    }
+
+    async fn session(
+        State(state): State<FixtureState>,
+        AxumPath((persona_id, session_id)): AxumPath<(String, String)>,
+        headers: HeaderMap,
+    ) -> Response {
+        if !authorized(&headers) || persona_id != PERSONA_ID || session_id != SESSION_ID {
+            return StatusCode::NOT_FOUND.into_response();
+        }
+        let call = state.session_calls.fetch_add(1, Ordering::SeqCst);
+        let mut admission_revision = state.admission.admission_revision;
+        if state.change_final_session && call > 0 {
+            admission_revision += 1;
+        }
+        Json(json!({
+            "id": SESSION_ID,
+            "game_key": state.admission.game_key,
+            "game_version": state.admission.rules_version,
+            "revision": 1,
+            "status": "active",
+            "state": {},
+            "authority": "local",
+            "provider_release_id": null,
+            "availability": null,
+            "presentation": {
+                "format": "omarchygs.session-cartridge/v1",
+                "publisher_id": state.admission.publisher_id,
+                "game_key": state.admission.game_key,
+                "rules_version": state.admission.rules_version,
+                "cartridge_version": state.admission.cartridge_version,
+                "archive_sha256": state.admission.archive_sha256,
+                "signed_identity_sha256": state.admission.signed_identity_sha256,
+                "admission_revision": admission_revision,
+                "lifecycle_status": "active",
+                "active_session_policy": "continue"
+            },
+            "result": null,
+            "participants": [],
+            "completed_at": null,
+            "created_at": "2026-08-26T00:00:00Z",
+            "updated_at": "2026-08-26T00:00:00Z"
+        }))
+        .into_response()
+    }
+
+    async fn session_acquisition(
+        State(state): State<FixtureState>,
+        AxumPath((persona_id, session_id)): AxumPath<(String, String)>,
+        headers: HeaderMap,
+    ) -> Response {
+        if !authorized(&headers) || persona_id != PERSONA_ID || session_id != SESSION_ID {
             return StatusCode::NOT_FOUND.into_response();
         }
         (

@@ -228,7 +228,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
             "publisher_id": "ignibyte",
             "game_key": "door-legends",
             "rules_version": 1,
-            "cartridge_version": 1,
+            "cartridge_version": 2,
             "archive_sha256": cartridge_digest,
             "signed_identity_sha256": cartridge_fixture.admission.signed_identity_sha256,
             "admission_revision": cartridge_fixture.admission.admission_revision,
@@ -315,6 +315,68 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         "a session cartridge pin must not be removable"
     );
 
+    sqlx::query(
+        r#"
+        UPDATE server_cartridge_catalogs
+        SET active_release_id = NULL,
+            admission_revision = admission_revision + 1,
+            updated_at = clock_timestamp()
+        WHERE game_key = 'door-legends'
+        "#,
+    )
+    .execute(&pool)
+    .await
+    .expect("catalog should advance away from the session's old pinned release");
+    let current_acquisition = request(
+        app.clone(),
+        Method::GET,
+        &format!("/v1/cartridges/door-legends/{cartridge_digest}/acquisition"),
+        Some(&alice.token),
+    )
+    .await;
+    assert_eq!(current_acquisition.status, StatusCode::NOT_FOUND);
+    let historical_acquisition_path = format!(
+        "/v1/personas/{}/game-sessions/{session_id}/cartridge-acquisition",
+        alice.id
+    );
+    let historical_acquisition = request(
+        app.clone(),
+        Method::GET,
+        &historical_acquisition_path,
+        Some(&alice.token),
+    )
+    .await;
+    assert_eq!(
+        historical_acquisition.status,
+        StatusCode::OK,
+        "{}",
+        historical_acquisition.body
+    );
+    assert_eq!(
+        historical_acquisition.json()["server_admission"],
+        json!({
+            "server_id": cartridge_fixture.admission.server_id,
+            "game_key": "door-legends",
+            "publisher_id": "ignibyte",
+            "rules_version": 1,
+            "cartridge_version": 2,
+            "archive_sha256": cartridge_digest,
+            "signed_identity_sha256": cartridge_fixture.admission.signed_identity_sha256,
+            "admission_revision": cartridge_fixture.admission.admission_revision
+        })
+    );
+    let foreign_historical_acquisition = request(
+        app.clone(),
+        Method::GET,
+        &format!(
+            "/v1/personas/{}/game-sessions/{session_id}/cartridge-acquisition",
+            stranger.id
+        ),
+        Some(&stranger.token),
+    )
+    .await;
+    assert_eq!(foreign_historical_acquisition.status, StatusCode::NOT_FOUND);
+
     let foreign = request(
         app.clone(),
         Method::GET,
@@ -337,6 +399,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
             "idempotency_key": Uuid::new_v4(),
             "expected_revision": 0,
             "archive_sha256": "f".repeat(64),
+            "screen_id": "lobby",
             "action": "enter",
             "payload": {}
         }),
@@ -355,6 +418,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
             "idempotency_key": Uuid::new_v4(),
             "expected_revision": 0,
             "archive_sha256": cartridge_digest,
+            "screen_id": "chronicle",
             "action": "enter",
             "payload": {"credential": "not-forwarded"}
         }),
@@ -372,12 +436,28 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
             "idempotency_key": Uuid::new_v4(),
             "expected_revision": 0,
             "archive_sha256": cartridge_digest,
+            "screen_id": "lobby",
             "action": "enter",
             "payload": {}
         }),
     )
     .await;
     assert_eq!(foreign_action.status, StatusCode::NOT_FOUND);
+    let navigation_injection = request_json(
+        app.clone(),
+        &command_path,
+        &alice.token,
+        json!({
+            "idempotency_key": Uuid::new_v4(),
+            "expected_revision": 0,
+            "archive_sha256": cartridge_digest,
+            "screen_id": "lobby",
+            "action": "navigate.chronicle",
+            "payload": {}
+        }),
+    )
+    .await;
+    assert_eq!(navigation_injection.status, StatusCode::CONFLICT);
     let command = request_json(
         app.clone(),
         &command_path,
@@ -386,6 +466,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
             "idempotency_key": command_key,
             "expected_revision": 0,
             "archive_sha256": cartridge_digest,
+            "screen_id": "chronicle",
             "action": "enter",
             "payload": {}
         }),
@@ -405,6 +486,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
             "idempotency_key": command_key,
             "expected_revision": 0,
             "archive_sha256": cartridge_digest,
+            "screen_id": "chronicle",
             "action": "enter",
             "payload": {}
         }),
@@ -457,6 +539,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
             "idempotency_key": command_key,
             "expected_revision": 0,
             "archive_sha256": cartridge_digest,
+            "screen_id": "chronicle",
             "action": "enter",
             "payload": {}
         }),
@@ -525,7 +608,9 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
             "public_summary": {"ending": "unapproved_rewrite"},
             "achievements": ["unapproved_claim"],
             "view": {
+                "chronicle_label": "Read the chronicle",
                 "enter_label": "Play again later",
+                "lobby_label": "Return to the lobby",
                 "status": "You escaped through the sunlit gate.",
                 "welcome": "Door Legends remembers your first escape."
             }
@@ -907,7 +992,9 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         ProviderEventKind::TurnReady,
         json!({
             "view": {
+                "chronicle_label": "Read the chronicle",
                 "enter_label": "Enter the brass door",
+                "lobby_label": "Return to the lobby",
                 "status": "A weathered brass door waits in the dark.",
                 "welcome": "Welcome to Door Legends. One choice opens the way."
             }

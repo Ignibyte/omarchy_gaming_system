@@ -14,7 +14,9 @@ Item {
     Components.OgsTheme { id: theme }
 
     function focusInitial() {
-        if (cartridgeSurface.visible)
+        if (installPinnedButton.visible)
+            installPinnedButton.forceActiveFocus()
+        else if (cartridgeSurface.visible)
             cartridgeSurface.focusInitial()
         else if (signalSurface.visible)
             signalSurface.focusInitial()
@@ -92,8 +94,48 @@ Item {
                 Layout.fillWidth: true
                 visible: controller.selectedSession !== null && !controller.presentation.supported
                          && controller.cartridgeRenderPlan === null
+                         && controller.cartridgeRenderState !== "missing"
                 message: "This cartridge is listed safely, but this client has no trusted presenter for it."
                 tone: "warning"
+            }
+
+            Components.OgsStatusBanner {
+                Layout.fillWidth: true
+                visible: controller.cartridgeRenderState === "missing"
+                message: "This session is pinned to an exact cartridge release that is not installed locally. Authoritative game state remains available."
+                tone: "warning"
+            }
+
+            Components.OgsButton {
+                id: installPinnedButton
+                objectName: "installPinnedCartridgeButton"
+                visible: controller.cartridgeInstallAvailable
+                text: "INSTALL PINNED CARTRIDGE"
+                accessibleName: "Install this session's exact signed cartridge"
+                accessibleDescription: "Download and verify the immutable release pinned to this game session"
+                enabled: !controller.busy
+                onClicked: controller.installPinnedCartridge()
+            }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                visible: cartridgeSurface.visible
+
+                Components.OgsButton {
+                    objectName: "cartridgeScreenBackButton"
+                    text: "SCREEN BACK"
+                    accessibleName: "Return to the previous cartridge screen"
+                    enabled: !controller.busy && controller.cartridgeCanGoBack
+                    onClicked: controller.backCartridgeScreen()
+                }
+
+                Components.OgsButton {
+                    objectName: "cartridgeEntryButton"
+                    text: "ENTRY"
+                    accessibleName: "Return to the signed cartridge entry screen"
+                    enabled: !controller.busy && controller.cartridgeCanGoEntry
+                    onClicked: controller.enterCartridgeScreen()
+                }
             }
 
             Cartridge.TrustedCartridgeSurface {
@@ -112,7 +154,7 @@ Item {
                                 && controller.selectedSession.presentation.active_session_policy === "continue"
                 opacity: actionsEnabled ? 1 : 0.65
                 onActionRequested: function(action, payload) {
-                    controller.submitCartridgeAction(action, payload)
+                    controller.activateCartridgeAction(action, payload)
                 }
             }
 

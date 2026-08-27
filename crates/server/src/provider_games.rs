@@ -1172,8 +1172,10 @@ fn validate_door_legends_view(view: &Value) -> Result<(), GameError> {
     let Some(object) = view.as_object() else {
         return Err(GameError::ProviderUnavailable);
     };
-    if object.len() != 3
+    if object.len() != 5
+        || !object.contains_key("chronicle_label")
         || !object.contains_key("enter_label")
+        || !object.contains_key("lobby_label")
         || !object.contains_key("status")
         || !object.contains_key("welcome")
         || object.values().any(|value| {

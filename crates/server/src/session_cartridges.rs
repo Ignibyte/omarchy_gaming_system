@@ -2,7 +2,7 @@
 
 use omarchygs_game_cartridge::{
     ActiveSessionDecision, CatalogPublicKey, CatalogStatus, LifecycleUse, PublisherPublicKey,
-    SignedCatalogPolicy, lifecycle_decision, validate_entry_screen_action,
+    SignedCatalogPolicy, lifecycle_decision, validate_screen_action,
 };
 use serde::Serialize;
 use serde_json::{Map, Value, json};
@@ -29,8 +29,8 @@ pub struct SessionCartridgePresentation {
     pub warning: Option<String>,
 }
 
-/// A cartridge action translated by the host after the exact signed entry
-/// screen contract was verified.
+/// A cartridge action translated by the host after the exact signed screen
+/// contract was verified.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ValidatedSessionCartridgeAction {
     pub archive_sha256: String,
@@ -99,6 +99,8 @@ pub async fn pin_new_session(
         FROM server_cartridge_catalogs AS catalog
         JOIN marketplace_releases AS release
           ON release.id = catalog.active_release_id
+        JOIN marketplace_release_acquisition_evidence AS evidence
+          ON evidence.marketplace_release_id = release.id
         JOIN marketplace_sync_state AS sync
           ON sync.singleton
         WHERE catalog.game_key = $1
@@ -180,6 +182,7 @@ pub async fn admit_session_action(
     idempotency_key: Uuid,
     expected_revision: i64,
     archive_sha256: &str,
+    screen_id: Option<&str>,
     action: &str,
     payload: &Value,
 ) -> Result<ValidatedSessionCartridgeAction, SessionCartridgeError> {
@@ -188,6 +191,7 @@ pub async fn admit_session_action(
         || idempotency_key.is_nil()
         || expected_revision < 0
         || !valid_sha256(archive_sha256)
+        || screen_id.is_some_and(|screen| !valid_identifier(screen))
         || !valid_identifier(action)
         || !payload.is_object()
     {
@@ -247,6 +251,10 @@ pub async fn admit_session_action(
                archive_sha256 = $5 AS archive_matches,
                action = $6 AS action_matches,
                payload = $7 AS payload_matches,
+               screen_id IS NULL OR (
+                   screen_explicit = ($8::text IS NOT NULL)
+                   AND (NOT screen_explicit OR screen_id = $8)
+               ) AS screen_matches,
                authority,
                archive_sha256,
                translated_command
@@ -261,6 +269,7 @@ pub async fn admit_session_action(
     .bind(archive_sha256)
     .bind(action)
     .bind(Json(payload))
+    .bind(screen_id)
     .fetch_optional(&mut *transaction)
     .await
     .map_err(|_| SessionCartridgeError::Internal)?;
@@ -270,6 +279,7 @@ pub async fn admit_session_action(
             || !replay.archive_matches
             || !replay.action_matches
             || !replay.payload_matches
+            || !replay.screen_matches
         {
             return Err(SessionCartridgeError::IdempotencyConflict);
         }
@@ -321,7 +331,8 @@ pub async fn admit_session_action(
     {
         return Err(SessionCartridgeError::Denied);
     }
-    validate_entry_screen_action(resolution.cartridge(), action, payload)
+    let effective_screen = screen_id.unwrap_or(&manifest.entry_screen);
+    validate_screen_action(resolution.cartridge(), effective_screen, action, payload)
         .map_err(|_| SessionCartridgeError::Denied)?;
     let command = translate_command(&row.authority, &row.game_key, action, payload)?;
     sqlx::query(
@@ -338,11 +349,16 @@ pub async fn admit_session_action(
             signed_identity_sha256,
             policy_version,
             lifecycle_status,
+            screen_id,
+            screen_explicit,
             action,
             payload,
             translated_command
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8,
+            $9, $10, $11, $12, $13, $14, $15, $16
+        )
         "#,
     )
     .bind(game_session_id)
@@ -356,6 +372,8 @@ pub async fn admit_session_action(
     .bind(&row.signed_identity_sha256)
     .bind(row.policy_version)
     .bind(&row.policy_status)
+    .bind(effective_screen)
+    .bind(screen_id.is_some())
     .bind(action)
     .bind(Json(payload))
     .bind(Json(&command))
@@ -523,6 +541,7 @@ struct ActionAdmissionReplayRow {
     archive_matches: bool,
     action_matches: bool,
     payload_matches: bool,
+    screen_matches: bool,
     authority: String,
     archive_sha256: String,
     translated_command: Json<Value>,

@@ -17,6 +17,16 @@ sources:
     resource: repo://client/qml/game/SignalSiegeSurface.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
     resource: repo://client/qml/GameController.qml
+  - id: openwiki-source-152956378e80408d69d9dfb7
+    resource: repo://client/qml/tests/fixture/tst_games.qml
+  - id: openwiki-source-2bc62522bf486443de88f261
+    resource: repo://crates/client-cartridge-runtime/src/cache.rs
+  - id: openwiki-source-dc7f4e06ba23b051849cbe40
+    resource: repo://crates/client-cartridge-runtime/src/lib.rs
+  - id: openwiki-source-939b835e7d6c679aae8394e7
+    resource: repo://crates/client-cartridge-runtime/src/remote.rs
+  - id: openwiki-source-bc8915a33f270bc28a270170
+    resource: repo://crates/client-cartridge-runtime/src/service.rs
   - id: openwiki-source-f4e5b7474eca8daeac03aaab
     resource: repo://crates/game-cartridge-renderer/src/bin/omarchygs-cartridge-preview.rs
   - id: openwiki-source-fdf115002c4aabad0babec70
@@ -53,8 +63,12 @@ sources:
     resource: repo://crates/game-provider/src/registry.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
+  - id: openwiki-source-6e9cbe5bfa9c94fd24523bd3
+    resource: repo://crates/server/src/cartridge_catalog_api_tests.rs
   - id: openwiki-source-7243a317e3224aa82795a5fc
     resource: repo://crates/server/src/cartridge_catalog.rs
+  - id: openwiki-source-5942cee1725f1a3f7bf01ec7
+    resource: repo://crates/server/src/cartridge_distribution.rs
   - id: openwiki-source-9a69a848b9d41472b0830bd4
     resource: repo://crates/server/src/marketplace_egress.rs
   - id: openwiki-source-f6dda000394ac1ba6bba8f65
@@ -63,6 +77,8 @@ sources:
     resource: repo://crates/server/src/provider_game_api_tests.rs
   - id: openwiki-source-0e10f198b5749ecebf761185
     resource: repo://crates/server/src/provider_games.rs
+  - id: openwiki-source-b7ac90b7d5ad368e8fd1cca3
+    resource: repo://crates/server/src/session_cartridges.rs
   - id: openwiki-source-408aa68caebee417a5a319b8
     resource: repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md
   - id: openwiki-source-bfc109ee5d2c2f6c0f5c5f77
@@ -73,12 +89,18 @@ sources:
     resource: repo://docs/operators/owner-operated-servers.md
   - id: openwiki-source-ff39fa8dfffbd1a097ab5e16
     resource: repo://docs/planning/pipeline/completed/separate-repository-sdk-and-first-party-cartridge.notes.md
+  - id: openwiki-source-99837885b960ec6c07c5dcb7
+    resource: repo://examples/first-party-door-legends/cartridge/manifest.json
+  - id: openwiki-source-3b28096ad6f9667f4ceefdf5
+    resource: repo://examples/first-party-door-legends/cartridge/presentation.json
   - id: openwiki-source-047cb62ee1741c598c0f11a5
     resource: repo://migrations/0014_provider_security_foundation.sql
   - id: openwiki-source-c1f2a0cfcd9a603e8e6b291c
     resource: repo://migrations/0015_first_party_remote_provider_authority.sql
   - id: openwiki-source-11256f84337d259ecf424a45
     resource: repo://migrations/0019_marketplace_catalog.sql
+  - id: openwiki-source-6e903c05353a3393af0fb6c8
+    resource: repo://migrations/0022_historical_session_cartridge_acquisition.sql
   - id: openwiki-source-d69dbacb0ae7fe382ee46161
     resource: repo://scripts/test-game-cartridge-renderer.sh
   - id: openwiki-source-8df9ad1a3495f8360740ff03
@@ -87,7 +109,9 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-27T04:04:27.382Z"}
+  - id: openwiki-source-31a4e9d026860da100c233f9
+    resource: repo://scripts/test-provider-authority-pilot.sh
+generated: {by: "codex", at: "2026-08-27T05:42:15.031Z"}
 ---
 
 # Game Cartridges and portable provider direction
@@ -116,7 +140,11 @@ content-addressed cache, and per-server-profile mounts. Ticket 034 pins an exact
 admitted release to each eligible new session, compiles its signed entry screen
 from the matching mount in the native companion, renders it through trusted QML,
 and sends declared actions back through the selected server's existing gameplay
-authority. Operator-custom trust, a public Provider SDK, external-provider
+authority. Ticket 035 retains immutable historical marketplace evidence,
+allows a participant to install the exact old session pin after catalog change,
+keeps multiple exact releases mounted side by side, and adds bounded signed
+multi-screen host navigation with screen-bound action admission.
+Operator-custom trust, a public Provider SDK, external-provider
 onboarding, and server modules/hooks remain unimplemented.
 
 Ticket 014 contributes an isolated executable architecture proof. Its broker,
@@ -153,7 +181,7 @@ game repository
                   │ verified private cache + server-profile mount
                   ▼
        trusted Rust render-plan compiler
-                  │ bounded inert plan + digest assets
+                  │ bounded inert plan + signed-screen navigation + digest assets
                   ▼
        trusted OmarchyGS QML components
                   │ unconfirmed declared action
@@ -199,13 +227,24 @@ the database selection, retained signed marketplace snapshot and key, lifecycle
 policy, and immutable secure-store bytes to agree; the response is bounded and
 self-verified, with no fallback to another release.
 
+That current-selection path is deliberately separate from session recovery.
+Every newly created presentation pin now requires immutable normalized evidence
+for the exact signed marketplace snapshot and release that established its
+provenance. A participant-authorized historical route resolves the exact
+session pin through that retained evidence, not through today's catalog
+selection. Current signed active-session lifecycle policy still decides whether
+the old release may be used; retained provenance alone is never authorization.
+
 The packaged client starts a native loopback companion with a random
 per-process credential. That companion requires a marketplace public key from
 client-controlled configuration, verifies the full key rather than trusting
 the server-supplied copy, then rechecks publisher release, marketplace snapshot,
 lifecycle policy, compatibility, digest, and selected-server admission before
 staging content. Private descriptor-relative storage keeps immutable cached
-content separate from exact server-profile mount records. Each mount records
+content separate from exact server-profile mount records. A profile can retain
+up to 128 records keyed by server identity/origin, game, archive digest, and
+admission revision, so installing an old session pin does not replace another
+release of the same game. Each mount records
 the trusted marketplace-key fingerprint; removal deletes only that exact
 profile pointer and leaves authoritative game state unchanged. Session pinning
 is deliberately separate from the profile mount: an eligible new session stores
@@ -227,21 +266,31 @@ credentials. Suspended and revoked presentation authority fails closed;
 deprecated and retired releases follow their signed active-session policy.
 
 For a continuing bound session, `GameController` asks the authenticated
-same-user companion to compile the authoritative view. The companion
+same-user companion to compile the authoritative view. If its exact mount is
+absent, trusted QML exposes an explicit install control only when historical
+acquisition, the helper credential, and independent marketplace trust are all
+available. The companion reads the participant-visible session before and
+after acquisition, verifies the returned evidence against the client key and
+immutable binding, and refuses changed admission or lifecycle state. It then
 canonicalizes the selected origin, resolves only the exact profile mount under
 the client-controlled marketplace key and cached publisher identity, and runs
-the production Rich-2D renderer on the signed entry screen. It returns the inert
-plan plus a random per-plan loopback capability for digest-named PNG/WAV bytes.
+the production Rich-2D renderer on one requested signed screen. It returns the
+inert plan plus the accepted screen ID, signed entry ID, exact local navigation
+map, and a random per-plan loopback capability for digest-named PNG/WAV bytes.
 Host checking, media allowlists, no-store responses, and plan/count/byte/age
 bounds keep that asset authority local and ephemeral. QML independently checks
-the exact plan, origin, nodes, preferences, and aggregate resource budgets
-before retaining `acceptedPlan` or instantiating platform-owned components.
+the exact plan, origin, nodes, preferences, navigation mapping, and aggregate
+resource budgets before retaining `acceptedPlan` or instantiating
+platform-owned components. Navigation keeps at most sixteen prior screens,
+exposes Back and Entry, compiles each destination through the companion, and
+makes no gameplay request.
 
-An emitted Button or Grid action is still unconfirmed. QML sends only session
+An emitted gameplay Button or Grid action is still unconfirmed. QML sends only session
 identity from the path, expected revision, pinned archive digest, declared
-action, shaped payload, and idempotency identity to OmarchyGS. The server
+screen, action, shaped payload, and idempotency identity to OmarchyGS. Reserved
+`navigate.<screen>` actions never enter this transport. The server
 reauthorizes the participant, locks the lifecycle snapshot, re-verifies the
-exact signed entry-screen contract, translates the action itself, and records
+exact signed current-screen contract, translates the action itself, and records
 one immutable admission before invoking the existing compiled or provider
 command path. Exact replay uses the stored admitted command even after a later
 suspension, while a fresh post-transition action is denied. No cartridge gets a
@@ -249,13 +298,13 @@ server credential, provider address, socket, filesystem path, or executable
 frontend authority.
 
 Door Legends is the first complete portable proof: its provider owns rules and
-private state, its independently signed cartridge declares the entry screen and
-`enter` action, and OmarchyGS owns authentication, session envelope,
-presentation admission, action brokerage, projections, and recovery. V1 does
-not auto-download an absent historical mount or navigate beyond the signed
-entry screen. Multi-screen navigation, arbitrary publisher code, direct
-client-provider networking, external-provider onboarding, and general server
-plugins remain later designs.
+private state, its independently signed cartridge v2 declares cyclic Lobby and
+Chronicle screens plus the same real `enter` action from either screen, and
+OmarchyGS owns authentication, session envelope, historical presentation
+acquisition, host navigation, action brokerage, projections, and recovery.
+Acquisition remains explicit rather than automatic. Arbitrary publisher code,
+direct client-provider networking, external-provider onboarding, and general
+server plugins remain later designs.
 
 Those are four distinct trust decisions: a publisher signature proves origin
 and unchanged bytes, marketplace review records that marketplace's assessment,
@@ -298,6 +347,13 @@ exactly `column` and `row`, Button actions emit an empty object, and media stays
 within strict 8-bit PNG and PCM WAV. The package CLI can generate publisher
 keys, pack, conform, install, and revoke without HTTP, database,
 platform-credential, QML, or dynamic-loader dependencies.
+
+`presentation.navigation.v1` adds no executable vocabulary. It reserves only
+`navigate.<screen_id>` with an empty payload, requires an existing signed target
+and one unique Button emitter, and rejects Grids, malformed reserved actions,
+missing targets, and gameplay interpretation. Signed cycles are valid because
+the host owns the bounded navigation history and each destination is compiled
+through the same verifier/renderer boundary.
 
 The Ticket 015 store writes the exact verified archive to a content-addressed
 read-only blob and atomically publishes allowlisted activation and revocation
@@ -372,11 +428,13 @@ unspoofable platform surfaces.
 ### Implemented trusted renderer path
 
 The renderer accepts only the verifier's externally immutable
-`VerifiedCartridge`. For a ready screen it reads the authenticated pinned
+`VerifiedCartridge`. For a ready exact requested screen—or the signed entry
+screen when none is requested—it reads the authenticated pinned
 schema, validates one bounded view, resolves only dotted bindings and declared
 actions/assets, applies signed optional fallbacks plus trusted scale, contrast,
 reduced-motion, and mute preferences, and emits
-`omarchygs.render-plan/v1`. Non-ready loading, offline, stale, empty, protocol,
+`omarchygs.render-plan/v1` plus authenticated current-screen, entry-screen, and
+local navigation metadata. Non-ready loading, offline, stale, empty, protocol,
 unsupported-capability, and revoked states use fixed platform messages and
 contain zero cartridge nodes.
 
@@ -593,6 +651,13 @@ scripts/test-database.sh
 scripts/test-operator-recovery.sh
 ```
 
+Ticket 035 extends that evidence with immutable snapshot replay/omission tests,
+participant-private historical acquisition after catalog advancement, exact
+multi-release cache and requested-screen compilation cases, malformed and
+duplicate navigation rejection, zero-network QML Back/Entry/history behavior,
+screen-bound gameplay replay, and the clean-clone Door Legends Lobby ↔
+Chronicle pilot. The QML production-root fixture contains 47 passing cases.
+
 See [Development and validation](development-and-validation.md) for the full
 gate and failure routing.
 
@@ -622,7 +687,11 @@ gate and failure routing.
 9. Ticket 034 binds exact admitted releases to eligible sessions, prepares the
    trusted mounted render plan, launches it inside the platform shell, and
    returns declared actions through durable server authorization.
-10. Later tickets publish the Provider SDK, add explicitly labeled
+10. Ticket 035 retains exact historical marketplace evidence, acquires an old
+   session pin without consulting current selection, mounts exact releases side
+   by side, and adds signed host-local multi-screen navigation with screen-bound
+   action authorization.
+11. Later tickets publish the Provider SDK, add explicitly labeled
    operator-custom cartridge trust, prove the server-module isolation model,
    and only then implement module administration and typed hooks.
 
@@ -652,4 +721,5 @@ decisions and monotonic policy versions.
 | Marketplace synchronization and server admission | `marketplace.rs`, `marketplace_egress.rs`, `marketplace_sync.rs`, `cartridge_catalog.rs`; migration `0019`; administrator CLI and authenticated catalog route; Ticket 032 | Canonical signature hostile corpus; real TLS root/redirect/size tests; PostgreSQL replay/race/rollback/lifecycle tests; exact API and CLI fixtures; recovery rehearsal; security and authority review |
 | Player acquisition, cache, and mounts | `acquisition.rs`; `cartridge_distribution.rs`; `crates/client-cartridge-runtime`; `CartridgeController.qml`; migration `0020`; launcher/package scripts; Ticket 033 | Exact-selection/no-fallback PostgreSQL tests; hostile acquisition corpus; descriptor-relative permission/race tests; independent-key substitution denial; catalog-only QML compatibility; reproducible native package and cleanup smoke |
 | Session pinning, trusted launch, and cartridge actions | `session_cartridges.rs`; migration `0021`; `crates/client-cartridge-runtime/src/render.rs`; `service.rs`; `GameController.qml`; `GameplayScreen.qml`; Ticket 034 | Immutable pin and admission tests; hostile origin/mount/lifecycle/action corpus; renderer/QML harness; clean-clone Door Legends authority pilot; canonical diff gate |
+| Historical session acquisition and signed-screen navigation | retained evidence in `cartridge_catalog.rs`; `cartridge_distribution.rs::acquire_session_exact`; migration `0022`; client runtime remote/cache/render/service modules; navigation validator/renderer; `GameController.qml`; Door Legends cartridge v2; Ticket 035 | Snapshot replay/omission immutability; participant privacy and catalog-independent exact acquisition; key/binding/lifecycle substitution denial; multi-release mounts; malformed/duplicate navigation; zero-network QML navigation/history; screen-bound gameplay and exact replay; clean-clone historical Door Legends pilot |
 | Remaining owner-operated extension direction | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; roadmap | Custom-content provenance; provider/module separation; extension isolation, lifecycle, audit, and operator-responsibility review |

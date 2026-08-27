@@ -2,8 +2,8 @@
 
 Status: stable identity/discovery, isolated flagship-client profiles,
 marketplace-vetted catalog administration, and exact player cartridge
-acquisition/cache/mounting plus live-session trusted cartridge rendering are
-implemented. The direction is accepted by
+acquisition/cache/multi-release mounting plus historical session recovery and
+live-session trusted multi-screen cartridge rendering are implemented. The direction is accepted by
 [`ADR-0003`](../architecture/adr-0003-owner-operated-server-and-extension-boundary.md);
 operator-custom content and module administration remain follow-up work.
 
@@ -75,6 +75,9 @@ paths, and signed lifecycle policy. The command verifies production release
 and SDK conformance before staging accepted bytes. PostgreSQL publishes the
 reviewed inventory atomically only after all entries succeed; a failed or
 downgraded snapshot cannot partially replace the prior catalog.
+The same serialized publish transaction retains normalized immutable snapshot
+and release evidence for future session recovery. Replay may fill an absent
+matching record but cannot rewrite existing signed bytes or key material.
 
 Synchronization is not admission. `omarchygs-admin cartridges` displays the
 reviewed inventory and effective state. `omarchygs-admin catalog-apply` uses an
@@ -100,11 +103,13 @@ Distribution is opt-in server startup state. Set
 `OGS_MARKETPLACE_PUBLIC_KEY` and `OGS_CARTRIDGE_STORE_ROOT` together to the same
 reviewed public key and pre-provisioned secure store used for synchronization.
 If neither is set, the server remains metadata-only and does not advertise or
-register the acquisition route. Supplying only one fails startup. Marketplace
+register either acquisition route. Supplying only one fails startup. Marketplace
 origin and TLS-root inputs remain operator-command requirements and are not
 used as player download destinations.
 
-An enabled server advertises `games.cartridge-acquisition.v1` and serves
+An enabled server advertises `games.cartridge-acquisition.v1`,
+`games.session-cartridge.v1`, and
+`games.session-cartridge-acquisition.v1`. The current catalog route serves
 canonical, bounded acquisition envelopes only for an authenticated request
 whose game key, digest, current admission revision, retained signed snapshot,
 configured authority, database inventory, and immutable store all agree. The
@@ -114,13 +119,22 @@ server admission. It contains no URL, local path, credential, operator command,
 or executable content. Lifecycle denial and any evidence mismatch fail closed
 without choosing another version.
 
+The participant session route instead selects only the immutable release and
+admission revision already pinned to that session. It does not consult current
+catalog selection. The pin must have retained signed snapshot/release evidence,
+the requester must own a participating persona, the immutable bytes must still
+be available and compatible, and current signed active-session policy must
+allow use. Foreign, absent, unbound, or denied sessions share the same response.
+
 The packaged player runs a per-launch loopback Rust companion. It independently
 rechecks discovery, the initial catalog selection, every signed acquisition
 claim, SDK/host compatibility, and the final catalog selection before staging
 content. Before doing so, it requires the envelope's complete marketplace key
 to equal a client-controlled key provisioned independently from the selected
-community server. Content is shared by digest, but read-only mount records are
-scoped to the server's immutable UUID and retain that trusted-key fingerprint.
+community server. Content is shared by digest, but up to 128 read-only exact
+mount records are scoped to the server's immutable UUID and retain that
+trusted-key fingerprint, game, archive digest, and admission revision.
+Historical and current releases therefore coexist without one mutable game pointer.
 Install and update require an explicit player action; a failed attempt
 preserves the old mount. Removal changes only the local profile mount and
 retains remote data and immutable shared bytes.
@@ -136,12 +150,18 @@ and admission revision. The pin is immutable and does not follow later catalog
 changes. A player can render it only when the selected canonical origin, server
 UUID, client-controlled marketplace key, exact profile mount, digest, revision,
 cached publisher identity, and signed active-session policy agree. The native
-companion compiles the signed entry screen and exposes only a bounded inert plan
-plus ephemeral digest assets to trusted QML. Every declared action returns to
-this OmarchyGS server, which participant-authorizes and durably admits the exact
-signed action before invoking the session's existing compiled or provider
-authority. A missing historical mount is not downloaded automatically, and v1
-does not yet provide multi-screen cartridge navigation.
+companion compiles an exact requested signed screen and exposes only a bounded
+inert plan, accepted current/entry/navigation metadata, and ephemeral digest
+assets to trusted QML. A missing historical mount is never downloaded silently;
+the player must use the explicit pinned-install control, after which the
+companion rechecks that the session binding did not change.
+
+Trusted QML keeps a sixteen-entry screen history and handles approved
+`navigate.<screen>` Buttons locally with Back and Entry controls. Navigation
+makes no server or provider request. Every real action returns with the accepted
+screen to this OmarchyGS server, which participant-authorizes and durably admits
+the exact signed current-screen action before invoking the session's existing
+compiled or provider authority.
 
 ## Custom cartridges and code
 

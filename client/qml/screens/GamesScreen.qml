@@ -119,7 +119,7 @@ Item {
                     Layout.preferredHeight: 126
                     tone: modelData.marketplace.lifecycle_status === "deprecated"
                           ? "warning" : "info"
-                    highlighted: cartridgeController.mountFor(modelData.game_key) !== null
+                    highlighted: cartridgeController.isMountedExact(modelData)
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -187,7 +187,7 @@ Item {
                                 enabled: !cartridgeController.busy
                                          && cartridgeController.helperAvailable
                                          && cartridgeController.marketplaceTrusted
-                                         && cartridgeController.mountFor(modelData.game_key) !== null
+                                         && cartridgeController.isMountedExact(modelData)
                                 onClicked: cartridgeController.remove(modelData)
                             }
                         }

@@ -11,7 +11,7 @@ use omarchygs_game_cartridge::{
 use sqlx::{FromRow, PgPool, types::Json};
 use uuid::Uuid;
 
-use crate::marketplace_sync::LocalCatalogConfig;
+use crate::{cartridge_catalog::SNAPSHOT_ADVISORY_LOCK, marketplace_sync::LocalCatalogConfig};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DistributionError {
@@ -127,6 +127,82 @@ pub async fn acquire_exact(
     .await
     .map_err(|_| DistributionError::Internal)?
     .ok_or(DistributionError::Denied)?;
+    build_acquisition(runtime, row, LifecycleUse::NewLaunch)
+}
+
+/// Build one participant-authorized acquisition from the exact immutable
+/// cartridge presentation pinned to a session. Current catalog selection is
+/// deliberately not a release selector for this historical path.
+pub async fn acquire_session_exact(
+    pool: &PgPool,
+    runtime: &CartridgeDistributionRuntime,
+    actor_id: Uuid,
+    game_session_id: Uuid,
+) -> Result<Vec<u8>, DistributionError> {
+    if actor_id.is_nil() || game_session_id.is_nil() {
+        return Err(DistributionError::InvalidInput);
+    }
+    let mut transaction = pool
+        .begin()
+        .await
+        .map_err(|_| DistributionError::Internal)?;
+    sqlx::query("SELECT pg_advisory_xact_lock_shared($1)")
+        .bind(SNAPSHOT_ADVISORY_LOCK)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|_| DistributionError::Internal)?;
+    let row = sqlx::query_as::<_, AcquisitionRow>(
+        r#"
+        SELECT identity.id AS server_id,
+               release.game_key,
+               release.publisher_id,
+               release.publisher_key,
+               release.rules_version,
+               release.cartridge_version,
+               release.archive_sha256,
+               release.signed_identity_sha256,
+               release.signed_policy,
+               presentation.admission_revision,
+               snapshot.signed_snapshot,
+               snapshot.marketplace_key
+        FROM game_session_cartridge_presentations AS presentation
+        JOIN game_sessions AS session
+          ON session.id = presentation.game_session_id
+        JOIN game_session_participants AS participant
+          ON participant.game_session_id = session.id
+         AND participant.persona_id = $1
+        JOIN marketplace_releases AS release
+          ON release.id = presentation.marketplace_release_id
+        JOIN marketplace_release_acquisition_evidence AS evidence
+          ON evidence.marketplace_release_id = release.id
+        JOIN marketplace_snapshot_acquisition_evidence AS snapshot
+          ON snapshot.snapshot_sha256 = evidence.snapshot_sha256
+        JOIN server_identity AS identity
+          ON identity.singleton
+        WHERE session.id = $2
+          AND release.imported
+          AND release.compatible
+        FOR SHARE OF session, participant, release, evidence, snapshot, identity
+        "#,
+    )
+    .bind(actor_id)
+    .bind(game_session_id)
+    .fetch_optional(&mut *transaction)
+    .await
+    .map_err(|_| DistributionError::Internal)?
+    .ok_or(DistributionError::Denied)?;
+    transaction
+        .commit()
+        .await
+        .map_err(|_| DistributionError::Internal)?;
+    build_acquisition(runtime, row, LifecycleUse::ActiveSession)
+}
+
+fn build_acquisition(
+    runtime: &CartridgeDistributionRuntime,
+    row: AcquisitionRow,
+    use_kind: LifecycleUse,
+) -> Result<Vec<u8>, DistributionError> {
     let database_key = row.marketplace_key.ok_or(DistributionError::Denied)?.0;
     if database_key != runtime.marketplace_key {
         return Err(DistributionError::Denied);
@@ -138,7 +214,7 @@ pub async fn acquire_exact(
         &row.archive_sha256,
         &row.publisher_key.0,
         &policy_bytes,
-        LifecycleUse::NewLaunch,
+        use_kind,
     )?;
     let admission = AcquisitionServerAdmission {
         server_id: row.server_id.to_string(),

@@ -23,6 +23,8 @@ exact compatibility document:
     "games.cartridge-acquisition.v1",
     "games.cartridge-catalog.v1",
     "games.challenges.v1",
+    "games.session-cartridge-acquisition.v1",
+    "games.session-cartridge.v1",
     "games.sessions.v1",
     "identity.personas.v1",
     "social.connections.v1",
@@ -34,9 +36,10 @@ exact compatibility document:
 }
 ```
 
-`games.cartridge-acquisition.v1` is present only when the server has a complete
-reviewed cartridge-distribution configuration. Metadata-only servers omit it
-and do not register the acquisition route.
+`games.cartridge-acquisition.v1`, `games.session-cartridge.v1`, and
+`games.session-cartridge-acquisition.v1` are present only when the server has a
+complete reviewed cartridge-distribution configuration. Metadata-only servers
+omit all three and do not register either acquisition route.
 
 The UUID is generated once by migration `0018`, is immutable in ordinary
 database operation, and survives PostgreSQL dump/restore. The public name is
@@ -902,6 +905,34 @@ Absent, stale, denied, mismatched, or no-longer-effective exact releases return
 invalid authentication returns `invalid_session`; database or encoding failure
 returns 500 `internal_error`.
 
+## Acquire an exact cartridge pinned to a session
+
+`GET /v1/personas/{persona_id}/game-sessions/{game_session_id}/cartridge-acquisition`
+
+This route exists only while `games.session-cartridge-acquisition.v1` is
+advertised. It requires a valid device-session Bearer that owns `persona_id`,
+and that persona must participate in the requested session. Success returns the
+same canonical `omarchygs.cartridge-acquisition/v1` document as the current
+catalog route, with `Cache-Control: no-store`.
+
+The release is selected only by the session's immutable presentation pin and
+its retained signed marketplace snapshot/release evidence. Today's server
+catalog selection is deliberately not consulted and cannot substitute another
+digest. Current signed active-session policy still applies: retained historical
+provenance proves origin and unchanged bytes, not present authorization.
+
+The native companion reads the participant-visible session before acquisition,
+derives the exact expected server admission, verifies the acquisition with its
+client-controlled marketplace key, then reads the session again before
+publishing the exact mount. A changed pin, server, lifecycle decision, digest,
+revision, or evidence fails closed.
+
+Malformed persona or session identity returns 422
+`cartridge_acquisition_invalid_input`. Absent, foreign, unbound, unavailable,
+or lifecycle-denied sessions return 404 `cartridge_acquisition_denied` without
+distinguishing the cause. Missing or invalid authentication returns
+`invalid_session`; database or encoding failure returns 500 `internal_error`.
+
 ## List games
 
 `GET /v1/games`
@@ -1031,13 +1062,13 @@ currently admitted release and returns this bounded participant-visible shape:
 ```json
 {
   "format": "omarchygs.session-cartridge/v1",
-  "publisher_id": "thoughtless-labs",
+  "publisher_id": "ignibyte",
   "game_key": "door-legends",
   "rules_version": 1,
-  "cartridge_version": 1,
+  "cartridge_version": 2,
   "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "signed_identity_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-  "admission_revision": 3,
+  "admission_revision": 4,
   "lifecycle_status": "active",
   "active_session_policy": "continue"
 }
@@ -1280,14 +1311,16 @@ and rollbacks append no event. All command responses carry
 
 This 32 KiB participant-private route is the only gameplay path for an action
 emitted by a trusted cartridge plan. It rejects unknown fields and accepts only
-the selected session's current revision, exact pinned archive digest, declared
-action, object payload, and a session-wide idempotency UUID:
+the selected session's current revision, exact pinned archive digest, accepted
+signed screen, declared gameplay action, object payload, and a session-wide
+idempotency UUID:
 
 ```json
 {
   "idempotency_key": "8f5d8f1d-48df-4f5a-b6e7-ad26eb30ae88",
   "expected_revision": 0,
   "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "screen_id": "chronicle",
   "action": "enter",
   "payload": {}
 }
@@ -1296,14 +1329,25 @@ action, object payload, and a session-wide idempotency UUID:
 The server owner-scopes the acting persona, requires participation in the exact
 bound session, verifies current revision and digest, re-resolves the signed
 release under active-session policy, and validates the action against the
-signed entry screen. Button actions accept exactly `{}`; Grid actions accept
+exact signed `screen_id`. New clients always send this field. Its omission is a
+compatibility path that means only the signed entry screen for older clients;
+every new durable admission records an explicit screen. Button actions accept
+exactly `{}`; Grid actions accept
 only bounded integer `column` and `row` from the signed grid. The host—not QML
 or the cartridge—translates that intent into the session's existing
 `platform_compiled` or `registered_provider` command.
 
+`navigate.<screen_id>` is reserved for trusted local presentation navigation
+and is never accepted as gameplay. The verified cartridge must require
+`presentation.navigation.v1`; each such action has an empty payload, names an
+existing signed target, and is emitted by one unique Button. The companion
+returns the current screen, entry screen, and accepted mapping alongside the
+unchanged `omarchygs.render-plan/v1`; trusted QML may navigate cyclic screens
+without a server or provider request.
+
 Authorization is durably recorded before compiled execution or provider I/O.
 An exact retry reuses the admitted host command even if the release is later
-suspended or revoked; a changed actor, revision, digest, action, or payload is
+suspended or revoked; a changed actor, revision, digest, screen, action, or payload is
 an idempotency conflict, and a fresh post-transition action is denied. Success
 returns the existing command receipt plus the confirmed pinned digest:
 

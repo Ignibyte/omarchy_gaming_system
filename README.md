@@ -273,8 +273,10 @@ choose recovery after a later valid snapshot.
 
 When `OGS_MARKETPLACE_PUBLIC_KEY` and `OGS_CARTRIDGE_STORE_ROOT` are both
 present at server startup, discovery advertises exact acquisition support and
-the authenticated acquisition route serves only the selected digest from the
-retained signed snapshot and immutable store. Partial distribution
+the authenticated current route serves only the selected digest from the
+retained signed snapshot and immutable store. The participant session route can
+instead serve the exact immutable pin through retained historical evidence
+without consulting today's selection. Partial distribution
 configuration fails startup; no alternate release is substituted.
 
 The client package verifies that exact server admission, marketplace snapshot,
@@ -283,17 +285,18 @@ and attestation through its loopback Rust companion. Marketplace verification
 uses a client-controlled public key provisioned independently from the selected
 server; a response-supplied replacement key is rejected. Verified bytes enter a
 shared content-addressed cache, while read-only mount records remain isolated
-by server UUID. Installation and update are explicit, failures retain the old
-mount, and removal deletes only the selected profile mount—not remote state or
-shared immutable bytes. Eligible new sessions pin one exact admitted release;
-the companion resolves only the matching origin/UUID profile mount, compiles
-the signed entry screen into a bounded render plan, and serves digest assets
-through an ephemeral loopback capability. Trusted QML presents that plan and
-sends declared actions back to the selected server, which reauthorizes the
-participant and signed action contract before using the session's existing
-compiled or registered-provider authority. Door Legends is the first complete
-portable playable; absent historical-mount acquisition and multi-screen
-cartridge navigation remain later work.
+by server UUID and exact game/digest/admission revision. Installation and update
+are explicit, failures retain all prior mounts, and exact removal deletes only
+the named profile mount—not remote state or shared immutable bytes. Eligible new
+sessions pin one exact admitted release. If its mount is absent later, a
+participant can explicitly install that old pin; the companion verifies the
+session before and after acquisition. It resolves only the matching
+origin/UUID/exact-release mount, compiles the requested signed screen into a
+bounded render plan, and serves digest assets through an ephemeral loopback
+capability. Trusted QML validates the screen/navigation map, keeps bounded
+Back/Entry history locally, and sends only screen-bound non-navigation actions
+back to the selected server. Door Legends cartridge v2 proves cyclic Lobby and
+Chronicle navigation plus real provider gameplay from either screen.
 
 See [owner-operated servers](docs/operators/owner-operated-servers.md) and
 [operator safety and platform recovery](docs/operators/operator-safety-and-recovery.md)

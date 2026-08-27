@@ -216,23 +216,31 @@ the first identity HTTP surfaces:
   Lifecycle suspension, removal, or incompatibility fails closed without
   choosing another version. When the optional distribution runtime has its
   exact public key and secure-store root, discovery advertises the authenticated
-  exact acquisition route. That route composes retained signed snapshot
-  evidence with the immutable release and self-verifies the canonical response.
+  current and historical exact acquisition routes plus session-presentation
+  capabilities. The current route requires today's selected release; the
+  participant route resolves only the immutable session pin through normalized
+  retained signed snapshot/release evidence. Both apply current lifecycle
+  authority and self-verify the canonical response.
   The packaged loopback Rust companion requires a locally provisioned
   client-controlled marketplace public key, rejects any server-envelope key
   substitution, and independently verifies initial/final catalog admission
   plus every marketplace, publisher, lifecycle, SDK, and byte claim before
-  atomically staging shared content and a server-UUID-scoped read-only mount.
-  Each mount retains the trusted-key fingerprint. The QML Games screen exposes
+  atomically staging shared content and an exact server-UUID-scoped read-only mount.
+  Each profile can retain up to 128 game/digest/admission-revision mounts, each
+  with the trusted-key fingerprint. The QML Games screen exposes
   explicit install, update, and local removal. Eligible new compiled or
   registered-provider sessions pin one exact current release and admission
   revision in an immutable presentation row. The native companion resolves only
-  the matching canonical origin/UUID mount under client-controlled trust,
-  compiles the signed entry screen into an inert plan, and exposes bounded
-  digest assets through an ephemeral loopback capability. Trusted QML
-  independently validates the plan; declared actions return to the server for
-  participant authorization, signed-contract validation, durable admission,
-  and dispatch through the session's existing sole gameplay authority.
+  the matching canonical origin/UUID mount under client-controlled trust. A
+  missing mount is explicit and can be installed from the immutable pin only by
+  a participant; the companion checks the session before and after acquisition.
+  It compiles the requested signed screen into an inert plan and exposes bounded
+  digest assets through an ephemeral loopback capability. Trusted QML validates
+  exact screen/navigation metadata, keeps bounded Back/Entry history locally,
+  and never sends reserved navigation actions as gameplay. Declared gameplay
+  actions include the accepted screen and return to the server for participant
+  authorization, signed current-screen validation, durable admission, and
+  dispatch through the session's existing sole gameplay authority.
 - durable two-person challenges pin one exact game key/version between a
   connected, unblocked, different-account persona pair. A challenger-scoped
   UUID makes creation retry-safe, a partial uniqueness constraint prevents an
@@ -337,8 +345,9 @@ rendered by trusted OmarchyGS QML components. The v1 verifier, conformance SDK,
 descriptor-relative store, render-plan compiler, first-party separate-repository
 proof, guarded marketplace sync, reviewed server inventory, local catalog
 control, metadata-only player catalog, independently trusted client
-acquisition/mounting, immutable session presentation pins, and trusted launch
-exist. Signal Siege rules remain compiled into the trusted server for the
+acquisition/multi-release mounting, immutable session presentation pins,
+historical pin recovery, trusted multi-screen launch, and screen-bound action
+admission exist. Signal Siege rules remain compiled into the trusted server for the
 private alpha. The registered Door Legends pilot is the first portable
 playable and owns server-side gameplay only through the separately authenticated
 broker boundary. Raw
@@ -348,8 +357,8 @@ and direct database access remain outside the boundary.
 [ADR-0003](adr-0003-owner-operated-server-and-extension-boundary.md) extends
 that direction to owner-operated communities. A vetted marketplace can publish
 exact signed releases, and each server operator now chooses what to synchronize
-and independently admit. Players can acquire/cache the selected server's inert
-cartridges for exact mounted rendering when a session pins the same release. A
+and independently admit. Players can acquire/cache current selected cartridges
+or explicitly recover an exact old session pin for trusted mounted rendering. A
 future Provider SDK packages the brokered backend contract; a separate future module base supplies typed,
 capability-scoped server hooks only after an isolation spike. Operator-custom
 server content must be visibly distinct from vetted content and remains

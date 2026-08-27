@@ -64,6 +64,7 @@ pub fn core_host_profile() -> HostProfile {
             "presentation.button.v1".to_owned(),
             "presentation.image.v1".to_owned(),
             "presentation.meter.v1".to_owned(),
+            "presentation.navigation.v1".to_owned(),
             "presentation.status.v1".to_owned(),
             "presentation.terminal.v1".to_owned(),
         ]),

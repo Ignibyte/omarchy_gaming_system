@@ -482,6 +482,8 @@ struct CartridgeActionRequest {
     idempotency_key: String,
     expected_revision: i64,
     archive_sha256: String,
+    #[serde(default)]
+    screen_id: Option<String>,
     action: String,
     payload: serde_json::Value,
 }
@@ -703,7 +705,7 @@ pub(crate) fn router_with_runtimes(
         .route("/v1/personas/{persona_id}/sync", get(list_sync_events))
         .route("/v1/personas/{persona_id}/sync/live", get(open_sync_socket))
         .layer(middleware::map_response(inbox_no_store));
-    let game_routes = Router::new()
+    let mut game_routes = Router::new()
         .route(
             "/v1/personas/{persona_id}/game-sessions",
             get(list_game_sessions)
@@ -729,8 +731,14 @@ pub(crate) fn router_with_runtimes(
         .route(
             "/v1/personas/{persona_id}/achievements",
             get(list_provider_achievements),
-        )
-        .layer(middleware::map_response(inbox_no_store));
+        );
+    if cartridge_distribution.is_some() {
+        game_routes = game_routes.route(
+            "/v1/personas/{persona_id}/game-sessions/{game_session_id}/cartridge-acquisition",
+            get(acquire_session_cartridge),
+        );
+    }
+    let game_routes = game_routes.layer(middleware::map_response(inbox_no_store));
     let challenge_routes = Router::new()
         .route(
             "/v1/personas/{persona_id}/game-challenges",
@@ -1469,6 +1477,34 @@ async fn acquire_cartridge(
     ))
 }
 
+async fn acquire_session_cartridge(
+    State(state): State<AppState>,
+    Path((persona_id, game_session_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    let actor_id = games::authenticate_owned_persona(&state.pool, token, &persona_id)
+        .await
+        .map_err(ApiError::Game)?;
+    let session_id = Uuid::try_parse(&game_session_id)
+        .map_err(|_| ApiError::Distribution(DistributionError::InvalidInput))?;
+    let runtime = state
+        .cartridge_distribution
+        .as_ref()
+        .ok_or(ApiError::Distribution(DistributionError::Denied))?;
+    let document =
+        cartridge_distribution::acquire_session_exact(&state.pool, runtime, actor_id, session_id)
+            .await
+            .map_err(ApiError::Distribution)?;
+    Ok(no_store(
+        (
+            [(CONTENT_TYPE, HeaderValue::from_static("application/json"))],
+            document,
+        )
+            .into_response(),
+    ))
+}
+
 async fn list_game_sessions(
     State(state): State<AppState>,
     Path(persona_id): Path<String>,
@@ -1662,6 +1698,7 @@ async fn apply_cartridge_action(
         idempotency_key,
         request.expected_revision,
         &request.archive_sha256,
+        request.screen_id.as_deref(),
         &request.action,
         &request.payload,
     )

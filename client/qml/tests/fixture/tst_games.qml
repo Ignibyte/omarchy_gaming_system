@@ -378,8 +378,8 @@ TestCase {
 
     function test_session_cartridge_plan_and_action_are_exactly_bound() {
         const controller = applicationWindow.gameController
-        controller.helperEndpoint = "http://127.0.0.1:32123"
-        controller.helperCredential = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        controller.helperEndpoint = fixtureConfig.server_url
+        controller.helperCredential = "C".repeat(43)
         controller.marketplaceTrusted = true
         activate(object("homeGamesButton"))
         tryCompare(controller, "loadState", "ready", 5000)
@@ -389,73 +389,84 @@ TestCase {
         session.provider_release_id = "55555555-5555-4555-8555-555555555555"
         session.availability = "ready"
         session.state = {
+            "chronicle_label": "Read the chronicle",
             "welcome": "Welcome to Door Legends. One choice opens the way.",
             "status": "A weathered brass door waits in the dark.",
-            "enter_label": "Enter the brass door"
+            "enter_label": "Enter the brass door",
+            "lobby_label": "Return to the lobby"
         }
         session.presentation = {
             "format": "omarchygs.session-cartridge/v1",
             "publisher_id": "ignibyte",
             "game_key": "door-legends",
             "rules_version": 1,
-            "cartridge_version": 1,
+            "cartridge_version": 2,
             "archive_sha256": "a".repeat(64),
             "signed_identity_sha256": "b".repeat(64),
-            "admission_revision": 1,
+            "admission_revision": 3,
             "lifecycle_status": "active",
             "active_session_policy": "continue"
         }
         verify(controller._validSession(session))
         controller.selectedSession = session
-        verify(controller._helperApi.configure(controller.helperEndpoint).ok)
-        controller._helperGeneration = 77
-        const plan = {
-            "format": "omarchygs.render-plan/v1",
-            "profile": "rich2d",
-            "state": "ready",
-            "state_message": "Ready",
-            "origin": {
-                "publisher_id": "ignibyte",
-                "game_key": "door-legends",
-                "cartridge_version": 1,
-                "archive_sha256": "a".repeat(64)
-            },
-            "title": "Door Legends",
-            "preferences": {
-                "scale": 1.0,
-                "high_contrast": false,
-                "reduced_motion": false,
-                "muted_audio": false
-            },
-            "nodes": [{
-                "kind": "button",
-                "id": "enter",
-                "label": "Enter the brass door",
-                "action": "enter",
-                "accessible_label": "Enter Door Legends"
-            }],
-            "requested_actions_are_unconfirmed": true
-        }
-        controller._handleHelperFinished(77, "cartridge_render", 200, JSON.stringify({
-            "plan": plan,
-            "asset_base_url": "http://127.0.0.1:32123/v1/render-assets/"
-                              + "C".repeat(43)
-        }), "")
+        controller.sessionController.showPlayerScreen("gameplay")
+        verify(controller._requestCartridgeRender())
+        tryCompare(controller, "cartridgeRenderState", "missing", 5000)
+        verify(controller.cartridgeInstallAvailable)
+        activate(object("installPinnedCartridgeButton"))
+        tryCompare(controller, "cartridgeRenderState", "ready", 5000)
         compare(controller.cartridgeRenderState, "ready")
         compare(controller.cartridgeRenderPlan.origin.archive_sha256,
                 session.presentation.archive_sha256)
+        compare(controller.cartridgeScreenId, "lobby")
+        compare(controller.cartridgeEntryScreenId, "lobby")
+        compare(controller.cartridgeNavigation.length, 1)
+        compare(controller.cartridgeNavigation[0].target_screen, "chronicle")
+
+        const playerGeneration = controller._expectedGeneration
+        verify(controller.activateCartridgeAction("navigate.chronicle", {}))
+        tryCompare(controller, "cartridgeScreenId", "chronicle", 5000)
+        compare(controller._expectedGeneration, playerGeneration)
+        compare(controller.cartridgeHistory.length, 1)
+        verify(controller.cartridgeCanGoBack)
+        verify(controller.backCartridgeScreen())
+        tryCompare(controller, "cartridgeScreenId", "lobby", 5000)
+        compare(controller.cartridgeHistory.length, 0)
+
+        verify(controller.activateCartridgeAction("navigate.chronicle", {}))
+        tryCompare(controller, "cartridgeScreenId", "chronicle", 5000)
+        const bounded = []
+        for (let index = 0; index < 16; index++)
+            bounded.push("lobby")
+        controller.cartridgeHistory = bounded
+        verify(controller.activateCartridgeAction("navigate.lobby", {}))
+        tryCompare(controller, "cartridgeScreenId", "lobby", 5000)
+        compare(controller.cartridgeHistory.length, 16)
+        verify(controller.activateCartridgeAction("navigate.chronicle", {}))
+        tryCompare(controller, "cartridgeScreenId", "chronicle", 5000)
+        verify(controller.enterCartridgeScreen())
+        tryCompare(controller, "cartridgeScreenId", "lobby", 5000)
+        compare(controller.cartridgeHistory.length, 0)
+
+        verify(controller.activateCartridgeAction("navigate.chronicle", {}))
+        tryCompare(controller, "cartridgeScreenId", "chronicle", 5000)
+        verify(!controller.activateCartridgeAction("navigate.lobby", {"url": "https://invalid"}))
+        verify(!controller.activateCartridgeAction("navigate.unknown", {}))
 
         verify(controller.submitCartridgeAction("enter", {}))
         compare(controller._pendingMutation.operation, "player_cartridge_action")
         compare(controller._pendingMutation.path, "/v1/personas/" + controller.actor.id
                 + "/game-sessions/" + session.id + "/cartridge-actions")
-        compare(JSON.stringify(controller._pendingMutation.document), JSON.stringify({
-            "idempotency_key": controller._pendingMutation.document.idempotency_key,
-            "expected_revision": session.revision,
-            "archive_sha256": session.presentation.archive_sha256,
-            "action": "enter",
-            "payload": {}
-        }))
+        const actionDocument = controller._pendingMutation.document
+        compare(JSON.stringify(Object.keys(actionDocument).sort()), JSON.stringify([
+            "action", "archive_sha256", "expected_revision", "idempotency_key",
+            "payload", "screen_id"
+        ]))
+        compare(actionDocument.expected_revision, session.revision)
+        compare(actionDocument.archive_sha256, session.presentation.archive_sha256)
+        compare(actionDocument.screen_id, "chronicle")
+        compare(actionDocument.action, "enter")
+        compare(JSON.stringify(actionDocument.payload), "{}")
         controller.sessionController.cancelPlayerRequest()
         controller._expectedGeneration = 0
         controller._expectedOperation = ""

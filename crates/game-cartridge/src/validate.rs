@@ -16,6 +16,16 @@ use crate::{
     keys::valid_identifier,
 };
 
+/// Reserved inert host-navigation action prefix. The suffix is an exact signed
+/// screen identifier; it is never a URL, provider command, or gameplay action.
+pub const NAVIGATION_ACTION_PREFIX: &str = "navigate.";
+
+/// Return the exact signed target encoded by a host-navigation action.
+pub fn navigation_target(action: &str) -> Option<&str> {
+    let target = action.strip_prefix(NAVIGATION_ACTION_PREFIX)?;
+    (!target.is_empty() && valid_identifier(target)).then_some(target)
+}
+
 /// Validate an untrusted action request against the exact signed entry-screen
 /// emitter contract. Cartridges remain inert data: callers receive no general
 /// expression, script, filesystem, credential, or network execution path.
@@ -24,24 +34,38 @@ pub fn validate_entry_screen_action(
     action: &str,
     payload: &serde_json::Value,
 ) -> Result<()> {
-    validate_action_contract(
-        cartridge.presentation(),
+    validate_screen_action(
+        cartridge,
         &cartridge.manifest().entry_screen,
         action,
         payload,
     )
 }
 
-fn validate_action_contract(
-    presentation: &Presentation,
-    entry_screen_id: &str,
+/// Validate an untrusted gameplay action against one exact signed screen.
+/// Reserved navigation actions are host-local and are always rejected here.
+pub fn validate_screen_action(
+    cartridge: &VerifiedCartridge,
+    screen_id: &str,
     action: &str,
     payload: &serde_json::Value,
 ) -> Result<()> {
-    let entry_screen = presentation
+    if action.starts_with(NAVIGATION_ACTION_PREFIX) {
+        return Err(CartridgeError::InvalidPresentation);
+    }
+    validate_action_contract(cartridge.presentation(), screen_id, action, payload)
+}
+
+fn validate_action_contract(
+    presentation: &Presentation,
+    screen_id: &str,
+    action: &str,
+    payload: &serde_json::Value,
+) -> Result<()> {
+    let screen = presentation
         .screens
         .iter()
-        .find(|screen| screen.id == entry_screen_id)
+        .find(|screen| screen.id == screen_id)
         .ok_or(CartridgeError::InvalidPresentation)?;
     let definition = presentation
         .actions
@@ -53,7 +77,7 @@ fn validate_action_contract(
         .ok_or(CartridgeError::InvalidPresentation)?;
 
     let mut matching_emitter = false;
-    for node in &entry_screen.nodes {
+    for node in &screen.nodes {
         match node {
             PresentationNode::Button {
                 action: node_action,
@@ -393,18 +417,39 @@ pub(crate) fn validate_presentation(
     for action in &presentation.actions {
         validate_action(action, &mut action_ids)?;
     }
+    let navigation_capability = "presentation.navigation.v1";
+    let navigation_declared = required_capabilities
+        .binary_search_by(|candidate| candidate.as_str().cmp(navigation_capability))
+        .is_ok();
+    if presentation.actions.iter().any(|action| {
+        action.id.starts_with(NAVIGATION_ACTION_PREFIX) && navigation_target(&action.id).is_none()
+    }) {
+        return Err(CartridgeError::InvalidPresentation);
+    }
+    let navigation_actions = presentation
+        .actions
+        .iter()
+        .filter_map(|action| navigation_target(&action.id).map(|target| (action, target)))
+        .collect::<Vec<_>>();
+    if navigation_actions.iter().any(|(action, target)| {
+        !navigation_declared || !action.payload_fields.is_empty() || !screen_ids.contains(*target)
+    }) {
+        return Err(CartridgeError::InvalidPresentation);
+    }
     let action_contracts = presentation
         .actions
         .iter()
         .map(|action| (action.id.as_str(), action.payload_fields.as_slice()))
         .collect::<BTreeMap<_, _>>();
+    let mut emitted_navigation = BTreeSet::new();
     for screen in &presentation.screens {
         for node in &screen.nodes {
             match node {
                 PresentationNode::Grid { action, .. }
-                    if action_contracts.get(action.as_str()).is_none_or(|fields| {
-                        !fields.iter().map(String::as_str).eq(["column", "row"])
-                    }) =>
+                    if navigation_target(action).is_some()
+                        || action_contracts.get(action.as_str()).is_none_or(|fields| {
+                            !fields.iter().map(String::as_str).eq(["column", "row"])
+                        }) =>
                 {
                     return Err(CartridgeError::InvalidPresentation);
                 }
@@ -415,9 +460,21 @@ pub(crate) fn validate_presentation(
                 {
                     return Err(CartridgeError::InvalidPresentation);
                 }
+                PresentationNode::Button { action, .. }
+                    if navigation_target(action).is_some()
+                        && !emitted_navigation.insert(action.as_str()) =>
+                {
+                    return Err(CartridgeError::InvalidPresentation);
+                }
                 _ => {}
             }
         }
+    }
+    if navigation_actions
+        .iter()
+        .any(|(action, _)| !emitted_navigation.contains(action.id.as_str()))
+    {
+        return Err(CartridgeError::InvalidPresentation);
     }
     Ok(())
 }
@@ -1061,7 +1118,7 @@ mod action_tests {
                 crate::Screen {
                     id: "entry".to_owned(),
                     title: "Entry".to_owned(),
-                    view_schema: "schemas/entry.json".to_owned(),
+                    view_schema: "schemas/entry.schema.json".to_owned(),
                     nodes: vec![
                         PresentationNode::Button {
                             id: "enter-button".to_owned(),
@@ -1082,7 +1139,7 @@ mod action_tests {
                 crate::Screen {
                     id: "later".to_owned(),
                     title: "Later".to_owned(),
-                    view_schema: "schemas/later.json".to_owned(),
+                    view_schema: "schemas/later.schema.json".to_owned(),
                     nodes: vec![PresentationNode::Button {
                         id: "later-button".to_owned(),
                         label_binding: "label".to_owned(),
@@ -1133,5 +1190,128 @@ mod action_tests {
                 validate_action_contract(&presentation, "entry", rejected.0, &rejected.1).is_err()
             );
         }
+    }
+
+    #[test]
+    fn navigation_is_button_only_exact_bounded_and_not_gameplay() {
+        let mut presentation = presentation();
+        presentation.screens[0]
+            .nodes
+            .push(PresentationNode::Button {
+                id: "later-navigation".to_owned(),
+                label_binding: "later_label".to_owned(),
+                action: "navigate.later".to_owned(),
+                accessible_label: "Open later screen".to_owned(),
+            });
+        presentation.screens[1]
+            .nodes
+            .push(PresentationNode::Button {
+                id: "entry-navigation".to_owned(),
+                label_binding: "entry_label".to_owned(),
+                action: "navigate.entry".to_owned(),
+                accessible_label: "Return to entry".to_owned(),
+            });
+        presentation.actions.extend([
+            ActionDefinition {
+                id: "navigate.entry".to_owned(),
+                payload_fields: vec![],
+            },
+            ActionDefinition {
+                id: "navigate.later".to_owned(),
+                payload_fields: vec![],
+            },
+        ]);
+        let capabilities = vec![
+            "presentation.button.v1".to_owned(),
+            "presentation.grid.v1".to_owned(),
+            "presentation.navigation.v1".to_owned(),
+        ];
+        let schemas = vec![
+            "schemas/entry.schema.json".to_owned(),
+            "schemas/later.schema.json".to_owned(),
+        ];
+        assert!(
+            validate_presentation(&presentation, "entry", &capabilities, &[], &schemas, &[],)
+                .is_ok(),
+            "bounded navigation cycles are valid host presentation"
+        );
+        assert_eq!(navigation_target("navigate.later"), Some("later"));
+        assert!(
+            validate_action_contract(&presentation, "entry", "later", &json!({})).is_err(),
+            "an action emitted only on another screen must not cross screens"
+        );
+
+        let mut payload = presentation.clone();
+        payload
+            .actions
+            .iter_mut()
+            .find(|action| action.id == "navigate.later")
+            .unwrap()
+            .payload_fields
+            .push("url".to_owned());
+        assert!(
+            validate_presentation(&payload, "entry", &capabilities, &[], &schemas, &[]).is_err()
+        );
+
+        let without_capability = capabilities[..2].to_vec();
+        assert!(
+            validate_presentation(
+                &presentation,
+                "entry",
+                &without_capability,
+                &[],
+                &schemas,
+                &[],
+            )
+            .is_err()
+        );
+
+        let mut unknown = presentation.clone();
+        unknown.actions.push(ActionDefinition {
+            id: "navigate.missing".to_owned(),
+            payload_fields: vec![],
+        });
+        unknown.screens[0].nodes.push(PresentationNode::Button {
+            id: "missing-navigation".to_owned(),
+            label_binding: "missing_label".to_owned(),
+            action: "navigate.missing".to_owned(),
+            accessible_label: "Missing".to_owned(),
+        });
+        assert!(
+            validate_presentation(&unknown, "entry", &capabilities, &[], &schemas, &[]).is_err()
+        );
+
+        let mut duplicate = presentation.clone();
+        duplicate.screens[0].nodes.push(PresentationNode::Button {
+            id: "duplicate-navigation".to_owned(),
+            label_binding: "duplicate_label".to_owned(),
+            action: "navigate.later".to_owned(),
+            accessible_label: "Duplicate".to_owned(),
+        });
+        assert!(
+            validate_presentation(&duplicate, "entry", &capabilities, &[], &schemas, &[]).is_err()
+        );
+
+        let mut grid = presentation.clone();
+        if let PresentationNode::Grid { action, .. } = &mut grid.screens[0].nodes[1] {
+            *action = "navigate.later".to_owned();
+        }
+        assert!(validate_presentation(&grid, "entry", &capabilities, &[], &schemas, &[]).is_err());
+
+        let mut malformed = presentation.clone();
+        malformed.actions.push(ActionDefinition {
+            id: "navigate.".to_owned(),
+            payload_fields: vec![],
+        });
+        malformed.screens[0].nodes.push(PresentationNode::Button {
+            id: "malformed-navigation".to_owned(),
+            label_binding: "malformed_label".to_owned(),
+            action: "navigate.".to_owned(),
+            accessible_label: "Malformed".to_owned(),
+        });
+        assert!(
+            validate_presentation(&malformed, "entry", &capabilities, &[], &schemas, &[]).is_err(),
+            "the entire reserved navigation namespace must fail closed"
+        );
     }
 }

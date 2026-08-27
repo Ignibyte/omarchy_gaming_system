@@ -101,9 +101,7 @@ QtObject {
                 || !acquisitionSupported || isMountedExact(release))
             return false
         errorText = ""
-        statusText = mountFor(release.game_key) === null
-                ? "Installing exact signed cartridge..."
-                : "Updating exact signed cartridge..."
+        statusText = "Installing exact signed cartridge..."
         loadState = "loading"
         _helperOperation = "cartridge_install"
         _helperGeneration = helperApi.request(_helperOperation, "POST", "/v1/acquisitions", {
@@ -118,7 +116,7 @@ QtObject {
     }
 
     function remove(release) {
-        const mount = mountFor(release.game_key)
+        const mount = mountForExact(release)
         if (!_readyForMutation(release) || !helperAvailable || mount === null)
             return false
         errorText = ""
@@ -128,7 +126,8 @@ QtObject {
         _helperGeneration = helperApi.request(_helperOperation, "POST", "/v1/removals", {
             "server_id": _authority.server_id,
             "game_key": mount.game_key,
-            "archive_sha256": mount.archive_sha256
+            "archive_sha256": mount.archive_sha256,
+            "admission_revision": mount.admission_revision
         }, true)
         return _helperGeneration !== 0
     }
@@ -142,16 +141,26 @@ QtObject {
     }
 
     function isMountedExact(release) {
-        const mount = mountFor(release.game_key)
-        return mount !== null
-                && mount.archive_sha256 === release.archive_sha256
-                && mount.admission_revision === release.server_admission.revision
+        return mountForExact(release) !== null
+    }
+
+    function mountForExact(release) {
+        if (!_validRelease(release))
+            return null
+        for (let index = 0; index < mounts.length; index++) {
+            const mount = mounts[index]
+            if (mount.game_key === release.game_key
+                    && mount.archive_sha256 === release.archive_sha256
+                    && mount.admission_revision === release.server_admission.revision)
+                return mount
+        }
+        return null
     }
 
     function actionLabel(release) {
         if (isMountedExact(release))
             return "MOUNTED"
-        return mountFor(release.game_key) === null ? "INSTALL" : "UPDATE"
+        return "INSTALL"
     }
 
     function _readyForMutation(release) {

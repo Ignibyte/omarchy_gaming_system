@@ -246,6 +246,16 @@ pub async fn publish_snapshot(
         == SnapshotPreflight::Replay
     {
         retain_replayed_snapshot_evidence(&mut transaction, key, digest, signed_snapshot).await?;
+        let release_ids = release_ids_for_payload(&mut transaction, payload).await?;
+        retain_release_acquisition_evidence(
+            &mut transaction,
+            key,
+            payload.snapshot_version,
+            digest,
+            signed_snapshot,
+            &release_ids,
+        )
+        .await?;
         transaction
             .commit()
             .await
@@ -253,6 +263,7 @@ pub async fn publish_snapshot(
         return Ok(sync_receipt(payload, digest, releases, true));
     }
 
+    let mut release_ids = Vec::with_capacity(releases.len());
     for release in releases {
         let policy_version =
             i64::try_from(release.policy.policy_version).map_err(|_| CatalogError::InvalidInput)?;
@@ -321,10 +332,18 @@ pub async fn publish_snapshot(
         .fetch_optional(&mut *transaction)
         .await
         .map_err(|_| CatalogError::Internal)?;
-        if inserted.is_none() {
-            return Err(CatalogError::Conflict);
-        }
+        release_ids.push(inserted.ok_or(CatalogError::Conflict)?);
     }
+
+    retain_release_acquisition_evidence(
+        &mut transaction,
+        key,
+        payload.snapshot_version,
+        digest,
+        signed_snapshot,
+        &release_ids,
+    )
+    .await?;
 
     sqlx::query(
         r#"
@@ -388,6 +407,16 @@ pub async fn retain_snapshot_evidence(
         return Err(CatalogError::Conflict);
     }
     retain_replayed_snapshot_evidence(&mut transaction, key, digest, signed_snapshot).await?;
+    let release_ids = release_ids_for_payload(&mut transaction, payload).await?;
+    retain_release_acquisition_evidence(
+        &mut transaction,
+        key,
+        payload.snapshot_version,
+        digest,
+        signed_snapshot,
+        &release_ids,
+    )
+    .await?;
     transaction
         .commit()
         .await
@@ -951,6 +980,130 @@ async fn retain_replayed_snapshot_evidence(
     .await
     .map_err(|_| CatalogError::Internal)?;
     if result.rows_affected() == 1 {
+        Ok(())
+    } else {
+        Err(CatalogError::Conflict)
+    }
+}
+
+async fn release_ids_for_payload(
+    transaction: &mut Transaction<'_, Postgres>,
+    payload: &MarketplaceSnapshotPayload,
+) -> Result<Vec<Uuid>, CatalogError> {
+    let digests = payload
+        .releases
+        .iter()
+        .map(|release| release.archive_sha256.clone())
+        .collect::<Vec<_>>();
+    let ids = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        SELECT id
+        FROM marketplace_releases
+        WHERE archive_sha256 = ANY($1)
+        ORDER BY archive_sha256
+        "#,
+    )
+    .bind(&digests)
+    .fetch_all(&mut **transaction)
+    .await
+    .map_err(|_| CatalogError::Internal)?;
+    if ids.len() != digests.len() {
+        Err(CatalogError::Conflict)
+    } else {
+        Ok(ids)
+    }
+}
+
+async fn retain_release_acquisition_evidence(
+    transaction: &mut Transaction<'_, Postgres>,
+    key: &CatalogPublicKey,
+    snapshot_version: u64,
+    digest: &str,
+    signed_snapshot: &[u8],
+    release_ids: &[Uuid],
+) -> Result<(), CatalogError> {
+    if release_ids.is_empty() {
+        return Ok(());
+    }
+    let existing = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*)
+        FROM marketplace_release_acquisition_evidence
+        WHERE marketplace_release_id = ANY($1)
+        "#,
+    )
+    .bind(release_ids)
+    .fetch_one(&mut **transaction)
+    .await
+    .map_err(|_| CatalogError::Internal)?;
+    if usize::try_from(existing).map_err(|_| CatalogError::Internal)? == release_ids.len() {
+        return Ok(());
+    }
+    let snapshot_version =
+        i64::try_from(snapshot_version).map_err(|_| CatalogError::InvalidInput)?;
+    sqlx::query(
+        r#"
+        INSERT INTO marketplace_snapshot_acquisition_evidence (
+            snapshot_sha256, snapshot_version, marketplace_key, signed_snapshot
+        )
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (snapshot_sha256) DO NOTHING
+        "#,
+    )
+    .bind(digest)
+    .bind(snapshot_version)
+    .bind(Json(key))
+    .bind(signed_snapshot)
+    .execute(&mut **transaction)
+    .await
+    .map_err(|_| CatalogError::Internal)?;
+    let exact = sqlx::query_scalar::<_, bool>(
+        r#"
+        SELECT snapshot_version = $2
+           AND marketplace_key = $3
+           AND signed_snapshot = $4
+        FROM marketplace_snapshot_acquisition_evidence
+        WHERE snapshot_sha256 = $1
+        "#,
+    )
+    .bind(digest)
+    .bind(snapshot_version)
+    .bind(Json(key))
+    .bind(signed_snapshot)
+    .fetch_optional(&mut **transaction)
+    .await
+    .map_err(|_| CatalogError::Internal)?
+    .unwrap_or(false);
+    if !exact {
+        return Err(CatalogError::Conflict);
+    }
+    sqlx::query(
+        r#"
+        INSERT INTO marketplace_release_acquisition_evidence (
+            marketplace_release_id, snapshot_sha256
+        )
+        SELECT release_id, $2
+        FROM UNNEST($1::uuid[]) AS release_ids(release_id)
+        ON CONFLICT (marketplace_release_id) DO NOTHING
+        "#,
+    )
+    .bind(release_ids)
+    .bind(digest)
+    .execute(&mut **transaction)
+    .await
+    .map_err(|_| CatalogError::Internal)?;
+    let retained = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*)
+        FROM marketplace_release_acquisition_evidence
+        WHERE marketplace_release_id = ANY($1)
+        "#,
+    )
+    .bind(release_ids)
+    .fetch_one(&mut **transaction)
+    .await
+    .map_err(|_| CatalogError::Internal)?;
+    if usize::try_from(retained).map_err(|_| CatalogError::Internal)? == release_ids.len() {
         Ok(())
     } else {
         Err(CatalogError::Conflict)

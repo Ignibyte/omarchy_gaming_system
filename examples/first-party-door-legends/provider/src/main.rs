@@ -627,13 +627,17 @@ fn build_response(
 fn view_for(session: &SessionRow) -> Value {
     if session.room == "sunlit_gate" {
         json!({
+            "chronicle_label": "Read the chronicle",
             "enter_label": "Play again later",
+            "lobby_label": "Return to the lobby",
             "status": "You escaped through the sunlit gate.",
             "welcome": "Door Legends remembers your first escape."
         })
     } else {
         json!({
+            "chronicle_label": "Read the chronicle",
             "enter_label": "Enter the brass door",
+            "lobby_label": "Return to the lobby",
             "status": "A weathered brass door waits in the dark.",
             "welcome": "Welcome to Door Legends. One choice opens the way."
         })

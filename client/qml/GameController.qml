@@ -20,6 +20,17 @@ QtObject {
     property var cartridgeRenderPlan: null
     property string cartridgeAssetRoot: ""
     property string cartridgeRenderState: "idle"
+    property string cartridgeScreenId: ""
+    property string cartridgeEntryScreenId: ""
+    property var cartridgeNavigation: []
+    property var cartridgeHistory: []
+    readonly property bool cartridgeInstallAvailable: cartridgeRenderState === "missing"
+                                                        && _sessionAcquisitionSupported()
+    readonly property bool cartridgeCanGoBack: cartridgeRenderState === "ready"
+                                                && cartridgeHistory.length > 0
+    readonly property bool cartridgeCanGoEntry: cartridgeRenderState === "ready"
+                                                 && cartridgeEntryScreenId !== ""
+                                                 && cartridgeScreenId !== cartridgeEntryScreenId
     property var presentation: ({
         "supported": false,
         "title": "",
@@ -46,6 +57,11 @@ QtObject {
     property bool _appendChallenges: false
     property var _pendingMutation: null
     property int _helperGeneration: 0
+    property string _helperOperation: ""
+    property string _cartridgeScope: ""
+    property string _requestedCartridgeScreen: ""
+    property bool _entryFallbackAttempted: false
+    property bool _legacyEntryRender: false
 
     property ApiClient _helperApi: ApiClient {
         id: helperApi
@@ -76,6 +92,7 @@ QtObject {
         _appendChallenges = false
         _pendingMutation = null
         _helperGeneration = 0
+        _helperOperation = ""
         statusText = ""
         errorText = ""
         loadState = "idle"
@@ -193,6 +210,7 @@ QtObject {
         _expectedGeneration = 0
         _expectedOperation = ""
         _helperGeneration = 0
+        _helperOperation = ""
         _pendingMutation = null
         _clearSelectedSession()
         errorText = ""
@@ -217,6 +235,88 @@ QtObject {
         }, "Sending " + selectedAction.toUpperCase() + " command...")
     }
 
+    function activateCartridgeAction(action, payload) {
+        const selectedAction = String(action)
+        if (selectedAction.startsWith("navigate."))
+            return navigateCartridge(selectedAction, payload)
+        return submitCartridgeAction(selectedAction, payload)
+    }
+
+    function navigateCartridge(action, payload) {
+        if (busy || cartridgeRenderState !== "ready" || cartridgeScreenId === ""
+                || !payload || typeof payload !== "object" || Array.isArray(payload)
+                || Object.keys(payload).length !== 0)
+            return false
+        let target = ""
+        for (let index = 0; index < cartridgeNavigation.length; index++) {
+            if (cartridgeNavigation[index].action === action) {
+                target = cartridgeNavigation[index].target_screen
+                break
+            }
+        }
+        if (target === "")
+            return false
+        let nextHistory = cartridgeHistory.concat([cartridgeScreenId])
+        if (nextHistory.length > 16)
+            nextHistory = nextHistory.slice(nextHistory.length - 16)
+        if (!_requestCartridgeRender(target, false))
+            return false
+        cartridgeHistory = nextHistory
+        return true
+    }
+
+    function backCartridgeScreen() {
+        if (!cartridgeCanGoBack || busy)
+            return false
+        const target = cartridgeHistory[cartridgeHistory.length - 1]
+        if (!_requestCartridgeRender(target, false))
+            return false
+        cartridgeHistory = cartridgeHistory.slice(0, cartridgeHistory.length - 1)
+        return true
+    }
+
+    function enterCartridgeScreen() {
+        if (!cartridgeCanGoEntry || busy)
+            return false
+        if (!_requestCartridgeRender(cartridgeEntryScreenId, false))
+            return false
+        cartridgeHistory = []
+        return true
+    }
+
+    function installPinnedCartridge() {
+        const session = selectedSession
+        const binding = session === null ? null : session.presentation
+        const authority = sessionController.trustedCartridgeAuthority()
+        if (busy || cartridgeRenderState !== "missing" || authority === null
+                || !_validSession(session) || !_validSessionPresentation(binding, session)
+                || !_sessionAcquisitionSupported() || helperEndpoint === ""
+                || helperCredential === "" || !marketplaceTrusted)
+            return false
+        const configured = helperApi.configure(helperEndpoint)
+        if (!configured.ok)
+            return false
+        helperApi.installBearer(helperCredential)
+        statusText = "Installing the session's exact signed cartridge..."
+        loadState = "loading"
+        cartridgeRenderState = "installing"
+        _helperOperation = "cartridge_session_install"
+        _helperGeneration = helperApi.request(_helperOperation, "POST", "/v1/session-acquisitions", {
+            "server_origin": authority.origin,
+            "server_id": authority.server_id,
+            "device_bearer": authority.device_bearer,
+            "persona_id": actor.id,
+            "game_session_id": session.id
+        }, true)
+        if (_helperGeneration === 0) {
+            _helperOperation = ""
+            cartridgeRenderState = "missing"
+            loadState = "ready"
+            return false
+        }
+        return true
+    }
+
     function submitCartridgeAction(action, payload) {
         const selectedAction = String(action)
         const session = selectedSession
@@ -225,6 +325,8 @@ QtObject {
                 || cartridgeRenderPlan === null || cartridgeRenderState !== "ready"
                 || session.status !== "active" || binding.active_session_policy !== "continue"
                 || !/^[a-z][a-z0-9._-]{0,95}$/.test(selectedAction)
+                || selectedAction.startsWith("navigate.")
+                || (cartridgeScreenId === "" && !_legacyEntryRender)
                 || !payload || typeof payload !== "object" || Array.isArray(payload))
             return false
         const document = {
@@ -234,6 +336,8 @@ QtObject {
             "action": selectedAction,
             "payload": payload
         }
+        if (!_legacyEntryRender)
+            document.screen_id = cartridgeScreenId
         if (JSON.stringify(document).length > 32768)
             return false
         return _startMutation("player_cartridge_action", "POST", _actorPath()
@@ -453,14 +557,24 @@ QtObject {
         }
     }
 
-    function _requestCartridgeRender() {
+    function _requestCartridgeRender(requestedScreen, entryFallback) {
         cartridgeRenderPlan = null
         cartridgeAssetRoot = ""
         cartridgeRenderState = "idle"
+        cartridgeNavigation = []
         const session = selectedSession
         if (!_validSession(session) || session.presentation === null)
             return false
         const binding = session.presentation
+        const scope = session.id + ":" + binding.archive_sha256 + ":"
+                + binding.admission_revision
+        if (_cartridgeScope !== scope) {
+            _cartridgeScope = scope
+            cartridgeScreenId = ""
+            cartridgeEntryScreenId = ""
+            cartridgeHistory = []
+            _legacyEntryRender = false
+        }
         if (binding.active_session_policy !== "continue") {
             cartridgeRenderState = binding.active_session_policy
             return false
@@ -477,10 +591,15 @@ QtObject {
             return false
         }
         helperApi.installBearer(helperCredential)
+        let screen = typeof requestedScreen === "string" ? requestedScreen : cartridgeScreenId
+        if (screen !== "" && !/^[a-z][a-z0-9._-]{0,95}$/.test(screen))
+            screen = ""
         statusText = "Compiling trusted cartridge presentation..."
         loadState = "loading"
         cartridgeRenderState = "loading"
-        _helperGeneration = helperApi.request("cartridge_render", "POST", "/v1/render-plans", {
+        _requestedCartridgeScreen = screen
+        _entryFallbackAttempted = entryFallback === true
+        const request = {
             "server_origin": authority.origin,
             "server_id": authority.server_id,
             "game_key": binding.game_key,
@@ -495,8 +614,14 @@ QtObject {
                 "reduced_motion": false,
                 "muted_audio": false
             }
-        }, true)
+        }
+        if (screen !== "")
+            request.screen_id = screen
+        _helperOperation = "cartridge_render"
+        _helperGeneration = helperApi.request(_helperOperation, "POST", "/v1/render-plans",
+                                              request, true)
         if (_helperGeneration === 0) {
+            _helperOperation = ""
             cartridgeRenderState = "error"
             return false
         }
@@ -504,24 +629,74 @@ QtObject {
     }
 
     function _handleHelperFinished(generation, operation, status, body, transportError) {
-        if (generation !== _helperGeneration || operation !== "cartridge_render")
+        if (generation !== _helperGeneration || operation !== _helperOperation)
             return
         _helperGeneration = 0
+        _helperOperation = ""
         if (transportError !== "") {
-            cartridgeRenderState = "error"
+            cartridgeRenderState = operation === "cartridge_session_install" ? "missing" : "error"
             loadState = "ready"
-            statusText = "Authoritative state loaded; trusted cartridge rendering is unavailable."
+            statusText = operation === "cartridge_session_install"
+                    ? "The pinned cartridge was not installed; authoritative state is unchanged."
+                    : "Authoritative state loaded; trusted cartridge rendering is unavailable."
+            errorText = transportError === "timeout" ? "The cartridge companion timed out."
+                      : "The cartridge companion could not complete the request."
             return
         }
         const parsed = _parseDocument(body)
+        if (operation === "cartridge_session_install") {
+            if (status !== 200 || !parsed.ok
+                    || !_validSessionMountResponse(parsed.document)) {
+                cartridgeRenderState = "missing"
+                loadState = "ready"
+                statusText = "The pinned cartridge was not installed; authoritative state is unchanged."
+                errorText = parsed.ok ? _helperError(_errorCode(parsed.document))
+                                      : "The companion response was not accepted."
+                return
+            }
+            statusText = "Exact session cartridge installed; compiling its signed entry screen..."
+            errorText = ""
+            if (!_requestCartridgeRender("", false)) {
+                cartridgeRenderState = "error"
+                loadState = "ready"
+            }
+            return
+        }
+        if (status === 404 && parsed.ok
+                && _errorCode(parsed.document) === "companion_mount_missing") {
+            cartridgeRenderState = "missing"
+            loadState = "ready"
+            statusText = "Authoritative state loaded; this session's exact cartridge is not installed."
+            errorText = ""
+            return
+        }
         if (status !== 200 || !parsed.ok || !_validRenderResponse(parsed.document)) {
+            if (_requestedCartridgeScreen !== "" && !_entryFallbackAttempted
+                    && _requestCartridgeRender("", true)) {
+                cartridgeHistory = []
+                statusText = "That signed screen is no longer available; returning to entry..."
+                return
+            }
             cartridgeRenderState = "error"
             loadState = "ready"
             statusText = "Authoritative state loaded; the cartridge render plan was rejected."
+            errorText = "The exact signed screen could not be compiled."
             return
         }
         cartridgeRenderPlan = parsed.document.plan
         cartridgeAssetRoot = parsed.document.asset_base_url
+        if (parsed.document.format === "omarchygs.session-cartridge-render/v2") {
+            cartridgeScreenId = parsed.document.screen_id
+            cartridgeEntryScreenId = parsed.document.entry_screen_id
+            cartridgeNavigation = parsed.document.navigation
+            _legacyEntryRender = false
+        } else {
+            cartridgeScreenId = ""
+            cartridgeEntryScreenId = ""
+            cartridgeNavigation = []
+            cartridgeHistory = []
+            _legacyEntryRender = true
+        }
         cartridgeRenderState = "ready"
         loadState = "ready"
         statusText = "Trusted cartridge presentation ready."
@@ -529,10 +704,39 @@ QtObject {
     }
 
     function _validRenderResponse(document) {
-        if (!_exactKeys(document, ["plan", "asset_base_url"])
-                || !document.plan || typeof document.plan !== "object"
+        if (!document || typeof document !== "object")
+            return false
+        const legacy = _exactKeys(document, ["plan", "asset_base_url"])
+        const current = _exactKeys(document, ["format", "screen_id", "entry_screen_id",
+                                               "navigation", "plan", "asset_base_url"])
+        let navigationActions = null
+        if (!legacy && !current)
+            return false
+        if (!document.plan || typeof document.plan !== "object"
                 || typeof document.asset_base_url !== "string")
             return false
+        if (current) {
+            if (document.format !== "omarchygs.session-cartridge-render/v2"
+                    || !/^[a-z][a-z0-9._-]{0,95}$/.test(document.screen_id)
+                    || !/^[a-z][a-z0-9._-]{0,95}$/.test(document.entry_screen_id)
+                    || (_requestedCartridgeScreen !== ""
+                        && document.screen_id !== _requestedCartridgeScreen)
+                    || (_requestedCartridgeScreen === ""
+                        && document.screen_id !== document.entry_screen_id)
+                    || !Array.isArray(document.navigation)
+                    || document.navigation.length > 512)
+                return false
+            navigationActions = ({})
+            for (let index = 0; index < document.navigation.length; index++) {
+                const navigation = document.navigation[index]
+                if (!_exactKeys(navigation, ["action", "target_screen"])
+                        || !/^[a-z][a-z0-9._-]{0,95}$/.test(navigation.target_screen)
+                        || navigation.action !== "navigate." + navigation.target_screen
+                        || navigationActions[navigation.action])
+                    return false
+                navigationActions[navigation.action] = true
+            }
+        }
         const binding = selectedSession.presentation
         const origin = document.plan.origin
         if (!origin || typeof origin !== "object"
@@ -543,10 +747,89 @@ QtObject {
                 || origin.cartridge_version !== binding.cartridge_version
                 || origin.archive_sha256 !== binding.archive_sha256)
             return false
+        if (current) {
+            if (!Array.isArray(document.plan.nodes))
+                return false
+            const emitted = ({})
+            for (let nodeIndex = 0; nodeIndex < document.plan.nodes.length; nodeIndex++) {
+                const node = document.plan.nodes[nodeIndex]
+                if (node && typeof node.action === "string"
+                        && node.action.startsWith("navigate.")) {
+                    if (node.kind !== "button" || emitted[node.action]
+                            || !Object.prototype.hasOwnProperty.call(navigationActions, node.action))
+                        return false
+                    emitted[node.action] = true
+                }
+            }
+            const actionNames = Object.keys(navigationActions)
+            for (let actionIndex = 0; actionIndex < actionNames.length; actionIndex++) {
+                if (!emitted[actionNames[actionIndex]])
+                    return false
+            }
+        }
         const configured = helperApi.baseUrl + "/v1/render-assets/"
         const capability = document.asset_base_url.startsWith(configured)
                 ? document.asset_base_url.slice(configured.length) : ""
         return /^[A-Za-z0-9_-]{43}$/.test(capability)
+    }
+
+    function _sessionAcquisitionSupported() {
+        const authority = sessionController.trustedCartridgeAuthority()
+        return authority !== null && authority.session_acquisition_supported === true
+                && helperEndpoint !== "" && helperCredential !== "" && marketplaceTrusted
+    }
+
+    function _validSessionMountResponse(document) {
+        if (!_exactKeys(document, ["mount"]) || !document.mount
+                || typeof document.mount !== "object")
+            return false
+        const mount = document.mount
+        const binding = selectedSession === null ? null : selectedSession.presentation
+        const authority = sessionController.trustedCartridgeAuthority()
+        if (binding === null || authority === null)
+            return false
+        const keys = ["format", "server_id", "server_origin", "game_key", "publisher_id",
+                      "rules_version", "cartridge_version", "display_name", "archive_sha256",
+                      "signed_identity_sha256", "marketplace_key_sha256", "marketplace_id",
+                      "marketplace_name", "reviewed_by", "review_summary", "snapshot_version",
+                      "policy_version", "lifecycle_status", "admission_revision"]
+        if (mount.warning !== undefined)
+            keys.push("warning")
+        const warningMatches = mount.lifecycle_status === "deprecated"
+                ? _boundedString(mount.warning, 512, 1) : mount.warning === undefined
+        return _exactKeys(mount, keys)
+                && mount.format === "omarchygs.client-cartridge-mount/v1"
+                && mount.server_id === authority.server_id
+                && mount.server_origin === authority.origin
+                && mount.game_key === binding.game_key
+                && mount.publisher_id === binding.publisher_id
+                && mount.rules_version === binding.rules_version
+                && mount.cartridge_version === binding.cartridge_version
+                && _boundedString(mount.display_name, 128, 1)
+                && mount.archive_sha256 === binding.archive_sha256
+                && mount.signed_identity_sha256 === binding.signed_identity_sha256
+                && /^[0-9a-f]{64}$/.test(mount.marketplace_key_sha256)
+                && /^[a-z][a-z0-9._-]{0,95}$/.test(mount.marketplace_id)
+                && _boundedString(mount.marketplace_name, 128, 1)
+                && /^[a-z][a-z0-9._-]{0,95}$/.test(mount.reviewed_by)
+                && _boundedString(mount.review_summary, 512, 1)
+                && Number.isSafeInteger(mount.snapshot_version) && mount.snapshot_version > 0
+                && Number.isSafeInteger(mount.policy_version) && mount.policy_version > 0
+                && ["active", "deprecated"].indexOf(mount.lifecycle_status) !== -1
+                && mount.admission_revision === binding.admission_revision
+                && warningMatches
+    }
+
+    function _helperError(code) {
+        const messages = {
+            "companion_admission_changed": "The session pin changed before installation completed. Refresh and retry.",
+            "companion_mount_missing": "The session's exact cartridge is not installed.",
+            "companion_server_unavailable": "The selected server could not complete the cartridge download.",
+            "companion_server_rejected": "The signed historical cartridge evidence was rejected.",
+            "companion_marketplace_untrusted": "Configure an independently trusted marketplace key before installing.",
+            "companion_cache_failure": "The private cartridge cache needs attention."
+        }
+        return messages[code] || "The local cartridge companion rejected the operation."
     }
 
     function _actionFailure(operation, document) {
@@ -694,6 +977,14 @@ QtObject {
         cartridgeRenderPlan = null
         cartridgeAssetRoot = ""
         cartridgeRenderState = "idle"
+        cartridgeScreenId = ""
+        cartridgeEntryScreenId = ""
+        cartridgeNavigation = []
+        cartridgeHistory = []
+        _cartridgeScope = ""
+        _requestedCartridgeScreen = ""
+        _entryFallbackAttempted = false
+        _legacyEntryRender = false
         presentation = {
             "supported": false,
             "title": "",

@@ -265,7 +265,9 @@ QtObject {
             "server_id": currentServer.server_id,
             "device_bearer": api.trustedBearer(),
             "acquisition_supported": currentServer.capabilities.indexOf(
-                                         "games.cartridge-acquisition.v1") !== -1
+                                         "games.cartridge-acquisition.v1") !== -1,
+            "session_acquisition_supported": currentServer.capabilities.indexOf(
+                    "games.session-cartridge-acquisition.v1") !== -1
         }
     }
 

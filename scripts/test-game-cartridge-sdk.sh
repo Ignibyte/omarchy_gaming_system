@@ -111,7 +111,7 @@ mkdir -m 700 -- "$ogs_temp/prepared-preview"
   "$ogs_temp/preferences.json" "$ogs_temp/prepared-preview" \
   >"$ogs_temp/preview.json"
 rg --fixed-strings '"asset_count":0' "$ogs_temp/preview.json" >/dev/null
-[[ "$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))["nodes"]))' "$ogs_temp/prepared-preview/render-plan.json")" == "3" ]]
+[[ "$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))["nodes"]))' "$ogs_temp/prepared-preview/render-plan.json")" == "4" ]]
 rg --fixed-strings '"game_key":"door-legends"' "$ogs_temp/prepared-preview/render-plan.json" >/dev/null
 
 if rg --fixed-strings -- "$ogs_root" \

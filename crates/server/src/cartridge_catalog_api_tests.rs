@@ -273,6 +273,99 @@ async fn exact_acquisition_is_authenticated_verified_and_current(pool: PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 #[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+async fn participant_acquires_the_historical_exact_session_pin_without_current_selection(
+    pool: PgPool,
+) {
+    let fixture = acquisition_fixture(&pool).await;
+    let token = create_session(&pool).await;
+    let persona = personas::create_persona(
+        &pool,
+        &token,
+        CreatePersonaInput {
+            handle: "historical_pin_player".to_owned(),
+            display_name: "Historical Pin Player".to_owned(),
+            bio: String::new(),
+            status_message: String::new(),
+        },
+    )
+    .await
+    .expect("participant persona should create");
+    let session_id = seed_cartridge_action_session(&pool, &fixture, persona.id).await;
+    sqlx::query(
+        r#"
+        UPDATE server_cartridge_catalogs
+        SET active_release_id = NULL,
+            admission_revision = admission_revision + 1,
+            updated_at = clock_timestamp()
+        WHERE game_key = 'door-legends'
+        "#,
+    )
+    .execute(&pool)
+    .await
+    .expect("current catalog selection should advance away from the pinned release");
+
+    let app = router_with_runtimes(
+        pool.clone(),
+        MfaCipher::test_cipher(),
+        SyncHub::new(),
+        GameRegistry::empty(),
+        None,
+        Some(fixture.runtime.clone()),
+        Arc::from("Historical Acquisition Test"),
+    );
+    let current_route = format!(
+        "/v1/cartridges/{}/{}/acquisition",
+        fixture.admission.game_key, fixture.admission.archive_sha256
+    );
+    assert_eq!(
+        get_uri(app.clone(), &current_route, Some(&token))
+            .await
+            .status,
+        StatusCode::NOT_FOUND,
+        "the old release must no longer be a current catalog selection"
+    );
+    let session_route = format!(
+        "/v1/personas/{}/game-sessions/{}/cartridge-acquisition",
+        persona.id, session_id
+    );
+    let unauthorized = get_uri(app.clone(), &session_route, None).await;
+    assert_eq!(unauthorized.status, StatusCode::UNAUTHORIZED);
+    assert_no_store(&unauthorized);
+    let response = get_uri(app, &session_route, Some(&token)).await;
+    assert_eq!(response.status, StatusCode::OK);
+    assert_no_store(&response);
+    let verified = verify_acquisition_bytes(
+        response.body.as_bytes(),
+        &fixture.admission,
+        &fixture.marketplace_public,
+        &supported_sdk_identity().expect("supported SDK should load"),
+        &rich_2d_host_profile(),
+    )
+    .expect("historical session acquisition should independently verify");
+    assert_eq!(
+        verified.release().payload().archive_sha256,
+        fixture.admission.archive_sha256
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM marketplace_release_acquisition_evidence",
+        )
+        .fetch_one(&pool)
+        .await
+        .expect("retained evidence count should read"),
+        1
+    );
+    assert!(
+        sqlx::query("DELETE FROM marketplace_snapshot_acquisition_evidence")
+            .execute(&pool)
+            .await
+            .is_err(),
+        "retained signed acquisition evidence must be immutable"
+    );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
 async fn cartridge_action_admission_is_exact_immutable_and_survives_later_revocation(pool: PgPool) {
     let fixture = acquisition_fixture(&pool).await;
     let token = create_session(&pool).await;
@@ -298,6 +391,7 @@ async fn cartridge_action_admission_is_exact_immutable_and_survives_later_revoca
         idempotency_key,
         0,
         &fixture.admission.archive_sha256,
+        Some("lobby"),
         "enter",
         &json!({}),
     )
@@ -305,6 +399,62 @@ async fn cartridge_action_admission_is_exact_immutable_and_survives_later_revoca
     .expect("active signed action should be admitted");
     assert_eq!(admitted.authority, "platform_compiled");
     assert_eq!(admitted.command, json!({"action": "enter"}));
+    let secondary_key = uuid::Uuid::new_v4();
+    let secondary = session_cartridges::admit_session_action(
+        &pool,
+        &fixture.runtime,
+        persona.id,
+        session_id,
+        secondary_key,
+        0,
+        &fixture.admission.archive_sha256,
+        Some("chronicle"),
+        "enter",
+        &json!({}),
+    )
+    .await
+    .expect("gameplay emitted by the signed secondary screen should be admitted");
+    assert_eq!(secondary, admitted);
+    assert_eq!(
+        session_cartridges::admit_session_action(
+            &pool,
+            &fixture.runtime,
+            persona.id,
+            session_id,
+            secondary_key,
+            0,
+            &fixture.admission.archive_sha256,
+            Some("lobby"),
+            "enter",
+            &json!({}),
+        )
+        .await,
+        Err(session_cartridges::SessionCartridgeError::IdempotencyConflict),
+        "a replay cannot move an admitted action across screens"
+    );
+    for (screen, action) in [
+        ("unknown", "enter"),
+        ("lobby", "navigate.chronicle"),
+        ("chronicle", "navigate.lobby"),
+    ] {
+        assert_eq!(
+            session_cartridges::admit_session_action(
+                &pool,
+                &fixture.runtime,
+                persona.id,
+                session_id,
+                uuid::Uuid::new_v4(),
+                0,
+                &fixture.admission.archive_sha256,
+                Some(screen),
+                action,
+                &json!({}),
+            )
+            .await,
+            Err(session_cartridges::SessionCartridgeError::Denied),
+            "unknown screens and host navigation must not enter gameplay"
+        );
+    }
     assert_eq!(
         sqlx::query_scalar::<_, i64>(
             "SELECT count(*) FROM game_session_cartridge_action_admissions WHERE game_session_id = $1",
@@ -313,7 +463,7 @@ async fn cartridge_action_admission_is_exact_immutable_and_survives_later_revoca
         .fetch_one(&pool)
         .await
         .expect("admission count should read"),
-        1
+        2
     );
     assert!(
         sqlx::query(
@@ -335,6 +485,7 @@ async fn cartridge_action_admission_is_exact_immutable_and_survives_later_revoca
         idempotency_key,
         0,
         &fixture.admission.archive_sha256,
+        Some("lobby"),
         "enter",
         &json!({}),
     )
@@ -350,6 +501,7 @@ async fn cartridge_action_admission_is_exact_immutable_and_survives_later_revoca
             idempotency_key,
             0,
             &fixture.admission.archive_sha256,
+            Some("lobby"),
             "inspect",
             &json!({}),
         )
@@ -365,6 +517,7 @@ async fn cartridge_action_admission_is_exact_immutable_and_survives_later_revoca
             uuid::Uuid::new_v4(),
             0,
             &fixture.admission.archive_sha256,
+            Some("lobby"),
             "enter",
             &json!({}),
         )
@@ -430,6 +583,7 @@ async fn snapshot_writer_wins_before_fresh_cartridge_action_admission(pool: PgPo
             uuid::Uuid::new_v4(),
             0,
             &digest,
+            Some("lobby"),
             "enter",
             &json!({}),
         )

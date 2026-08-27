@@ -15,10 +15,18 @@ sources:
     resource: repo://client/qml/Main.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
+  - id: openwiki-source-650bc3dc3906a3b07d2dc791
+    resource: repo://client/qml/screens/GameplayScreen.qml
   - id: openwiki-source-4f5334e859a4d83e2a196fcf
     resource: repo://client/qml/SocialController.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
+  - id: openwiki-source-152956378e80408d69d9dfb7
+    resource: repo://client/qml/tests/fixture/tst_games.qml
+  - id: openwiki-source-939b835e7d6c679aae8394e7
+    resource: repo://crates/client-cartridge-runtime/src/remote.rs
+  - id: openwiki-source-2c5e901f86bcbb656e1b9dfa
+    resource: repo://crates/game-cartridge/src/validate.rs
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
@@ -29,6 +37,10 @@ sources:
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-ba203ea2e600f294ab58ef02
     resource: repo://crates/server/src/bin/omarchygs-admin.rs
+  - id: openwiki-source-6e9cbe5bfa9c94fd24523bd3
+    resource: repo://crates/server/src/cartridge_catalog_api_tests.rs
+  - id: openwiki-source-5942cee1725f1a3f7bf01ec7
+    resource: repo://crates/server/src/cartridge_distribution.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
     resource: repo://crates/server/src/challenge_api_tests.rs
   - id: openwiki-source-a3892e0554790e3efc606fe1
@@ -57,6 +69,10 @@ sources:
     resource: repo://crates/server/src/provider_games.rs
   - id: openwiki-source-e4423ee4de83f38bd240bf8b
     resource: repo://crates/server/src/reports.rs
+  - id: openwiki-source-42fe6bf463fcb01dc5566e16
+    resource: repo://crates/server/src/server_discovery.rs
+  - id: openwiki-source-b7ac90b7d5ad368e8fd1cca3
+    resource: repo://crates/server/src/session_cartridges.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
   - id: openwiki-source-76060b846b9222af2c790243
@@ -89,9 +105,13 @@ sources:
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
+  - id: openwiki-source-6e903c05353a3393af0fb6c8
+    resource: repo://migrations/0022_historical_session_cartridge_acquisition.sql
   - id: openwiki-source-a5928e7ee39885995efdc170
     resource: repo://scripts/dev.sh
-generated: {by: "codex", at: "2026-08-27T04:04:27.382Z"}
+  - id: openwiki-source-31a4e9d026860da100c233f9
+    resource: repo://scripts/test-provider-authority-pilot.sh
+generated: {by: "codex", at: "2026-08-27T05:42:15.031Z"}
 ---
 
 # Runtime foundation
@@ -157,8 +177,10 @@ serialization, and the QML consumer work together.
 Protocol 1 publishes one lexically ordered set of currently implemented
 versioned capabilities. `games.cartridge-catalog.v1` is a base capability;
 `games.registered-provider.v1` appears only when the optional provider runtime
-exists, and `games.cartridge-acquisition.v1` appears only when the optional
-distribution runtime exists. A missing durable identity returns a
+exists. When the optional distribution runtime exists, discovery adds current
+exact cartridge acquisition, session presentation, and historical session
+acquisition capabilities together; otherwise none of those delivery claims is
+advertised. A missing durable identity returns a
 generic `503 server_discovery_unavailable` rather than database detail. This
 compatibility contract is separate from `/health`, which remains operational
 liveness.
@@ -383,8 +405,12 @@ acquisition capability, an available companion, and a marketplace public key
 trusted by the client. A mounted record is presentation inventory only and does
 not create a game session or execute cartridge-supplied code. Once a separately
 created session carries the exact immutable presentation binding, the game
-controller may ask that companion to compile the mounted signed entry screen;
-mount presence alone remains insufficient.
+controller may ask that companion to compile one exact mounted signed screen;
+mount presence alone remains insufficient. If that session's exact mount is
+missing, the Gameplay screen offers an explicit historical install only when
+the server capability, companion, helper credential, participant authority, and
+client-controlled marketplace key all agree. Profiles retain exact digest and
+admission-revision mounts side by side rather than one mutable game pointer.
 
 The native package launcher owns the companion lifecycle. It resolves an
 absolute regular non-symlink marketplace-key file from explicit environment,
@@ -429,8 +455,9 @@ and exact Signal Siege v1/v2 state documents must pass closed schemas,
 participant uniqueness/cardinality, actor-direction, lifecycle, and cross-field
 checks before presentation. A bound cartridge response additionally must match
 the selected canonical server origin/UUID, exact session presentation digest
-and admission revision, independently trusted local mount, and accepted render
-origin before it reaches the trusted surface.
+and admission revision, independently trusted local mount, accepted screen or
+entry fallback, navigation mapping, and render origin before it reaches the
+trusted surface.
 
 The Games and Challenges screens expose keyboard-first catalog, history,
 connection, and lifecycle controls. Gameplay maps a validated compiled Signal
@@ -438,8 +465,9 @@ Siege view model into its platform-owned surface or an eligible mounted session
 into the separately validated trusted cartridge surface. Signal Siege does not
 wrap state in `omarchygs.render-plan/v1` or claim cartridge provenance. The
 cartridge surface accepts only a companion-compiled inert plan, uses host-owned
-components, and returns every unconfirmed declared action through the selected
-OmarchyGS server.
+components, keeps at most sixteen Back/Entry history records locally, and
+returns every unconfirmed non-navigation gameplay action with its accepted
+screen through the selected OmarchyGS server.
 
 ## Persona connection and block flow
 
@@ -692,16 +720,27 @@ malformed input, unavailable rules, completed lifecycle, revision conflict,
 and later transaction failure leave state, receipt, and invalidations
 unchanged.
 
+When distribution is configured, authenticated
+`GET /v1/personas/{persona_id}/game-sessions/{game_session_id}/cartridge-acquisition`
+owner-scopes the persona and requires it to participate in the durable session.
+It resolves the immutable presentation through retained signed marketplace
+evidence rather than current catalog selection, applies current active-session
+lifecycle policy, self-verifies the exact acquisition document, and keeps
+foreign, absent, or unavailable sessions behind the same denial.
+
 The sibling
 `POST /v1/personas/{persona_id}/game-sessions/{game_session_id}/cartridge-actions`
 route accepts only an idempotency UUID, expected revision, pinned archive
-digest, declared action, and object payload. Before either existing command path
+digest, optional compatibility screen, declared action, and object
+payload. New clients always send the accepted exact screen; omission means only
+the signed entry screen for legacy compatibility. Before either existing command path
 runs, `session_cartridges` participant-authorizes the session, share-locks the
 marketplace lifecycle snapshot, verifies the exact cached signed release and
-entry-screen action/payload, translates the command in host code, and inserts
-one immutable action admission. An exact replay recovers the stored translated
-command even after a later lifecycle change; a changed identity conflicts and
-a fresh action after suspension or revocation is denied. The admission
+current-screen action/payload, rejects the reserved host-navigation namespace,
+translates the command in host code, and inserts one immutable screen-bound
+action admission. An exact replay recovers the stored translated command and
+screen identity even after a later lifecycle change; a changed identity
+conflicts and a fresh action after suspension or revocation is denied. The admission
 transaction ends before compiled execution or provider network I/O.
 
 ## Registered-provider game flow
@@ -854,6 +893,10 @@ Migration `0019` adds signed marketplace inventory and server admission;
 immutable one-per-session presentation pins, insertion-time exact
 catalog/session validation, immutable cartridge-action admissions, and bound
 session authority-identity protection.
+Migration `0022` adds immutable normalized snapshot/release acquisition
+evidence, requires that evidence for every future presentation pin, and binds
+every future action admission to an exact explicit screen while retaining
+legacy rows unchanged.
 Add later
 capabilities through domain modules and thin handlers rather than placing policy
 directly in SQL or transport code.
@@ -919,7 +962,7 @@ and collisions, typed inbox and minimal sync payloads, exact-version acceptance
 and seat order, terminal history and lazy expiry, pending limits, initializer
 and block rollback, production Signal Siege v2 alternation/completion, and
 one-winner terminal races. QML client changes first prove two public profiles
-survive separate writer and reader processes, then run through the 46-case
+survive separate writer and reader processes, then run through the 47-case
 fixture corpus and four live scenarios in `scripts/dev.sh`; those
 prove contrast, semantic headings and status, deterministic focus, reversible
 Tab traversal, Escape authority, minimum-width containment, strict hostile-
@@ -936,3 +979,10 @@ independent TLS process and database, protocol-only dependency, mixed catalog,
 exact start and command replay, expected-revision races, unknown-outcome
 reconciliation, callback authentication/deduplication/policy, participant
 privacy, lifecycle containment, restart, and separate provider backup/restore.
+
+Historical cartridge acquisition or navigation changes additionally use the
+immutable marketplace-evidence and participant-acquisition PostgreSQL cases,
+the cartridge validator and companion remote/cache/render suites, the QML
+missing-mount/navigation/history fixtures, and the clean-clone Door Legends
+catalog-advancement path. The proof must show that navigation emits no gameplay
+request and that real actions remain bound to the accepted signed screen.
