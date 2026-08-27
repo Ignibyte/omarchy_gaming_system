@@ -69,6 +69,9 @@ pub struct SecureResolution {
     activation: SecureActivationRecord,
     policy: CatalogPolicy,
     decision: LifecycleDecision,
+    archive_bytes: Vec<u8>,
+    conformance_bytes: Vec<u8>,
+    attestation_bytes: Vec<u8>,
 }
 
 impl SecureResolution {
@@ -86,6 +89,24 @@ impl SecureResolution {
 
     pub fn decision(&self) -> &LifecycleDecision {
         &self.decision
+    }
+
+    /// Exact immutable archive bytes reverified through the retained store
+    /// descriptor during this resolution.
+    pub fn archive_bytes(&self) -> &[u8] {
+        &self.archive_bytes
+    }
+
+    /// Exact conformance evidence reverified with the release during this
+    /// resolution.
+    pub fn conformance_bytes(&self) -> &[u8] {
+        &self.conformance_bytes
+    }
+
+    /// Exact publisher-signed release attestation reverified during this
+    /// resolution.
+    pub fn attestation_bytes(&self) -> &[u8] {
+        &self.attestation_bytes
     }
 }
 
@@ -351,6 +372,9 @@ mod platform {
                 activation,
                 policy,
                 decision,
+                archive_bytes: archive,
+                conformance_bytes: conformance,
+                attestation_bytes: attestation,
             })
         }
 

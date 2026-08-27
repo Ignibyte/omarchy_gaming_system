@@ -45,7 +45,7 @@ server-authoritative game runtime below.
 - [x] Keyboard-first connections and private inbox screens
 - [x] Keyboard-first challenge and gameplay screens
 - [x] End-to-end accessibility and visual polish across the complete player flow
-- [x] Native client-only Arch package, desktop launcher, exact payload
+- [x] Native player Arch package, desktop launcher, exact payload
   inspection, and extracted-package smoke on Omarchy
 - [x] Reporting, suspension, audit records, backups, and restore drill
 - [x] Invite-only registration, operator/tester runbook, and isolated
@@ -59,8 +59,12 @@ server-authoritative game runtime below.
   client profiles for multiple independent OmarchyGS communities
 - [x] Server-admin marketplace synchronization, review metadata, exact release
   import, catalog activation, lifecycle policy, and rollback controls
-- [ ] Player-facing acquisition, verification, content-addressed local cache,
+- [x] Player-facing acquisition, verification, content-addressed local cache,
   mounting, update, and removal of the selected server's signed cartridges
+- [ ] Public marketplace trust-key enrollment, authenticated rotation, and
+  reviewed package-channel distribution for player clients
+- [ ] Bind an exact mounted cartridge/render plan to an authoritative game
+  session and replace first-party platform-owned screens where appropriate
 - [ ] Operator-local signing/import for inert custom cartridges that bypass the
   marketplace while remaining visibly distinct from vetted releases
 - [ ] Server extension architecture spike comparing external-process RPC,

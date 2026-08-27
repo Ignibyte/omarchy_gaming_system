@@ -1,7 +1,8 @@
 use omarchygs_game_cartridge::{
     CatalogPolicy, CatalogPublicKey, CatalogStatus, HostProfile, LifecycleUse,
-    MarketplaceReleaseEntry, MarketplaceSnapshotPayload, NewLaunchDecision, PublisherPublicKey,
-    SecureCartridgeStore, SignedCatalogPolicy, lifecycle_decision,
+    MAX_MARKETPLACE_SNAPSHOT_BYTES, MarketplaceReleaseEntry, MarketplaceSnapshotPayload,
+    NewLaunchDecision, PublisherPublicKey, SecureCartridgeStore, SignedCatalogPolicy,
+    lifecycle_decision,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as _, Sha256};
@@ -225,9 +226,11 @@ pub async fn publish_snapshot(
     key: &CatalogPublicKey,
     payload: &MarketplaceSnapshotPayload,
     digest: &str,
+    signed_snapshot: &[u8],
     releases: &[ReviewedReleaseInput],
 ) -> Result<MarketplaceSyncReceipt, CatalogError> {
-    if !valid_sha256(digest) || releases.len() != payload.releases.len() {
+    if !valid_snapshot_evidence(digest, signed_snapshot) || releases.len() != payload.releases.len()
+    {
         return Err(CatalogError::InvalidInput);
     }
     let snapshot_version =
@@ -242,6 +245,7 @@ pub async fn publish_snapshot(
     if compare_snapshot_state(current.as_ref(), origin, key, payload, digest)?
         == SnapshotPreflight::Replay
     {
+        retain_replayed_snapshot_evidence(&mut transaction, key, digest, signed_snapshot).await?;
         transaction
             .commit()
             .await
@@ -327,13 +331,15 @@ pub async fn publish_snapshot(
         INSERT INTO marketplace_sync_state (
             singleton, marketplace_origin, authority_id, key_id,
             marketplace_name, snapshot_version, snapshot_sha256,
-            synchronized_at
+            signed_snapshot, marketplace_key, synchronized_at
         )
-        VALUES (TRUE, $1, $2, $3, $4, $5, $6, clock_timestamp())
+        VALUES (TRUE, $1, $2, $3, $4, $5, $6, $7, $8, clock_timestamp())
         ON CONFLICT (singleton) DO UPDATE SET
             marketplace_name = EXCLUDED.marketplace_name,
             snapshot_version = EXCLUDED.snapshot_version,
             snapshot_sha256 = EXCLUDED.snapshot_sha256,
+            signed_snapshot = EXCLUDED.signed_snapshot,
+            marketplace_key = EXCLUDED.marketplace_key,
             synchronized_at = EXCLUDED.synchronized_at
         "#,
     )
@@ -343,6 +349,8 @@ pub async fn publish_snapshot(
     .bind(&payload.marketplace_name)
     .bind(snapshot_version)
     .bind(digest)
+    .bind(signed_snapshot)
+    .bind(Json(key))
     .execute(&mut *transaction)
     .await
     .map_err(|_| CatalogError::Internal)?;
@@ -351,6 +359,39 @@ pub async fn publish_snapshot(
         .await
         .map_err(|_| CatalogError::Internal)?;
     Ok(sync_receipt(payload, digest, releases, false))
+}
+
+/// Retain the exact signed snapshot evidence when an upgrade synchronizes an
+/// already-current Ticket 032 snapshot. The evidence may be filled once but
+/// can never be replaced for the same version and digest.
+pub async fn retain_snapshot_evidence(
+    pool: &PgPool,
+    origin: &str,
+    key: &CatalogPublicKey,
+    payload: &MarketplaceSnapshotPayload,
+    digest: &str,
+    signed_snapshot: &[u8],
+) -> Result<(), CatalogError> {
+    if !valid_snapshot_evidence(digest, signed_snapshot) {
+        return Err(CatalogError::InvalidInput);
+    }
+    let mut transaction = pool.begin().await.map_err(|_| CatalogError::Internal)?;
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(SNAPSHOT_ADVISORY_LOCK)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|_| CatalogError::Internal)?;
+    let current = fetch_sync_state_for_update(&mut transaction).await?;
+    if compare_snapshot_state(current.as_ref(), origin, key, payload, digest)?
+        != SnapshotPreflight::Replay
+    {
+        return Err(CatalogError::Conflict);
+    }
+    retain_replayed_snapshot_evidence(&mut transaction, key, digest, signed_snapshot).await?;
+    transaction
+        .commit()
+        .await
+        .map_err(|_| CatalogError::Internal)
 }
 
 pub async fn list_inventory(pool: &PgPool) -> Result<CatalogInventory, CatalogError> {
@@ -872,6 +913,48 @@ fn valid_sha256(value: &str) -> bool {
         && value
             .bytes()
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+fn valid_snapshot_evidence(digest: &str, signed_snapshot: &[u8]) -> bool {
+    valid_sha256(digest)
+        && !signed_snapshot.is_empty()
+        && signed_snapshot.len() <= MAX_MARKETPLACE_SNAPSHOT_BYTES
+        && snapshot_sha256(signed_snapshot) == digest
+}
+
+async fn retain_replayed_snapshot_evidence(
+    transaction: &mut Transaction<'_, Postgres>,
+    key: &CatalogPublicKey,
+    digest: &str,
+    signed_snapshot: &[u8],
+) -> Result<(), CatalogError> {
+    let result = sqlx::query(
+        r#"
+        UPDATE marketplace_sync_state
+        SET signed_snapshot = $1,
+            marketplace_key = $2
+        WHERE singleton
+          AND snapshot_sha256 = $3
+          AND (
+                signed_snapshot IS NULL
+                OR (
+                    signed_snapshot = $1
+                    AND marketplace_key = $2
+                )
+              )
+        "#,
+    )
+    .bind(signed_snapshot)
+    .bind(Json(key))
+    .bind(digest)
+    .execute(&mut **transaction)
+    .await
+    .map_err(|_| CatalogError::Internal)?;
+    if result.rows_affected() == 1 {
+        Ok(())
+    } else {
+        Err(CatalogError::Conflict)
+    }
 }
 
 #[derive(FromRow)]

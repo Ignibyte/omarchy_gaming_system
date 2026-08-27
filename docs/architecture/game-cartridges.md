@@ -18,8 +18,12 @@ recovery; this design never authorizes loading third-party code.
 Ticket 032 implements the first marketplace-vetted server half: guarded signed
 snapshot synchronization, production release verification, descriptor-relative
 staging, atomic reviewed inventory, independent audited local admission, and an
-authenticated metadata-only cartridge catalog. Player acquisition, cache,
-mount, and launch integration remain a gated follow-up.
+authenticated metadata-only cartridge catalog. Ticket 033 retains the exact
+signed snapshot evidence, adds authenticated exact server distribution, and
+ships a loopback Rust client companion for independent acquisition verification,
+content-addressed cache staging, server-profile mounts, explicit update, and
+local removal. Binding a mounted render plan to an authoritative live session
+remains a gated follow-up.
 [`ADR-0003`](adr-0003-owner-operated-server-and-extension-boundary.md) now
 accepts the owner-operated server, server-curated marketplace, operator-custom
 trust, future Provider SDK, and separately gated server module/hook direction.
@@ -237,6 +241,38 @@ catalog selection is a distinct expected-state/idempotent transaction with an
 immutable audit receipt. Only a present, imported, compatible, locally selected
 `active` or `deprecated` release is effective; suspension, denial, snapshot
 removal, or incompatibility fails closed with no version fallback.
+
+Ticket 033 makes distribution an optional all-or-nothing server capability.
+The configured marketplace public key and secure-store root must both agree
+with the database's retained exact signed snapshot evidence; otherwise the
+route is absent or startup/acquisition fails closed. An authenticated request
+can name only the selected game key and exact archive digest. The server
+resolves that exact release under current lifecycle policy, emits a canonical
+bounded acquisition envelope, and self-verifies it. The envelope has no
+destination, URL, credential, executable, or alternate-release instruction.
+
+The player package owns the remote trust transition in a per-launch loopback
+Rust companion, not in QML. It requires the selected server's immutable UUID,
+canonical origin, device Bearer, exact digest, and admission revision; verifies
+discovery and the initial catalog; performs the bounded same-origin request
+without proxy, redirect, or decompression; requires the acquisition's complete
+marketplace key to equal a client-controlled key loaded before any request;
+verifies the retained marketplace snapshot, publisher release, policy,
+SDK/host compatibility, archive, conformance, and attestation; then re-reads
+the catalog to close the admission race. The marketplace key never comes from
+discovery, catalog metadata, QML, or the acquisition request. The credential
+is zeroized when possible and is never written to the cache.
+
+The per-user cache is private and descriptor-anchored. Immutable content is
+shared by digest, while mode-0400 canonical mount documents live under exact
+server UUID profiles and bind provenance, the client-trusted marketplace-key
+SHA-256 fingerprint, and admission revision. A profile whose fingerprint does
+not match the current client trust anchor fails closed on restart. Profile
+replacement uses exclusive cross-process locking, exclusive temporary files,
+sync, no-follow opens, and atomic rename. A failed install/update never replaces
+the prior mount; removal deletes only the exact local mount and deliberately
+retains shared content. QML receives only bounded catalog/mount facts and
+explicit operations; cartridge-supplied QML or networking remains impossible.
 The root and every fixed child must be owned by the opening process's effective
 user and cannot be writable by group or other. Each policy transition acquires
 an exclusive lock through a fresh descriptor-relative open of the retained

@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "crates/client-cartridge-runtime",
     "crates/game-cartridge",
     "crates/game-cartridge-renderer",
     "crates/game-provider",

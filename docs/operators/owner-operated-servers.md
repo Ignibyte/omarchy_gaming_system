@@ -1,10 +1,10 @@
 # Owner-operated OmarchyGS servers
 
-Status: stable identity/discovery, isolated flagship-client profiles, and the
-marketplace-vetted server catalog administration boundary are implemented. The
-direction is accepted by
+Status: stable identity/discovery, isolated flagship-client profiles,
+marketplace-vetted catalog administration, and exact player cartridge
+acquisition/cache/mounting are implemented. The direction is accepted by
 [`ADR-0003`](../architecture/adr-0003-owner-operated-server-and-extension-boundary.md);
-client cartridge acquisition, operator-custom content, and module
+operator-custom content, live-session cartridge rendering, and module
 administration remain follow-up work.
 
 ## Operating model
@@ -94,10 +94,47 @@ server's retained selection. Marketplace outage does not prevent use of the
 last valid database snapshot or local catalog changes, but operators cannot
 treat stale review state as a fresh sync.
 
-The current command stages server-side immutable bytes as evidence and future
-distribution input. It does not yet make the QML client download, cache, mount,
-or launch a cartridge. Those player-side steps remain a separate trust-boundary
-slice.
+## Player distribution and mounts
+
+Distribution is opt-in server startup state. Set
+`OGS_MARKETPLACE_PUBLIC_KEY` and `OGS_CARTRIDGE_STORE_ROOT` together to the same
+reviewed public key and pre-provisioned secure store used for synchronization.
+If neither is set, the server remains metadata-only and does not advertise or
+register the acquisition route. Supplying only one fails startup. Marketplace
+origin and TLS-root inputs remain operator-command requirements and are not
+used as player download destinations.
+
+An enabled server advertises `games.cartridge-acquisition.v1` and serves
+canonical, bounded acquisition envelopes only for an authenticated request
+whose game key, digest, current admission revision, retained signed snapshot,
+configured authority, database inventory, and immutable store all agree. The
+response contains the exact inert archive, conformance record, release
+attestation, signed marketplace snapshot, public marketplace key, and selected
+server admission. It contains no URL, local path, credential, operator command,
+or executable content. Lifecycle denial and any evidence mismatch fail closed
+without choosing another version.
+
+The packaged player runs a per-launch loopback Rust companion. It independently
+rechecks discovery, the initial catalog selection, every signed acquisition
+claim, SDK/host compatibility, and the final catalog selection before staging
+content. Before doing so, it requires the envelope's complete marketplace key
+to equal a client-controlled key provisioned independently from the selected
+community server. Content is shared by digest, but read-only mount records are
+scoped to the server's immutable UUID and retain that trusted-key fingerprint.
+Install and update require an explicit player action; a failed attempt
+preserves the old mount. Removal changes only the local profile mount and
+retains remote data and immutable shared bytes.
+
+Server operators must publish the reviewed marketplace public key through a
+channel independent from their own community server, such as the marketplace
+or a reviewed client-package channel. Players must not bootstrap marketplace
+trust from discovery, the catalog, or the acquisition response. Public
+enrollment and authenticated key rotation remain roadmap work.
+
+This lifecycle makes a selected cartridge visible and mounted, but it does not
+yet bind a render plan to a live server-authoritative game session. The current
+compiled game screens remain the playable surface until that separately
+reviewed launch/runtime slice is implemented.
 
 ## Custom cartridges and code
 

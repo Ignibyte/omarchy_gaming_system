@@ -1492,6 +1492,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "omarchygs-client-cartridge-runtime"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "base64 0.23.1",
+ "futures-util",
+ "omarchygs-game-cartridge",
+ "rand_core 0.6.4",
+ "reqwest",
+ "rustix",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tower",
+ "url",
+ "uuid",
+ "zeroize",
+]
+
+[[package]]
 name = "omarchygs-game-cartridge"
 version = "0.1.0"
 dependencies = [

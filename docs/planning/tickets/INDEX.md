@@ -4,14 +4,15 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `033`**
+- **Next ticket number: `034`**
 
 ## Open queue
 
-None.
+No open tickets.
 
 ## Closed
 
+- [`TICKET-033` — Player cartridge acquisition, cache, and mount lifecycle](closed/TICKET-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md)
 - [`TICKET-032` — Marketplace synchronization and server catalog control](closed/TICKET-032-marketplace-sync-and-server-catalog-control.md)
 - [`TICKET-031` — Stable server discovery and isolated client profiles](closed/TICKET-031-stable-server-discovery-and-isolated-client-profiles.md)
 - [`TICKET-030` — Invite-only registration and private-alpha readiness](closed/TICKET-030-invite-only-registration-and-private-alpha-readiness.md)

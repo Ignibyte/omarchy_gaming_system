@@ -6,7 +6,7 @@ use axum::{
     extract::{DefaultBodyLimit, Path, Query, State, WebSocketUpgrade},
     http::{
         HeaderMap, HeaderValue, StatusCode,
-        header::{AUTHORIZATION, CACHE_CONTROL, HOST, WWW_AUTHENTICATE},
+        header::{AUTHORIZATION, CACHE_CONTROL, CONTENT_TYPE, HOST, WWW_AUTHENTICATE},
     },
     middleware,
     response::{IntoResponse, Response},
@@ -43,6 +43,9 @@ use crate::server_discovery;
 use crate::sessions::{self, CreateSessionInput, DeviceSession, SessionCreation, SessionError};
 use crate::sync::{self, SyncError, SyncEvent, SyncEventKind, SyncHub};
 use omarchy_gaming_system_server::cartridge_catalog::{self, CatalogError, PlayerCartridgeRelease};
+use omarchy_gaming_system_server::cartridge_distribution::{
+    self, CartridgeDistributionRuntime, DistributionError,
+};
 
 const SYNC_SOCKET_MAX_CLIENT_BYTES: usize = 1024;
 
@@ -53,6 +56,7 @@ pub struct AppState {
     sync_hub: SyncHub,
     game_registry: GameRegistry,
     provider_runtime: Option<ProviderRuntime>,
+    cartridge_distribution: Option<CartridgeDistributionRuntime>,
     server_name: Arc<str>,
 }
 
@@ -539,6 +543,7 @@ enum ApiError {
     Connection(ConnectionError),
     Challenge(ChallengeError),
     Catalog(CatalogError),
+    Distribution(DistributionError),
     Inbox(InboxError),
     Game(GameError),
     Sync(SyncError),
@@ -600,12 +605,33 @@ pub(crate) fn router_with_server_name(
     )
 }
 
+#[cfg(test)]
 pub(crate) fn router_with_provider_runtime(
     pool: PgPool,
     mfa_cipher: MfaCipher,
     sync_hub: SyncHub,
     game_registry: GameRegistry,
     provider_runtime: Option<ProviderRuntime>,
+    server_name: Arc<str>,
+) -> Router {
+    router_with_runtimes(
+        pool,
+        mfa_cipher,
+        sync_hub,
+        game_registry,
+        provider_runtime,
+        None,
+        server_name,
+    )
+}
+
+pub(crate) fn router_with_runtimes(
+    pool: PgPool,
+    mfa_cipher: MfaCipher,
+    sync_hub: SyncHub,
+    game_registry: GameRegistry,
+    provider_runtime: Option<ProviderRuntime>,
+    cartridge_distribution: Option<CartridgeDistributionRuntime>,
     server_name: Arc<str>,
 ) -> Router {
     let discovery_routes = Router::new()
@@ -617,9 +643,14 @@ pub(crate) fn router_with_provider_runtime(
             post(register_account).layer(DefaultBodyLimit::max(1024)),
         )
         .layer(middleware::map_response(inbox_no_store));
-    let cartridge_routes = Router::new()
-        .route("/v1/cartridges", get(list_cartridges))
-        .layer(middleware::map_response(inbox_no_store));
+    let mut cartridge_routes = Router::new().route("/v1/cartridges", get(list_cartridges));
+    if cartridge_distribution.is_some() {
+        cartridge_routes = cartridge_routes.route(
+            "/v1/cartridges/{game_key}/{archive_sha256}/acquisition",
+            get(acquire_cartridge),
+        );
+    }
+    let cartridge_routes = cartridge_routes.layer(middleware::map_response(inbox_no_store));
     let report_routes = Router::new()
         .route(
             "/v1/personas/{persona_id}/reports",
@@ -769,6 +800,7 @@ pub(crate) fn router_with_provider_runtime(
             sync_hub,
             game_registry,
             provider_runtime,
+            cartridge_distribution,
             server_name,
         })
         .layer(TraceLayer::new_for_http())
@@ -779,6 +811,7 @@ async fn discover_server(State(state): State<AppState>) -> Response {
         &state.pool,
         &state.server_name,
         state.provider_runtime.is_some(),
+        state.cartridge_distribution.is_some(),
     )
     .await
     {
@@ -1377,6 +1410,32 @@ async fn list_cartridges(
         .map_err(ApiError::Catalog)?;
     Ok(no_store(
         Json(CartridgeCatalogResponse { cartridges }).into_response(),
+    ))
+}
+
+async fn acquire_cartridge(
+    State(state): State<AppState>,
+    Path((game_key, archive_sha256)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    sessions::authenticate(&state.pool, token)
+        .await
+        .map_err(ApiError::Session)?;
+    let runtime = state
+        .cartridge_distribution
+        .as_ref()
+        .ok_or(ApiError::Distribution(DistributionError::Denied))?;
+    let document =
+        cartridge_distribution::acquire_exact(&state.pool, runtime, &game_key, &archive_sha256)
+            .await
+            .map_err(ApiError::Distribution)?;
+    Ok(no_store(
+        (
+            [(CONTENT_TYPE, HeaderValue::from_static("application/json"))],
+            document,
+        )
+            .into_response(),
     ))
 }
 
@@ -2153,6 +2212,21 @@ impl IntoResponse for ApiError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "internal_error",
                 "cartridge catalog operation failed",
+            ),
+            ApiError::Distribution(DistributionError::InvalidInput) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "cartridge_acquisition_invalid_input",
+                "cartridge acquisition identity is invalid",
+            ),
+            ApiError::Distribution(DistributionError::Denied) => (
+                StatusCode::NOT_FOUND,
+                "cartridge_acquisition_denied",
+                "the exact cartridge is not available for acquisition",
+            ),
+            ApiError::Distribution(DistributionError::Internal) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal_error",
+                "cartridge acquisition failed",
             ),
             ApiError::Mfa(MfaError::Unauthorized) => (
                 StatusCode::UNAUTHORIZED,

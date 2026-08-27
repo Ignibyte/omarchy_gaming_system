@@ -3,6 +3,7 @@
 //! This crate verifies inert data packages. It intentionally has no network,
 //! database, platform-credential, dynamic-library, or executable-code path.
 
+mod acquisition;
 mod archive;
 mod compatibility;
 mod contract;
@@ -17,6 +18,7 @@ mod secure_store;
 mod store;
 mod validate;
 
+pub use acquisition::*;
 pub use archive::{pack_directory, verify_archive, verify_archive_bytes};
 pub use compatibility::{
     baseline_host_profile, core_host_profile, evaluate_compatibility, rich_2d_host_profile,

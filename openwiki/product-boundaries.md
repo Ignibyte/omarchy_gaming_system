@@ -7,6 +7,8 @@ sources:
     resource: repo://client/qml/cartridge/CartridgePreview.qml
   - id: openwiki-source-c566a55d52a9744f7b26b7c4
     resource: repo://client/qml/cartridge/TrustedCartridgeSurface.qml
+  - id: openwiki-source-0196de8872a3fef5b0b350d3
+    resource: repo://client/qml/CartridgeController.qml
   - id: openwiki-source-a046e08cc1ba7740db940ad2
     resource: repo://client/qml/game/SignalSiegeSurface.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
@@ -15,12 +17,20 @@ sources:
     resource: repo://client/qml/OnboardingController.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
+  - id: openwiki-source-2bc62522bf486443de88f261
+    resource: repo://crates/client-cartridge-runtime/src/cache.rs
+  - id: openwiki-source-939b835e7d6c679aae8394e7
+    resource: repo://crates/client-cartridge-runtime/src/remote.rs
+  - id: openwiki-source-bc8915a33f270bc28a270170
+    resource: repo://crates/client-cartridge-runtime/src/service.rs
   - id: openwiki-source-37af4c6b51c86b62db25f85f
     resource: repo://crates/game-cartridge-renderer/Cargo.toml
   - id: openwiki-source-fdf115002c4aabad0babec70
     resource: repo://crates/game-cartridge-renderer/src/lib.rs
   - id: openwiki-source-877fd8b6ed8717d54fa8c17a
     resource: repo://crates/game-cartridge/Cargo.toml
+  - id: openwiki-source-30abbd4fc5d09b185331836c
+    resource: repo://crates/game-cartridge/src/acquisition.rs
   - id: openwiki-source-b4a2591d7d7f80d847ef95ed
     resource: repo://crates/game-cartridge/src/contract.rs
   - id: openwiki-source-71f8ccb7a1e293121205a368
@@ -75,11 +85,11 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
+  - id: openwiki-source-d85e6ea816d7c91e9828f7b2
+    resource: repo://packaging/arch/omarchygs
   - id: openwiki-source-8df9ad1a3495f8360740ff03
     resource: repo://scripts/test-game-cartridge-sdk.sh
-  - id: openwiki-source-e08dc6155c081d7928029e27
-    resource: repo://scripts/test-operator-recovery.sh
-generated: {by: "codex", at: "2026-08-26T21:07:26.522Z"}
+generated: {by: "codex", at: "2026-08-27T01:49:04.244Z"}
 ---
 
 # Product and architecture boundaries
@@ -231,9 +241,11 @@ negotiation, and bounded public-only profiles for selecting independent
 communities without sharing credentials or persona authority. Gate stage 22 proves the
 software path for private-alpha admission, but it does not substitute for the
 first human event's documented issue, trusted delivery, onboarding, gameplay,
-safety, and evidence sequence. Federation, server identity fork/rotation,
-remote administration, marketplace synchronization, signed-cartridge
-main-client launch, and external-provider onboarding remain later slices.
+safety, and evidence sequence. Marketplace synchronization, server admission,
+and independently trusted player acquisition, caching, and server-profile
+mounting are implemented. Federation, server identity fork/rotation, remote
+administration, mounted-cartridge gameplay launch, and external-provider
+onboarding remain later slices.
 
 The current server is a local development slice. Bearer tokens require
 production TLS in transit, and public login requires distributed attempt
@@ -322,12 +334,16 @@ before account access, and switching origins clears all live bearer, MFA,
 username, and persona authority before a request. These profiles are isolated
 connection choices, not a global account or federated community layer.
 
-The planned marketplace is distribution and review infrastructure rather than
-a global gameplay or catalog authority. Publisher integrity, optional
-marketplace review, and the selected server's admission are separate
-attestations. The administrator imports an exact release, players see only the
-server-scoped catalog, and a future client path acquires, verifies, and caches
-the exact admitted package locally. An operator-custom cartridge has no
+The marketplace is distribution and review infrastructure rather than a global
+gameplay or catalog authority. Publisher integrity, marketplace review, the
+selected server's admission, and the player's configured marketplace trust key
+remain separate decisions. The administrator imports and admits an exact
+release; players see the server-scoped metadata catalog; and a separately
+capability-advertised route serves only that exact release. The native client
+verifies the full marketplace key against its own configured trust anchor,
+rechecks every release and admission proof, and writes private cached content
+plus an exact server-profile mount. The selected server cannot replace the
+client's marketplace key. An operator-custom cartridge has no
 marketplace-review claim, but it remains signed inert data subject to every
 official-client package, schema, media, capability, digest, and trusted-render
 check.
@@ -377,9 +393,13 @@ serializes monotonic signed-policy transitions, and persists denial policy
 before enforcement. The exact store UID is still authoritative, so a later
 privileged or shared launcher needs a dedicated service identity or equivalent
 external monotonic authority. The main client now browses platform catalog
-records and plays compiled Signal Siege, but it still does not acquire or launch
-signed cartridge packages, and the server does not ingest cartridge files into
-its public game catalog. Signal Siege's platform-owned presenter reuses inert
+records, plays compiled Signal Siege, and separately acquires, privately caches,
+updates, removes, and mounts exact admitted signed cartridges when independent
+marketplace trust and server acquisition are available. A mount is only a
+verified profile pointer into inert content: it does not create a game session,
+prepare a trusted render plan, or grant executable frontend authority. The
+server still does not ingest cartridge files into its public game catalog.
+Signal Siege's platform-owned presenter reuses inert
 repository components without claiming a signed origin, content digest, or
 `omarchygs.render-plan/v1` provenance. The optional provider runtime instead
 lists only an operator-enabled manifest already pinned in the provider registry.

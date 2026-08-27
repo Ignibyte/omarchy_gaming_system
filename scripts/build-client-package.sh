@@ -80,6 +80,7 @@ ogs_digest_records="$ogs_temp/digest-records"
 (
   cd -- "$ogs_source_root"
   for ogs_path in \
+    Cargo.lock \
     Cargo.toml \
     packaging/arch/PKGBUILD \
     packaging/arch/client-runtime-files.txt \
@@ -88,6 +89,13 @@ ogs_digest_records="$ogs_temp/digest-records"
     ogs_hash="$(sha256sum -- "$ogs_path" | awk '{print $1}')"
     printf '%s\0%s\0' "$ogs_path" "$ogs_hash"
   done
+  while IFS= read -r ogs_path; do
+    ogs_hash="$(sha256sum -- "$ogs_path" | awk '{print $1}')"
+    printf '%s\0%s\0' "$ogs_path" "$ogs_hash"
+  done < <(
+    find crates/client-cartridge-runtime crates/game-cartridge \
+      -type f -print | LC_ALL=C sort
+  )
   while IFS= read -r ogs_path; do
     ogs_hash="$(sha256sum -- "$ogs_path" | awk '{print $1}')"
     printf '%s\0%s\0' "$ogs_path" "$ogs_hash"

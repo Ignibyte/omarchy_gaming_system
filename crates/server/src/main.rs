@@ -50,6 +50,7 @@ use anyhow::{Context, Result, anyhow};
 use config::Config;
 use omarchy_game_runtime::{GameDefinition, GameRegistry};
 use omarchy_game_signal_siege::{SignalSiege, SignalSiegeVersus};
+use omarchy_gaming_system_server::cartridge_distribution::CartridgeDistributionRuntime;
 use sqlx::{PgPool, migrate::Migrator, postgres::PgPoolOptions};
 use tokio::{net::TcpListener, signal};
 use tracing::info;
@@ -73,6 +74,12 @@ async fn main() -> Result<()> {
         .map(|provider| provider_games::ProviderRuntime::production(pool.clone(), provider))
         .transpose()
         .map_err(|error| anyhow!("invalid provider runtime: {}", error.code()))?;
+    let cartridge_distribution = config
+        .cartridge_distribution
+        .as_ref()
+        .map(CartridgeDistributionRuntime::from_local_config)
+        .transpose()
+        .map_err(|error| anyhow!("invalid cartridge distribution runtime: {}", error.code()))?;
 
     let listener = TcpListener::bind(config.bind_address)
         .await
@@ -87,12 +94,13 @@ async fn main() -> Result<()> {
 
     let server_result = axum::serve(
         listener,
-        app::router_with_provider_runtime(
+        app::router_with_runtimes(
             pool,
             config.mfa_cipher,
             sync_hub,
             game_registry,
             provider_runtime,
+            cartridge_distribution,
             Arc::from(config.server_name),
         ),
     )

@@ -35,8 +35,10 @@ copy_source() {
   local ogs_destination="$1"
   mkdir -p -- "$ogs_destination"
   cp -a -- \
+    "$ogs_test_root/Cargo.lock" \
     "$ogs_test_root/Cargo.toml" \
     "$ogs_test_root/client" \
+    "$ogs_test_root/crates" \
     "$ogs_test_root/packaging" \
     "$ogs_destination/"
 }
@@ -144,11 +146,13 @@ grep -Fxq 'pkgname = omarchy-gaming-system-client' "$ogs_temp/PKGINFO" \
   || fail "package name is incorrect"
 grep -Fxq 'pkgver = 0.1.0-1' "$ogs_temp/PKGINFO" \
   || fail "package version is incorrect"
-grep -Fxq 'arch = any' "$ogs_temp/PKGINFO" \
+grep -Fxq 'arch = x86_64' "$ogs_temp/PKGINFO" \
   || fail "package architecture is incorrect"
-grep -Fxq 'depend = qt6-declarative' "$ogs_temp/PKGINFO" \
-  || fail "Qt runtime dependency is missing"
-[[ "$(grep -c '^depend = ' "$ogs_temp/PKGINFO")" == 1 ]] \
+for ogs_dependency in gcc-libs glibc qt6-declarative; do
+  grep -Fxq "depend = $ogs_dependency" "$ogs_temp/PKGINFO" \
+    || fail "$ogs_dependency runtime dependency is missing"
+done
+[[ "$(grep -c '^depend = ' "$ogs_temp/PKGINFO")" == 3 ]] \
   || fail "client package declares an unexpected runtime dependency"
 
 mkdir -p -- "$ogs_temp/extracted"
@@ -162,6 +166,7 @@ fi
 
 : >"$ogs_temp/expected-payload"
 printf '%s\n' \
+  usr/bin/omarchygs-cartridge-companion \
   usr/bin/omarchygs \
   usr/share/applications/com.ignibyte.OmarchyGS.desktop \
   usr/share/doc/omarchy-gaming-system-client/BUILD-PROVENANCE \
@@ -179,10 +184,13 @@ if ! cmp -s -- "$ogs_temp/expected-payload" "$ogs_temp/actual-payload"; then
   fail "client package payload does not match the exact manifest"
 fi
 
-[[ "$(stat -c '%a' "$ogs_temp/extracted/usr/bin/omarchygs")" == 755 ]] \
-  || fail "client launcher mode is not 0755"
+for ogs_executable in omarchygs omarchygs-cartridge-companion; do
+  [[ "$(stat -c '%a' "$ogs_temp/extracted/usr/bin/$ogs_executable")" == 755 ]] \
+    || fail "$ogs_executable mode is not 0755"
+done
 while IFS= read -r ogs_payload_path; do
-  [[ "$ogs_payload_path" == usr/bin/omarchygs ]] && continue
+  [[ "$ogs_payload_path" == usr/bin/omarchygs \
+    || "$ogs_payload_path" == usr/bin/omarchygs-cartridge-companion ]] && continue
   [[ "$(stat -c '%a' "$ogs_temp/extracted/$ogs_payload_path")" == 644 ]] \
     || fail "$ogs_payload_path mode is not 0644"
 done <"$ogs_temp/actual-payload"
@@ -223,15 +231,50 @@ for _ in {1..100}; do
 done
 [[ -s "$ogs_port_file" ]] || fail "package smoke fixture did not publish a port"
 ogs_fixture_url="http://127.0.0.1:$(<"$ogs_port_file")"
+install -d -m0700 -- "$ogs_temp/runtime" "$ogs_temp/data" "$ogs_temp/home"
 
-env \
+ln -s -- "$ogs_temp/missing-marketplace-key.json" "$ogs_temp/untrusted-marketplace-key.json"
+if env \
+  HOME="$ogs_temp/home" \
+  OGS_CLIENT_MARKETPLACE_PUBLIC_KEY="$ogs_temp/untrusted-marketplace-key.json" \
   PATH=/usr/bin \
   QT_QPA_PLATFORM=offscreen \
   QT_QUICK_BACKEND=software \
+  XDG_DATA_HOME="$ogs_temp/data" \
+  XDG_RUNTIME_DIR="$ogs_temp/runtime" \
+  timeout 5 \
+  "$ogs_temp/extracted/usr/bin/omarchygs" \
+    --smoke-test \
+    "--server-url=$ogs_fixture_url" \
+    >"$ogs_temp/untrusted-marketplace.out" \
+    2>"$ogs_temp/untrusted-marketplace.err"; then
+  fail "extracted client accepted a symlinked marketplace trust key"
+fi
+grep -Fq 'trusted marketplace public key is missing or invalid' \
+  "$ogs_temp/untrusted-marketplace.err" \
+  || fail "invalid marketplace trust key did not fail explicitly"
+if find "$ogs_temp/runtime" -mindepth 1 -print -quit | grep -q .; then
+  fail "invalid marketplace trust configuration left runtime state"
+fi
+
+env \
+  HOME="$ogs_temp/home" \
+  PATH=/usr/bin \
+  QT_QPA_PLATFORM=offscreen \
+  QT_QUICK_BACKEND=software \
+  XDG_DATA_HOME="$ogs_temp/data" \
+  XDG_RUNTIME_DIR="$ogs_temp/runtime" \
   timeout 20 \
   "$ogs_temp/extracted/usr/bin/omarchygs" \
     --smoke-test \
     "--server-url=$ogs_fixture_url"
+
+[[ -d "$ogs_temp/data/omarchy-gaming-system/cartridges" \
+  && "$(stat -c '%a' "$ogs_temp/data/omarchy-gaming-system/cartridges")" == 700 ]] \
+  || fail "extracted client did not create the private cartridge cache"
+if find "$ogs_temp/runtime" -mindepth 1 -print -quit | grep -q .; then
+  fail "extracted client left companion runtime state after exit"
+fi
 
 ogs_fixture_status="$(curl --fail --silent "$ogs_fixture_url/__fixture__/status")"
 jq -e '

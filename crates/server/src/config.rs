@@ -2,6 +2,7 @@ use std::{env, net::SocketAddr};
 
 use anyhow::{Context, Result, anyhow};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
+use omarchy_gaming_system_server::marketplace_sync::LocalCatalogConfig;
 
 use crate::mfa::MfaCipher;
 
@@ -16,6 +17,7 @@ pub struct Config {
     pub server_name: String,
     pub mfa_cipher: MfaCipher,
     pub provider: Option<ProviderConfig>,
+    pub cartridge_distribution: Option<LocalCatalogConfig>,
 }
 
 pub struct ProviderConfig {
@@ -45,6 +47,12 @@ impl Config {
             env::var("OGS_PROVIDER_MESSAGE_SIGNING_SEED").ok(),
             env::var("OGS_PROVIDER_CALLBACK_AUTHORITY").ok(),
         ])?;
+        let cartridge_distribution = LocalCatalogConfig::optional_from_environment()
+            .map_err(|_| {
+                anyhow!(
+                    "OGS_MARKETPLACE_PUBLIC_KEY and OGS_CARTRIDGE_STORE_ROOT must be absent or a complete valid distribution configuration"
+                )
+            })?;
 
         Ok(Self {
             bind_address,
@@ -52,6 +60,7 @@ impl Config {
             server_name,
             mfa_cipher,
             provider,
+            cartridge_distribution,
         })
     }
 }

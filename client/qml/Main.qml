@@ -17,10 +17,12 @@ ApplicationWindow {
     readonly property alias onboardingController: onboarding
     readonly property alias socialController: social
     readonly property alias gameController: games
+    readonly property alias cartridgeController: cartridges
     property bool smokeTest: Qt.application.arguments.indexOf("--smoke-test") !== -1
     readonly property bool hasShellError: onboarding.errorText !== ""
                                           || social.errorText !== ""
                                           || games.errorText !== ""
+                                          || cartridges.errorText !== ""
     readonly property bool playerReady: ["home", "social", "inbox", "games",
                                          "challenges", "gameplay"].indexOf(onboarding.state) !== -1
     readonly property string shellStateLabel: hasShellError ? "ERROR"
@@ -64,7 +66,10 @@ ApplicationWindow {
             else if (state === "inbox")
                 Qt.callLater(function() { social.refreshInbox() })
             else if (state === "games")
-                Qt.callLater(function() { games.refreshGames() })
+                Qt.callLater(function() {
+                    games.refreshGames()
+                    cartridges.refresh()
+                })
             else if (state === "challenges")
                 Qt.callLater(function() { games.refreshChallenges() })
         }
@@ -82,6 +87,16 @@ ApplicationWindow {
         actor: onboarding.selectedPersona
     }
 
+    CartridgeController {
+        id: cartridges
+        sessionController: onboarding
+        actor: onboarding.selectedPersona
+        helperEndpoint: root.argumentValue("--companion-endpoint=", "")
+        helperCredential: root.argumentValue("--companion-credential=", "")
+        marketplaceTrusted: root.argumentValue(
+                                "--companion-marketplace-trusted=", "false") === "true"
+    }
+
     Component { id: connectionComponent; Screens.ConnectionScreen { controller: onboarding } }
     Component { id: accessComponent; Screens.AccessScreen { controller: onboarding } }
     Component { id: mfaComponent; Screens.MfaScreen { controller: onboarding } }
@@ -97,7 +112,11 @@ ApplicationWindow {
     }
     Component {
         id: gamesComponent
-        Screens.GamesScreen { controller: games; sessionController: onboarding }
+        Screens.GamesScreen {
+            controller: games
+            cartridgeController: cartridges
+            sessionController: onboarding
+        }
     }
     Component {
         id: challengesComponent

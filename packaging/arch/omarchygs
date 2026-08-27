@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 ogs_client_bin_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ogs_client_qml_root="$ogs_client_bin_dir/../share/omarchy-gaming-system/qml"
+ogs_client_companion="$ogs_client_bin_dir/omarchygs-cartridge-companion"
 
 if [[ ! -d "$ogs_client_qml_root" || -L "$ogs_client_qml_root" ]]; then
   echo "OmarchyGS client data directory is missing or invalid." >&2
@@ -18,5 +19,95 @@ if ! command -v qml6 >/dev/null 2>&1; then
   echo "OmarchyGS requires the Qt 6 QML runtime (qt6-declarative)." >&2
   exit 1
 fi
+if [[ ! -x "$ogs_client_companion" || -L "$ogs_client_companion" ]]; then
+  echo "OmarchyGS cartridge companion is missing or invalid." >&2
+  exit 1
+fi
 
-exec qml6 "$ogs_client_qml_root/Main.qml" -- "$@"
+ogs_client_marketplace_key="${OGS_CLIENT_MARKETPLACE_PUBLIC_KEY:-}"
+ogs_client_config_parent="${XDG_CONFIG_HOME:-${HOME:?HOME is required}/.config}"
+if [[ -z "$ogs_client_marketplace_key" \
+  && ( -e "$ogs_client_config_parent/omarchy-gaming-system/marketplace-public.json" \
+    || -L "$ogs_client_config_parent/omarchy-gaming-system/marketplace-public.json" ) ]]; then
+  ogs_client_marketplace_key="$ogs_client_config_parent/omarchy-gaming-system/marketplace-public.json"
+elif [[ -z "$ogs_client_marketplace_key" \
+  && ( -e /etc/omarchygs/marketplace-public.json \
+    || -L /etc/omarchygs/marketplace-public.json ) ]]; then
+  ogs_client_marketplace_key=/etc/omarchygs/marketplace-public.json
+fi
+ogs_client_marketplace_trusted=false
+if [[ -n "$ogs_client_marketplace_key" ]]; then
+  if [[ "$ogs_client_marketplace_key" != /* \
+    || ! -f "$ogs_client_marketplace_key" \
+    || -L "$ogs_client_marketplace_key" ]]; then
+    echo "OmarchyGS trusted marketplace public key is missing or invalid." >&2
+    exit 1
+  fi
+  ogs_client_marketplace_trusted=true
+fi
+
+ogs_client_runtime_parent="${XDG_RUNTIME_DIR:-/tmp}"
+ogs_client_runtime_dir=$(mktemp -d "$ogs_client_runtime_parent/omarchygs-client.XXXXXX")
+chmod 0700 -- "$ogs_client_runtime_dir"
+ogs_client_startup_file="$ogs_client_runtime_dir/companion.json"
+ogs_client_data_parent="${XDG_DATA_HOME:-${HOME:?HOME is required}/.local/share}"
+ogs_client_data_root="$ogs_client_data_parent/omarchy-gaming-system"
+mkdir -p -- "$ogs_client_data_root"
+chmod 0700 -- "$ogs_client_data_root"
+ogs_client_cache_root="$ogs_client_data_root/cartridges"
+ogs_client_companion_pid=""
+ogs_client_companion_arguments=(
+  "--startup-file=$ogs_client_startup_file"
+  "--cache-root=$ogs_client_cache_root"
+)
+if [[ -n "$ogs_client_marketplace_key" ]]; then
+  ogs_client_companion_arguments+=(
+    "--marketplace-public-key-file=$ogs_client_marketplace_key"
+  )
+fi
+
+ogs_client_cleanup() {
+  if [[ "$ogs_client_companion_pid" =~ ^[0-9]+$ ]]; then
+    kill "$ogs_client_companion_pid" 2>/dev/null || true
+    wait "$ogs_client_companion_pid" 2>/dev/null || true
+  fi
+  rm -f -- "$ogs_client_startup_file"
+  rmdir -- "$ogs_client_runtime_dir" 2>/dev/null || true
+}
+trap ogs_client_cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM HUP
+
+"$ogs_client_companion" "${ogs_client_companion_arguments[@]}" &
+ogs_client_companion_pid=$!
+
+for _ in {1..100}; do
+  [[ -s "$ogs_client_startup_file" ]] && break
+  kill -0 "$ogs_client_companion_pid" 2>/dev/null || {
+    echo "OmarchyGS cartridge companion failed to start." >&2
+    exit 1
+  }
+  sleep 0.05
+done
+[[ -f "$ogs_client_startup_file" && ! -L "$ogs_client_startup_file" ]] || {
+  echo "OmarchyGS cartridge companion did not become ready." >&2
+  exit 1
+}
+ogs_client_companion_endpoint=$(
+  sed -n 's/.*"endpoint":"\([^"]*\)".*/\1/p' "$ogs_client_startup_file"
+)
+ogs_client_companion_credential=$(
+  sed -n 's/.*"credential":"\([^"]*\)".*/\1/p' "$ogs_client_startup_file"
+)
+[[ "$ogs_client_companion_endpoint" =~ ^http://127\.0\.0\.1:[1-9][0-9]{0,4}$ \
+  && "$ogs_client_companion_credential" =~ ^[A-Za-z0-9_-]{43}$ ]] || {
+  echo "OmarchyGS cartridge companion returned an invalid startup document." >&2
+  exit 1
+}
+rm -f -- "$ogs_client_startup_file"
+
+qml6 "$ogs_client_qml_root/Main.qml" -- \
+  "--companion-endpoint=$ogs_client_companion_endpoint" \
+  "--companion-credential=$ogs_client_companion_credential" \
+  "--companion-marketplace-trusted=$ogs_client_marketplace_trusted" \
+  "$@"

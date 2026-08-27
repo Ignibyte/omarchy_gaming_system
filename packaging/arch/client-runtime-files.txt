@@ -1,4 +1,5 @@
 client/qml/ApiClient.qml
+client/qml/CartridgeController.qml
 client/qml/GameController.qml
 client/qml/Main.qml
 client/qml/OnboardingController.qml

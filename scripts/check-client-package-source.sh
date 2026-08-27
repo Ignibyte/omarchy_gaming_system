@@ -25,7 +25,12 @@ fail() {
 }
 
 for ogs_required_path in \
+  Cargo.lock \
   Cargo.toml \
+  crates/client-cartridge-runtime/Cargo.toml \
+  crates/client-cartridge-runtime/src/lib.rs \
+  crates/client-cartridge-runtime/src/main.rs \
+  crates/game-cartridge/Cargo.toml \
   packaging/arch/PKGBUILD \
   packaging/arch/client-runtime-files.txt \
   packaging/arch/com.ignibyte.OmarchyGS.desktop \
@@ -35,6 +40,26 @@ for ogs_required_path in \
     fail "$ogs_required_path must be a non-symlink regular file"
   fi
 done
+
+for ogs_rust_root in \
+  crates/client-cartridge-runtime \
+  crates/game-cartridge; do
+  while IFS= read -r -d '' ogs_rust_path; do
+    [[ -f "$ogs_rust_path" && ! -L "$ogs_rust_path" ]] \
+      || fail "${ogs_rust_path#"$ogs_source_root/"} must be a non-symlink regular file"
+  done < <(find "$ogs_source_root/$ogs_rust_root" ! -type d -print0)
+done
+
+grep -Fq '"crates/client-cartridge-runtime"' "$ogs_source_root/Cargo.toml" \
+  || fail "workspace must include the native cartridge companion crate"
+grep -Fq 'omarchygs-client-cartridge-runtime' "$ogs_source_root/packaging/arch/PKGBUILD" \
+  || fail "PKGBUILD must build the native cartridge companion"
+grep -Fq 'OGS_CLIENT_MARKETPLACE_PUBLIC_KEY' "$ogs_source_root/packaging/arch/omarchygs" \
+  || fail "client launcher must support an independent marketplace trust key"
+grep -Fq -- '--marketplace-public-key-file=' "$ogs_source_root/packaging/arch/omarchygs" \
+  || fail "client launcher must pass the marketplace trust key only to the companion"
+grep -Fq -- '--companion-marketplace-trusted=' "$ogs_source_root/packaging/arch/omarchygs" \
+  || fail "client launcher must disclose marketplace trust readiness to trusted QML"
 
 if [[ -n "$(tail -c 1 -- "$ogs_manifest")" ]]; then
   fail "runtime manifest must end with a newline"

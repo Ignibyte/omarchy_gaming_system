@@ -134,10 +134,16 @@ revocation, audit, or resource limits.
 This decision records product direction, not implementation authorization.
 Private-alpha federation and user-supplied native plugins remain non-goals.
 Door Legends v1 remains the sole remote-provider pilot. The current main client
-does not acquire or mount signed cartridges, and no general server plugin
-runtime exists. External providers, marketplace services, operator-custom
-installation, and executable modules each require their own ticketed security,
-operations, compatibility, and recovery evidence.
+can explicitly acquire, independently verify, cache, update, mount, and locally
+remove marketplace-vetted cartridges selected by the active server. Independent
+verification requires an exact marketplace public key provisioned on the
+client outside that selected server; server-supplied key labels or key bytes
+cannot establish marketplace provenance. It does not
+yet bind a mount to a live game session or render it as the authoritative game
+surface, and no general server plugin runtime exists. External providers,
+marketplace services, operator-custom installation, and executable modules each
+require their own ticketed security, operations, compatibility, and recovery
+evidence.
 
 ## Alternatives rejected or deferred
 
@@ -180,8 +186,9 @@ operations, compatibility, and recovery evidence.
 1. Finish private-alpha packaging and operator reliability work.
 2. Add stable server identity/capability discovery and isolated saved client
    profiles.
-3. Implement server marketplace synchronization/import and exact player
-   cartridge acquisition/cache/mounting.
+3. Bind mounted cartridge presentation to exact authoritative game sessions
+   after server marketplace synchronization/import and player
+   acquisition/cache/mounting.
 4. Publish the Provider SDK and prove a second clean-room backend integration.
 5. Add explicit operator-local cartridge trust and provenance disclosure.
 6. Run the server extension isolation/hook architecture spike.

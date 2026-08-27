@@ -2,13 +2,27 @@ pkgname=omarchy-gaming-system-client
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="Keyboard-first OmarchyGS social gaming client"
-arch=(any)
+arch=(x86_64)
 url="https://github.com/Ignibyte/omarchy_gaming_system"
 license=(custom)
-depends=(qt6-declarative)
-options=(!debug !strip)
+depends=(gcc-libs glibc qt6-declarative)
+makedepends=(cargo)
+# ring's native objects are linked into the Rust binary by rust-lld. GCC LTO
+# objects from makepkg's global LTO flags are not compatible with that link.
+options=(!debug !strip !lto)
 source=()
 sha256sums=()
+
+build() {
+  local ogs_source_root="${OMARCHYGS_SOURCE_ROOT:?missing reviewed source root}"
+  [[ "$ogs_source_root" == /* && -d "$ogs_source_root" && ! -L "$ogs_source_root" ]] \
+    || return 1
+  CARGO_TARGET_DIR="$srcdir/cargo-target" \
+    cargo build --locked --release \
+      --manifest-path "$ogs_source_root/Cargo.toml" \
+      --package omarchygs-client-cartridge-runtime \
+      --bin omarchygs-cartridge-companion
+}
 
 package() {
   local ogs_source_root="${OMARCHYGS_SOURCE_ROOT:?missing reviewed source root}"
@@ -34,6 +48,9 @@ package() {
   install -Dm0755 -- \
     "$ogs_source_root/packaging/arch/omarchygs" \
     "$pkgdir/usr/bin/omarchygs"
+  install -Dm0755 -- \
+    "$srcdir/cargo-target/release/omarchygs-cartridge-companion" \
+    "$pkgdir/usr/bin/omarchygs-cartridge-companion"
   install -Dm0644 -- \
     "$ogs_source_root/packaging/arch/com.ignibyte.OmarchyGS.desktop" \
     "$pkgdir/usr/share/applications/com.ignibyte.OmarchyGS.desktop"

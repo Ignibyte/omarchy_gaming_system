@@ -214,8 +214,18 @@ the first identity HTTP surfaces:
   reviewed inventory; an independent expected-state operator transaction owns
   activation, deactivation, upgrade, rollback, revision, and immutable audit.
   Lifecycle suspension, removal, or incompatibility fails closed without
-  choosing another version. This metadata boundary does not yet acquire or
-  mount cartridges in the QML client.
+  choosing another version. When the optional distribution runtime has its
+  exact public key and secure-store root, discovery advertises the authenticated
+  exact acquisition route. That route composes retained signed snapshot
+  evidence with the immutable release and self-verifies the canonical response.
+  The packaged loopback Rust companion requires a locally provisioned
+  client-controlled marketplace public key, rejects any server-envelope key
+  substitution, and independently verifies initial/final catalog admission
+  plus every marketplace, publisher, lifecycle, SDK, and byte claim before
+  atomically staging shared content and a server-UUID-scoped read-only mount.
+  Each mount retains the trusted-key fingerprint. The QML Games screen exposes
+  explicit install, update, and local removal; binding the mount to live
+  gameplay remains deferred.
 - durable two-person challenges pin one exact game key/version between a
   connected, unblocked, different-account persona pair. A challenger-scoped
   UUID makes creation retry-safe, a partial uniqueness constraint prevents an

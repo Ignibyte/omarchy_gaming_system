@@ -49,10 +49,13 @@ INVITE_CODE = "ogsi_" + "I" * 43
 SERVER_ID = "12121212-1212-4212-8212-121212121212"
 SECOND_SERVER_ID = "13131313-1313-4313-8313-131313131313"
 REPLACEMENT_SERVER_ID = "14141414-1414-4414-8414-141414141414"
+CATALOG_ONLY_SERVER_ID = "15151515-1515-4515-8515-151515151515"
 DISCOVERY_CAPABILITIES = [
     "accounts.invite-registration.v1",
     "auth.device-sessions.v1",
     "auth.totp.v1",
+    "games.cartridge-acquisition.v1",
+    "games.cartridge-catalog.v1",
     "games.challenges.v1",
     "games.sessions.v1",
     "identity.personas.v1",
@@ -62,6 +65,9 @@ DISCOVERY_CAPABILITIES = [
     "sync.cursor.v1",
     "sync.websocket-hints.v1",
 ]
+CARTRIDGE_DIGEST = "a" * 64
+CARTRIDGE_IDENTITY = "b" * 64
+COMPANION_TOKEN = "C" * 43
 
 
 def persona(persona_id: str, handle: str, display_name: str) -> dict[str, Any]:
@@ -96,6 +102,7 @@ class FixtureState:
         self.versus_state = self._versus_state()
         self.incoming_challenge_status = "pending"
         self.outgoing_challenge_status = "absent"
+        self.cartridge_mounted = False
 
     def reset_social(self) -> None:
         with self.lock:
@@ -113,6 +120,7 @@ class FixtureState:
             self.versus_state = self._versus_state()
             self.incoming_challenge_status = "pending"
             self.outgoing_challenge_status = "absent"
+            self.cartridge_mounted = False
 
     def record_call(self, call: str) -> None:
         with self.lock:
@@ -218,6 +226,13 @@ class Handler(BaseHTTPRequestHandler):
                 document["capabilities"].sort()
                 self._json(200, document)
                 return
+            if self.state.mode == "catalog_only":
+                document = self._discovery_document(
+                    CATALOG_ONLY_SERVER_ID, "Catalog-Only Fixture Community"
+                )
+                document["capabilities"].remove("games.cartridge-acquisition.v1")
+                self._json(200, document)
+                return
             self._json(200, self._discovery_document(
                 SERVER_ID, "Fixture Community"
             ))
@@ -273,6 +288,17 @@ class Handler(BaseHTTPRequestHandler):
                     "provider_release_id": None,
                 },
             ]})
+            return
+        if path == "/v1/cartridges":
+            if not self._require_social_bearer():
+                return
+            self._json(200, {"cartridges": [self._cartridge_release()]})
+            return
+        if path == f"/v1/mounts/{SERVER_ID}":
+            if not self._require_companion_bearer():
+                return
+            mounts = [self._cartridge_mount()] if self.state.cartridge_mounted else []
+            self._json(200, {"mounts": mounts})
             return
         if path == "/v1/personas":
             token = self._bearer()
@@ -426,6 +452,35 @@ class Handler(BaseHTTPRequestHandler):
         self.state.record_call(f"POST {self.path}")
         document = self._read_json()
         if document is None:
+            return
+        if self.path == "/v1/acquisitions":
+            if not self._require_companion_bearer():
+                return
+            if set(document) != {
+                "server_origin", "server_id", "device_bearer", "game_key",
+                "archive_sha256", "admission_revision"
+            }:
+                self.state.violate("cartridge acquisition body did not have exact keys")
+            if document.get("server_id") != SERVER_ID \
+                    or document.get("device_bearer") != TOKEN_S \
+                    or document.get("game_key") != "door-legends" \
+                    or document.get("archive_sha256") != CARTRIDGE_DIGEST \
+                    or document.get("admission_revision") != 3:
+                self.state.violate("cartridge acquisition did not preserve exact authority")
+            self.state.cartridge_mounted = True
+            self._json(200, {"mount": self._cartridge_mount()})
+            return
+        if self.path == "/v1/removals":
+            if not self._require_companion_bearer():
+                return
+            if set(document) != {"server_id", "game_key", "archive_sha256"}:
+                self.state.violate("cartridge removal body did not have exact keys")
+            if document.get("server_id") != SERVER_ID \
+                    or document.get("game_key") != "door-legends" \
+                    or document.get("archive_sha256") != CARTRIDGE_DIGEST:
+                self.state.violate("cartridge removal crossed profile authority")
+            self.state.cartridge_mounted = False
+            self._json(200, {"removed": True})
             return
         if self.path == "/v1/accounts":
             self._require_no_authorization("account registration")
@@ -899,6 +954,58 @@ class Handler(BaseHTTPRequestHandler):
         self._error(401, "invalid_session", "device session is invalid")
         return False
 
+    def _require_companion_bearer(self) -> bool:
+        if self._bearer() == COMPANION_TOKEN:
+            return True
+        self.state.violate("companion request did not carry its local bearer")
+        self._error(401, "companion_unauthorized", "companion authorization failed")
+        return False
+
+    def _cartridge_release(self) -> dict[str, Any]:
+        return {
+            "game_key": "door-legends",
+            "publisher_id": "ignibyte",
+            "rules_version": 1,
+            "cartridge_version": 2,
+            "display_name": "Door Legends",
+            "archive_sha256": CARTRIDGE_DIGEST,
+            "signed_identity_sha256": CARTRIDGE_IDENTITY,
+            "marketplace": {
+                "provenance_class": "marketplace_vetted",
+                "marketplace_id": "omarchygs-marketplace",
+                "marketplace_name": "OmarchyGS Marketplace",
+                "reviewed_by": "review-team",
+                "review_summary": "Bounded first-party review passed.",
+                "policy_version": 1,
+                "lifecycle_status": "active",
+            },
+            "server_admission": {"revision": 3},
+        }
+
+    def _cartridge_mount(self) -> dict[str, Any]:
+        release = self._cartridge_release()
+        return {
+            "format": "omarchygs.client-cartridge-mount/v1",
+            "server_id": SERVER_ID,
+            "server_origin": f"http://{self.headers.get('Host', '')}",
+            "game_key": release["game_key"],
+            "publisher_id": release["publisher_id"],
+            "rules_version": release["rules_version"],
+            "cartridge_version": release["cartridge_version"],
+            "display_name": release["display_name"],
+            "archive_sha256": release["archive_sha256"],
+            "signed_identity_sha256": release["signed_identity_sha256"],
+            "marketplace_key_sha256": "d" * 64,
+            "marketplace_id": release["marketplace"]["marketplace_id"],
+            "marketplace_name": release["marketplace"]["marketplace_name"],
+            "reviewed_by": release["marketplace"]["reviewed_by"],
+            "review_summary": release["marketplace"]["review_summary"],
+            "snapshot_version": 1,
+            "policy_version": release["marketplace"]["policy_version"],
+            "lifecycle_status": release["marketplace"]["lifecycle_status"],
+            "admission_revision": release["server_admission"]["revision"],
+        }
+
     def _session(self, token: str) -> dict[str, Any]:
         return {
             "token": token,
@@ -1039,7 +1146,7 @@ def main() -> int:
     port_file = Path(sys.argv[1])
     mode = sys.argv[2]
     if mode not in {
-        "normal", "server_two", "identity_changed", "incompatible", "slow",
+        "normal", "server_two", "catalog_only", "identity_changed", "incompatible", "slow",
         "malformed", "wrong_identity", "oversized",
     }:
         print(f"unsupported fixture mode: {mode}", file=sys.stderr)

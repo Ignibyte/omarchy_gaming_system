@@ -13,10 +13,18 @@ sources:
     resource: repo://client/qml/cartridge/nodes/TrustedTerminalNode.qml
   - id: openwiki-source-c566a55d52a9744f7b26b7c4
     resource: repo://client/qml/cartridge/TrustedCartridgeSurface.qml
+  - id: openwiki-source-0196de8872a3fef5b0b350d3
+    resource: repo://client/qml/CartridgeController.qml
   - id: openwiki-source-a046e08cc1ba7740db940ad2
     resource: repo://client/qml/game/SignalSiegeSurface.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
     resource: repo://client/qml/GameController.qml
+  - id: openwiki-source-2bc62522bf486443de88f261
+    resource: repo://crates/client-cartridge-runtime/src/cache.rs
+  - id: openwiki-source-939b835e7d6c679aae8394e7
+    resource: repo://crates/client-cartridge-runtime/src/remote.rs
+  - id: openwiki-source-bc8915a33f270bc28a270170
+    resource: repo://crates/client-cartridge-runtime/src/service.rs
   - id: openwiki-source-f4e5b7474eca8daeac03aaab
     resource: repo://crates/game-cartridge-renderer/src/bin/omarchygs-cartridge-preview.rs
   - id: openwiki-source-fdf115002c4aabad0babec70
@@ -25,6 +33,8 @@ sources:
     resource: repo://crates/game-cartridge-spike/README.md
   - id: openwiki-source-45df52cda75cb0ccadd8ef3e
     resource: repo://crates/game-cartridge-spike/src/lib.rs
+  - id: openwiki-source-30abbd4fc5d09b185331836c
+    resource: repo://crates/game-cartridge/src/acquisition.rs
   - id: openwiki-source-8899ed5703baed5a96fa4f93
     resource: repo://crates/game-cartridge/src/archive.rs
   - id: openwiki-source-b4a2591d7d7f80d847ef95ed
@@ -51,10 +61,10 @@ sources:
     resource: repo://crates/game-provider/src/egress.rs
   - id: openwiki-source-183d71a1a996865fb003e694
     resource: repo://crates/game-provider/src/registry.rs
-  - id: openwiki-source-e61b285fcaa489b63922f43f
-    resource: repo://crates/server/src/app.rs
   - id: openwiki-source-7243a317e3224aa82795a5fc
     resource: repo://crates/server/src/cartridge_catalog.rs
+  - id: openwiki-source-5942cee1725f1a3f7bf01ec7
+    resource: repo://crates/server/src/cartridge_distribution.rs
   - id: openwiki-source-9a69a848b9d41472b0830bd4
     resource: repo://crates/server/src/marketplace_egress.rs
   - id: openwiki-source-f6dda000394ac1ba6bba8f65
@@ -63,6 +73,8 @@ sources:
     resource: repo://crates/server/src/provider_game_api_tests.rs
   - id: openwiki-source-0e10f198b5749ecebf761185
     resource: repo://crates/server/src/provider_games.rs
+  - id: openwiki-source-42fe6bf463fcb01dc5566e16
+    resource: repo://crates/server/src/server_discovery.rs
   - id: openwiki-source-408aa68caebee417a5a319b8
     resource: repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md
   - id: openwiki-source-bfc109ee5d2c2f6c0f5c5f77
@@ -79,6 +91,8 @@ sources:
     resource: repo://migrations/0015_first_party_remote_provider_authority.sql
   - id: openwiki-source-11256f84337d259ecf424a45
     resource: repo://migrations/0019_marketplace_catalog.sql
+  - id: openwiki-source-ef5a364adb186e8e580cf1e7
+    resource: repo://migrations/0020_player_cartridge_distribution.sql
   - id: openwiki-source-d69dbacb0ae7fe382ee46161
     resource: repo://scripts/test-game-cartridge-renderer.sh
   - id: openwiki-source-8df9ad1a3495f8360740ff03
@@ -87,10 +101,7 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-26T23:12:01.286Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-26T23:45:54.301Z
+generated: {by: "codex", at: "2026-08-27T01:49:04.244Z"}
 ---
 
 # Game Cartridges and portable provider direction
@@ -113,9 +124,11 @@ unauthorized. [Runtime foundation](runtime-foundation.md) maps both paths.
 Ticket 032 implements ADR-0003's first owner-operated distribution slice: one
 operator-pinned marketplace, immutable reviewed staging, atomic PostgreSQL
 inventory, independent audited server admission, and an authenticated
-metadata-only player catalog. It does not implement client acquisition,
-operator-custom trust, a public Provider SDK, external-provider onboarding, or
-server modules/hooks.
+metadata-only player catalog. Ticket 033 adds exact distribution from that
+selection plus independently trusted client verification, a private
+content-addressed cache, and per-server-profile mounts. A mount is not yet a
+gameplay launch or render plan. Operator-custom trust, a public Provider SDK,
+external-provider onboarding, and server modules/hooks remain unimplemented.
 
 Ticket 014 contributes an isolated executable architecture proof. Its broker,
 provider, and QML surface are not a public SDK or deployed runtime. Ticket 018
@@ -140,6 +153,12 @@ game repository
        ├─ view/action/event schemas and localization
        └─ bounded static assets
                   │ approved exact release
+                  ▼
+       owner-operated server catalog
+                  │ exact admitted release + retained evidence
+                  ▼
+       trusted native client companion
+                  │ verified private cache + server-profile mount
                   ▼
        trusted Rust render-plan compiler
                   │ bounded inert plan + digest assets
@@ -182,18 +201,31 @@ secure-store root. The owner can synchronize reviewed exact releases, inspect
 the resulting inventory, and independently select one permitted digest per
 game. Authenticated players see only the effective selected metadata.
 
-The official client does not yet acquire the exact `.ogsc` bytes. A later
-bounded server-approved path will verify publisher integrity, marketplace
-review, server admission, compatibility, and digest before storing a package
-in a local content-addressed read-only cache. Session pinning to the exact
-cartridge, rules, and authority identities also remains part of that later
-client/launch slice; actions continue to travel only through the selected
-OmarchyGS server.
+When distribution is configured, the server advertises a separate acquisition
+capability and serves only the currently effective selected digest. It requires
+the database selection, retained signed marketplace snapshot and key, lifecycle
+policy, and immutable secure-store bytes to agree; the response is bounded and
+self-verified, with no fallback to another release.
 
-Those are three distinct trust claims: a publisher signature proves origin and
-unchanged bytes, marketplace review records that marketplace's assessment, and
-server admission records the local operator's catalog decision. Marketplace
-publication cannot force admission. A server may eventually admit an
+The packaged client starts a native loopback companion with a random
+per-process credential. That companion requires a marketplace public key from
+client-controlled configuration, verifies the full key rather than trusting
+the server-supplied copy, then rechecks publisher release, marketplace snapshot,
+lifecycle policy, compatibility, digest, and selected-server admission before
+staging content. Private descriptor-relative storage keeps immutable cached
+content separate from exact server-profile mount records. Each mount records
+the trusted marketplace-key fingerprint; removal deletes only that exact
+profile pointer and leaves authoritative game state unchanged. Session pinning
+to a verified mount, render-plan preparation, and gameplay launch remain the
+next client slice; actions still travel only through the selected OmarchyGS
+server.
+
+Those are four distinct trust decisions: a publisher signature proves origin
+and unchanged bytes, marketplace review records that marketplace's assessment,
+server admission records the local operator's catalog decision, and the player
+client independently chooses which marketplace key it trusts. The selected
+server cannot replace that client trust anchor, and marketplace publication
+cannot force server admission. A server may eventually admit an
 `operator-custom` cartridge with no marketplace-review claim, but that changes
 provenance rather than containment: the package remains signed, inert, bounded,
 schema-checked, content-addressed, and rendered only through trusted QML. A
@@ -548,9 +580,11 @@ gate and failure routing.
 7. Tickets 031 and 032 implement stable server identity/profiles followed by
    one pinned marketplace, reviewed staging/inventory, independent audited
    server admission, and authenticated catalog metadata.
-8. The next cartridge slice adds main-client exact acquisition, local
-   cache/mounting, and launch integration without weakening trusted rendering.
-9. Later tickets publish the Provider SDK, add explicitly labeled
+8. Ticket 033 implements exact server distribution, independent client trust,
+   private cache, and server-profile mounts without weakening trusted rendering.
+9. The next cartridge slice binds a verified mount to session identity, prepares
+   the trusted render plan, and launches it inside the platform shell.
+10. Later tickets publish the Provider SDK, add explicitly labeled
    operator-custom cartridge trust, prove the server-module isolation model,
    and only then implement module administration and typed hooks.
 
@@ -578,4 +612,5 @@ decisions and monotonic policy versions.
 | Provider security foundation | `crates/game-provider`; migration `0014_provider_security_foundation.sql`; `docs/operators/provider-security.md`; Ticket 018 | `scripts/test-provider-conformance.sh`; TLS and sender authentication, public-only pinned egress, grant/replay/key/quota/lease/audit, lifecycle, race, and failure tests |
 | Remote authority migration | Constitution §10; ADR-0002; migration `0015`; `crates/server/src/provider_games.rs`; Ticket 019 | `scripts/test-provider-authority-pilot.sh`; one durable gameplay owner, exact replay/reconciliation, callback projection, lifecycle, independent database and restore evidence |
 | Marketplace synchronization and server admission | `marketplace.rs`, `marketplace_egress.rs`, `marketplace_sync.rs`, `cartridge_catalog.rs`; migration `0019`; administrator CLI and authenticated catalog route; Ticket 032 | Canonical signature hostile corpus; real TLS root/redirect/size tests; PostgreSQL replay/race/rollback/lifecycle tests; exact API and CLI fixtures; recovery rehearsal; security and authority review |
-| Remaining owner-operated distribution and extension direction | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; roadmap | Client acquisition/cache/mount/launch containment; separate publisher/marketplace/server attestations; custom-content provenance; provider/module separation; extension isolation, lifecycle, audit, and operator-responsibility review |
+| Player acquisition, cache, and mounts | `acquisition.rs`; `cartridge_distribution.rs`; `crates/client-cartridge-runtime`; `CartridgeController.qml`; migration `0020`; launcher/package scripts; Ticket 033 | Exact-selection/no-fallback PostgreSQL tests; hostile acquisition corpus; descriptor-relative permission/race tests; independent-key substitution denial; catalog-only QML compatibility; reproducible native package and cleanup smoke |
+| Remaining owner-operated launch and extension direction | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; roadmap | Session/mount/render-plan launch containment; custom-content provenance; provider/module separation; extension isolation, lifecycle, audit, and operator-responsibility review |

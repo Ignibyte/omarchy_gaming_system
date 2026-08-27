@@ -92,6 +92,10 @@ QtObject {
         _bearerToken = ""
     }
 
+    function trustedBearer() {
+        return _bearerToken
+    }
+
     function cancel() {
         if (_activeGeneration === 0)
             return

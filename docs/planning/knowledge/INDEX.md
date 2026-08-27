@@ -323,3 +323,16 @@ and in this register.
 | `PR-omarchy-gaming-system-test-reserved-prefix-interiors-at-shared-egress-boundary-001` | rule | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
 | `PR-omarchy-gaming-system-preflight-isolated-build-storage-001` | rule | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
 | `AD-omarchy-gaming-system-marketplace-sync-and-server-catalog-boundary-001` | decision | `../../architecture/game-cartridges.md` |
+| `BF-omarchy-gaming-system-companion-profile-lock-retention-001` | failure | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
+| `BF-omarchy-gaming-system-arch-native-lto-link-incompatibility-001` | failure | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
+| `BF-omarchy-gaming-system-server-supplied-marketplace-trust-anchor-001` | failure | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
+| `BF-omarchy-gaming-system-optional-acquisition-capability-hid-catalog-001` | failure | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
+| `BF-omarchy-gaming-system-focused-tests-missed-workspace-clippy-001` | failure | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
+| `PR-omarchy-gaming-system-release-retained-synchronization-locks-001` | rule | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
+| `PR-omarchy-gaming-system-prove-native-linking-in-package-environment-001` | rule | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
+| `PR-omarchy-gaming-system-authenticate-independent-claims-outside-claiming-authority-001` | rule | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
+| `PR-omarchy-gaming-system-negotiate-read-and-mutation-capabilities-separately-001` | rule | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
+| `PR-omarchy-gaming-system-run-warning-denied-workspace-clippy-before-canonical-gate-001` | rule | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
+| `AD-omarchy-gaming-system-client-controlled-marketplace-trust-and-profile-mounts-001` | decision | `../../architecture/game-cartridges.md`; `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md` |
+| `BF-omarchy-gaming-system-completed-spec-status-enum-drift-001` | failure | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
+| `PR-omarchy-gaming-system-use-exact-pipeline-status-enum-001` | rule | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |

@@ -3,6 +3,8 @@ type: "Reference"
 title: "Runtime foundation"
 openwiki_generated: true
 sources:
+  - id: openwiki-source-0196de8872a3fef5b0b350d3
+    resource: repo://client/qml/CartridgeController.qml
   - id: openwiki-source-490417654c55d88090cb369e
     resource: repo://client/qml/components/OgsScreenHeader.qml
   - id: openwiki-source-f4ccc0eff8d8cee134cf3ed5
@@ -15,10 +17,14 @@ sources:
     resource: repo://client/qml/Main.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
+  - id: openwiki-source-4ed0cbd1dd42080eafc4058b
+    resource: repo://client/qml/screens/GamesScreen.qml
   - id: openwiki-source-4f5334e859a4d83e2a196fcf
     resource: repo://client/qml/SocialController.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
+  - id: openwiki-source-a9681bd734a0aaee2540757d
+    resource: repo://crates/client-cartridge-runtime/src/main.rs
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
@@ -89,9 +95,11 @@ sources:
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
+  - id: openwiki-source-d85e6ea816d7c91e9828f7b2
+    resource: repo://packaging/arch/omarchygs
   - id: openwiki-source-a5928e7ee39885995efdc170
     resource: repo://scripts/dev.sh
-generated: {by: "codex", at: "2026-08-26T21:07:26.522Z"}
+generated: {by: "codex", at: "2026-08-27T01:49:04.244Z"}
 ---
 
 # Runtime foundation
@@ -113,6 +121,12 @@ environment values are absent. It is enabled only when the grant-signing seed,
 pairwise secret, message-signing seed, and callback authority are all present
 and valid; a partial or malformed set stops startup rather than exposing a
 partially configured broker.
+
+Startup may independently construct a `CartridgeDistributionRuntime` from the
+operator's existing secure-store configuration and pinned marketplace public
+key. The catalog remains available without it. Distribution is enabled only
+when the complete configuration is valid; otherwise startup fails rather than
+advertising an acquisition capability that cannot serve exact retained bytes.
 
 Configuration lives in `crates/server/src/config.rs`. `DATABASE_URL` and
 `OGS_BIND_ADDRESS` can override development defaults; `BBS_BIND_ADDRESS` is a
@@ -149,8 +163,10 @@ serialization, and the QML consumer work together.
 `GET /.well-known/omarchygs`. The exact successful document contains only
 `service`, `server_id`, `server_name`, `protocol_version`, and `capabilities`.
 Protocol 1 publishes one lexically ordered set of currently implemented
-versioned capabilities; the registered-provider capability appears only when
-the optional provider runtime exists. A missing durable identity returns a
+versioned capabilities. `games.cartridge-catalog.v1` is a base capability;
+`games.registered-provider.v1` appears only when the optional provider runtime
+exists, and `games.cartridge-acquisition.v1` appears only when the optional
+distribution runtime exists. A missing durable identity returns a
 generic `503 server_discovery_unavailable` rather than database detail. This
 compatibility contract is separate from `/health`, which remains operational
 liveness.
@@ -366,6 +382,22 @@ public persona, derive every authenticated actor path from that persona ID, and
 cancel and clear state when the actor changes. The production root owns one of
 each controller and refreshes the appropriate durable REST inventory when a
 corresponding screen becomes active.
+
+`CartridgeController` uses the same selected-persona gateway for the
+metadata-only server catalog and a separate authenticated loopback companion
+for local acquisition and mount operations. Catalog-only servers remain fully
+browsable; install and update controls require the separately advertised
+acquisition capability, an available companion, and a marketplace public key
+trusted by the client. A mounted record is presentation inventory only and does
+not create a game session or execute cartridge-supplied code.
+
+The native package launcher owns the companion lifecycle. It resolves an
+absolute regular non-symlink marketplace-key file from explicit environment,
+user configuration, or system configuration, creates a private runtime
+directory and random per-process bearer credential, passes the key path only to
+the Rust companion, and tells QML only whether independent trust is ready. The
+launcher terminates the companion and removes its runtime state when QML exits;
+an explicitly configured invalid key fails before either process is exposed.
 
 Social refresh serially loads incoming/outgoing requests, accepted
 connections, and the actor's private block inventory. Exact public-handle
@@ -868,7 +900,7 @@ and collisions, typed inbox and minimal sync payloads, exact-version acceptance
 and seat order, terminal history and lazy expiry, pending limits, initializer
 and block rollback, production Signal Siege v2 alternation/completion, and
 one-winner terminal races. QML client changes first prove two public profiles
-survive separate writer and reader processes, then run through the 44-case
+survive separate writer and reader processes, then run through the 46-case
 fixture corpus and four live scenarios in `scripts/dev.sh`; those
 prove contrast, semantic headings and status, deterministic focus, reversible
 Tab traversal, Escape authority, minimum-width containment, strict hostile-

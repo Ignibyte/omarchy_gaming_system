@@ -136,6 +136,74 @@ TestCase {
         tryCompare(applicationWindow.gameController, "loadState", "ready", 5000)
     }
 
+    function test_signed_cartridge_install_update_contract_and_remove() {
+        activate(object("homeGamesButton"))
+        tryCompare(applicationWindow.onboardingController, "state", "games")
+        tryVerify(function() {
+            return !applicationWindow.cartridgeController.busy
+                    && applicationWindow.cartridgeController.catalog.length === 1
+        }, 5000)
+        const controller = applicationWindow.cartridgeController
+        compare(controller.loadState, "unavailable")
+        compare(controller.mounts.length, 0)
+        controller.helperEndpoint = fixtureConfig.server_url
+        controller.helperCredential = "C".repeat(43)
+        controller.marketplaceTrusted = true
+        verify(controller.refresh())
+        tryVerify(function() {
+            return !controller.busy && controller.loadState === "ready"
+        }, 5000, controller.statusText + " // " + controller.errorText)
+        compare(controller.catalog.length, 1)
+        compare(controller.mounts.length, 0)
+        const release = controller.catalog[0]
+        compare(controller.actionLabel(release), "INSTALL")
+        verify(controller.install(release))
+        tryVerify(function() {
+            return !controller.busy && controller.loadState === "ready"
+                    && controller.mounts.length === 1
+        }, 5000, controller.statusText + " // " + controller.errorText)
+        verify(controller.isMountedExact(release))
+        compare(controller.actionLabel(release), "MOUNTED")
+
+        const hostile = clone(release)
+        hostile.destination = "https://attacker.example.invalid"
+        verify(!controller._validRelease(hostile))
+        const wrongProfile = clone(controller.mounts[0])
+        wrongProfile.server_id = "13131313-1313-4313-8313-131313131313"
+        verify(!controller._validMount(wrongProfile))
+        const unboundProfile = clone(controller.mounts[0])
+        delete unboundProfile.marketplace_key_sha256
+        verify(!controller._validMount(unboundProfile))
+
+        verify(controller.remove(release))
+        tryVerify(function() {
+            return !controller.busy && controller.loadState === "ready"
+                    && controller.mounts.length === 0
+        }, 5000, controller.statusText + " // " + controller.errorText)
+    }
+
+    function test_catalog_only_server_renders_metadata_without_enabling_install() {
+        const onboarding = applicationWindow.onboardingController
+        onboarding.showServerConfiguration()
+        verify(onboarding.connectToServer(fixtureConfig.catalog_only_url))
+        tryCompare(onboarding, "state", "access", 5000)
+        signInAndSelectActor()
+
+        activate(object("homeGamesButton"))
+        tryCompare(onboarding, "state", "games")
+        const controller = applicationWindow.cartridgeController
+        tryVerify(function() {
+            return !controller.busy && controller.catalog.length === 1
+        }, 5000, controller.statusText + " // " + controller.errorText)
+        compare(controller.acquisitionSupported, false)
+        verify(controller.statusText.indexOf("does not offer downloads") !== -1)
+        const catalogRepeater = object("cartridgeCatalogRepeater")
+        tryVerify(function() {
+            return catalogRepeater.count === 1 && catalogRepeater.itemAt(0) !== null
+        }, 3000, "catalog metadata delegate must render")
+        verify(!controller.install(controller.catalog[0]))
+    }
+
     function test_hostile_envelopes_preserve_safe_state_and_provider_is_inert() {
         applicationWindow.width = 920
         applicationWindow.height = 600

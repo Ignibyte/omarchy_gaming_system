@@ -29,11 +29,12 @@ sudo pacman -U ./omarchy-gaming-system-client-*.pkg.tar.zst
 ```
 
 Launch **Omarchy Gaming System** from the application menu or run
-`omarchygs`. The package contains only the trusted QML player client and uses
-Omarchy's `qt6-declarative` runtime; it does not install the Rust server,
-PostgreSQL, Cargo, or Docker. These locally built private-alpha artifacts are
-unsigned, so inspect the package and verify its SHA-256 sidecar through the
-same trusted channel as the source before installing it.
+`omarchygs`. The x86_64 package contains the trusted QML player client and its
+loopback Rust cartridge companion. It uses Omarchy's `qt6-declarative` runtime
+and does not install the community server, PostgreSQL, Cargo, or Docker. These
+locally built private-alpha artifacts are unsigned, so inspect the package and
+verify its SHA-256 sidecar through the same trusted channel as the source
+before installing it.
 
 See [client installation](docs/client-installation.md) for server selection,
 updates, removal, provenance, and the current trust boundaries.
@@ -268,9 +269,24 @@ the current digest in `expected` and the chosen digest in `desired`; exact
 replay returns the original receipt, while stale intent conflicts. A
 marketplace suspension, removal, or incompatibility makes a selected release
 ineffective without falling back to another version. Operators must explicitly
-choose recovery after a later valid snapshot. The authenticated metadata-only
-`GET /v1/cartridges` exposes effective admissions to players. Client download,
-cache, mount, and launch integration remain a later slice.
+choose recovery after a later valid snapshot.
+
+When `OGS_MARKETPLACE_PUBLIC_KEY` and `OGS_CARTRIDGE_STORE_ROOT` are both
+present at server startup, discovery advertises exact acquisition support and
+the authenticated acquisition route serves only the selected digest from the
+retained signed snapshot and immutable store. Partial distribution
+configuration fails startup; no alternate release is substituted.
+
+The client package verifies that exact server admission, marketplace snapshot,
+publisher release, lifecycle policy, SDK compatibility, archive, conformance,
+and attestation through its loopback Rust companion. Marketplace verification
+uses a client-controlled public key provisioned independently from the selected
+server; a response-supplied replacement key is rejected. Verified bytes enter a
+shared content-addressed cache, while read-only mount records remain isolated
+by server UUID. Installation and update are explicit, failures retain the old
+mount, and removal deletes only the selected profile mount—not remote state or
+shared immutable bytes. Binding a mounted render plan to a live game session
+and replacing the current platform-owned game screens remain a later slice.
 
 See [owner-operated servers](docs/operators/owner-operated-servers.md) and
 [operator safety and platform recovery](docs/operators/operator-safety-and-recovery.md)

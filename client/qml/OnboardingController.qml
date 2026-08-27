@@ -256,6 +256,19 @@ QtObject {
         return api.request(operation, method, path, document, authenticated !== false)
     }
 
+    function trustedCartridgeAuthority() {
+        if (!hasSession || !_validPersona(selectedPersona) || currentServer === null
+                || currentServer.capabilities.indexOf("games.cartridge-catalog.v1") === -1)
+            return null
+        return {
+            "origin": serverUrl,
+            "server_id": currentServer.server_id,
+            "device_bearer": api.trustedBearer(),
+            "acquisition_supported": currentServer.capabilities.indexOf(
+                                         "games.cartridge-acquisition.v1") !== -1
+        }
+    }
+
     function cancelPlayerRequest() {
         api.cancel()
     }

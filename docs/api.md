@@ -20,6 +20,7 @@ exact compatibility document:
     "accounts.invite-registration.v1",
     "auth.device-sessions.v1",
     "auth.totp.v1",
+    "games.cartridge-acquisition.v1",
     "games.cartridge-catalog.v1",
     "games.challenges.v1",
     "games.sessions.v1",
@@ -32,6 +33,10 @@ exact compatibility document:
   ]
 }
 ```
+
+`games.cartridge-acquisition.v1` is present only when the server has a complete
+reviewed cartridge-distribution configuration. Metadata-only servers omit it
+and do not register the acquisition route.
 
 The UUID is generated once by migration `0018`, is immutable in ordinary
 database operation, and survives PostgreSQL dump/restore. The public name is
@@ -839,8 +844,63 @@ download authority. Missing or invalid authentication returns the normal
 
 This catalog describes inert presentation releases selected by the server. It
 does not replace public `GET /v1/games`, which describes currently implemented
-gameplay authorities and rules versions, and it does not yet download or mount
-cartridge bytes in the player client.
+gameplay authorities and rules versions. The packaged client uses its exact
+digest and admission revision as the input to an explicit acquisition.
+
+## Acquire one exact Game Cartridge
+
+`GET /v1/cartridges/{game_key}/{archive_sha256}/acquisition`
+
+This route exists only while `games.cartridge-acquisition.v1` is advertised and
+requires a valid device-session Bearer token. The requested key and lowercase
+SHA-256 digest must name the current effective catalog selection. Success is
+canonical `application/json` with `Cache-Control: no-store`:
+
+```json
+{
+  "format": "omarchygs.cartridge-acquisition/v1",
+  "server_admission": {
+    "server_id": "58ee076d-0216-422c-b1e2-48ee7fa648bb",
+    "game_key": "door-legends",
+    "publisher_id": "ignibyte",
+    "rules_version": 1,
+    "cartridge_version": 2,
+    "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "signed_identity_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "admission_revision": 4
+  },
+  "marketplace_key": {
+    "format_version": 1,
+    "algorithm": "ed25519",
+    "key_id": "marketplace-2026",
+    "authority_id": "omarchygs-marketplace",
+    "verifying_key": "<base64url public key>"
+  },
+  "signed_marketplace_snapshot": "<base64url exact signed snapshot>",
+  "archive": "<base64url canonical .ogsc bytes>",
+  "conformance": "<base64url canonical conformance record>",
+  "release_attestation": "<base64url publisher release attestation>"
+}
+```
+
+The server resolves the exact immutable store entry and self-verifies the
+envelope before returning it. The response includes public verification
+evidence but no marketplace URL, download redirect, filesystem destination,
+credential, private key, operator reason, executable, raw QML, or backend
+endpoint. The client independently verifies the selected-server admission,
+requires `marketplace_key` to equal its complete locally provisioned
+marketplace trust key, then verifies the snapshot signature, publisher
+identity, lifecycle policy, SDK/host
+compatibility, archive, conformance, and attestation, then re-reads the catalog
+before mounting it. The response key is public evidence, not a trust-on-first-use
+channel; clients must not learn their marketplace trust root from this route or
+any other selected-server response.
+
+Invalid identity syntax returns 422 `cartridge_acquisition_invalid_input`.
+Absent, stale, denied, mismatched, or no-longer-effective exact releases return
+404 `cartridge_acquisition_denied` without distinguishing the cause. Missing or
+invalid authentication returns `invalid_session`; database or encoding failure
+returns 500 `internal_error`.
 
 ## List games
 

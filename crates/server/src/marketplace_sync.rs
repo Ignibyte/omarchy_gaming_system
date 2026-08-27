@@ -48,6 +48,7 @@ impl MarketplaceSyncError {
     }
 }
 
+#[derive(Clone)]
 pub struct LocalCatalogConfig {
     pub marketplace_key: CatalogPublicKey,
     pub store_root: PathBuf,
@@ -55,20 +56,28 @@ pub struct LocalCatalogConfig {
 
 impl LocalCatalogConfig {
     pub fn from_environment() -> Result<Self, MarketplaceSyncError> {
-        let key_path = env::var_os("OGS_MARKETPLACE_PUBLIC_KEY")
-            .map(PathBuf::from)
-            .ok_or(MarketplaceSyncError::InvalidConfig)?;
-        let store_root = env::var_os("OGS_CARTRIDGE_STORE_ROOT")
-            .map(PathBuf::from)
-            .ok_or(MarketplaceSyncError::InvalidConfig)?;
+        Self::optional_from_environment()?.ok_or(MarketplaceSyncError::InvalidConfig)
+    }
+
+    /// Load the all-or-nothing normal-server distribution configuration.
+    /// Neither variable means the metadata-only deployment profile; exactly
+    /// one variable is rejected.
+    pub fn optional_from_environment() -> Result<Option<Self>, MarketplaceSyncError> {
+        let key_path = env::var_os("OGS_MARKETPLACE_PUBLIC_KEY").map(PathBuf::from);
+        let store_root = env::var_os("OGS_CARTRIDGE_STORE_ROOT").map(PathBuf::from);
+        let (key_path, store_root) = match (key_path, store_root) {
+            (None, None) => return Ok(None),
+            (Some(key_path), Some(store_root)) => (key_path, store_root),
+            _ => return Err(MarketplaceSyncError::InvalidConfig),
+        };
         let marketplace_key =
             read_catalog_public_key(&key_path).map_err(|_| MarketplaceSyncError::InvalidConfig)?;
         SecureCartridgeStore::open_existing(&store_root)
             .map_err(|_| MarketplaceSyncError::InvalidConfig)?;
-        Ok(Self {
+        Ok(Some(Self {
             marketplace_key,
             store_root,
-        })
+        }))
     }
 
     pub fn open_store(&self) -> Result<SecureCartridgeStore, MarketplaceSyncError> {
@@ -150,6 +159,16 @@ pub async fn synchronize_with_client(
     .map_err(map_catalog)?
     {
         SnapshotPreflight::Replay => {
+            cartridge_catalog::retain_snapshot_evidence(
+                pool,
+                config.origin.as_str(),
+                &config.local.marketplace_key,
+                &payload,
+                &snapshot_digest,
+                &snapshot_bytes,
+            )
+            .await
+            .map_err(map_catalog)?;
             let inventory = cartridge_catalog::list_inventory(pool)
                 .await
                 .map_err(map_catalog)?;
@@ -233,6 +252,7 @@ pub async fn synchronize_with_client(
         &config.local.marketplace_key,
         &payload,
         &snapshot_digest,
+        &snapshot_bytes,
         &reviewed,
     )
     .await
