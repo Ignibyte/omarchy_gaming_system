@@ -148,6 +148,12 @@ TestCase {
         compare(controller.mounts.length, 0)
         controller.helperEndpoint = fixtureConfig.server_url
         controller.helperCredential = "C".repeat(43)
+        verify(controller.refresh())
+        tryVerify(function() {
+            return !controller.busy && controller.loadState === "ready"
+        }, 5000, controller.statusText + " // " + controller.errorText)
+        verify(controller.statusText.indexOf("exact removal") !== -1)
+        verify(!controller.install(controller.catalog[0]))
         controller.marketplaceTrusted = true
         verify(controller.refresh())
         tryVerify(function() {
@@ -422,6 +428,23 @@ TestCase {
         compare(controller.cartridgeEntryScreenId, "lobby")
         compare(controller.cartridgeNavigation.length, 1)
         compare(controller.cartridgeNavigation[0].target_screen, "chronicle")
+
+        controller.marketplaceTrusted = true
+        verify(controller._sessionAcquisitionSupported())
+        controller._helperGeneration = 991
+        controller._helperOperation = "cartridge_render"
+        controller._handleHelperFinished(
+                    991, "cartridge_render", 403,
+                    JSON.stringify({"error": {
+                        "code": "companion_marketplace_untrusted",
+                        "message": "the mount policy key is no longer current"
+                    }}), "")
+        compare(controller.cartridgeRenderState, "missing")
+        compare(controller.statusText,
+                "This mount needs current marketplace policy before it can render.")
+        verify(controller.cartridgeInstallAvailable)
+        activate(object("installPinnedCartridgeButton"))
+        tryCompare(controller, "cartridgeRenderState", "ready", 5000)
 
         const playerGeneration = controller._expectedGeneration
         verify(controller.activateCartridgeAction("navigate.chronicle", {}))

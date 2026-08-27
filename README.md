@@ -215,7 +215,8 @@ then a separate audited command admits one exact release for this community.
 
 Provision an existing Linux directory owned by the account running the command
 and inaccessible to group or other users, then configure the exact HTTPS
-origin, Ed25519 public-key document, DER TLS root, and store root:
+origin, DER TLS root, store root, and either a manual Ed25519 public-key
+document or a root-authenticated trust bundle:
 
 ```bash
 install -d -m 0700 /var/lib/omarchygs/cartridges
@@ -224,6 +225,20 @@ export OGS_MARKETPLACE_PUBLIC_KEY=/etc/omarchygs/marketplace-public.json
 export OGS_MARKETPLACE_TLS_ROOT_DER=/etc/omarchygs/marketplace-root.der
 export OGS_CARTRIDGE_STORE_ROOT=/var/lib/omarchygs/cartridges
 ```
+
+Channel mode replaces `OGS_MARKETPLACE_PUBLIC_KEY` with the complete set below;
+mixed or partial trust configuration fails closed:
+
+```bash
+export OGS_MARKETPLACE_TRUST_ROOT=/etc/omarchygs/marketplace-trust-root.json
+export OGS_MARKETPLACE_TRUST_BUNDLE=/etc/omarchygs/marketplace-trust.signed.json
+export OGS_MARKETPLACE_TRUST_CHANNEL_ORIGIN=https://packages.example.com/v1/
+```
+
+The offline-root-signed bundle pins the exact current marketplace snapshot and
+complete active/retired/revoked key history. PostgreSQL persists its highest
+authenticated state, so an older bundle or live stale process cannot revive a
+retired or revoked key.
 
 The marketplace origin must be a canonical HTTPS domain origin. The sync
 client accepts only the configured TLS root, public DNS destinations, relative
@@ -271,7 +286,7 @@ marketplace suspension, removal, or incompatibility makes a selected release
 ineffective without falling back to another version. Operators must explicitly
 choose recovery after a later valid snapshot.
 
-When `OGS_MARKETPLACE_PUBLIC_KEY` and `OGS_CARTRIDGE_STORE_ROOT` are both
+When the store and exactly one complete manual or channel trust mode are
 present at server startup, discovery advertises exact acquisition support and
 the authenticated current route serves only the selected digest from the
 retained signed snapshot and immutable store. The participant session route can
@@ -279,11 +294,14 @@ instead serve the exact immutable pin through retained historical evidence
 without consulting today's selection. Partial distribution
 configuration fails startup; no alternate release is substituted.
 
-The client package verifies that exact server admission, marketplace snapshot,
-publisher release, lifecycle policy, SDK compatibility, archive, conformance,
-and attestation through its loopback Rust companion. Marketplace verification
-uses a client-controlled public key provisioned independently from the selected
-server; a response-supplied replacement key is rejected. Verified bytes enter a
+The client package verifies that exact server admission, historical marketplace
+snapshot, signed current-policy snapshot, publisher release, lifecycle policy,
+SDK compatibility, archive, conformance, and attestation through its loopback
+Rust companion. Marketplace verification uses either a client-controlled
+manual key or an explicitly enrolled packaged public channel provisioned
+independently from the selected server; response-supplied trust is rejected.
+The packaged channel also supports exact authenticated native-package staging
+but never runs pacman, sudo, a shell, or an installer. Verified cartridge bytes enter a
 shared content-addressed cache, while read-only mount records remain isolated
 by server UUID and exact game/digest/admission revision. Installation and update
 are explicit, failures retain all prior mounts, and exact removal deletes only

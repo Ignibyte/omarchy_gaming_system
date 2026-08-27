@@ -861,7 +861,7 @@ canonical `application/json` with `Cache-Control: no-store`:
 
 ```json
 {
-  "format": "omarchygs.cartridge-acquisition/v1",
+  "format": "omarchygs.cartridge-acquisition/v2",
   "server_admission": {
     "server_id": "58ee076d-0216-422c-b1e2-48ee7fa648bb",
     "game_key": "door-legends",
@@ -879,7 +879,15 @@ canonical `application/json` with `Cache-Control: no-store`:
     "authority_id": "omarchygs-marketplace",
     "verifying_key": "<base64url public key>"
   },
+  "policy_marketplace_key": {
+    "format_version": 1,
+    "algorithm": "ed25519",
+    "key_id": "marketplace-2027",
+    "authority_id": "omarchygs-marketplace",
+    "verifying_key": "<base64url current-policy public key>"
+  },
   "signed_marketplace_snapshot": "<base64url exact signed snapshot>",
+  "signed_policy_marketplace_snapshot": "<base64url exact signed current-policy snapshot>",
   "archive": "<base64url canonical .ogsc bytes>",
   "conformance": "<base64url canonical conformance record>",
   "release_attestation": "<base64url publisher release attestation>"
@@ -890,14 +898,20 @@ The server resolves the exact immutable store entry and self-verifies the
 envelope before returning it. The response includes public verification
 evidence but no marketplace URL, download redirect, filesystem destination,
 credential, private key, operator reason, executable, raw QML, or backend
-endpoint. The client independently verifies the selected-server admission,
-requires `marketplace_key` to equal its complete locally provisioned
-marketplace trust key, then verifies the snapshot signature, publisher
-identity, lifecycle policy, SDK/host
+endpoint. The client independently verifies the selected-server admission and
+requires both marketplace keys and their snapshot versions to be authorized by
+its locally provisioned manual key or packaged-channel keyring. The retained
+release snapshot may use an eligible historical key; the signed policy snapshot
+must use the active key for the root-authenticated current version. It then
+verifies publisher identity, lifecycle policy, SDK/host
 compatibility, archive, conformance, and attestation, then re-reads the catalog
 before mounting it. The response key is public evidence, not a trust-on-first-use
 channel; clients must not learn their marketplace trust root from this route or
 any other selected-server response.
+
+The v1 document remains accepted by compatible clients when historical
+evidence and current policy use the same exact key, but current servers emit v2
+so key rotation never requires fabricating or rewriting old provenance.
 
 Invalid identity syntax returns 422 `cartridge_acquisition_invalid_input`.
 Absent, stale, denied, mismatched, or no-longer-effective exact releases return
@@ -912,7 +926,7 @@ returns 500 `internal_error`.
 This route exists only while `games.session-cartridge-acquisition.v1` is
 advertised. It requires a valid device-session Bearer that owns `persona_id`,
 and that persona must participate in the requested session. Success returns the
-same canonical `omarchygs.cartridge-acquisition/v1` document as the current
+same canonical `omarchygs.cartridge-acquisition/v2` document as the current
 catalog route, with `Cache-Control: no-store`.
 
 The release is selected only by the session's immutable presentation pin and
@@ -923,7 +937,8 @@ provenance proves origin and unchanged bytes, not present authorization.
 
 The native companion reads the participant-visible session before acquisition,
 derives the exact expected server admission, verifies the acquisition with its
-client-controlled marketplace key, then reads the session again before
+client-controlled manual or channel trust, including separate evidence and
+current-policy keys when rotated, then reads the session again before
 publishing the exact mount. A changed pin, server, lifecycle decision, digest,
 revision, or evidence fails closed.
 

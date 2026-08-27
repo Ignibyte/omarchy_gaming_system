@@ -18,11 +18,13 @@ ApplicationWindow {
     readonly property alias socialController: social
     readonly property alias gameController: games
     readonly property alias cartridgeController: cartridges
+    readonly property alias marketplaceController: marketplace
     property bool smokeTest: Qt.application.arguments.indexOf("--smoke-test") !== -1
     readonly property bool hasShellError: onboarding.errorText !== ""
                                           || social.errorText !== ""
                                           || games.errorText !== ""
                                           || cartridges.errorText !== ""
+                                          || marketplace.errorText !== ""
     readonly property bool playerReady: ["home", "social", "inbox", "games",
                                          "challenges", "gameplay"].indexOf(onboarding.state) !== -1
     readonly property string shellStateLabel: hasShellError ? "ERROR"
@@ -67,6 +69,7 @@ ApplicationWindow {
                 Qt.callLater(function() { social.refreshInbox() })
             else if (state === "games")
                 Qt.callLater(function() {
+                    marketplace.refresh()
                     games.refreshGames()
                     cartridges.refresh()
                 })
@@ -87,8 +90,15 @@ ApplicationWindow {
         actor: onboarding.selectedPersona
         helperEndpoint: root.argumentValue("--companion-endpoint=", "")
         helperCredential: root.argumentValue("--companion-credential=", "")
-        marketplaceTrusted: root.argumentValue(
-                                "--companion-marketplace-trusted=", "false") === "true"
+        marketplaceTrusted: marketplace.marketplaceReady
+    }
+
+    MarketplaceController {
+        id: marketplace
+        helperEndpoint: root.argumentValue("--companion-endpoint=", "")
+        helperCredential: root.argumentValue("--companion-credential=", "")
+        configured: root.argumentValue(
+                        "--companion-marketplace-trusted=", "false") === "true"
     }
 
     CartridgeController {
@@ -97,8 +107,7 @@ ApplicationWindow {
         actor: onboarding.selectedPersona
         helperEndpoint: root.argumentValue("--companion-endpoint=", "")
         helperCredential: root.argumentValue("--companion-credential=", "")
-        marketplaceTrusted: root.argumentValue(
-                                "--companion-marketplace-trusted=", "false") === "true"
+        marketplaceTrusted: marketplace.marketplaceReady
     }
 
     Component { id: connectionComponent; Screens.ConnectionScreen { controller: onboarding } }
@@ -119,6 +128,7 @@ ApplicationWindow {
         Screens.GamesScreen {
             controller: games
             cartridgeController: cartridges
+            marketplaceController: marketplace
             sessionController: onboarding
         }
     }
@@ -134,6 +144,14 @@ ApplicationWindow {
     Component.onCompleted: {
         const initialUrl = argumentValue("--server-url=", "http://127.0.0.1:8080")
         onboarding.initialize(initialUrl)
+    }
+
+    Connections {
+        target: marketplace
+        function onMarketplaceReadyChanged() {
+            if (marketplace.marketplaceReady && onboarding.state === "games")
+                Qt.callLater(function() { cartridges.refresh() })
+        }
     }
 
     Timer {

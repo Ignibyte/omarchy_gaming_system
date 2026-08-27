@@ -1,9 +1,12 @@
 use std::time::Duration;
 
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use futures_util::StreamExt as _;
 use omarchygs_game_cartridge::{
-    AcquisitionServerAdmission, CatalogPublicKey, MAX_ACQUISITION_DOCUMENT_BYTES,
-    VerifiedAcquisition, rich_2d_host_profile, supported_sdk_identity, verify_acquisition_bytes,
+    ACQUISITION_FORMAT, ACQUISITION_FORMAT_V2, AcquisitionServerAdmission, CartridgeAcquisition,
+    CatalogPublicKey, MAX_ACQUISITION_DOCUMENT_BYTES, MAX_MARKETPLACE_SNAPSHOT_BYTES,
+    VerifiedAcquisition, rich_2d_host_profile, supported_sdk_identity,
+    verify_acquisition_bytes_with_policy_key, verify_marketplace_snapshot_bytes,
 };
 use reqwest::{Client, Response, StatusCode, header};
 use serde::{Deserialize, Serialize};
@@ -11,7 +14,7 @@ use url::Url;
 use uuid::Uuid;
 use zeroize::Zeroizing;
 
-use crate::{CompanionError, MountRecord, Result};
+use crate::{ClientTrustSnapshot, CompanionError, MountRecord, Result};
 
 const MAX_DISCOVERY_BYTES: usize = 16 * 1024;
 const MAX_CATALOG_BYTES: usize = 256 * 1024;
@@ -43,9 +46,50 @@ pub struct RemoteAcquisition {
     pub mount: MountRecord,
 }
 
+pub trait AcquisitionTrust {
+    fn authorize_key(&self, key: &CatalogPublicKey, snapshot_version: u64) -> Result<()>;
+    fn authorize_current_policy_key(
+        &self,
+        key: &CatalogPublicKey,
+        snapshot_version: u64,
+    ) -> Result<()>;
+}
+
+impl AcquisitionTrust for CatalogPublicKey {
+    fn authorize_key(&self, key: &CatalogPublicKey, snapshot_version: u64) -> Result<()> {
+        if snapshot_version > 0 && self == key {
+            Ok(())
+        } else {
+            Err(CompanionError::MarketplaceUntrusted)
+        }
+    }
+
+    fn authorize_current_policy_key(
+        &self,
+        key: &CatalogPublicKey,
+        snapshot_version: u64,
+    ) -> Result<()> {
+        self.authorize_key(key, snapshot_version)
+    }
+}
+
+impl AcquisitionTrust for ClientTrustSnapshot {
+    fn authorize_key(&self, key: &CatalogPublicKey, snapshot_version: u64) -> Result<()> {
+        ClientTrustSnapshot::authorize_key(self, key, snapshot_version)
+    }
+
+    fn authorize_current_policy_key(
+        &self,
+        key: &CatalogPublicKey,
+        snapshot_version: u64,
+    ) -> Result<()> {
+        self.authorize_current_key(key, snapshot_version)
+    }
+}
+
 pub async fn acquire(
     mut request: AcquireRequest,
-    trusted_marketplace_key: &CatalogPublicKey,
+    trusted_marketplace: &impl AcquisitionTrust,
 ) -> Result<RemoteAcquisition> {
     let origin = selected_origin(&request.server_origin)?;
     let server_id = exact_uuid(&request.server_id)?;
@@ -102,11 +146,13 @@ pub async fn acquire(
         CompanionError::AdmissionChanged,
     )
     .await?;
+    let (evidence_key, policy_key) = authorized_acquisition_keys(&bytes, trusted_marketplace)?;
     let sdk = supported_sdk_identity().map_err(|_| CompanionError::Rejected)?;
-    let verified = verify_acquisition_bytes(
+    let verified = verify_acquisition_bytes_with_policy_key(
         &bytes,
         &expected,
-        trusted_marketplace_key,
+        &evidence_key,
+        &policy_key,
         &sdk,
         &rich_2d_host_profile(),
     )
@@ -132,7 +178,7 @@ pub async fn acquire(
 
 pub async fn acquire_session(
     mut request: SessionAcquireRequest,
-    trusted_marketplace_key: &CatalogPublicKey,
+    trusted_marketplace: &impl AcquisitionTrust,
 ) -> Result<RemoteAcquisition> {
     let origin = selected_origin(&request.server_origin)?;
     let server_id = exact_uuid(&request.server_id)?;
@@ -166,11 +212,13 @@ pub async fn acquire_session(
         CompanionError::AdmissionChanged,
     )
     .await?;
+    let (evidence_key, policy_key) = authorized_acquisition_keys(&bytes, trusted_marketplace)?;
     let sdk = supported_sdk_identity().map_err(|_| CompanionError::Rejected)?;
-    let verified = verify_acquisition_bytes(
+    let verified = verify_acquisition_bytes_with_policy_key(
         &bytes,
         &expected,
-        trusted_marketplace_key,
+        &evidence_key,
+        &policy_key,
         &sdk,
         &rich_2d_host_profile(),
     )
@@ -186,6 +234,75 @@ pub async fn acquire_session(
         &verified,
     )?;
     Ok(RemoteAcquisition { verified, mount })
+}
+
+fn authorized_acquisition_keys(
+    bytes: &[u8],
+    trust: &impl AcquisitionTrust,
+) -> Result<(CatalogPublicKey, CatalogPublicKey)> {
+    if bytes.is_empty() || bytes.len() > MAX_ACQUISITION_DOCUMENT_BYTES {
+        return Err(CompanionError::Rejected);
+    }
+    let document: CartridgeAcquisition =
+        serde_json::from_slice(bytes).map_err(|_| CompanionError::Rejected)?;
+    if serde_json::to_vec(&document).map_err(|_| CompanionError::Rejected)? != bytes {
+        return Err(CompanionError::Rejected);
+    }
+    let snapshot = authenticated_snapshot(
+        &document.signed_marketplace_snapshot,
+        &document.marketplace_key,
+    )?;
+    trust
+        .authorize_key(&document.marketplace_key, snapshot.snapshot_version)
+        .map_err(|_| CompanionError::Rejected)?;
+    let policy_key = match document.format.as_str() {
+        ACQUISITION_FORMAT
+            if document.policy_marketplace_key.is_none()
+                && document.signed_policy_marketplace_snapshot.is_none() =>
+        {
+            trust
+                .authorize_current_policy_key(&document.marketplace_key, snapshot.snapshot_version)
+                .map_err(|_| CompanionError::Rejected)?;
+            document.marketplace_key.clone()
+        }
+        ACQUISITION_FORMAT_V2 => {
+            let policy_key = document
+                .policy_marketplace_key
+                .clone()
+                .ok_or(CompanionError::Rejected)?;
+            let policy_snapshot = authenticated_snapshot(
+                document
+                    .signed_policy_marketplace_snapshot
+                    .as_deref()
+                    .ok_or(CompanionError::Rejected)?,
+                &policy_key,
+            )?;
+            trust
+                .authorize_current_policy_key(&policy_key, policy_snapshot.snapshot_version)
+                .map_err(|_| CompanionError::Rejected)?;
+            policy_key
+        }
+        _ => return Err(CompanionError::Rejected),
+    };
+    Ok((document.marketplace_key, policy_key))
+}
+
+fn authenticated_snapshot(
+    encoded: &str,
+    key: &CatalogPublicKey,
+) -> Result<omarchygs_game_cartridge::MarketplaceSnapshotPayload> {
+    if encoded.is_empty()
+        || encoded.len() > MAX_MARKETPLACE_SNAPSHOT_BYTES.saturating_mul(4).div_ceil(3) + 4
+    {
+        return Err(CompanionError::Rejected);
+    }
+    let snapshot_bytes = URL_SAFE_NO_PAD
+        .decode(encoded)
+        .map_err(|_| CompanionError::Rejected)?;
+    if snapshot_bytes.is_empty() || snapshot_bytes.len() > MAX_MARKETPLACE_SNAPSHOT_BYTES {
+        return Err(CompanionError::Rejected);
+    }
+    verify_marketplace_snapshot_bytes(&snapshot_bytes, key).map_err(|_| CompanionError::Rejected)
 }
 
 async fn require_discovery_capability(
@@ -622,6 +739,7 @@ mod tests {
             Arc,
             atomic::{AtomicUsize, Ordering},
         },
+        time::{SystemTime, UNIX_EPOCH},
     };
 
     use axum::{
@@ -639,11 +757,16 @@ mod tests {
         generate_keypair, rich_2d_host_profile, sign_catalog_policy, sign_marketplace_snapshot,
         verify_release_directory,
     };
+    use omarchygs_marketplace_trust::{
+        MarketplaceKeyStatus, MarketplaceTrustKey, MarketplaceTrustPayload, catalog_key_sha256,
+        generate_trust_root_keypair, sign_marketplace_trust, signed_trust_bytes,
+        verify_marketplace_trust_bytes,
+    };
     use serde_json::{Value, json};
     use tokio::net::TcpListener;
 
     use super::*;
-    use crate::ClientCartridgeCache;
+    use crate::{ClientCartridgeCache, ClientTrustSnapshot};
 
     const REVISION: &str = "1111111111111111111111111111111111111111";
     const BUILDER_DIGEST: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -651,6 +774,48 @@ mod tests {
     const PERSONA_ID: &str = "22222222-2222-4222-8222-222222222222";
     const SESSION_ID: &str = "33333333-3333-4333-8333-333333333333";
     const BEARER: &str = "ogs1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+    fn channel_trust(
+        current_snapshot_version: u64,
+        keys: Vec<MarketplaceTrustKey>,
+    ) -> ClientTrustSnapshot {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock should be valid")
+            .as_secs();
+        let authority_id = keys
+            .last()
+            .expect("channel trust needs an active key")
+            .key
+            .authority_id
+            .clone();
+        let (root_private, root_public) =
+            generate_trust_root_keypair("root-1", "official").expect("root should generate");
+        let payload = MarketplaceTrustPayload {
+            format: "omarchygs.marketplace-trust-channel/v2".to_owned(),
+            channel_id: "official".to_owned(),
+            channel_name: "Official OmarchyGS".to_owned(),
+            channel_origin: "https://packages.example.test/v1/".to_owned(),
+            marketplace_origin: "https://market.example.test/v1/".to_owned(),
+            marketplace_authority_id: authority_id,
+            bundle_version: current_snapshot_version,
+            current_snapshot_version,
+            not_before_unix: now - 10,
+            expires_at_unix: now + 3600,
+            keys,
+            packages: Vec::new(),
+        };
+        let signed = sign_marketplace_trust(&payload, &root_private).expect("trust should sign");
+        let trust = verify_marketplace_trust_bytes(
+            &signed_trust_bytes(&signed).expect("trust bytes"),
+            &root_public,
+            "official",
+            "https://packages.example.test/v1/",
+            now,
+        )
+        .expect("trust should verify");
+        ClientTrustSnapshot::Channel(Arc::new(trust))
+    }
 
     #[tokio::test]
     async fn exact_remote_acquisition_mounts_and_catalog_change_fails_closed() {
@@ -719,6 +884,37 @@ mod tests {
         assert_eq!(chronicle.screen_id, "chronicle");
         assert_eq!(chronicle.entry_screen_id, "lobby");
         assert_eq!(chronicle.navigation[0].target_screen, "lobby");
+
+        let (_, replacement_key) =
+            generate_catalog_keypair("marketplace-primary-v2", "marketplace").unwrap();
+        let rotated = channel_trust(
+            2,
+            vec![
+                MarketplaceTrustKey {
+                    key_sha256: catalog_key_sha256(&fixture.marketplace_public).unwrap(),
+                    key: fixture.marketplace_public.clone(),
+                    status: MarketplaceKeyStatus::Retired,
+                    first_snapshot_version: 1,
+                    last_snapshot_version: Some(1),
+                },
+                MarketplaceTrustKey {
+                    key_sha256: catalog_key_sha256(&replacement_key).unwrap(),
+                    key: replacement_key,
+                    status: MarketplaceKeyStatus::Active,
+                    first_snapshot_version: 2,
+                    last_snapshot_version: None,
+                },
+            ],
+        );
+        assert!(matches!(
+            crate::render::compile_mounted_render_plan_with_trust(
+                &cache,
+                &render_request,
+                &rotated,
+            ),
+            Err(CompanionError::MarketplaceUntrusted)
+        ));
+
         render_request.server_origin = "https://other.example.test".to_owned();
         assert!(matches!(
             crate::compile_mounted_render_plan(
@@ -738,6 +934,40 @@ mod tests {
             vec![mounted]
         );
         server.abort();
+
+        let exact_current = channel_trust(
+            1,
+            vec![MarketplaceTrustKey {
+                key_sha256: catalog_key_sha256(&fixture.marketplace_public).unwrap(),
+                key: fixture.marketplace_public.clone(),
+                status: MarketplaceKeyStatus::Active,
+                first_snapshot_version: 1,
+                last_snapshot_version: None,
+            }],
+        );
+        let (channel_origin, channel_server) = fixture.spawn(false).await;
+        acquire(fixture.request(channel_origin), &exact_current)
+            .await
+            .expect("the exact declared current snapshot should acquire");
+        channel_server.abort();
+
+        let stale_current = channel_trust(
+            2,
+            vec![MarketplaceTrustKey {
+                key_sha256: catalog_key_sha256(&fixture.marketplace_public).unwrap(),
+                key: fixture.marketplace_public.clone(),
+                status: MarketplaceKeyStatus::Active,
+                first_snapshot_version: 1,
+                last_snapshot_version: None,
+            }],
+        );
+        let (stale_origin, stale_server) = fixture.spawn(false).await;
+        let error = match acquire(fixture.request(stale_origin), &stale_current).await {
+            Ok(_) => panic!("an older active-key policy snapshot must be rejected"),
+            Err(error) => error,
+        };
+        assert_eq!(error.code(), "companion_server_rejected");
+        stale_server.abort();
 
         let (_, substituted_marketplace_key) =
             generate_catalog_keypair("marketplace-primary-v1", "marketplace").unwrap();
@@ -767,7 +997,7 @@ mod tests {
 
     #[tokio::test]
     async fn historical_session_acquisition_uses_the_exact_session_pin() {
-        let fixture = RemoteFixture::new();
+        let fixture = RemoteFixture::with_status(CatalogStatus::Retired);
         let (origin, server) = fixture.spawn_session(false).await;
         let acquired = acquire_session(
             SessionAcquireRequest {
@@ -790,6 +1020,12 @@ mod tests {
             acquired.mount.admission_revision,
             fixture.admission.admission_revision
         );
+        assert_eq!(acquired.mount.lifecycle_status, "retired");
+        let cache_root = tempfile::tempdir().unwrap();
+        let cache = ClientCartridgeCache::open(&cache_root.path().join("cache")).unwrap();
+        cache
+            .install_session(&acquired.verified, acquired.mount.clone())
+            .expect("an active session may refresh a retired exact cartridge");
         server.abort();
 
         let (changed_origin, changed_server) = fixture.spawn_session(true).await;
@@ -850,10 +1086,23 @@ mod tests {
         catalog: Value,
         marketplace_public: CatalogPublicKey,
         admission: AcquisitionServerAdmission,
+        lifecycle_status: String,
     }
 
     impl RemoteFixture {
         fn new() -> Self {
+            Self::with_status(CatalogStatus::Active)
+        }
+
+        fn with_status(status: CatalogStatus) -> Self {
+            let lifecycle_status = match status {
+                CatalogStatus::Active => "active",
+                CatalogStatus::Deprecated => "deprecated",
+                CatalogStatus::Suspended => "suspended",
+                CatalogStatus::Revoked => "revoked",
+                CatalogStatus::Retired => "retired",
+            }
+            .to_owned();
             let temp = tempfile::tempdir().unwrap();
             let sdk = temp.path().join("sdk");
             let release_root = temp.path().join("release");
@@ -886,7 +1135,7 @@ mod tests {
                 &release,
                 &marketplace_private,
                 1,
-                CatalogStatus::Active,
+                status,
                 "Reviewed exact release.",
             )
             .unwrap();
@@ -951,7 +1200,7 @@ mod tests {
                         "reviewed_by": "review-team",
                         "review_summary": "Bounded first-party review passed.",
                         "policy_version": 1,
-                        "lifecycle_status": "active"
+                        "lifecycle_status": lifecycle_status
                     },
                     "server_admission": {"revision": admission.admission_revision}
                 }]
@@ -962,6 +1211,7 @@ mod tests {
                 catalog,
                 marketplace_public,
                 admission,
+                lifecycle_status,
             }
         }
 
@@ -987,6 +1237,7 @@ mod tests {
                 game_key: self.admission.game_key.clone(),
                 digest: self.admission.archive_sha256.clone(),
                 admission: self.admission.clone(),
+                lifecycle_status: self.lifecycle_status.clone(),
             };
             let app = Router::new()
                 .route("/.well-known/omarchygs", get(discovery))
@@ -1018,6 +1269,7 @@ mod tests {
                 game_key: self.admission.game_key.clone(),
                 digest: self.admission.archive_sha256.clone(),
                 admission: self.admission.clone(),
+                lifecycle_status: self.lifecycle_status.clone(),
             };
             let app = Router::new()
                 .route("/.well-known/omarchygs", get(discovery))
@@ -1050,6 +1302,7 @@ mod tests {
         game_key: String,
         digest: String,
         admission: AcquisitionServerAdmission,
+        lifecycle_status: String,
     }
 
     async fn discovery() -> Json<Value> {
@@ -1126,7 +1379,7 @@ mod tests {
                 "archive_sha256": state.admission.archive_sha256,
                 "signed_identity_sha256": state.admission.signed_identity_sha256,
                 "admission_revision": admission_revision,
-                "lifecycle_status": "active",
+                "lifecycle_status": state.lifecycle_status,
                 "active_session_policy": "continue"
             },
             "result": null,

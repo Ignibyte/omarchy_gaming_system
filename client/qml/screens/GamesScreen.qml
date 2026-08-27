@@ -8,6 +8,7 @@ Item {
 
     required property var controller
     required property var cartridgeController
+    required property var marketplaceController
     required property var sessionController
 
     Components.OgsTheme { id: theme }
@@ -50,7 +51,9 @@ Item {
                     text: "REFRESH"
                     accessibleName: "Refresh game cartridges and sessions"
                     enabled: !controller.busy && !cartridgeController.busy
+                             && !marketplaceController.busy
                     onClicked: {
+                        marketplaceController.refresh()
                         controller.refreshGames()
                         cartridgeController.refresh()
                     }
@@ -80,6 +83,217 @@ Item {
                 accessibleName: "Retry the same game operation identity"
                 enabled: !controller.busy
                 onClicked: controller.retryPendingMutation()
+            }
+
+            Components.OgsSectionLabel {
+                Layout.fillWidth: true
+                text: "MARKETPLACE TRUST & CLIENT PACKAGES"
+            }
+
+            Components.OgsStatusBanner {
+                Layout.fillWidth: true
+                message: marketplaceController.errorText !== ""
+                         ? marketplaceController.errorText
+                         : marketplaceController.statusText
+                tone: marketplaceController.errorText !== "" ? "error"
+                    : marketplaceController.busy ? "working"
+                    : marketplaceController.marketplaceReady ? "success" : "warning"
+                accessibleDescription: "Independent marketplace trust, key rotation, and reviewed client package state"
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: marketplaceController.trust !== null
+                         && marketplaceController.trust.mode === "channel"
+                spacing: 3
+
+                Text {
+                    Layout.fillWidth: true
+                    text: marketplaceController.trust === null ? ""
+                          : "CHANNEL " + marketplaceController.trust.channel_name
+                            + " // " + marketplaceController.trust.channel_origin
+                            + " // BUNDLE " + marketplaceController.trust.bundle_version
+                            + " // EXPIRES UNIX "
+                            + marketplaceController.trust.expires_at_unix
+                    textFormat: Text.PlainText
+                    color: theme.textSecondary
+                    font.family: theme.fontFamily
+                    font.pixelSize: theme.captionSize
+                    wrapMode: Text.WrapAnywhere
+                }
+
+                Repeater {
+                    model: marketplaceController.trust === null
+                           ? [] : marketplaceController.trust.keys
+                    delegate: Text {
+                        required property var modelData
+                        Layout.fillWidth: true
+                        text: "KEY " + modelData.status.toUpperCase() + " // "
+                              + modelData.key_sha256 + " // SNAPSHOTS "
+                              + modelData.first_snapshot_version + "–"
+                              + (modelData.last_snapshot_version === undefined
+                                 ? "CURRENT" : modelData.last_snapshot_version)
+                        textFormat: Text.PlainText
+                        color: modelData.status === "revoked"
+                               ? theme.error : modelData.status === "retired"
+                                 ? theme.warning : theme.textSecondary
+                        font.family: theme.fontFamily
+                        font.pixelSize: theme.captionSize
+                        wrapMode: Text.WrapAnywhere
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+
+                Components.OgsButton {
+                    objectName: "marketplaceTrustSyncButton"
+                    text: marketplaceController.trust !== null
+                          && marketplaceController.trust.enrolled ? "SYNC TRUST" : "ENROLL"
+                    accessibleName: text + " with the independently packaged marketplace channel"
+                    enabled: marketplaceController.configured
+                             && !marketplaceController.busy
+                             && (marketplaceController.trust === null
+                                 || marketplaceController.trust.mode === "channel")
+                    onClicked: marketplaceController.synchronize()
+                }
+
+                Components.OgsButton {
+                    objectName: "marketplacePackageRefreshButton"
+                    text: "CHECK PACKAGES"
+                    accessibleName: "Check root-authenticated OmarchyGS client packages"
+                    enabled: marketplaceController.marketplaceReady
+                             && !marketplaceController.busy
+                             && marketplaceController.channelMode
+                    onClicked: marketplaceController.refresh()
+                }
+            }
+
+            Repeater {
+                model: marketplaceController.packages
+                delegate: Components.OgsCard {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 154
+                    tone: "info"
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 10
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: "CLIENT " + modelData.package_version.toUpperCase()
+                                      + " // " + modelData.filename
+                                textFormat: Text.PlainText
+                                color: theme.textPrimary
+                                font.family: theme.fontFamily
+                                font.bold: true
+                                font.pixelSize: theme.bodySize
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: "PACKAGE SHA-256 // " + modelData.sha256
+                                textFormat: Text.PlainText
+                                color: theme.textSecondary
+                                font.family: theme.fontFamily
+                                font.pixelSize: theme.captionSize
+                                wrapMode: Text.WrapAnywhere
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: "SOURCE REVISION // " + modelData.source_revision
+                                      + "\nSOURCE SHA-256 // " + modelData.source_sha256
+                                      + "\nBUILD PROVENANCE SHA-256 // "
+                                      + modelData.build_provenance_sha256
+                                textFormat: Text.PlainText
+                                color: theme.textSecondary
+                                font.family: theme.fontFamily
+                                font.pixelSize: theme.captionSize
+                                wrapMode: Text.WrapAnywhere
+                            }
+                        }
+
+                        Components.OgsButton {
+                            objectName: "marketplacePackageStageButton"
+                            text: "VERIFY & STAGE"
+                            accessibleName: "Download, verify, and stage client package "
+                                            + modelData.package_version
+                            enabled: !marketplaceController.busy
+                            onClicked: marketplaceController.stage(modelData)
+                        }
+                    }
+                }
+            }
+
+            Components.OgsCard {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 148
+                visible: marketplaceController.stagedPackage !== null
+                tone: "warning"
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 5
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: marketplaceController.stagedPackage === null ? ""
+                              : "STAGED " + marketplaceController.stagedPackage.package_version
+                                + " // SHA-256 "
+                                + marketplaceController.stagedPackage.sha256
+                        textFormat: Text.PlainText
+                        color: theme.warning
+                        font.family: theme.fontFamily
+                        font.bold: true
+                        font.pixelSize: theme.bodySize
+                        wrapMode: Text.WrapAnywhere
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: marketplaceController.stagedPackage === null ? ""
+                              : marketplaceController.stagedPackage.staged_path
+                        textFormat: Text.PlainText
+                        color: theme.textSecondary
+                        font.family: theme.fontFamily
+                        font.pixelSize: theme.captionSize
+                        elide: Text.ElideMiddle
+                    }
+
+                    TextEdit {
+                        id: installCommandClipboard
+                        Layout.preferredWidth: 1
+                        Layout.preferredHeight: 1
+                        opacity: 0
+                        readOnly: true
+                        text: marketplaceController.stagedPackage === null ? ""
+                              : marketplaceController.stagedPackage.install_command
+                    }
+
+                    Components.OgsButton {
+                        Layout.alignment: Qt.AlignRight
+                        objectName: "marketplacePackageCopyCommandButton"
+                        text: "COPY PACMAN COMMAND"
+                        accessibleName: "Copy the verified package install command"
+                        accessibleDescription: "Copies text only; OmarchyGS does not run pacman, sudo, or a shell"
+                        onClicked: {
+                            installCommandClipboard.selectAll()
+                            installCommandClipboard.copy()
+                            installCommandClipboard.deselect()
+                        }
+                    }
+                }
             }
 
             Components.OgsSectionLabel {
@@ -115,8 +329,9 @@ Item {
                 model: cartridgeController.catalog
                 delegate: Components.OgsCard {
                     required property var modelData
+                    readonly property var exactMount: cartridgeController.mountForExact(modelData)
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 126
+                    Layout.preferredHeight: exactMount === null ? 126 : 176
                     tone: modelData.marketplace.lifecycle_status === "deprecated"
                           ? "warning" : "info"
                     highlighted: cartridgeController.isMountedExact(modelData)
@@ -137,6 +352,30 @@ Item {
                             font.bold: true
                             font.pixelSize: theme.bodySize
                             elide: Text.ElideRight
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            visible: exactMount !== null
+                            text: exactMount === null ? ""
+                                  : "LOCAL TRUST "
+                                    + (exactMount.trust_status === undefined
+                                       ? "TRUSTED" : exactMount.trust_status.toUpperCase())
+                                    + " // EVIDENCE KEY "
+                                    + exactMount.marketplace_key_sha256
+                                    + (exactMount.policy_marketplace_key_sha256 === undefined
+                                       ? "" : " // POLICY KEY "
+                                         + exactMount.policy_marketplace_key_sha256)
+                            textFormat: Text.PlainText
+                            color: exactMount !== null
+                                   && ["revoked", "expired", "unknown"]
+                                      .indexOf(exactMount.trust_status) !== -1
+                                   ? theme.error : exactMount !== null
+                                     && exactMount.trust_status === "retired"
+                                       ? theme.warning : theme.textSecondary
+                            font.family: theme.fontFamily
+                            font.pixelSize: theme.captionSize
+                            wrapMode: Text.WrapAnywhere
                         }
 
                         Text {
@@ -186,7 +425,6 @@ Item {
                                 accessibleDescription: "Remove presentation bytes from this server profile without deleting game state"
                                 enabled: !cartridgeController.busy
                                          && cartridgeController.helperAvailable
-                                         && cartridgeController.marketplaceTrusted
                                          && cartridgeController.isMountedExact(modelData)
                                 onClicked: cartridgeController.remove(modelData)
                             }

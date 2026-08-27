@@ -4,6 +4,9 @@ use omarchygs_game_cartridge::{
     NewLaunchDecision, PublisherPublicKey, SecureCartridgeStore, SignedCatalogPolicy,
     lifecycle_decision,
 };
+use omarchygs_marketplace_trust::{
+    MarketplaceTrust, MarketplaceTrustPayload, verify_persisted_trust_continuity,
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as _, Sha256};
 use sqlx::{FromRow, PgPool, Postgres, Transaction, types::Json};
@@ -38,6 +41,16 @@ pub struct ReviewedReleaseInput {
     pub display_name: String,
     pub compatible: bool,
     pub imported: bool,
+}
+
+pub struct SnapshotPublication<'a> {
+    pub origin: &'a str,
+    pub key: &'a CatalogPublicKey,
+    pub payload: &'a MarketplaceSnapshotPayload,
+    pub digest: &'a str,
+    pub signed_snapshot: &'a [u8],
+    pub releases: &'a [ReviewedReleaseInput],
+    pub marketplace_trust: Option<&'a MarketplaceTrust>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -204,11 +217,13 @@ pub async fn preflight_snapshot(
     key: &CatalogPublicKey,
     payload: &MarketplaceSnapshotPayload,
     digest: &str,
+    marketplace_trust: Option<&MarketplaceTrust>,
 ) -> Result<SnapshotPreflight, CatalogError> {
     let row = sqlx::query_as::<_, SyncStateRow>(
         r#"
         SELECT marketplace_origin, authority_id, key_id, marketplace_name,
                snapshot_version, snapshot_sha256,
+               trust_root_sha256, trust_payload,
                to_char(synchronized_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS synchronized_at
         FROM marketplace_sync_state
         WHERE singleton
@@ -217,18 +232,43 @@ pub async fn preflight_snapshot(
     .fetch_optional(pool)
     .await
     .map_err(|_| CatalogError::Internal)?;
+    verify_marketplace_trust_state(row.as_ref(), marketplace_trust)?;
     compare_snapshot_state(row.as_ref(), origin, key, payload, digest)
+}
+
+pub async fn authorize_marketplace_trust(
+    pool: &PgPool,
+    marketplace_trust: Option<&MarketplaceTrust>,
+) -> Result<(), CatalogError> {
+    let row = sqlx::query_as::<_, SyncStateRow>(
+        r#"
+        SELECT marketplace_origin, authority_id, key_id, marketplace_name,
+               snapshot_version, snapshot_sha256,
+               trust_root_sha256, trust_payload,
+               to_char(synchronized_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS synchronized_at
+        FROM marketplace_sync_state
+        WHERE singleton
+        "#,
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| CatalogError::Internal)?;
+    verify_marketplace_trust_state(row.as_ref(), marketplace_trust)
 }
 
 pub async fn publish_snapshot(
     pool: &PgPool,
-    origin: &str,
-    key: &CatalogPublicKey,
-    payload: &MarketplaceSnapshotPayload,
-    digest: &str,
-    signed_snapshot: &[u8],
-    releases: &[ReviewedReleaseInput],
+    publication: SnapshotPublication<'_>,
 ) -> Result<MarketplaceSyncReceipt, CatalogError> {
+    let SnapshotPublication {
+        origin,
+        key,
+        payload,
+        digest,
+        signed_snapshot,
+        releases,
+        marketplace_trust,
+    } = publication;
     if !valid_snapshot_evidence(digest, signed_snapshot) || releases.len() != payload.releases.len()
     {
         return Err(CatalogError::InvalidInput);
@@ -242,6 +282,7 @@ pub async fn publish_snapshot(
         .await
         .map_err(|_| CatalogError::Internal)?;
     let current = fetch_sync_state_for_update(&mut transaction).await?;
+    verify_marketplace_trust_state(current.as_ref(), marketplace_trust)?;
     if compare_snapshot_state(current.as_ref(), origin, key, payload, digest)?
         == SnapshotPreflight::Replay
     {
@@ -256,6 +297,7 @@ pub async fn publish_snapshot(
             &release_ids,
         )
         .await?;
+        persist_marketplace_trust(&mut transaction, marketplace_trust).await?;
         transaction
             .commit()
             .await
@@ -275,13 +317,14 @@ pub async fn publish_snapshot(
                 game_key, publisher_id, publisher_key, rules_version,
                 cartridge_version, archive_sha256, signed_identity_sha256,
                 display_name, release_path, reviewed_by, review_summary,
-                signed_policy, policy_version, policy_status, policy_reason,
+                signed_policy, policy_marketplace_key, policy_snapshot_version,
+                policy_version, policy_status, policy_reason,
                 compatible, imported, first_seen_snapshot_version,
                 last_seen_snapshot_version, created_at, updated_at
             )
             VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-                $12, $13, $14, $15, $16, $17, $18, $18,
+                $12, $13, $14, $15, $16, $17, $18, $19, $20, $20,
                 clock_timestamp(), clock_timestamp()
             )
             ON CONFLICT (archive_sha256) DO UPDATE SET
@@ -289,6 +332,8 @@ pub async fn publish_snapshot(
                 reviewed_by = EXCLUDED.reviewed_by,
                 review_summary = EXCLUDED.review_summary,
                 signed_policy = EXCLUDED.signed_policy,
+                policy_marketplace_key = EXCLUDED.policy_marketplace_key,
+                policy_snapshot_version = EXCLUDED.policy_snapshot_version,
                 policy_version = EXCLUDED.policy_version,
                 policy_status = EXCLUDED.policy_status,
                 policy_reason = EXCLUDED.policy_reason,
@@ -306,7 +351,26 @@ pub async fn publish_snapshot(
               AND marketplace_releases.policy_version <= EXCLUDED.policy_version
               AND (
                     marketplace_releases.policy_version < EXCLUDED.policy_version
-                    OR marketplace_releases.signed_policy = EXCLUDED.signed_policy
+                    OR (
+                        marketplace_releases.signed_policy = EXCLUDED.signed_policy
+                        AND marketplace_releases.policy_marketplace_key
+                            IS NOT DISTINCT FROM EXCLUDED.policy_marketplace_key
+                    )
+                  )
+              AND (
+                    marketplace_releases.policy_snapshot_version IS NULL
+                    OR marketplace_releases.policy_snapshot_version
+                        <= EXCLUDED.policy_snapshot_version
+                  )
+              AND (
+                    marketplace_releases.policy_snapshot_version IS NULL
+                    OR marketplace_releases.policy_snapshot_version
+                        < EXCLUDED.policy_snapshot_version
+                    OR (
+                        marketplace_releases.policy_marketplace_key
+                            = EXCLUDED.policy_marketplace_key
+                        AND marketplace_releases.signed_policy = EXCLUDED.signed_policy
+                    )
                   )
             RETURNING id
             "#,
@@ -323,6 +387,8 @@ pub async fn publish_snapshot(
         .bind(&release.entry.reviewed_by)
         .bind(&release.entry.review_summary)
         .bind(Json(&release.entry.policy))
+        .bind(Json(key))
+        .bind(snapshot_version)
         .bind(policy_version)
         .bind(catalog_status_name(release.policy.status))
         .bind(&release.policy.reason)
@@ -350,15 +416,25 @@ pub async fn publish_snapshot(
         INSERT INTO marketplace_sync_state (
             singleton, marketplace_origin, authority_id, key_id,
             marketplace_name, snapshot_version, snapshot_sha256,
-            signed_snapshot, marketplace_key, synchronized_at
+            signed_snapshot, marketplace_key, trust_root_sha256,
+            trust_payload, synchronized_at
         )
-        VALUES (TRUE, $1, $2, $3, $4, $5, $6, $7, $8, clock_timestamp())
+        VALUES (TRUE, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, clock_timestamp())
         ON CONFLICT (singleton) DO UPDATE SET
+            key_id = EXCLUDED.key_id,
             marketplace_name = EXCLUDED.marketplace_name,
             snapshot_version = EXCLUDED.snapshot_version,
             snapshot_sha256 = EXCLUDED.snapshot_sha256,
             signed_snapshot = EXCLUDED.signed_snapshot,
             marketplace_key = EXCLUDED.marketplace_key,
+            trust_root_sha256 = COALESCE(
+                EXCLUDED.trust_root_sha256,
+                marketplace_sync_state.trust_root_sha256
+            ),
+            trust_payload = COALESCE(
+                EXCLUDED.trust_payload,
+                marketplace_sync_state.trust_payload
+            ),
             synchronized_at = EXCLUDED.synchronized_at
         "#,
     )
@@ -370,6 +446,8 @@ pub async fn publish_snapshot(
     .bind(digest)
     .bind(signed_snapshot)
     .bind(Json(key))
+    .bind(marketplace_trust.map(|trust| trust.root_sha256().to_owned()))
+    .bind(marketplace_trust.map(|trust| Json(trust.payload().clone())))
     .execute(&mut *transaction)
     .await
     .map_err(|_| CatalogError::Internal)?;
@@ -390,6 +468,7 @@ pub async fn retain_snapshot_evidence(
     payload: &MarketplaceSnapshotPayload,
     digest: &str,
     signed_snapshot: &[u8],
+    marketplace_trust: Option<&MarketplaceTrust>,
 ) -> Result<(), CatalogError> {
     if !valid_snapshot_evidence(digest, signed_snapshot) {
         return Err(CatalogError::InvalidInput);
@@ -401,6 +480,7 @@ pub async fn retain_snapshot_evidence(
         .await
         .map_err(|_| CatalogError::Internal)?;
     let current = fetch_sync_state_for_update(&mut transaction).await?;
+    verify_marketplace_trust_state(current.as_ref(), marketplace_trust)?;
     if compare_snapshot_state(current.as_ref(), origin, key, payload, digest)?
         != SnapshotPreflight::Replay
     {
@@ -417,6 +497,7 @@ pub async fn retain_snapshot_evidence(
         &release_ids,
     )
     .await?;
+    persist_marketplace_trust(&mut transaction, marketplace_trust).await?;
     transaction
         .commit()
         .await
@@ -428,6 +509,7 @@ pub async fn list_inventory(pool: &PgPool) -> Result<CatalogInventory, CatalogEr
         r#"
         SELECT marketplace_origin, authority_id, key_id, marketplace_name,
                snapshot_version, snapshot_sha256,
+               trust_root_sha256, trust_payload,
                to_char(synchronized_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS synchronized_at
         FROM marketplace_sync_state
         WHERE singleton
@@ -555,12 +637,17 @@ pub async fn apply_catalog_command(
     let sync_key = fetch_marketplace_key(&mut transaction)
         .await?
         .ok_or(CatalogError::Denied)?;
-    if sync_key.authority_id != marketplace_key.authority_id
-        || sync_key.key_id != marketplace_key.key_id
-    {
+    if sync_key.marketplace_key.as_ref().map(|key| &key.0) != Some(marketplace_key) {
         return Err(CatalogError::Denied);
     }
     if let Some(desired) = &desired {
+        if desired.policy_marketplace_key.as_ref().map(|key| &key.0) != Some(marketplace_key)
+            || desired
+                .policy_snapshot_version
+                .is_none_or(|version| version <= 0)
+        {
+            return Err(CatalogError::Denied);
+        }
         let policy_bytes =
             serde_json::to_vec(&desired.signed_policy.0).map_err(|_| CatalogError::Internal)?;
         store
@@ -645,23 +732,65 @@ fn compare_snapshot_state(
     let Some(current) = current else {
         return Ok(SnapshotPreflight::New);
     };
-    if current.marketplace_origin != origin
-        || current.authority_id != key.authority_id
-        || current.key_id != key.key_id
-    {
+    if current.marketplace_origin != origin || current.authority_id != key.authority_id {
         return Err(CatalogError::Denied);
     }
     if requested < current.snapshot_version {
         return Err(CatalogError::Conflict);
     }
     if requested == current.snapshot_version {
-        return if current.snapshot_sha256 == digest {
+        return if current.key_id == key.key_id && current.snapshot_sha256 == digest {
             Ok(SnapshotPreflight::Replay)
         } else {
             Err(CatalogError::Conflict)
         };
     }
     Ok(SnapshotPreflight::New)
+}
+
+fn verify_marketplace_trust_state(
+    current: Option<&SyncStateRow>,
+    marketplace_trust: Option<&MarketplaceTrust>,
+) -> Result<(), CatalogError> {
+    let Some(current) = current else {
+        return Ok(());
+    };
+    match (
+        current.trust_root_sha256.as_deref(),
+        current.trust_payload.as_ref(),
+        marketplace_trust,
+    ) {
+        (None, None, _) => Ok(()),
+        (Some(root_sha256), Some(Json(payload)), Some(trust)) => {
+            verify_persisted_trust_continuity(root_sha256, payload, trust)
+                .map_err(|_| CatalogError::Denied)
+        }
+        (Some(_), Some(_), None) => Err(CatalogError::Denied),
+        _ => Err(CatalogError::Internal),
+    }
+}
+
+async fn persist_marketplace_trust(
+    transaction: &mut Transaction<'_, Postgres>,
+    marketplace_trust: Option<&MarketplaceTrust>,
+) -> Result<(), CatalogError> {
+    let Some(trust) = marketplace_trust else {
+        return Ok(());
+    };
+    sqlx::query(
+        r#"
+        UPDATE marketplace_sync_state
+        SET trust_root_sha256 = $1,
+            trust_payload = $2
+        WHERE singleton
+        "#,
+    )
+    .bind(trust.root_sha256())
+    .bind(Json(trust.payload()))
+    .execute(&mut **transaction)
+    .await
+    .map_err(|_| CatalogError::Internal)?;
+    Ok(())
 }
 
 async fn fetch_sync_state_for_update(
@@ -671,6 +800,7 @@ async fn fetch_sync_state_for_update(
         r#"
         SELECT marketplace_origin, authority_id, key_id, marketplace_name,
                snapshot_version, snapshot_sha256,
+               trust_root_sha256, trust_payload,
                to_char(synchronized_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS synchronized_at
         FROM marketplace_sync_state
         WHERE singleton
@@ -711,7 +841,8 @@ async fn fetch_activatable_release(
     sqlx::query_as::<_, ActivatableReleaseRow>(
         r#"
         SELECT r.id, r.archive_sha256, r.rules_version, r.cartridge_version,
-               r.publisher_key, r.signed_policy
+               r.publisher_key, r.signed_policy,
+               r.policy_marketplace_key, r.policy_snapshot_version
         FROM marketplace_releases r
         JOIN marketplace_sync_state s ON s.singleton
         WHERE r.game_key = $1
@@ -734,7 +865,7 @@ async fn fetch_marketplace_key(
     transaction: &mut Transaction<'_, Postgres>,
 ) -> Result<Option<MarketplaceKeyRow>, CatalogError> {
     sqlx::query_as::<_, MarketplaceKeyRow>(
-        "SELECT authority_id, key_id FROM marketplace_sync_state WHERE singleton",
+        "SELECT marketplace_key FROM marketplace_sync_state WHERE singleton",
     )
     .fetch_optional(&mut **transaction)
     .await
@@ -1118,6 +1249,8 @@ struct SyncStateRow {
     marketplace_name: String,
     snapshot_version: i64,
     snapshot_sha256: String,
+    trust_root_sha256: Option<String>,
+    trust_payload: Option<Json<MarketplaceTrustPayload>>,
     synchronized_at: String,
 }
 
@@ -1181,12 +1314,13 @@ struct ActivatableReleaseRow {
     cartridge_version: i64,
     publisher_key: Json<PublisherPublicKey>,
     signed_policy: Json<SignedCatalogPolicy>,
+    policy_marketplace_key: Option<Json<CatalogPublicKey>>,
+    policy_snapshot_version: Option<i64>,
 }
 
 #[derive(FromRow)]
 struct MarketplaceKeyRow {
-    authority_id: String,
-    key_id: String,
+    marketplace_key: Option<Json<CatalogPublicKey>>,
 }
 
 #[derive(FromRow)]

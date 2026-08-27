@@ -4,12 +4,13 @@ use omarchygs_game_cartridge::{
     ActiveSessionDecision, CatalogPublicKey, CatalogStatus, LifecycleUse, PublisherPublicKey,
     SignedCatalogPolicy, lifecycle_decision, validate_screen_action,
 };
+use omarchygs_marketplace_trust::MarketplaceTrustPayload;
 use serde::Serialize;
 use serde_json::{Map, Value, json};
 use sqlx::{FromRow, PgPool, Postgres, Transaction, types::Json};
 use uuid::Uuid;
 
-use crate::cartridge_distribution::CartridgeDistributionRuntime;
+use crate::cartridge_distribution::{CartridgeDistributionRuntime, CurrentPolicyEvidence};
 
 /// Stable non-secret presentation facts exposed with a participant-authorized
 /// game session.
@@ -94,8 +95,12 @@ pub async fn pin_new_session(
                release.archive_sha256,
                release.signed_identity_sha256,
                release.signed_policy,
+               release.policy_marketplace_key,
+               release.policy_snapshot_version,
                catalog.admission_revision,
-               sync.marketplace_key
+               sync.snapshot_version,
+               sync.trust_root_sha256,
+               sync.trust_payload
         FROM server_cartridge_catalogs AS catalog
         JOIN marketplace_releases AS release
           ON release.id = catalog.active_release_id
@@ -123,10 +128,20 @@ pub async fn pin_new_session(
     if expected_archive_sha256.is_some_and(|digest| digest != row.archive_sha256.as_str()) {
         return Ok(false);
     }
-    let database_key = row.marketplace_key.ok_or(SessionCartridgeError::Denied)?.0;
-    if &database_key != runtime.marketplace_key() {
-        return Err(SessionCartridgeError::Denied);
-    }
+    runtime
+        .authorize_persisted_marketplace_trust(
+            row.trust_root_sha256.as_deref(),
+            row.trust_payload.as_ref().map(|payload| &payload.0),
+        )
+        .map_err(|_| SessionCartridgeError::Denied)?;
+    let policy_key = row
+        .policy_marketplace_key
+        .ok_or(SessionCartridgeError::Denied)?
+        .0;
+    let policy_snapshot_version = row
+        .policy_snapshot_version
+        .and_then(|version| u64::try_from(version).ok())
+        .ok_or(SessionCartridgeError::Denied)?;
     let policy_bytes =
         serde_json::to_vec(&row.signed_policy.0).map_err(|_| SessionCartridgeError::Internal)?;
     let resolution = runtime
@@ -134,7 +149,11 @@ pub async fn pin_new_session(
             &row.game_key,
             &row.archive_sha256,
             &row.publisher_key.0,
-            &policy_bytes,
+            CurrentPolicyEvidence {
+                signed_bytes: &policy_bytes,
+                marketplace_key: &policy_key,
+                snapshot_version: policy_snapshot_version,
+            },
             LifecycleUse::NewLaunch,
         )
         .map_err(|_| SessionCartridgeError::Denied)?;
@@ -223,7 +242,10 @@ pub async fn admit_session_action(
                release.signed_policy,
                release.policy_version,
                release.policy_status,
-               sync.marketplace_key
+               release.policy_marketplace_key,
+               release.policy_snapshot_version,
+               sync.trust_root_sha256,
+               sync.trust_payload
         FROM game_sessions AS session
         JOIN game_session_participants AS participant
           ON participant.game_session_id = session.id
@@ -305,10 +327,20 @@ pub async fn admit_session_action(
     if row.archive_sha256 != archive_sha256 {
         return Err(SessionCartridgeError::Denied);
     }
-    let database_key = row.marketplace_key.ok_or(SessionCartridgeError::Denied)?.0;
-    if &database_key != runtime.marketplace_key() {
-        return Err(SessionCartridgeError::Denied);
-    }
+    runtime
+        .authorize_persisted_marketplace_trust(
+            row.trust_root_sha256.as_deref(),
+            row.trust_payload.as_ref().map(|payload| &payload.0),
+        )
+        .map_err(|_| SessionCartridgeError::Denied)?;
+    let policy_key = row
+        .policy_marketplace_key
+        .ok_or(SessionCartridgeError::Denied)?
+        .0;
+    let policy_snapshot_version = row
+        .policy_snapshot_version
+        .and_then(|version| u64::try_from(version).ok())
+        .ok_or(SessionCartridgeError::Denied)?;
     let policy_bytes =
         serde_json::to_vec(&row.signed_policy.0).map_err(|_| SessionCartridgeError::Internal)?;
     let resolution = runtime
@@ -316,7 +348,11 @@ pub async fn admit_session_action(
             &row.game_key,
             &row.archive_sha256,
             &row.publisher_key.0,
-            &policy_bytes,
+            CurrentPolicyEvidence {
+                signed_bytes: &policy_bytes,
+                marketplace_key: &policy_key,
+                snapshot_version: policy_snapshot_version,
+            },
             LifecycleUse::ActiveSession,
         )
         .map_err(|_| SessionCartridgeError::Denied)?;
@@ -511,7 +547,12 @@ struct PinnableReleaseRow {
     signed_identity_sha256: String,
     signed_policy: Json<SignedCatalogPolicy>,
     admission_revision: i64,
-    marketplace_key: Option<Json<CatalogPublicKey>>,
+    policy_marketplace_key: Option<Json<CatalogPublicKey>>,
+    policy_snapshot_version: Option<i64>,
+    #[allow(dead_code)]
+    snapshot_version: i64,
+    trust_root_sha256: Option<String>,
+    trust_payload: Option<Json<MarketplaceTrustPayload>>,
 }
 
 #[derive(FromRow)]
@@ -531,7 +572,10 @@ struct ActionReleaseRow {
     signed_policy: Json<SignedCatalogPolicy>,
     policy_version: i64,
     policy_status: String,
-    marketplace_key: Option<Json<CatalogPublicKey>>,
+    policy_marketplace_key: Option<Json<CatalogPublicKey>>,
+    policy_snapshot_version: Option<i64>,
+    trust_root_sha256: Option<String>,
+    trust_payload: Option<Json<MarketplaceTrustPayload>>,
 }
 
 #[derive(FromRow)]

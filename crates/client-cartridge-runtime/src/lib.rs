@@ -2,14 +2,18 @@
 //! the OmarchyGS flagship client.
 
 mod cache;
+mod package_channel;
 mod remote;
 mod render;
 mod service;
+mod trust;
 
 pub use cache::{ClientCartridgeCache, MountRecord};
+pub use package_channel::{ClientPackageChannel, ClientPackageStatus, StagedPackage};
 pub use remote::{AcquireRequest, SessionAcquireRequest, acquire, acquire_session};
 pub use render::{RenderRequest, compile_mounted_render_plan};
 pub use service::{CompanionState, router};
+pub use trust::{ClientMarketplaceTrust, ClientTrustSnapshot, ClientTrustStore, TrustStatus};
 
 use thiserror::Error;
 

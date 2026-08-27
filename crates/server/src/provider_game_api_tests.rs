@@ -35,6 +35,7 @@ use omarchy_game_provider::{
     registry::ProviderRegistry,
 };
 use omarchy_game_runtime::GameRegistry;
+use omarchygs_game_cartridge::CatalogStatus;
 use rcgen::{CertifiedKey, generate_simple_self_signed};
 use serde_json::{Value, json};
 use sqlx::{PgPool, postgres::PgPoolOptions};
@@ -46,7 +47,7 @@ use uuid::Uuid;
 use crate::{
     accounts::{self, RegistrationInput},
     app::router_with_runtimes,
-    cartridge_catalog_api_tests::acquisition_fixture,
+    cartridge_catalog_api_tests::{acquisition_fixture, publish_fixture_policy},
     mfa::MfaCipher,
     personas::{self, CreatePersonaInput},
     provider_games::ProviderRuntime,
@@ -505,32 +506,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         1,
         "provider replay must reuse one durable cartridge admission"
     );
-    let mut lifecycle_writer = pool.begin().await.expect("lifecycle writer should begin");
-    sqlx::query("SELECT pg_advisory_xact_lock($1)")
-        .bind(omarchy_gaming_system_server::cartridge_catalog::SNAPSHOT_ADVISORY_LOCK)
-        .execute(&mut *lifecycle_writer)
-        .await
-        .expect("lifecycle writer should lock");
-    sqlx::query(
-        r#"
-        UPDATE marketplace_releases
-        SET signed_policy = $1,
-            policy_version = 2,
-            policy_status = 'suspended',
-            policy_reason = 'Review paused.',
-            updated_at = clock_timestamp()
-        WHERE archive_sha256 = $2
-        "#,
-    )
-    .bind(sqlx::types::Json(&cartridge_fixture.suspended_policy))
-    .bind(&cartridge_digest)
-    .execute(&mut *lifecycle_writer)
-    .await
-    .expect("valid suspended lifecycle should stage");
-    lifecycle_writer
-        .commit()
-        .await
-        .expect("valid suspended lifecycle should commit");
+    publish_fixture_policy(&pool, &cartridge_fixture, CatalogStatus::Suspended).await;
     let post_suspension_replay = request_json(
         app.clone(),
         &command_path,

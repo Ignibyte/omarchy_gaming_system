@@ -4,6 +4,8 @@ use std::{
     io::Read as _,
     os::unix::fs::MetadataExt as _,
     path::{Path, PathBuf},
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use omarchygs_game_cartridge::{
@@ -11,6 +13,10 @@ use omarchygs_game_cartridge::{
     MarketplaceReleaseEntry, SecureCartridgeStore, read_catalog_public_key, rich_2d_host_profile,
     supported_sdk_identity, verify_catalog_policy_bytes, verify_marketplace_snapshot_bytes,
     verify_release_components,
+};
+use omarchygs_marketplace_trust::{
+    MAX_TRUST_CHANNEL_BYTES, MarketplaceTrust, MarketplaceTrustPayload, read_trust_root_public_key,
+    verify_marketplace_trust_bytes, verify_persisted_trust_continuity,
 };
 use sqlx::PgPool;
 
@@ -49,8 +55,95 @@ impl MarketplaceSyncError {
 }
 
 #[derive(Clone)]
+pub enum LocalMarketplaceTrust {
+    Manual(CatalogPublicKey),
+    Channel(Arc<MarketplaceTrust>),
+}
+
+impl LocalMarketplaceTrust {
+    pub fn channel_trust(&self) -> Option<&MarketplaceTrust> {
+        match self {
+            Self::Manual(_) => None,
+            Self::Channel(trust) => Some(trust.as_ref()),
+        }
+    }
+
+    pub fn active_key(&self) -> Result<CatalogPublicKey, MarketplaceSyncError> {
+        match self {
+            Self::Manual(key) => Ok(key.clone()),
+            Self::Channel(trust) => {
+                trust
+                    .validate_now(now_unix()?)
+                    .map_err(|_| MarketplaceSyncError::Denied)?;
+                Ok(trust.active_key().clone())
+            }
+        }
+    }
+
+    /// Confirm that this process's loaded trust is at least as authoritative as
+    /// the trust persisted in the request's database snapshot. A newer valid
+    /// local bundle may be used while persistence catches up, but a process
+    /// holding older or manual trust must fail closed once the database advances.
+    pub fn authorize_persisted_state(
+        &self,
+        persisted_root_sha256: Option<&str>,
+        persisted_payload: Option<&MarketplaceTrustPayload>,
+    ) -> Result<(), MarketplaceSyncError> {
+        match (self, persisted_root_sha256, persisted_payload) {
+            (Self::Manual(_), None, None) => Ok(()),
+            (Self::Channel(current), Some(root_sha256), Some(payload)) => {
+                verify_persisted_trust_continuity(root_sha256, payload, current.as_ref())
+                    .map_err(|_| MarketplaceSyncError::Denied)
+            }
+            _ => Err(MarketplaceSyncError::Denied),
+        }
+    }
+
+    pub fn authorize_key(
+        &self,
+        key: &CatalogPublicKey,
+        snapshot_version: u64,
+    ) -> Result<(), MarketplaceSyncError> {
+        if snapshot_version == 0 {
+            return Err(MarketplaceSyncError::Denied);
+        }
+        match self {
+            Self::Manual(expected) if expected == key => Ok(()),
+            Self::Manual(_) => Err(MarketplaceSyncError::Denied),
+            Self::Channel(trust) => {
+                trust
+                    .validate_now(now_unix()?)
+                    .map_err(|_| MarketplaceSyncError::Denied)?;
+                trust
+                    .authorize_key(key, snapshot_version)
+                    .map(|_| ())
+                    .map_err(|_| MarketplaceSyncError::Denied)
+            }
+        }
+    }
+
+    pub fn authorize_new_snapshot(
+        &self,
+        key: &CatalogPublicKey,
+        snapshot_version: u64,
+    ) -> Result<(), MarketplaceSyncError> {
+        match self {
+            Self::Manual(_) => self.authorize_key(key, snapshot_version),
+            Self::Channel(trust) => {
+                trust
+                    .validate_now(now_unix()?)
+                    .map_err(|_| MarketplaceSyncError::Denied)?;
+                trust
+                    .authorize_new_snapshot(key, snapshot_version)
+                    .map_err(|_| MarketplaceSyncError::Denied)
+            }
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct LocalCatalogConfig {
-    pub marketplace_key: CatalogPublicKey,
+    pub marketplace_trust: LocalMarketplaceTrust,
     pub store_root: PathBuf,
 }
 
@@ -60,22 +153,47 @@ impl LocalCatalogConfig {
     }
 
     /// Load the all-or-nothing normal-server distribution configuration.
-    /// Neither variable means the metadata-only deployment profile; exactly
-    /// one variable is rejected.
+    /// No trust/store inputs means the metadata-only deployment profile;
+    /// manual and root-authenticated channel modes are mutually exclusive.
     pub fn optional_from_environment() -> Result<Option<Self>, MarketplaceSyncError> {
         let key_path = env::var_os("OGS_MARKETPLACE_PUBLIC_KEY").map(PathBuf::from);
+        let root_path = env::var_os("OGS_MARKETPLACE_TRUST_ROOT").map(PathBuf::from);
+        let bundle_path = env::var_os("OGS_MARKETPLACE_TRUST_BUNDLE").map(PathBuf::from);
+        let channel_origin = env::var("OGS_MARKETPLACE_TRUST_CHANNEL_ORIGIN").ok();
         let store_root = env::var_os("OGS_CARTRIDGE_STORE_ROOT").map(PathBuf::from);
-        let (key_path, store_root) = match (key_path, store_root) {
-            (None, None) => return Ok(None),
-            (Some(key_path), Some(store_root)) => (key_path, store_root),
+        let any_trust = key_path.is_some()
+            || root_path.is_some()
+            || bundle_path.is_some()
+            || channel_origin.is_some();
+        if !any_trust && store_root.is_none() {
+            return Ok(None);
+        }
+        let store_root = store_root.ok_or(MarketplaceSyncError::InvalidConfig)?;
+        let marketplace_trust = match (key_path, root_path, bundle_path, channel_origin) {
+            (Some(key_path), None, None, None) => LocalMarketplaceTrust::Manual(
+                read_catalog_public_key(&key_path)
+                    .map_err(|_| MarketplaceSyncError::InvalidConfig)?,
+            ),
+            (None, Some(root_path), Some(bundle_path), Some(channel_origin)) => {
+                let root = read_trust_root_public_key(&root_path)
+                    .map_err(|_| MarketplaceSyncError::InvalidConfig)?;
+                let bundle = read_checked_file(&bundle_path, MAX_TRUST_CHANNEL_BYTES)?;
+                let trust = verify_marketplace_trust_bytes(
+                    &bundle,
+                    &root,
+                    &root.channel_id,
+                    &channel_origin,
+                    now_unix()?,
+                )
+                .map_err(|_| MarketplaceSyncError::InvalidConfig)?;
+                LocalMarketplaceTrust::Channel(Arc::new(trust))
+            }
             _ => return Err(MarketplaceSyncError::InvalidConfig),
         };
-        let marketplace_key =
-            read_catalog_public_key(&key_path).map_err(|_| MarketplaceSyncError::InvalidConfig)?;
         SecureCartridgeStore::open_existing(&store_root)
             .map_err(|_| MarketplaceSyncError::InvalidConfig)?;
         Ok(Some(Self {
-            marketplace_key,
+            marketplace_trust,
             store_root,
         }))
     }
@@ -83,6 +201,10 @@ impl LocalCatalogConfig {
     pub fn open_store(&self) -> Result<SecureCartridgeStore, MarketplaceSyncError> {
         SecureCartridgeStore::open_existing(&self.store_root)
             .map_err(|_| MarketplaceSyncError::InvalidConfig)
+    }
+
+    pub fn active_key(&self) -> Result<CatalogPublicKey, MarketplaceSyncError> {
+        self.marketplace_trust.active_key()
     }
 }
 
@@ -104,6 +226,11 @@ impl MarketplaceSyncConfig {
             .map(PathBuf::from)
             .ok_or(MarketplaceSyncError::InvalidConfig)?;
         let tls_root_der = read_checked_file(&tls_path, MAX_TLS_ROOT_BYTES)?;
+        if let LocalMarketplaceTrust::Channel(trust) = &local.marketplace_trust
+            && trust.payload().marketplace_origin != origin.as_str()
+        {
+            return Err(MarketplaceSyncError::InvalidConfig);
+        }
         Ok(Self {
             local,
             origin,
@@ -141,19 +268,26 @@ pub async fn synchronize_with_client(
     config: &MarketplaceSyncConfig,
     client: &GuardedMarketplaceClient,
 ) -> Result<MarketplaceSyncReceipt, MarketplaceSyncError> {
+    let active_key = config.local.active_key()?;
+    let channel_trust = config.local.marketplace_trust.channel_trust();
     let snapshot_bytes = client
         .get(SNAPSHOT_PATH, MAX_MARKETPLACE_SNAPSHOT_BYTES)
         .await
         .map_err(map_egress)?;
-    let payload = verify_marketplace_snapshot_bytes(&snapshot_bytes, &config.local.marketplace_key)
+    let payload = verify_marketplace_snapshot_bytes(&snapshot_bytes, &active_key)
         .map_err(|_| MarketplaceSyncError::Rejected)?;
+    config
+        .local
+        .marketplace_trust
+        .authorize_new_snapshot(&active_key, payload.snapshot_version)?;
     let snapshot_digest = cartridge_catalog::snapshot_sha256(&snapshot_bytes);
     match cartridge_catalog::preflight_snapshot(
         pool,
         config.origin.as_str(),
-        &config.local.marketplace_key,
+        &active_key,
         &payload,
         &snapshot_digest,
+        channel_trust,
     )
     .await
     .map_err(map_catalog)?
@@ -162,10 +296,11 @@ pub async fn synchronize_with_client(
             cartridge_catalog::retain_snapshot_evidence(
                 pool,
                 config.origin.as_str(),
-                &config.local.marketplace_key,
+                &active_key,
                 &payload,
                 &snapshot_digest,
                 &snapshot_bytes,
+                channel_trust,
             )
             .await
             .map_err(map_catalog)?;
@@ -229,11 +364,10 @@ pub async fn synchronize_with_client(
         let policy_bytes = entry
             .policy_bytes()
             .map_err(|_| MarketplaceSyncError::Rejected)?;
-        let policy =
-            verify_catalog_policy_bytes(&policy_bytes, &config.local.marketplace_key, &release)
-                .map_err(|_| MarketplaceSyncError::Rejected)?;
+        let policy = verify_catalog_policy_bytes(&policy_bytes, &active_key, &release)
+            .map_err(|_| MarketplaceSyncError::Rejected)?;
         let staged = store
-            .stage_reviewed_release(&release, &policy_bytes, &config.local.marketplace_key)
+            .stage_reviewed_release(&release, &policy_bytes, &active_key)
             .map_err(|error| match error {
                 omarchygs_game_cartridge::CartridgeError::Io(_) => MarketplaceSyncError::Internal,
                 _ => MarketplaceSyncError::Rejected,
@@ -248,15 +382,25 @@ pub async fn synchronize_with_client(
     }
     cartridge_catalog::publish_snapshot(
         pool,
-        config.origin.as_str(),
-        &config.local.marketplace_key,
-        &payload,
-        &snapshot_digest,
-        &snapshot_bytes,
-        &reviewed,
+        cartridge_catalog::SnapshotPublication {
+            origin: config.origin.as_str(),
+            key: &active_key,
+            payload: &payload,
+            digest: &snapshot_digest,
+            signed_snapshot: &snapshot_bytes,
+            releases: &reviewed,
+            marketplace_trust: channel_trust,
+        },
     )
     .await
     .map_err(map_catalog)
+}
+
+fn now_unix() -> Result<u64, MarketplaceSyncError> {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .map_err(|_| MarketplaceSyncError::InvalidConfig)
 }
 
 async fn download_component(

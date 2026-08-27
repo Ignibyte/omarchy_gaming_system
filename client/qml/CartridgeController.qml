@@ -195,12 +195,6 @@ QtObject {
                     : "This server publishes cartridge metadata but does not offer downloads."
             return
         }
-        if (!marketplaceTrusted) {
-            mounts = []
-            loadState = "unavailable"
-            statusText = "Cartridges are available, but this client has no independently trusted marketplace key."
-            return
-        }
         statusText = "Loading local cartridge mounts..."
         _helperOperation = "cartridge_mounts"
         _helperGeneration = helperApi.request(
@@ -231,7 +225,9 @@ QtObject {
             }
             mounts = parsed.document.mounts
             loadState = "ready"
-            statusText = catalog.length === 0
+            statusText = !marketplaceTrusted
+                    ? "Local mounts are visible for exact removal; synchronize marketplace trust to install or play cartridges."
+                    : catalog.length === 0
                     ? "No signed cartridges are available on this server."
                     : acquisitionSupported ? "Signed cartridge library ready."
                     : "Cartridge metadata is ready; this server does not offer downloads."
@@ -320,6 +316,12 @@ QtObject {
                       "marketplace_id", "marketplace_name", "reviewed_by",
                       "review_summary", "snapshot_version", "policy_version",
                       "lifecycle_status", "admission_revision"]
+        if (mount.policy_marketplace_key_sha256 !== undefined)
+            keys.push("policy_marketplace_key_sha256")
+        if (mount.policy_snapshot_version !== undefined)
+            keys.push("policy_snapshot_version")
+        if (mount.trust_status !== undefined)
+            keys.push("trust_status")
         if (mount.warning !== undefined)
             keys.push("warning")
         return serverApi.exactKeys(mount, keys)
@@ -333,14 +335,25 @@ QtObject {
                 && _validDigest(mount.archive_sha256)
                 && _validDigest(mount.signed_identity_sha256)
                 && _validDigest(mount.marketplace_key_sha256)
+                && (mount.policy_marketplace_key_sha256 === undefined
+                    || _validDigest(mount.policy_marketplace_key_sha256))
+                && ((mount.policy_marketplace_key_sha256 === undefined)
+                    === (mount.policy_snapshot_version === undefined))
                 && _validIdentifier(mount.marketplace_id)
                 && _validText(mount.marketplace_name, 128)
                 && _validIdentifier(mount.reviewed_by)
                 && _validText(mount.review_summary, 512)
                 && Number.isInteger(mount.snapshot_version) && mount.snapshot_version > 0
+                && (mount.policy_snapshot_version === undefined
+                    || (Number.isInteger(mount.policy_snapshot_version)
+                        && mount.policy_snapshot_version > 0))
                 && Number.isInteger(mount.policy_version) && mount.policy_version > 0
-                && ["active", "deprecated"].indexOf(mount.lifecycle_status) !== -1
+                && ["active", "deprecated", "retired"]
+                    .indexOf(mount.lifecycle_status) !== -1
                 && Number.isInteger(mount.admission_revision) && mount.admission_revision > 0
+                && (mount.trust_status === undefined
+                    || ["trusted", "retired", "revoked", "expired", "unknown"]
+                        .indexOf(mount.trust_status) !== -1)
                 && (mount.warning === undefined || _validText(mount.warning, 512))
     }
 
@@ -367,7 +380,7 @@ QtObject {
             "companion_admission_changed": "The server changed this cartridge admission. Refresh and try again.",
             "companion_server_unavailable": "The selected server could not complete the download.",
             "companion_server_rejected": "The signed cartridge evidence was rejected.",
-            "companion_marketplace_untrusted": "Configure an independently trusted marketplace public key before installing cartridges.",
+            "companion_marketplace_untrusted": "Enroll or synchronize current independently authenticated marketplace trust before using cartridges.",
             "companion_cache_failure": "The private local cartridge cache needs attention."
         }
         return messages[code] || "The local cartridge companion rejected the operation."

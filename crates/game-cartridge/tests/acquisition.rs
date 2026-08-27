@@ -5,7 +5,8 @@ use omarchygs_game_cartridge::{
     MarketplaceSnapshotPayload, RELEASE_ARCHIVE_PATH, RELEASE_ATTESTATION_PATH,
     RELEASE_CONFORMANCE_PATH, create_release, export_sdk, generate_catalog_keypair,
     generate_keypair, rich_2d_host_profile, sign_catalog_policy, sign_marketplace_snapshot,
-    supported_sdk_identity, verify_acquisition_bytes, verify_release_directory,
+    supported_sdk_identity, verify_acquisition_bytes, verify_acquisition_bytes_with_policy_key,
+    verify_release_directory,
 };
 
 const REVISION: &str = "1111111111111111111111111111111111111111";
@@ -93,10 +94,100 @@ fn acquisition_verifies_every_exact_claim_and_rejects_tamper() {
     );
 }
 
+#[test]
+fn acquisition_v2_separates_retired_snapshot_evidence_from_current_policy() {
+    let fixture = fixture();
+    let release = verify_release_directory(
+        &fixture.release,
+        &fixture.publisher_public,
+        &fixture.sdk,
+        &rich_2d_host_profile(),
+    )
+    .unwrap();
+    let (policy_private, policy_public) =
+        generate_catalog_keypair("marketplace-primary-v2", "marketplace").unwrap();
+    let policy = sign_catalog_policy(
+        &release,
+        &policy_private,
+        2,
+        CatalogStatus::Active,
+        "Re-signed after marketplace rotation.",
+    )
+    .unwrap();
+    let mut policy_entry = fixture.entry.clone();
+    policy_entry.policy = policy;
+    let policy_snapshot_payload = MarketplaceSnapshotPayload {
+        format: "omarchygs.marketplace-snapshot/v1".to_owned(),
+        snapshot_version: 2,
+        authority_id: policy_public.authority_id.clone(),
+        marketplace_name: "Test Marketplace".to_owned(),
+        releases: vec![policy_entry],
+    };
+    let policy_snapshot = serde_json::to_vec(
+        &sign_marketplace_snapshot(&policy_snapshot_payload, &policy_private).unwrap(),
+    )
+    .unwrap();
+    let document = CartridgeAcquisition::from_verified_bytes_with_policy(
+        fixture.admission.clone(),
+        fixture.marketplace_public.clone(),
+        policy_public.clone(),
+        &fixture.snapshot,
+        &policy_snapshot,
+        &fs::read(fixture.release.join(RELEASE_ARCHIVE_PATH)).unwrap(),
+        &fs::read(fixture.release.join(RELEASE_CONFORMANCE_PATH)).unwrap(),
+        &fs::read(fixture.release.join(RELEASE_ATTESTATION_PATH)).unwrap(),
+    )
+    .unwrap();
+    let bytes = document.to_bounded_json().unwrap();
+    let sdk = supported_sdk_identity().unwrap();
+    let verified = verify_acquisition_bytes_with_policy_key(
+        &bytes,
+        &fixture.admission,
+        &fixture.marketplace_public,
+        &policy_public,
+        &sdk,
+        &rich_2d_host_profile(),
+    )
+    .unwrap();
+    assert_eq!(verified.snapshot().snapshot_version, 1);
+    assert_eq!(verified.policy_snapshot_version(), 2);
+    assert_eq!(verified.policy_snapshot().snapshot_version, 2);
+    assert_eq!(verified.policy_marketplace_key(), &policy_public);
+    assert!(
+        verify_acquisition_bytes(
+            &bytes,
+            &fixture.admission,
+            &fixture.marketplace_public,
+            &sdk,
+            &rich_2d_host_profile(),
+        )
+        .is_err(),
+        "the legacy one-key verifier must not collapse the two authorities"
+    );
+
+    let mut unsigned_version: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    unsigned_version["policy_snapshot_version"] = serde_json::json!(999);
+    assert!(
+        verify_acquisition_bytes_with_policy_key(
+            &serde_json::to_vec(&unsigned_version).unwrap(),
+            &fixture.admission,
+            &fixture.marketplace_public,
+            &policy_public,
+            &sdk,
+            &rich_2d_host_profile(),
+        )
+        .is_err(),
+        "unsigned lifecycle snapshot metadata must not be accepted"
+    );
+}
+
 struct Fixture {
     _temp: tempfile::TempDir,
     release: std::path::PathBuf,
+    sdk: std::path::PathBuf,
+    publisher_public: omarchygs_game_cartridge::PublisherPublicKey,
     marketplace_public: omarchygs_game_cartridge::CatalogPublicKey,
+    entry: MarketplaceReleaseEntry,
     snapshot: Vec<u8>,
     admission: AcquisitionServerAdmission,
 }
@@ -146,7 +237,7 @@ fn fixture() -> Fixture {
         cartridge_version: release.payload().cartridge_version,
         archive_sha256: release.payload().archive_sha256.clone(),
         signed_identity_sha256: release.payload().signed_identity_sha256.clone(),
-        publisher_key: publisher_public,
+        publisher_key: publisher_public.clone(),
         reviewed_by: "review-team".to_owned(),
         review_summary: "Bounded first-party review passed.".to_owned(),
         policy,
@@ -156,7 +247,7 @@ fn fixture() -> Fixture {
         snapshot_version: 1,
         authority_id: marketplace_public.authority_id.clone(),
         marketplace_name: "Test Marketplace".to_owned(),
-        releases: vec![entry],
+        releases: vec![entry.clone()],
     };
     let snapshot =
         serde_json::to_vec(&sign_marketplace_snapshot(&payload, &marketplace_private).unwrap())
@@ -174,7 +265,10 @@ fn fixture() -> Fixture {
     Fixture {
         _temp: temp,
         release: release_root,
+        sdk,
+        publisher_public,
         marketplace_public,
+        entry,
         snapshot,
         admission,
     }

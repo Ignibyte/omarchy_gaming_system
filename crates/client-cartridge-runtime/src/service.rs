@@ -22,9 +22,11 @@ use omarchygs_game_cartridge::CatalogPublicKey;
 use omarchygs_game_cartridge_renderer::{PreparedNavigation, RenderPlan, valid_asset_token};
 use rand_core::{OsRng, RngCore as _};
 
+use crate::render::compile_mounted_render_plan_with_trust;
 use crate::{
-    AcquireRequest, ClientCartridgeCache, CompanionError, MountRecord, RenderRequest,
-    SessionAcquireRequest, acquire, acquire_session, compile_mounted_render_plan,
+    AcquireRequest, ClientCartridgeCache, ClientMarketplaceTrust, ClientPackageChannel,
+    ClientPackageStatus, CompanionError, MountRecord, RenderRequest, SessionAcquireRequest,
+    StagedPackage, TrustStatus, acquire, acquire_session,
 };
 
 const MAX_RENDER_REQUEST_BYTES: usize = 512 * 1024;
@@ -38,7 +40,8 @@ pub struct CompanionState {
     cache: Arc<ClientCartridgeCache>,
     credential: Arc<Zeroizing<String>>,
     expected_host: Arc<str>,
-    trusted_marketplace_key: Option<Arc<CatalogPublicKey>>,
+    marketplace_trust: ClientMarketplaceTrust,
+    package_channel: Option<Arc<ClientPackageChannel>>,
     render_assets: Arc<Mutex<RenderAssetCache>>,
 }
 
@@ -49,6 +52,18 @@ impl CompanionState {
         expected_host: String,
         trusted_marketplace_key: Option<CatalogPublicKey>,
     ) -> std::result::Result<Self, CompanionError> {
+        let marketplace_trust = trusted_marketplace_key
+            .map(|key| ClientMarketplaceTrust::Manual(Arc::new(key)))
+            .unwrap_or(ClientMarketplaceTrust::None);
+        Self::new_with_trust(cache, credential, expected_host, marketplace_trust)
+    }
+
+    pub fn new_with_trust(
+        cache: Arc<ClientCartridgeCache>,
+        credential: Zeroizing<String>,
+        expected_host: String,
+        marketplace_trust: ClientMarketplaceTrust,
+    ) -> std::result::Result<Self, CompanionError> {
         if credential.len() < 40
             || credential.len() > 128
             || expected_host.len() < 9
@@ -56,11 +71,17 @@ impl CompanionState {
         {
             return Err(CompanionError::InvalidInput);
         }
+        let package_channel = marketplace_trust
+            .channel_store()
+            .map(|store| ClientPackageChannel::open(store.root_path(), store.bootstrap().clone()))
+            .transpose()?
+            .map(Arc::new);
         Ok(Self {
             cache,
             credential: Arc::new(credential),
             expected_host: Arc::from(expected_host),
-            trusted_marketplace_key: trusted_marketplace_key.map(Arc::new),
+            marketplace_trust,
+            package_channel,
             render_assets: Arc::new(Mutex::new(RenderAssetCache::default())),
         })
     }
@@ -69,6 +90,13 @@ impl CompanionState {
 pub fn router(state: CompanionState) -> Router {
     Router::new()
         .route("/v1/mounts/{server_id}", get(list_mounts))
+        .route("/v1/trust", get(trust_status))
+        .route("/v1/trust/synchronize", post(synchronize_trust))
+        .route("/v1/client-packages", get(client_packages))
+        .route(
+            "/v1/client-packages/stage",
+            post(stage_client_package).layer(DefaultBodyLimit::max(1024)),
+        )
         .route(
             "/v1/acquisitions",
             post(install).layer(DefaultBodyLimit::max(4 * 1024)),
@@ -97,17 +125,80 @@ async fn list_mounts(
 ) -> std::result::Result<Json<MountList>, LocalError> {
     authorize(&state, &headers)?;
     let server_id = exact_uuid(&server_id)?;
-    let trusted_marketplace_key = state
-        .trusted_marketplace_key
-        .clone()
-        .ok_or(LocalError(CompanionError::MarketplaceUntrusted))?;
+    let trust = state
+        .marketplace_trust
+        .inventory_snapshot()
+        .map_err(LocalError)?;
     let cache = state.cache.clone();
-    let mounts =
-        tokio::task::spawn_blocking(move || cache.mounts(server_id, &trusted_marketplace_key))
-            .await
-            .map_err(|_| LocalError(CompanionError::Cache))?
-            .map_err(LocalError)?;
+    let mut mounts = tokio::task::spawn_blocking(move || cache.mounts_all(server_id))
+        .await
+        .map_err(|_| LocalError(CompanionError::Cache))?
+        .map_err(LocalError)?;
+    for mount in &mut mounts {
+        mount.trust_status = Some(
+            trust
+                .as_ref()
+                .map_or("unknown", |trust| mount_trust_status(mount, trust))
+                .to_owned(),
+        );
+    }
     Ok(Json(MountList { mounts }))
+}
+
+async fn trust_status(
+    State(state): State<CompanionState>,
+    headers: HeaderMap,
+) -> std::result::Result<Json<TrustStatus>, LocalError> {
+    authorize(&state, &headers)?;
+    state
+        .marketplace_trust
+        .status()
+        .map(Json)
+        .map_err(LocalError)
+}
+
+async fn synchronize_trust(
+    State(state): State<CompanionState>,
+    headers: HeaderMap,
+) -> std::result::Result<Json<TrustStatus>, LocalError> {
+    authorize(&state, &headers)?;
+    state
+        .marketplace_trust
+        .synchronize()
+        .await
+        .map(Json)
+        .map_err(LocalError)
+}
+
+async fn client_packages(
+    State(state): State<CompanionState>,
+    headers: HeaderMap,
+) -> std::result::Result<Json<ClientPackageStatus>, LocalError> {
+    authorize(&state, &headers)?;
+    state
+        .package_channel
+        .as_deref()
+        .ok_or(LocalError(CompanionError::MarketplaceUntrusted))?
+        .status(&state.marketplace_trust)
+        .map(Json)
+        .map_err(LocalError)
+}
+
+async fn stage_client_package(
+    State(state): State<CompanionState>,
+    headers: HeaderMap,
+    Json(request): Json<StagePackageRequest>,
+) -> std::result::Result<Json<StagedPackage>, LocalError> {
+    authorize(&state, &headers)?;
+    let channel = state
+        .package_channel
+        .as_deref()
+        .ok_or(LocalError(CompanionError::MarketplaceUntrusted))?;
+    channel
+        .stage(&state.marketplace_trust, &request.sha256)
+        .await
+        .map(Json)
+        .map_err(LocalError)
 }
 
 async fn install(
@@ -116,12 +207,20 @@ async fn install(
     Json(request): Json<AcquireRequest>,
 ) -> std::result::Result<Json<MountResponse>, LocalError> {
     authorize(&state, &headers)?;
-    let trusted_marketplace_key = state
-        .trusted_marketplace_key
-        .as_deref()
-        .ok_or(LocalError(CompanionError::MarketplaceUntrusted))?;
-    let acquired = acquire(request, trusted_marketplace_key)
-        .await
+    let trust = state.marketplace_trust.snapshot().map_err(LocalError)?;
+    let acquired = acquire(request, &trust).await.map_err(LocalError)?;
+    let current = state.marketplace_trust.snapshot().map_err(LocalError)?;
+    current
+        .authorize_key(
+            acquired.verified.marketplace_key(),
+            acquired.verified.snapshot().snapshot_version,
+        )
+        .map_err(LocalError)?;
+    current
+        .authorize_current_key(
+            acquired.verified.policy_marketplace_key(),
+            acquired.verified.policy_snapshot_version(),
+        )
         .map_err(LocalError)?;
     let cache = state.cache.clone();
     let mount =
@@ -138,19 +237,28 @@ async fn install_session(
     Json(request): Json<SessionAcquireRequest>,
 ) -> std::result::Result<Json<MountResponse>, LocalError> {
     authorize(&state, &headers)?;
-    let trusted_marketplace_key = state
-        .trusted_marketplace_key
-        .as_deref()
-        .ok_or(LocalError(CompanionError::MarketplaceUntrusted))?;
-    let acquired = acquire_session(request, trusted_marketplace_key)
-        .await
+    let trust = state.marketplace_trust.snapshot().map_err(LocalError)?;
+    let acquired = acquire_session(request, &trust).await.map_err(LocalError)?;
+    let current = state.marketplace_trust.snapshot().map_err(LocalError)?;
+    current
+        .authorize_key(
+            acquired.verified.marketplace_key(),
+            acquired.verified.snapshot().snapshot_version,
+        )
+        .map_err(LocalError)?;
+    current
+        .authorize_current_key(
+            acquired.verified.policy_marketplace_key(),
+            acquired.verified.policy_snapshot_version(),
+        )
         .map_err(LocalError)?;
     let cache = state.cache.clone();
-    let mount =
-        tokio::task::spawn_blocking(move || cache.install(&acquired.verified, acquired.mount))
-            .await
-            .map_err(|_| LocalError(CompanionError::Cache))?
-            .map_err(LocalError)?;
+    let mount = tokio::task::spawn_blocking(move || {
+        cache.install_session(&acquired.verified, acquired.mount)
+    })
+    .await
+    .map_err(|_| LocalError(CompanionError::Cache))?
+    .map_err(LocalError)?;
     Ok(Json(MountResponse { mount }))
 }
 
@@ -161,18 +269,13 @@ async fn remove(
 ) -> std::result::Result<Json<RemovalResponse>, LocalError> {
     authorize(&state, &headers)?;
     let server_id = exact_uuid(&request.server_id)?;
-    let trusted_marketplace_key = state
-        .trusted_marketplace_key
-        .clone()
-        .ok_or(LocalError(CompanionError::MarketplaceUntrusted))?;
     let cache = state.cache.clone();
     let removed = tokio::task::spawn_blocking(move || {
-        cache.remove(
+        cache.remove_exact(
             server_id,
             &request.game_key,
             &request.archive_sha256,
             request.admission_revision,
-            &trusted_marketplace_key,
         )
     })
     .await
@@ -187,13 +290,10 @@ async fn render_plan(
     Json(request): Json<RenderRequest>,
 ) -> std::result::Result<Json<RenderPlanResponse>, LocalError> {
     authorize(&state, &headers)?;
-    let trusted_marketplace_key = state
-        .trusted_marketplace_key
-        .clone()
-        .ok_or(LocalError(CompanionError::MarketplaceUntrusted))?;
+    let trust = state.marketplace_trust.snapshot().map_err(LocalError)?;
     let cache = state.cache.clone();
     let prepared = tokio::task::spawn_blocking(move || {
-        compile_mounted_render_plan(&cache, &request, &trusted_marketplace_key)
+        compile_mounted_render_plan_with_trust(&cache, &request, &trust)
     })
     .await
     .map_err(|_| LocalError(CompanionError::Cache))?
@@ -215,6 +315,30 @@ async fn render_plan(
             state.expected_host
         ),
     }))
+}
+
+fn mount_trust_status(mount: &MountRecord, trust: &crate::ClientTrustSnapshot) -> &'static str {
+    let evidence = trust.key_status(&mount.marketplace_key_sha256, mount.snapshot_version);
+    let policy = trust.key_status(
+        mount
+            .policy_marketplace_key_sha256
+            .as_deref()
+            .unwrap_or(&mount.marketplace_key_sha256),
+        mount
+            .policy_snapshot_version
+            .unwrap_or(mount.snapshot_version),
+    );
+    if evidence == "revoked" || policy == "revoked" {
+        "revoked"
+    } else if evidence == "expired" || policy == "expired" {
+        "expired"
+    } else if evidence == "unknown" || policy == "unknown" {
+        "unknown"
+    } else if evidence == "retired" || policy == "retired" {
+        "retired"
+    } else {
+        "trusted"
+    }
 }
 
 async fn render_asset(
@@ -320,6 +444,12 @@ struct RemoveRequest {
     archive_sha256: String,
     #[serde(default)]
     admission_revision: Option<u64>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct StagePackageRequest {
+    sha256: String,
 }
 
 #[derive(Serialize)]
@@ -480,14 +610,11 @@ mod tests {
         let cache = Arc::new(
             ClientCartridgeCache::open(&temp.path().join("cache")).expect("cache should open"),
         );
-        let (_, marketplace_public) =
-            generate_catalog_keypair("marketplace-primary-v1", "marketplace")
-                .expect("key should generate");
         let state = CompanionState::new(
             cache,
             Zeroizing::new("A".repeat(43)),
             "127.0.0.1:32123".to_owned(),
-            Some(marketplace_public),
+            None,
         )
         .expect("state should construct");
         let app = router(state);

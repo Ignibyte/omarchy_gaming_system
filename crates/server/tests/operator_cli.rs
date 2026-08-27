@@ -354,16 +354,18 @@ async fn local_operator_cli_lists_public_catalog_facts_and_deactivates_exact_rel
         r#"
         INSERT INTO marketplace_sync_state (
             marketplace_origin, authority_id, key_id, marketplace_name,
-            snapshot_version, snapshot_sha256
+            snapshot_version, snapshot_sha256, signed_snapshot, marketplace_key
         ) VALUES (
             'https://market.example.test/v1/', $1, $2,
-            'OmarchyGS Marketplace', 1, $3
+            'OmarchyGS Marketplace', 1, $3, $4, $5
         )
         "#,
     )
     .bind(&marketplace_public.authority_id)
     .bind(&marketplace_public.key_id)
     .bind("c".repeat(64))
+    .bind(vec![1_u8])
+    .bind(serde_json::to_value(&marketplace_public).expect("key should serialize"))
     .execute(&pool)
     .await
     .expect("sync state should seed");
@@ -373,13 +375,14 @@ async fn local_operator_cli_lists_public_catalog_facts_and_deactivates_exact_rel
             game_key, publisher_id, publisher_key, rules_version,
             cartridge_version, archive_sha256, signed_identity_sha256,
             display_name, release_path, reviewed_by, review_summary,
-            signed_policy, policy_version, policy_status, policy_reason,
+            signed_policy, policy_marketplace_key, policy_snapshot_version,
+            policy_version, policy_status, policy_reason,
             compatible, imported, first_seen_snapshot_version,
             last_seen_snapshot_version
         ) VALUES (
             'door-legends', 'ignibyte', $1, 1, 2, $2, $3,
             'Door Legends', 'releases/door-legends/2/', 'review-team',
-            'Bounded review passed.', $4, 1, 'active', 'Current release.',
+            'Bounded review passed.', $4, $5, 1, 1, 'active', 'Current release.',
             TRUE, TRUE, 1, 1
         ) RETURNING id
         "#,
@@ -388,6 +391,7 @@ async fn local_operator_cli_lists_public_catalog_facts_and_deactivates_exact_rel
     .bind(CATALOG_ARCHIVE)
     .bind(CATALOG_IDENTITY)
     .bind(json!({"policy": "public-but-not-returned"}))
+    .bind(serde_json::to_value(&marketplace_public).expect("key should serialize"))
     .fetch_one(&pool)
     .await
     .expect("release should seed");

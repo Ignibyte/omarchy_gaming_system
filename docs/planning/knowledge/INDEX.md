@@ -356,3 +356,17 @@ and in this register.
 | `PR-omarchy-gaming-system-align-producer-consumer-limits-and-uniqueness-001` | rule | `aar/AAR-035-historical-session-cartridge-acquisition-and-multi-screen-navigation.md` |
 | `PR-omarchy-gaming-system-treat-clean-clone-fixtures-as-protocol-clients-001` | rule | `aar/AAR-035-historical-session-cartridge-acquisition-and-multi-screen-navigation.md` |
 | `AD-omarchy-gaming-system-historical-acquisition-and-host-navigation-boundary-001` | decision | `../../architecture/game-cartridges.md`; `../../architecture/system-overview.md` |
+| `BF-omarchy-gaming-system-unsigned-current-policy-snapshot-001` | failure | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `BF-omarchy-gaming-system-process-local-trust-revocation-cache-001` | failure | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `BF-omarchy-gaming-system-package-bootstrap-path-toctou-001` | failure | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `BF-omarchy-gaming-system-stale-live-server-trust-runtime-001` | failure | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `BF-omarchy-gaming-system-fresh-enrollment-trust-replay-001` | failure | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `BF-omarchy-gaming-system-historical-migration-singleton-backfill-001` | failure | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `BF-omarchy-gaming-system-trust-floor-hidden-transition-history-001` | failure | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `PR-omarchy-gaming-system-bind-fresh-enrollment-to-package-floors-001` | rule | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `PR-omarchy-gaming-system-preserve-ineligible-trust-as-transition-evidence-001` | rule | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `PR-omarchy-gaming-system-backfill-history-from-row-local-provenance-001` | rule | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `PR-omarchy-gaming-system-reconcile-persisted-trust-before-effects-001` | rule | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `PR-omarchy-gaming-system-snapshot-mutable-build-inputs-before-verification-001` | rule | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `PR-omarchy-gaming-system-bind-current-policy-to-signed-current-snapshot-001` | rule | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
+| `AD-omarchy-gaming-system-offline-root-marketplace-trust-and-package-channel-001` | decision | `../../architecture/game-cartridges.md`; `../../architecture/system-overview.md`; `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md` |

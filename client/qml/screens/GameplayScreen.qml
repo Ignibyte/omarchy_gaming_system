@@ -102,7 +102,7 @@ Item {
             Components.OgsStatusBanner {
                 Layout.fillWidth: true
                 visible: controller.cartridgeRenderState === "missing"
-                message: "This session is pinned to an exact cartridge release that is not installed locally. Authoritative game state remains available."
+                message: "This session's exact cartridge is missing or needs current marketplace policy. Authoritative game state remains available."
                 tone: "warning"
             }
 
@@ -110,9 +110,9 @@ Item {
                 id: installPinnedButton
                 objectName: "installPinnedCartridgeButton"
                 visible: controller.cartridgeInstallAvailable
-                text: "INSTALL PINNED CARTRIDGE"
-                accessibleName: "Install this session's exact signed cartridge"
-                accessibleDescription: "Download and verify the immutable release pinned to this game session"
+                text: "INSTALL / REFRESH CARTRIDGE"
+                accessibleName: "Install or refresh this session's exact signed cartridge"
+                accessibleDescription: "Download and verify the immutable release and its current marketplace policy"
                 enabled: !controller.busy
                 onClicked: controller.installPinnedCartridge()
             }

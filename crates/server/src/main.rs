@@ -74,12 +74,17 @@ async fn main() -> Result<()> {
         .map(|provider| provider_games::ProviderRuntime::production(pool.clone(), provider))
         .transpose()
         .map_err(|error| anyhow!("invalid provider runtime: {}", error.code()))?;
-    let cartridge_distribution = config
-        .cartridge_distribution
-        .as_ref()
-        .map(CartridgeDistributionRuntime::from_local_config)
-        .transpose()
-        .map_err(|error| anyhow!("invalid cartridge distribution runtime: {}", error.code()))?;
+    let cartridge_distribution = if let Some(local) = config.cartridge_distribution.as_ref() {
+        Some(
+            CartridgeDistributionRuntime::from_local_config(&pool, local)
+                .await
+                .map_err(|error| {
+                    anyhow!("invalid cartridge distribution runtime: {}", error.code())
+                })?,
+        )
+    } else {
+        None
+    };
 
     let listener = TcpListener::bind(config.bind_address)
         .await

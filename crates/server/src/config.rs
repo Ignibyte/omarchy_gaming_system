@@ -50,7 +50,7 @@ impl Config {
         let cartridge_distribution = LocalCatalogConfig::optional_from_environment()
             .map_err(|_| {
                 anyhow!(
-                    "OGS_MARKETPLACE_PUBLIC_KEY and OGS_CARTRIDGE_STORE_ROOT must be absent or a complete valid distribution configuration"
+                    "marketplace distribution must be absent or complete: set OGS_CARTRIDGE_STORE_ROOT with either OGS_MARKETPLACE_PUBLIC_KEY or all of OGS_MARKETPLACE_TRUST_ROOT, OGS_MARKETPLACE_TRUST_BUNDLE, and OGS_MARKETPLACE_TRUST_CHANNEL_ORIGIN"
                 )
             })?;
 

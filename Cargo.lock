@@ -1469,6 +1469,7 @@ dependencies = [
  "omarchy-game-runtime",
  "omarchy-game-signal-siege",
  "omarchygs-game-cartridge",
+ "omarchygs-marketplace-trust",
  "percent-encoding",
  "rand_core 0.6.4",
  "rcgen",
@@ -1501,6 +1502,7 @@ dependencies = [
  "futures-util",
  "omarchygs-game-cartridge",
  "omarchygs-game-cartridge-renderer",
+ "omarchygs-marketplace-trust",
  "rand_core 0.6.4",
  "reqwest",
  "rustix",
@@ -1545,6 +1547,29 @@ dependencies = [
  "sha2 0.11.0",
  "tempfile",
  "thiserror",
+]
+
+[[package]]
+name = "omarchygs-marketplace-trust"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64 0.23.1",
+ "ed25519-dalek",
+ "futures-util",
+ "omarchy-game-provider",
+ "omarchygs-game-cartridge",
+ "rand_core 0.6.4",
+ "reqwest",
+ "rustix",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "url",
 ]
 
 [[package]]

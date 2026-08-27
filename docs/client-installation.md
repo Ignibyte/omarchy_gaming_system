@@ -1,8 +1,9 @@
 # Omarchy client installation
 
-Status: native Arch packaging is available for private-alpha testing. Public
-package-repository publication, release signing, and automatic updates are not
-implemented yet.
+Status: native Arch packaging and an optional offline-root-authenticated public
+trust/package channel are available for private-alpha testing. A hosted package
+repository, marketplace-root rotation operation, and automatic or privileged
+installation are not implemented.
 
 ## What the package installs
 
@@ -14,7 +15,9 @@ implemented yet.
 - `/usr/bin/omarchygs-cartridge-companion` as the loopback acquisition,
   verification, cache, mount, and trusted render-plan service;
 - an Omarchy application-menu entry; and
-- non-secret build revision and source-digest provenance.
+- non-secret build revision and source-digest provenance; and, for a reviewed
+  channel build, one public bootstrap containing the offline root, canonical
+  channel, platform identity, and minimum acceptable trust versions.
 
 The x86_64 package depends on Omarchy's `qt6-declarative`, `glibc`, and
 `gcc-libs` packages. It does not contain the Rust community server, PostgreSQL,
@@ -40,11 +43,25 @@ the Git revision, dirty state, and aggregate source digest without embedding a
 checkout path or credential. Repeated builds from the same state on the same
 Omarchy build host are byte-identical.
 
+A release operator may produce a channel-enabled artifact only from an
+explicit reviewed absolute bootstrap file:
+
+```bash
+./scripts/build-client-package.sh \
+  --channel-bootstrap /absolute/path/marketplace-channel-bootstrap.json
+```
+
+The builder copies the input once into private build-owned storage, verifies
+its canonical public-root contract, and binds its digest into source and
+installed provenance before `makepkg`. A normal build with no option contains
+no channel bootstrap and remains manual/no-key compatible.
+
 For a private-alpha artifact received from someone else, verify the checksum
-through the same trusted channel used to obtain the reviewed source. A
-SHA-256 sidecar detects mismatched bytes but is not a publisher signature.
-Do not treat this local build path as a public package repository or a signed
-release channel.
+through the same trusted channel used to obtain the reviewed source. A SHA-256
+sidecar detects mismatched bytes but is not a publisher signature. A packaged
+channel bootstrap is public trust configuration, not proof that the package
+containing it was itself obtained authentically; inspect its provenance before
+the first install. Do not treat this local build path as a hosted repository.
 
 ## Install and launch
 
@@ -98,10 +115,16 @@ server/provider credential or network path.
 ## Configure marketplace trust
 
 Marketplace review must be authenticated independently from the community
-server being selected. Obtain the reviewed marketplace Ed25519 public-key JSON
-through the marketplace or reviewed client-package channel—not from discovery,
-the server catalog, or an acquisition response—and install it as a non-symlink
-regular file at either:
+server being selected. The client supports three mutually exclusive modes:
+
+- no trust configuration, which leaves social play and metadata browsing
+  available but disables cartridge acquisition and trusted mounts;
+- a manually provisioned exact marketplace Ed25519 public key; or
+- the public channel bootstrap installed by a reviewed client package.
+
+For manual mode, obtain the public-key JSON through an independent trusted
+channel—not from discovery, the server catalog, or an acquisition response—and
+install it as a non-symlink regular file at either:
 
 ```text
 ${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-gaming-system/marketplace-public.json
@@ -117,18 +140,28 @@ OGS_CLIENT_MARKETPLACE_PUBLIC_KEY=/absolute/path/marketplace-public.json \
 ```
 
 The launcher passes only that path to the Rust companion and tells trusted QML
-whether installation authority is ready; it does not pass the key through a
-server request. The companion parses the bounded key once, requires the full
-key in every acquisition envelope to match exactly, and binds its SHA-256
-fingerprint into each mount. Matching `authority_id` or `key_id` labels with
-different key bytes are rejected.
+whether cartridge trust is configured; it does not pass the key through a
+server request. The companion requires every acquisition proof to match the
+exact key and binds its SHA-256 fingerprint into each mount. Matching labels
+with different key bytes are rejected.
 
-Without a configured key, the normal social/game client still starts and may
-browse a server's cartridge catalog, but installation and trusted mount
-inventory/removal stay unavailable. An invalid, relative, or symlinked explicit
-path fails launch. Changing the configured key also fails closed on mounts made
-under the old fingerprint; public enrollment and authenticated rotation are not
-implemented yet.
+For channel mode, the package owns
+`/usr/share/omarchy-gaming-system/marketplace-channel-bootstrap.json`. Do not
+copy a bootstrap from a selected community server. The Games screen shows the
+fixed channel and supports explicit **ENROLL/SYNC TRUST**. The companion fetches
+only that bootstrap's canonical HTTPS manifest path, verifies the offline root,
+time window, package-supplied minimum bundle/snapshot versions, complete
+active/retired/revoked key history, and monotonic transition, then publishes
+the signed bundle atomically in the private application data directory.
+Another running companion's valid rotation or revocation is reconciled before
+each security-sensitive operation.
+
+Manual and packaged-channel trust may not be combined; mixed configuration
+fails launch rather than selecting one silently. An invalid, relative, or
+symlinked manual path also fails launch. In channel mode, expiry or lack of
+enrollment denies cartridge and package effects while ordinary social/server
+gameplay remains available. Retired keys authenticate only their exact
+historical snapshot ranges; revoked keys make their mounts remove-only.
 
 ## Cartridge installation and local state
 
@@ -160,8 +193,9 @@ screen from the authoritative REST view. If the mount is missing and the server
 advertises `games.session-cartridge-acquisition.v1`, the Gameplay screen offers
 `INSTALL PINNED CARTRIDGE`. This explicit operation participant-authorizes the
 session, acquires the immutable old release through retained marketplace
-evidence rather than today's catalog selection, verifies it under the client
-key, and rechecks the session before publishing the mount. Failure changes no
+evidence rather than today's catalog selection, verifies the old evidence and
+current lifecycle policy under their exact independently authorized keys, and
+rechecks the session before publishing the mount. Failure changes no
 authoritative game state or other mount.
 
 The gameplay screen accepts only the matching bounded plan and exact companion
@@ -175,7 +209,16 @@ origins, trust keys, revisions, screens, or lifecycle policy fail closed.
 
 ## Update and remove
 
-Inspect and install a newer reviewed package with the same `pacman -U` flow.
+In channel mode, the Games screen can list an exact newer package record and
+**VERIFY & STAGE** it. The companion streams only that root-authenticated
+platform artifact into bounded mode-0600 non-executable storage, checks exact
+size and SHA-256, rechecks current trust, and shows a fixed-path `pacman -U`
+command. It never runs the command, invokes a shell or sudo, or changes the
+system package database. Inspect the staged path/provenance and run the shown
+command deliberately.
+
+Manual-mode users inspect and install a newer reviewed package with the same
+`pacman -U` flow.
 Pacman replaces the immutable QML and companion payload and keeps the package
 inventory coherent. Existing public mount records and immutable cached
 cartridge bytes remain in the per-user data directory; no credential is stored

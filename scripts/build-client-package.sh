@@ -5,9 +5,10 @@ export LC_ALL=C
 ogs_build_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 ogs_source_candidate="$ogs_build_root"
 ogs_output_candidate="$ogs_build_root/target/packages"
+ogs_channel_bootstrap_candidate=""
 
 usage() {
-  echo "Usage: $0 [--source-root PATH] [--output PATH]" >&2
+  echo "Usage: $0 [--source-root PATH] [--output PATH] [--channel-bootstrap PATH]" >&2
 }
 
 while (( $# > 0 )); do
@@ -22,6 +23,11 @@ while (( $# > 0 )); do
       ogs_output_candidate="$2"
       shift 2
       ;;
+    --channel-bootstrap)
+      (( $# >= 2 )) || { usage; exit 2; }
+      ogs_channel_bootstrap_candidate="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -33,7 +39,7 @@ while (( $# > 0 )); do
   esac
 done
 
-for ogs_command in flock git id makepkg sha256sum stat; do
+for ogs_command in cargo flock git id makepkg sha256sum stat; do
   command -v "$ogs_command" >/dev/null 2>&1 || {
     echo "Missing client package build command: $ogs_command" >&2
     exit 1
@@ -42,6 +48,32 @@ done
 
 "$ogs_build_root/scripts/check-client-package-source.sh" "$ogs_source_candidate"
 ogs_source_root="$(cd -- "$ogs_source_candidate" && pwd -P)"
+ogs_temp="$(mktemp -d)"
+trap 'rm -rf -- "$ogs_temp"' EXIT INT TERM
+mkdir -p -- "$ogs_temp/packages"
+
+ogs_channel_bootstrap=""
+if [[ -n "$ogs_channel_bootstrap_candidate" ]]; then
+  [[ "$ogs_channel_bootstrap_candidate" == /* \
+    && -f "$ogs_channel_bootstrap_candidate" \
+    && ! -L "$ogs_channel_bootstrap_candidate" ]] || {
+    echo "Client channel bootstrap must be an absolute regular file." >&2
+    exit 1
+  }
+  ogs_channel_bootstrap="$ogs_temp/marketplace-channel-bootstrap.json"
+  cp --no-dereference -- \
+    "$ogs_channel_bootstrap_candidate" "$ogs_channel_bootstrap"
+  [[ -f "$ogs_channel_bootstrap" && ! -L "$ogs_channel_bootstrap" ]] || {
+    echo "Client channel bootstrap snapshot must be a regular file." >&2
+    exit 1
+  }
+  chmod 0600 -- "$ogs_channel_bootstrap"
+  cargo run --quiet --locked \
+    --manifest-path "$ogs_source_root/Cargo.toml" \
+    --package omarchygs-marketplace-trust \
+    --bin omarchygs-marketplace-channel -- \
+    verify-bootstrap "$ogs_channel_bootstrap" >/dev/null
+fi
 
 if [[ -e "$ogs_output_candidate" && -L "$ogs_output_candidate" ]]; then
   echo "Client package output directory must not be a symlink." >&2
@@ -49,9 +81,6 @@ if [[ -e "$ogs_output_candidate" && -L "$ogs_output_candidate" ]]; then
 fi
 mkdir -p -- "$ogs_output_candidate"
 ogs_output_root="$(cd -- "$ogs_output_candidate" && pwd -P)"
-ogs_temp="$(mktemp -d)"
-trap 'rm -rf -- "$ogs_temp"' EXIT INT TERM
-mkdir -p -- "$ogs_temp/packages"
 
 ogs_build_workspace="/tmp/omarchygs-client-package-build-$(id -u)"
 if [[ -e "$ogs_build_workspace" \
@@ -94,6 +123,7 @@ ogs_digest_records="$ogs_temp/digest-records"
     printf '%s\0%s\0' "$ogs_path" "$ogs_hash"
   done < <(
     find crates/client-cartridge-runtime crates/game-cartridge \
+      crates/game-provider crates/marketplace-trust \
       -type f -print | LC_ALL=C sort
   )
   while IFS= read -r ogs_path; do
@@ -101,6 +131,11 @@ ogs_digest_records="$ogs_temp/digest-records"
     printf '%s\0%s\0' "$ogs_path" "$ogs_hash"
   done <packaging/arch/client-runtime-files.txt
 ) >"$ogs_digest_records"
+if [[ -n "$ogs_channel_bootstrap" ]]; then
+  ogs_bootstrap_hash="$(sha256sum -- "$ogs_channel_bootstrap" | awk '{print $1}')"
+  printf '%s\0%s\0' marketplace-channel-bootstrap.json "$ogs_bootstrap_hash" \
+    >>"$ogs_digest_records"
+fi
 ogs_source_digest="$(sha256sum -- "$ogs_digest_records" | awk '{print $1}')"
 
 ogs_source_revision="$(git -C "$ogs_source_root" rev-parse HEAD 2>/dev/null || true)"
@@ -124,6 +159,7 @@ fi
     OMARCHYGS_SOURCE_DIGEST="$ogs_source_digest" \
     OMARCHYGS_SOURCE_REVISION="$ogs_source_revision" \
     OMARCHYGS_SOURCE_DIRTY="$ogs_source_dirty" \
+    OMARCHYGS_CHANNEL_BOOTSTRAP="$ogs_channel_bootstrap" \
     SOURCE_DATE_EPOCH="$ogs_source_date_epoch" \
     PKGDEST="$ogs_temp/packages" \
     makepkg --clean --cleanbuild --force --nodeps --noconfirm

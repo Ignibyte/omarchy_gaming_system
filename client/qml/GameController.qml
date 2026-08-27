@@ -670,6 +670,15 @@ QtObject {
             errorText = ""
             return
         }
+        if (parsed.ok
+                && _errorCode(parsed.document) === "companion_marketplace_untrusted"
+                && _sessionAcquisitionSupported()) {
+            cartridgeRenderState = "missing"
+            loadState = "ready"
+            statusText = "This mount needs current marketplace policy before it can render."
+            errorText = ""
+            return
+        }
         if (status !== 200 || !parsed.ok || !_validRenderResponse(parsed.document)) {
             if (_requestedCartridgeScreen !== "" && !_entryFallbackAttempted
                     && _requestCartridgeRender("", true)) {
@@ -793,6 +802,10 @@ QtObject {
                       "signed_identity_sha256", "marketplace_key_sha256", "marketplace_id",
                       "marketplace_name", "reviewed_by", "review_summary", "snapshot_version",
                       "policy_version", "lifecycle_status", "admission_revision"]
+        if (mount.policy_marketplace_key_sha256 !== undefined)
+            keys.push("policy_marketplace_key_sha256")
+        if (mount.policy_snapshot_version !== undefined)
+            keys.push("policy_snapshot_version")
         if (mount.warning !== undefined)
             keys.push("warning")
         const warningMatches = mount.lifecycle_status === "deprecated"
@@ -809,13 +822,21 @@ QtObject {
                 && mount.archive_sha256 === binding.archive_sha256
                 && mount.signed_identity_sha256 === binding.signed_identity_sha256
                 && /^[0-9a-f]{64}$/.test(mount.marketplace_key_sha256)
+                && (mount.policy_marketplace_key_sha256 === undefined
+                    || /^[0-9a-f]{64}$/.test(mount.policy_marketplace_key_sha256))
+                && ((mount.policy_marketplace_key_sha256 === undefined)
+                    === (mount.policy_snapshot_version === undefined))
                 && /^[a-z][a-z0-9._-]{0,95}$/.test(mount.marketplace_id)
                 && _boundedString(mount.marketplace_name, 128, 1)
                 && /^[a-z][a-z0-9._-]{0,95}$/.test(mount.reviewed_by)
                 && _boundedString(mount.review_summary, 512, 1)
                 && Number.isSafeInteger(mount.snapshot_version) && mount.snapshot_version > 0
+                && (mount.policy_snapshot_version === undefined
+                    || (Number.isSafeInteger(mount.policy_snapshot_version)
+                        && mount.policy_snapshot_version > 0))
                 && Number.isSafeInteger(mount.policy_version) && mount.policy_version > 0
-                && ["active", "deprecated"].indexOf(mount.lifecycle_status) !== -1
+                && ["active", "deprecated", "retired"]
+                    .indexOf(mount.lifecycle_status) !== -1
                 && mount.admission_revision === binding.admission_revision
                 && warningMatches
     }
@@ -826,7 +847,7 @@ QtObject {
             "companion_mount_missing": "The session's exact cartridge is not installed.",
             "companion_server_unavailable": "The selected server could not complete the cartridge download.",
             "companion_server_rejected": "The signed historical cartridge evidence was rejected.",
-            "companion_marketplace_untrusted": "Configure an independently trusted marketplace key before installing.",
+            "companion_marketplace_untrusted": "Synchronize current independently authenticated marketplace policy before installing.",
             "companion_cache_failure": "The private cartridge cache needs attention."
         }
         return messages[code] || "The local cartridge companion rejected the operation."

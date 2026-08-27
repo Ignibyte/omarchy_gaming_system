@@ -15,30 +15,26 @@ sources:
     resource: repo://client/qml/Main.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
-  - id: openwiki-source-650bc3dc3906a3b07d2dc791
-    resource: repo://client/qml/screens/GameplayScreen.qml
   - id: openwiki-source-4f5334e859a4d83e2a196fcf
     resource: repo://client/qml/SocialController.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
-  - id: openwiki-source-152956378e80408d69d9dfb7
-    resource: repo://client/qml/tests/fixture/tst_games.qml
-  - id: openwiki-source-939b835e7d6c679aae8394e7
-    resource: repo://crates/client-cartridge-runtime/src/remote.rs
-  - id: openwiki-source-2c5e901f86bcbb656e1b9dfa
-    resource: repo://crates/game-cartridge/src/validate.rs
+  - id: openwiki-source-af488519fab8354e5e131df3
+    resource: repo://crates/client-cartridge-runtime/src/trust.rs
+  - id: openwiki-source-30abbd4fc5d09b185331836c
+    resource: repo://crates/game-cartridge/src/acquisition.rs
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
+  - id: openwiki-source-217cb24d606877cd63b392ef
+    resource: repo://crates/marketplace-trust/src/lib.rs
   - id: openwiki-source-66facc66e34ad7f2a74321e1
     resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-ba203ea2e600f294ab58ef02
     resource: repo://crates/server/src/bin/omarchygs-admin.rs
-  - id: openwiki-source-6e9cbe5bfa9c94fd24523bd3
-    resource: repo://crates/server/src/cartridge_catalog_api_tests.rs
   - id: openwiki-source-5942cee1725f1a3f7bf01ec7
     resource: repo://crates/server/src/cartridge_distribution.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
@@ -57,6 +53,8 @@ sources:
     resource: repo://crates/server/src/games.rs
   - id: openwiki-source-a13fe4db1eee073d0a7e2c4d
     resource: repo://crates/server/src/main.rs
+  - id: openwiki-source-f6dda000394ac1ba6bba8f65
+    resource: repo://crates/server/src/marketplace_sync.rs
   - id: openwiki-source-1f3bbf6debbcae2e3b3c3b61
     resource: repo://crates/server/src/mfa_api_tests.rs
   - id: openwiki-source-83e16151ac88c29a31cb79d2
@@ -69,10 +67,6 @@ sources:
     resource: repo://crates/server/src/provider_games.rs
   - id: openwiki-source-e4423ee4de83f38bd240bf8b
     resource: repo://crates/server/src/reports.rs
-  - id: openwiki-source-42fe6bf463fcb01dc5566e16
-    resource: repo://crates/server/src/server_discovery.rs
-  - id: openwiki-source-b7ac90b7d5ad368e8fd1cca3
-    resource: repo://crates/server/src/session_cartridges.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
   - id: openwiki-source-76060b846b9222af2c790243
@@ -105,13 +99,13 @@ sources:
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-  - id: openwiki-source-6e903c05353a3393af0fb6c8
-    resource: repo://migrations/0022_historical_session_cartridge_acquisition.sql
+  - id: openwiki-source-1db5e045968bcac71129c0fd
+    resource: repo://migrations/0023_marketplace_trust_key_rotation.sql
+  - id: openwiki-source-d85e6ea816d7c91e9828f7b2
+    resource: repo://packaging/arch/omarchygs
   - id: openwiki-source-a5928e7ee39885995efdc170
     resource: repo://scripts/dev.sh
-  - id: openwiki-source-31a4e9d026860da100c233f9
-    resource: repo://scripts/test-provider-authority-pilot.sh
-generated: {by: "codex", at: "2026-08-27T05:42:15.031Z"}
+generated: {by: "codex", at: "2026-08-27T10:39:16.768Z"}
 ---
 
 # Runtime foundation
@@ -135,10 +129,14 @@ and valid; a partial or malformed set stops startup rather than exposing a
 partially configured broker.
 
 Startup may independently construct a `CartridgeDistributionRuntime` from the
-operator's existing secure-store configuration and pinned marketplace public
-key. The catalog remains available without it. Distribution is enabled only
-when the complete configuration is valid; otherwise startup fails rather than
-advertising an acquisition capability that cannot serve exact retained bytes.
+operator's existing secure-store configuration and either one manual
+marketplace public key or a root-verified signed trust bundle. The two trust
+modes are mutually exclusive. Channel mode also verifies that its marketplace
+origin matches server synchronization and reconciles its root and monotonic
+trust history with PostgreSQL before binding. The catalog remains available
+without distribution. Distribution is enabled only when the complete
+configuration is valid; otherwise startup fails rather than advertising an
+acquisition capability that cannot serve exact retained bytes.
 
 Configuration lives in `crates/server/src/config.rs`. `DATABASE_URL` and
 `OGS_BIND_ADDRESS` can override development defaults; `BBS_BIND_ADDRESS` is a
@@ -401,24 +399,38 @@ corresponding screen becomes active.
 metadata-only server catalog and a separate authenticated loopback companion
 for local acquisition and mount operations. Catalog-only servers remain fully
 browsable; install and update controls require the separately advertised
-acquisition capability, an available companion, and a marketplace public key
-trusted by the client. A mounted record is presentation inventory only and does
+acquisition capability, an available companion, and client marketplace trust
+from either manual or packaged-channel mode. A mounted record is presentation
+inventory only and does
 not create a game session or execute cartridge-supplied code. Once a separately
 created session carries the exact immutable presentation binding, the game
 controller may ask that companion to compile one exact mounted signed screen;
 mount presence alone remains insufficient. If that session's exact mount is
 missing, the Gameplay screen offers an explicit historical install only when
 the server capability, companion, helper credential, participant authority, and
-client-controlled marketplace key all agree. Profiles retain exact digest and
+client-controlled marketplace trust all agree. Profiles retain exact digest and
 admission-revision mounts side by side rather than one mutable game pointer.
 
-The native package launcher owns the companion lifecycle. It resolves an
-absolute regular non-symlink marketplace-key file from explicit environment,
-user configuration, or system configuration, creates a private runtime
-directory and random per-process bearer credential, passes the key path only to
-the Rust companion, and tells QML only whether independent trust is ready. The
-launcher terminates the companion and removes its runtime state when QML exits;
-an explicitly configured invalid key fails before either process is exposed.
+The native package launcher owns the companion lifecycle. It supports no-trust,
+manual-key, and packaged-channel modes and rejects mixed manual/channel input.
+Manual mode resolves an absolute regular non-symlink key file from explicit
+environment, user configuration, or system configuration. Channel mode passes
+only the package's fixed public bootstrap and the private application data root.
+The launcher creates a private runtime directory and random per-process bearer
+credential, tells QML only whether independent trust is configured, and never
+passes marketplace or root key bytes to QML. It terminates the companion and
+removes runtime state when QML exits; an invalid trust input fails before either
+process is exposed.
+
+The companion exposes credential-protected no-store status, explicit trust
+synchronization, package inventory, and package staging routes. A channel sync
+fetches only the bootstrap's guarded canonical location, verifies the offline
+root, time window, package freshness floors, and complete key transition, then
+atomically publishes a mode-0600 signed bundle in the descriptor-bound private
+store. Every security-sensitive read reconciles that persisted bundle before
+use, so another companion's rotation or revocation is visible without restart.
+A below-floor bundle is unavailable for authorization but still constrains the
+next transition as authenticated history.
 
 Social refresh serially loads incoming/outgoing requests, accepted
 connections, and the actor's private block inventory. Exact public-handle
@@ -727,6 +739,11 @@ It resolves the immutable presentation through retained signed marketplace
 evidence rather than current catalog selection, applies current active-session
 lifecycle policy, self-verifies the exact acquisition document, and keeps
 foreign, absent, or unavailable sessions behind the same denial.
+Acquisition v2 carries the retained evidence snapshot and the current
+policy-bearing snapshot separately. The old evidence key may be retired only
+inside its authenticated historical range; the policy key must be the active
+key for the root-declared current snapshot. Version 1 remains accepted when
+both claims use the same key.
 
 The sibling
 `POST /v1/personas/{persona_id}/game-sessions/{game_session_id}/cartridge-actions`
@@ -897,6 +914,13 @@ Migration `0022` adds immutable normalized snapshot/release acquisition
 evidence, requires that evidence for every future presentation pin, and binds
 every future action admission to an exact explicit screen while retaining
 legacy rows unchanged.
+Migration `0023` binds every release policy to its exact marketplace key and
+the release's own last-seen snapshot version, persists an authenticated root
+fingerprint and complete trust payload in the synchronization singleton, and
+enforces monotonic trust/key/policy transitions. Server acquisition, session
+pinning, fresh action admission, and catalog administration compare the live
+runtime with this persisted trust in their database snapshot, so a stale
+process fails closed after another administrator advances or revokes trust.
 Add later
 capabilities through domain modules and thin handlers rather than placing policy
 directly in SQL or transport code.

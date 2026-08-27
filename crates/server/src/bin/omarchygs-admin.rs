@@ -14,7 +14,10 @@ mod operator_admin;
 mod registration_invites;
 
 use omarchy_gaming_system_server::{
-    cartridge_catalog::{CatalogCommand, CatalogError, apply_catalog_command, list_inventory},
+    cartridge_catalog::{
+        CatalogCommand, CatalogError, apply_catalog_command, authorize_marketplace_trust,
+        list_inventory,
+    },
     marketplace_sync::{self, LocalCatalogConfig, MarketplaceSyncConfig, MarketplaceSyncError},
 };
 use omarchygs_game_cartridge::rich_2d_host_profile;
@@ -178,12 +181,14 @@ async fn run() -> Result<(), AdminError> {
             .map_err(|_| AdminError::Catalog(CatalogError::InvalidInput))?;
         command.validate()?;
         let config = LocalCatalogConfig::from_environment()?;
+        authorize_marketplace_trust(&pool, config.marketplace_trust.channel_trust()).await?;
         let store = config.open_store()?;
+        let marketplace_key = config.active_key()?;
         serde_json::to_value(
             apply_catalog_command(
                 &pool,
                 &store,
-                &config.marketplace_key,
+                &marketplace_key,
                 &rich_2d_host_profile(),
                 &command,
             )

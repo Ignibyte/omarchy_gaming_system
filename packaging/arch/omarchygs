@@ -4,6 +4,7 @@ set -Eeuo pipefail
 ogs_client_bin_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 ogs_client_qml_root="$ogs_client_bin_dir/../share/omarchy-gaming-system/qml"
 ogs_client_companion="$ogs_client_bin_dir/omarchygs-cartridge-companion"
+ogs_client_channel_bootstrap="$ogs_client_bin_dir/../share/omarchy-gaming-system/marketplace-channel-bootstrap.json"
 
 if [[ ! -d "$ogs_client_qml_root" || -L "$ogs_client_qml_root" ]]; then
   echo "OmarchyGS client data directory is missing or invalid." >&2
@@ -45,6 +46,19 @@ if [[ -n "$ogs_client_marketplace_key" ]]; then
   fi
   ogs_client_marketplace_trusted=true
 fi
+ogs_client_channel_configured=false
+if [[ -e "$ogs_client_channel_bootstrap" || -L "$ogs_client_channel_bootstrap" ]]; then
+  if [[ ! -f "$ogs_client_channel_bootstrap" || -L "$ogs_client_channel_bootstrap" ]]; then
+    echo "OmarchyGS packaged marketplace channel is missing or invalid." >&2
+    exit 1
+  fi
+  if [[ -n "$ogs_client_marketplace_key" ]]; then
+    echo "OmarchyGS manual marketplace trust and the packaged channel cannot be combined." >&2
+    exit 1
+  fi
+  ogs_client_channel_configured=true
+  ogs_client_marketplace_trusted=true
+fi
 
 ogs_client_runtime_parent="${XDG_RUNTIME_DIR:-/tmp}"
 ogs_client_runtime_dir=$(mktemp -d "$ogs_client_runtime_parent/omarchygs-client.XXXXXX")
@@ -63,6 +77,10 @@ ogs_client_companion_arguments=(
 if [[ -n "$ogs_client_marketplace_key" ]]; then
   ogs_client_companion_arguments+=(
     "--marketplace-public-key-file=$ogs_client_marketplace_key"
+  )
+elif [[ "$ogs_client_channel_configured" == true ]]; then
+  ogs_client_companion_arguments+=(
+    "--marketplace-trust-bootstrap-file=$ogs_client_channel_bootstrap"
   )
 fi
 

@@ -29,6 +29,8 @@ package() {
   local ogs_source_digest="${OMARCHYGS_SOURCE_DIGEST:?missing reviewed source digest}"
   local ogs_source_revision="${OMARCHYGS_SOURCE_REVISION:?missing source revision}"
   local ogs_source_dirty="${OMARCHYGS_SOURCE_DIRTY:?missing source dirty state}"
+  local ogs_channel_bootstrap="${OMARCHYGS_CHANNEL_BOOTSTRAP:-}"
+  local ogs_channel_bootstrap_sha256=none
   local ogs_runtime_path
   local ogs_runtime_relative
 
@@ -55,6 +57,16 @@ package() {
     "$ogs_source_root/packaging/arch/com.ignibyte.OmarchyGS.desktop" \
     "$pkgdir/usr/share/applications/com.ignibyte.OmarchyGS.desktop"
 
+  if [[ -n "$ogs_channel_bootstrap" ]]; then
+    [[ "$ogs_channel_bootstrap" == /* \
+      && -f "$ogs_channel_bootstrap" \
+      && ! -L "$ogs_channel_bootstrap" ]] || return 1
+    ogs_channel_bootstrap_sha256="$(sha256sum -- "$ogs_channel_bootstrap" | awk '{print $1}')"
+    [[ "$ogs_channel_bootstrap_sha256" =~ ^[0-9a-f]{64}$ ]] || return 1
+    install -Dm0644 -- "$ogs_channel_bootstrap" \
+      "$pkgdir/usr/share/omarchy-gaming-system/marketplace-channel-bootstrap.json"
+  fi
+
   install -d -m0755 -- "$pkgdir/usr/share/doc/omarchy-gaming-system-client"
   printf '%s\n' \
     'format=omarchygs-client-build-provenance-v1' \
@@ -62,6 +74,7 @@ package() {
     "source_revision=$ogs_source_revision" \
     "source_dirty=$ogs_source_dirty" \
     "source_sha256=$ogs_source_digest" \
+    "channel_bootstrap_sha256=$ogs_channel_bootstrap_sha256" \
     >"$pkgdir/usr/share/doc/omarchy-gaming-system-client/BUILD-PROVENANCE"
   chmod 0644 -- \
     "$pkgdir/usr/share/doc/omarchy-gaming-system-client/BUILD-PROVENANCE"

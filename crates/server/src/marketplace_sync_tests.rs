@@ -5,7 +5,7 @@ use std::{
     os::unix::fs::PermissionsExt as _,
     path::{Path, PathBuf},
     sync::Arc,
-    time::Duration,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use axum::{
@@ -22,9 +22,15 @@ use omarchygs_game_cartridge::{
     generate_catalog_keypair, generate_keypair, rich_2d_host_profile, sign_catalog_policy,
     sign_marketplace_snapshot, verify_release_directory,
 };
+use omarchygs_marketplace_trust::{
+    GuardedChannelClient, MarketplaceKeyStatus, MarketplaceTrustKey, MarketplaceTrustPayload,
+    catalog_key_sha256, generate_trust_root_keypair, sign_marketplace_trust, signed_trust_bytes,
+    verify_marketplace_trust_bytes,
+};
 use rcgen::{CertifiedKey, generate_simple_self_signed};
+use sha2::{Digest as _, Sha256};
 use sqlx::PgPool;
-use tokio::{net::TcpStream, sync::RwLock, task::JoinHandle};
+use tokio::{io::AsyncReadExt as _, net::TcpStream, sync::RwLock, task::JoinHandle};
 use uuid::Uuid;
 
 use crate::{
@@ -32,9 +38,11 @@ use crate::{
         CatalogCommand, CatalogError, CatalogSelection, apply_catalog_command, list_inventory,
         list_player_catalog, snapshot_sha256,
     },
+    cartridge_distribution::{CartridgeDistributionRuntime, DistributionError},
     marketplace_egress::{GuardedMarketplaceClient, MarketplaceOrigin},
     marketplace_sync::{
-        LocalCatalogConfig, MarketplaceSyncConfig, MarketplaceSyncError, synchronize_with_client,
+        LocalCatalogConfig, LocalMarketplaceTrust, MarketplaceSyncConfig, MarketplaceSyncError,
+        synchronize_with_client,
     },
 };
 
@@ -42,6 +50,242 @@ const MARKETPLACE_HOST: &str = "market.example.test";
 const REVISION_ONE: &str = "1111111111111111111111111111111111111111";
 const REVISION_TWO: &str = "2222222222222222222222222222222222222222";
 const BUILDER_DIGEST: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL and the separately spawned TLS marketplace fixture"]
+async fn root_authenticated_marketplace_key_rotation_preserves_old_evidence(pool: PgPool) {
+    let generated = GeneratedMarketplace::new();
+    let snapshot_one = generated.snapshot(1, CatalogStatus::Active, CatalogStatus::Active, 1);
+    generated
+        .files
+        .write()
+        .await
+        .insert("snapshot.signed.json".to_owned(), snapshot_one);
+    let (address, certificate, server) = spawn_marketplace(Arc::clone(&generated.files)).await;
+    let origin = MarketplaceOrigin::parse(&format!(
+        "https://{MARKETPLACE_HOST}:{}/v1/",
+        address.port()
+    ))
+    .unwrap();
+    let (root_private, root_public) = generate_trust_root_keypair("root-1", "official").unwrap();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let initial_trust = verified_channel_trust(
+        &root_private,
+        &root_public,
+        origin.as_str(),
+        now,
+        1,
+        1,
+        vec![MarketplaceTrustKey {
+            key_sha256: catalog_key_sha256(&generated.catalog_public).unwrap(),
+            key: generated.catalog_public.clone(),
+            status: MarketplaceKeyStatus::Active,
+            first_snapshot_version: 1,
+            last_snapshot_version: None,
+        }],
+    );
+    let initial_config = MarketplaceSyncConfig::for_test(
+        LocalCatalogConfig {
+            marketplace_trust: LocalMarketplaceTrust::Channel(Arc::new(initial_trust)),
+            store_root: generated.store_root.clone(),
+        },
+        origin.clone(),
+        certificate.clone(),
+    );
+    let client =
+        GuardedMarketplaceClient::conformance_loopback(origin.clone(), address, &certificate)
+            .unwrap();
+    synchronize_with_client(&pool, &initial_config, &client)
+        .await
+        .unwrap();
+
+    let (second_private, second_public) =
+        generate_catalog_keypair("marketplace-primary-v2", "omarchygs-marketplace").unwrap();
+    let snapshot_two_same_policy_version = generated.snapshot_with_catalog(
+        2,
+        CatalogStatus::Active,
+        CatalogStatus::Active,
+        1,
+        &second_private,
+        &second_public,
+    );
+    generated.files.write().await.insert(
+        "snapshot.signed.json".to_owned(),
+        snapshot_two_same_policy_version,
+    );
+    let rotated_trust = verified_channel_trust(
+        &root_private,
+        &root_public,
+        origin.as_str(),
+        now,
+        2,
+        2,
+        vec![
+            MarketplaceTrustKey {
+                key_sha256: catalog_key_sha256(&generated.catalog_public).unwrap(),
+                key: generated.catalog_public.clone(),
+                status: MarketplaceKeyStatus::Retired,
+                first_snapshot_version: 1,
+                last_snapshot_version: Some(1),
+            },
+            MarketplaceTrustKey {
+                key_sha256: catalog_key_sha256(&second_public).unwrap(),
+                key: second_public.clone(),
+                status: MarketplaceKeyStatus::Active,
+                first_snapshot_version: 2,
+                last_snapshot_version: None,
+            },
+        ],
+    );
+    let rotated_config = MarketplaceSyncConfig::for_test(
+        LocalCatalogConfig {
+            marketplace_trust: LocalMarketplaceTrust::Channel(Arc::new(rotated_trust)),
+            store_root: generated.store_root.clone(),
+        },
+        origin.clone(),
+        certificate.clone(),
+    );
+    assert_eq!(
+        synchronize_with_client(&pool, &rotated_config, &client).await,
+        Err(MarketplaceSyncError::Conflict),
+        "a rotated key must not replace signed policy without advancing policy_version",
+    );
+    let snapshot_two = generated.snapshot_with_catalog(
+        2,
+        CatalogStatus::Active,
+        CatalogStatus::Active,
+        2,
+        &second_private,
+        &second_public,
+    );
+    generated
+        .files
+        .write()
+        .await
+        .insert("snapshot.signed.json".to_owned(), snapshot_two);
+    let receipt = synchronize_with_client(&pool, &rotated_config, &client)
+        .await
+        .unwrap();
+    assert_eq!(receipt.snapshot_version, 2);
+    assert_eq!(
+        sqlx::query_scalar::<_, String>(
+            "SELECT marketplace_key ->> 'key_id' FROM marketplace_sync_state WHERE singleton",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap(),
+        second_public.key_id
+    );
+    let policy_keys = sqlx::query_scalar::<_, String>(
+        "SELECT DISTINCT policy_marketplace_key ->> 'key_id' FROM marketplace_releases",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(policy_keys, vec![second_public.key_id.clone()]);
+    let retained_keys = sqlx::query_scalar::<_, String>(
+        r#"
+        SELECT DISTINCT snapshot.marketplace_key ->> 'key_id'
+        FROM marketplace_release_acquisition_evidence AS release
+        JOIN marketplace_snapshot_acquisition_evidence AS snapshot
+          ON snapshot.snapshot_sha256 = release.snapshot_sha256
+        "#,
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(retained_keys, vec![generated.catalog_public.key_id.clone()]);
+    let stale_runtime =
+        CartridgeDistributionRuntime::from_local_config(&pool, &rotated_config.local)
+            .await
+            .expect("the current persisted bundle should authorize the running server");
+
+    let revoked_trust = verified_channel_trust(
+        &root_private,
+        &root_public,
+        origin.as_str(),
+        now,
+        3,
+        2,
+        vec![
+            MarketplaceTrustKey {
+                key_sha256: catalog_key_sha256(&generated.catalog_public).unwrap(),
+                key: generated.catalog_public.clone(),
+                status: MarketplaceKeyStatus::Revoked,
+                first_snapshot_version: 1,
+                last_snapshot_version: Some(1),
+            },
+            MarketplaceTrustKey {
+                key_sha256: catalog_key_sha256(&second_public).unwrap(),
+                key: second_public,
+                status: MarketplaceKeyStatus::Active,
+                first_snapshot_version: 2,
+                last_snapshot_version: None,
+            },
+        ],
+    );
+    let revoked_config = MarketplaceSyncConfig::for_test(
+        LocalCatalogConfig {
+            marketplace_trust: LocalMarketplaceTrust::Channel(Arc::new(revoked_trust)),
+            store_root: generated.store_root.clone(),
+        },
+        origin,
+        certificate,
+    );
+    assert!(
+        synchronize_with_client(&pool, &revoked_config, &client)
+            .await
+            .unwrap()
+            .replayed
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT (trust_payload ->> 'bundle_version')::BIGINT FROM marketplace_sync_state WHERE singleton",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap(),
+        3
+    );
+    let persisted_trust = sqlx::query_as::<
+        _,
+        (
+            Option<String>,
+            Option<sqlx::types::Json<MarketplaceTrustPayload>>,
+        ),
+    >(
+        "SELECT trust_root_sha256, trust_payload FROM marketplace_sync_state WHERE singleton",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        stale_runtime.authorize_persisted_marketplace_trust(
+            persisted_trust.0.as_deref(),
+            persisted_trust.1.as_ref().map(|payload| &payload.0),
+        ),
+        Err(DistributionError::Denied),
+        "a running server must fail closed after persisted trust advances",
+    );
+    assert!(matches!(
+        CartridgeDistributionRuntime::from_local_config(&pool, &rotated_config.local).await,
+        Err(DistributionError::Denied)
+    ));
+    let current_runtime =
+        CartridgeDistributionRuntime::from_local_config(&pool, &revoked_config.local)
+            .await
+            .expect("the highest persisted bundle should authorize server restart");
+    current_runtime
+        .authorize_persisted_marketplace_trust(
+            persisted_trust.0.as_deref(),
+            persisted_trust.1.as_ref().map(|payload| &payload.0),
+        )
+        .expect("the restarted server should match persisted trust");
+    server.abort();
+}
 
 #[sqlx::test(migrations = "../../migrations")]
 #[ignore = "requires PostgreSQL and the separately spawned TLS marketplace fixture"]
@@ -60,7 +304,7 @@ async fn tls_sync_activation_race_rollback_lifecycle_and_audit_are_exact(pool: P
     ))
     .expect("fixture origin should parse");
     let local = LocalCatalogConfig {
-        marketplace_key: generated.catalog_public.clone(),
+        marketplace_trust: LocalMarketplaceTrust::Manual(generated.catalog_public.clone()),
         store_root: generated.store_root.clone(),
     };
     let config = MarketplaceSyncConfig::for_test(local, origin.clone(), certificate.clone());
@@ -369,6 +613,7 @@ async fn guarded_marketplace_tls_rejects_wrong_root_redirect_and_oversized_body(
     let files = Arc::new(RwLock::new(HashMap::from([
         ("small".to_owned(), b"bounded".to_vec()),
         ("oversized".to_owned(), vec![b'x'; 17]),
+        ("client.pkg.tar.zst".to_owned(), b"package".to_vec()),
     ])));
     let (address, certificate, server) = spawn_marketplace(files).await;
     let origin = MarketplaceOrigin::parse(&format!(
@@ -387,6 +632,45 @@ async fn guarded_marketplace_tls_rejects_wrong_root_redirect_and_oversized_body(
     );
     assert_eq!(
         client.get("redirect", 16).await,
+        Err(crate::marketplace_egress::MarketplaceEgressError::Rejected)
+    );
+
+    let package_client =
+        GuardedChannelClient::conformance_loopback(origin.clone(), address, &certificate)
+            .expect("package fixture client should construct");
+    let digest = Sha256::digest(b"package")
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let (mut writer, mut reader) = tokio::io::duplex(32);
+    package_client
+        .download_exact(
+            "client.pkg.tar.zst",
+            "application/vnd.archlinux.package",
+            7,
+            &digest,
+            &mut writer,
+        )
+        .await
+        .expect("exact package should download");
+    drop(writer);
+    let mut downloaded = Vec::new();
+    reader
+        .read_to_end(&mut downloaded)
+        .await
+        .expect("download should read");
+    assert_eq!(downloaded, b"package");
+    let (mut rejected, _rejected_reader) = tokio::io::duplex(32);
+    assert_eq!(
+        package_client
+            .download_exact(
+                "client.pkg.tar.zst",
+                "application/vnd.archlinux.package",
+                7,
+                &"0".repeat(64),
+                &mut rejected,
+            )
+            .await,
         Err(crate::marketplace_egress::MarketplaceEgressError::Rejected)
     );
 
@@ -528,6 +812,26 @@ impl GeneratedMarketplace {
         second_status: CatalogStatus,
         policy_version: u64,
     ) -> Vec<u8> {
+        self.snapshot_with_catalog(
+            snapshot_version,
+            first_status,
+            second_status,
+            policy_version,
+            &self.catalog_private,
+            &self.catalog_public,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn snapshot_with_catalog(
+        &self,
+        snapshot_version: u64,
+        first_status: CatalogStatus,
+        second_status: CatalogStatus,
+        policy_version: u64,
+        catalog_private: &CatalogPrivateKey,
+        catalog_public: &CatalogPublicKey,
+    ) -> Vec<u8> {
         let statuses = [first_status, second_status];
         let entries = self
             .releases
@@ -536,7 +840,7 @@ impl GeneratedMarketplace {
             .map(|(release, status)| {
                 let policy = sign_catalog_policy(
                     &release.verified,
-                    &self.catalog_private,
+                    catalog_private,
                     policy_version,
                     status,
                     match status {
@@ -570,16 +874,49 @@ impl GeneratedMarketplace {
         let payload = MarketplaceSnapshotPayload {
             format: "omarchygs.marketplace-snapshot/v1".to_owned(),
             snapshot_version,
-            authority_id: self.catalog_public.authority_id.clone(),
+            authority_id: catalog_public.authority_id.clone(),
             marketplace_name: "OmarchyGS Marketplace".to_owned(),
             releases: entries,
         };
         serde_json::to_vec(
-            &sign_marketplace_snapshot(&payload, &self.catalog_private)
-                .expect("snapshot should sign"),
+            &sign_marketplace_snapshot(&payload, catalog_private).expect("snapshot should sign"),
         )
         .expect("snapshot should serialize")
     }
+}
+
+fn verified_channel_trust(
+    root_private: &omarchygs_marketplace_trust::TrustRootPrivateKey,
+    root_public: &omarchygs_marketplace_trust::TrustRootPublicKey,
+    marketplace_origin: &str,
+    now: u64,
+    bundle_version: u64,
+    current_snapshot_version: u64,
+    keys: Vec<MarketplaceTrustKey>,
+) -> omarchygs_marketplace_trust::MarketplaceTrust {
+    let payload = MarketplaceTrustPayload {
+        format: "omarchygs.marketplace-trust-channel/v2".to_owned(),
+        channel_id: "official".to_owned(),
+        channel_name: "Official OmarchyGS".to_owned(),
+        channel_origin: "https://packages.example.test/v1/".to_owned(),
+        marketplace_origin: marketplace_origin.to_owned(),
+        marketplace_authority_id: "omarchygs-marketplace".to_owned(),
+        bundle_version,
+        current_snapshot_version,
+        not_before_unix: now - 10,
+        expires_at_unix: now + 3600,
+        keys,
+        packages: Vec::new(),
+    };
+    let signed = sign_marketplace_trust(&payload, root_private).unwrap();
+    verify_marketplace_trust_bytes(
+        &signed_trust_bytes(&signed).unwrap(),
+        root_public,
+        "official",
+        "https://packages.example.test/v1/",
+        now,
+    )
+    .unwrap()
 }
 
 fn command(
@@ -669,6 +1006,16 @@ async fn serve_fixture_file(
     match files.read().await.get(&path).cloned() {
         Some(bytes) => Response::builder()
             .status(StatusCode::OK)
+            .header(
+                "content-type",
+                if path.ends_with(".json") {
+                    "application/json"
+                } else if path.ends_with(".pkg.tar.zst") {
+                    "application/vnd.archlinux.package"
+                } else {
+                    "application/octet-stream"
+                },
+            )
             .body(Body::from(bytes))
             .expect("fixture response should build"),
         None => Response::builder()

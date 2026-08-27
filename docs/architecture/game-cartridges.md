@@ -30,7 +30,11 @@ complete portable playable. Ticket 035 adds immutable historical snapshot and
 release evidence, participant-authorized acquisition of an old session pin,
 exact multi-release profile mounts, signed host-local multi-screen navigation,
 and screen-bound gameplay admission. Acquisition remains explicit rather than
-automatic.
+automatic. Ticket 036 adds the separate offline-root-signed marketplace trust
+channel, packaged first-enrollment freshness floors, active/retired/revoked key
+rotation, persisted client/server revocation, acquisition v2's independent
+historical and current-policy proofs, and bounded authenticated native-package
+staging without installation authority.
 [`ADR-0003`](adr-0003-owner-operated-server-and-extension-boundary.md) now
 accepts the owner-operated server, server-curated marketplace, operator-custom
 trust, future Provider SDK, and separately gated server module/hook direction.
@@ -262,9 +266,10 @@ immutable audit receipt. Only a present, imported, compatible, locally selected
 removal, or incompatibility fails closed with no version fallback.
 
 Ticket 033 makes distribution an optional all-or-nothing server capability.
-The configured marketplace public key and secure-store root must both agree
-with the database's retained exact signed snapshot evidence; otherwise the
-route is absent or startup/acquisition fails closed. An authenticated request
+The configured manual marketplace key or root-authenticated channel bundle and
+secure-store root must agree with the database's retained exact signed snapshot
+evidence; otherwise the route is absent or startup/acquisition fails closed. An
+authenticated request
 can name only the selected game key and exact archive digest. The server
 resolves that exact release under current lifecycle policy, emits a canonical
 bounded acquisition envelope, and self-verifies it. The envelope has no
@@ -279,23 +284,57 @@ link. The historical route participant-authorizes that pin and self-verifies it
 under `active_session` policy without turning provenance into current catalog
 authority.
 
+Ticket 036 adds `omarchygs.marketplace-trust-channel/v2` outside the public
+Game Cartridge SDK. One offline root signs a bounded validity-window payload
+binding the stable channel and marketplace authority, strictly increasing
+bundle version, exact current marketplace snapshot, complete ordered
+active/retired/revoked key history, and immutable native-package records. Only
+the active key may sign the declared current snapshot; retired keys authenticate
+their exact closed historical ranges; revoked keys authorize nothing. Every
+transition retains prior key identity and ranges and permits only monotonic
+active-to-retired/revoked or retired-to-revoked movement.
+
+The reviewed native package may embed only a public bootstrap: root, channel
+location, platform identity, installed version, and minimum acceptable bundle
+and snapshot versions. Those package floors prevent a first-run or cache-cleared
+client from accepting known-old signed trust. The client persists the complete
+root-verified bundle in a descriptor-bound private store. A below-floor bundle
+is unavailable but remains transition evidence, so installing a package with a
+higher floor cannot erase terminal key history. The server persists the same
+root/key continuity in PostgreSQL, and live security-sensitive requests reject
+a runtime made stale by a later administrator rotation or revocation.
+
+The same root-signed payload may bind immutable native packages by platform,
+architecture, version, filename, size, SHA-256, source revision/digest, and
+build-provenance digest. The companion selects only a newer artifact for its
+packaged platform, downloads it through the guarded channel into bounded
+mode-0600 same-user staging, and rechecks current trust before atomic
+publication. It returns a fixed-path `pacman -U` command as text; it never
+executes a shell, package manager, sudo, or installer. This authenticates bytes
+and provenance metadata without turning the same-user client into a privilege
+boundary or claiming a hosted marketplace operation exists.
+
 The player package owns the remote trust transition in a per-launch loopback
 Rust companion, not in QML. It requires the selected server's immutable UUID,
 canonical origin, device Bearer, exact digest, and admission revision; verifies
 discovery and the initial catalog; performs the bounded same-origin request
-without proxy, redirect, or decompression; requires the acquisition's complete
-marketplace key to equal a client-controlled key loaded before any request;
-verifies the retained marketplace snapshot, publisher release, policy,
+without proxy, redirect, or decompression; requires every acquisition key to be
+authorized by either a client-controlled manual key or an explicitly enrolled
+packaged channel; verifies the retained marketplace snapshot, current signed
+policy snapshot, publisher release, policy,
 SDK/host compatibility, archive, conformance, and attestation; then re-reads
-the catalog to close the admission race. The marketplace key never comes from
-discovery, catalog metadata, QML, or the acquisition request. The credential
+the catalog to close the admission race. Acquisition v2 permits an eligible
+retired key for historical release evidence while requiring the exact active
+key for current policy. The root, channel, and manual key never come from
+discovery, catalog metadata, QML, or the acquisition response. The credential
 is zeroized when possible and is never written to the cache.
 
 The per-user cache is private and descriptor-anchored. Immutable content is
 shared by digest, while mode-0400 canonical mount documents live under exact
 server UUID profiles and bind provenance, the client-trusted marketplace-key
-SHA-256 fingerprint, and admission revision. A profile whose fingerprint does
-not match the current client trust anchor fails closed on restart. Profile
+SHA-256 fingerprints for evidence and policy plus their snapshot versions, and
+admission revision. A profile whose exact keys and versions are unknown or
+revoked under current client trust fails closed on restart. Profile
 documents retain up to 128 exact records keyed by game, archive digest, and
 admission revision, so historical and current releases coexist. Replacement
 of an identical tuple uses exclusive cross-process locking, exclusive temporary files,
@@ -305,8 +344,9 @@ retains shared content. QML receives only bounded catalog/mount facts and
 explicit operations; cartridge-supplied QML or networking remains impossible.
 For live gameplay, the companion additionally requires the selected canonical
 server origin and UUID, the session's exact digest and admission revision, the
-profile's client-trusted marketplace-key fingerprint, the privately retained
-publisher key, and current signed active-session policy. It compiles only the
+profile's client-trusted evidence/policy fingerprints and snapshot versions,
+the privately retained publisher key, and current signed active-session policy.
+It compiles only the
 requested exact signed screen—or entry when no screen is requested—against the
 authoritative REST view. It returns accepted current-screen, entry-screen, and
 navigation metadata around the unchanged inert render plan. Digest-named PNG/WAV
@@ -625,6 +665,8 @@ publisher rendering code.
 | Ticket 016 trusted renderer | Compile schema-valid views into Core `terminal/grid/status/button/image/meter` or Rich-2D `sprite/particle_field/audio_cue` plans; render through platform-owned QML with measured bounds, keyboard/accessibility states, fallbacks, and an isolated production previewer | No publisher QML/JS, expression language, Canvas, shader code, WebEngine, video, 3D, provider network, or confirmed game mutation |
 | Ticket 033 player mount | Acquire and independently verify one exact admitted release, retain immutable content privately, and mount it under an exact server origin/UUID profile | A mount alone creates no session, presentation authority, or game mutation |
 | Ticket 034 trusted gameplay | Pin one exact admitted release to an eligible session, compile its mounted signed entry screen, render through trusted QML, and route declared actions through durable OmarchyGS authorization | No historical auto-download, multi-screen navigation, publisher executable code, direct provider networking, or arbitrary URL |
+| Ticket 035 historical navigation | Explicitly acquire an old session pin through retained evidence, keep exact releases mounted side by side, and navigate signed screens locally with screen-bound real actions | No silent download, current-catalog substitution, publisher execution, or navigation network request |
+| Ticket 036 public trust/package channel | Enroll an offline-root-signed marketplace keyring, apply rotation/revocation to exact snapshot ranges, verify dual-key acquisition evidence, and stage an exact newer native package | No selected-server trust bootstrap, hosted-marketplace claim, root rotation, or automatic/privileged installation |
 | Later reviewed profiles | Add Advanced 2D/2.5D host primitives and possibly constrained 3D assets/scenes when separate hardware, decoder, dependency, and threat reviews pass | No promise of a general engine or arbitrary third-party execution |
 
 This staging makes graphics additive. A new renderer primitive becomes a

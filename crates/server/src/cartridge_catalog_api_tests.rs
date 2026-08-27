@@ -19,8 +19,8 @@ use crate::{
 use omarchy_game_runtime::GameRegistry;
 use omarchy_gaming_system_server::{
     cartridge_catalog::{
-        CatalogCommand, CatalogSelection, ReviewedReleaseInput, apply_catalog_command,
-        publish_snapshot, snapshot_sha256,
+        CatalogCommand, CatalogSelection, ReviewedReleaseInput, SnapshotPublication,
+        apply_catalog_command, publish_snapshot, snapshot_sha256,
     },
     cartridge_distribution::CartridgeDistributionRuntime,
     session_cartridges,
@@ -102,6 +102,8 @@ async fn authenticated_catalog_is_exact_no_store_and_lifecycle_filtered(pool: Pg
             policy_status = 'suspended',
             policy_reason = 'Review paused.',
             signed_policy = '{"version":2}'::jsonb,
+            policy_snapshot_version = policy_snapshot_version + 1,
+            last_seen_snapshot_version = last_seen_snapshot_version + 1,
             updated_at = clock_timestamp()
         WHERE archive_sha256 = $1
         "#,
@@ -121,6 +123,8 @@ async fn authenticated_catalog_is_exact_no_store_and_lifecycle_filtered(pool: Pg
             policy_status = 'active',
             policy_reason = 'Review restored.',
             signed_policy = '{"version":3}'::jsonb,
+            policy_snapshot_version = policy_snapshot_version + 1,
+            last_seen_snapshot_version = last_seen_snapshot_version + 1,
             updated_at = clock_timestamp()
         WHERE archive_sha256 = $1
         "#,
@@ -258,6 +262,8 @@ async fn exact_acquisition_is_authenticated_verified_and_current(pool: PgPool) {
             policy_status = 'suspended',
             policy_reason = 'Review paused.',
             signed_policy = '{"version":999}'::jsonb,
+            policy_snapshot_version = policy_snapshot_version + 1,
+            last_seen_snapshot_version = last_seen_snapshot_version + 1,
             updated_at = clock_timestamp()
         WHERE archive_sha256 = $1
         "#,
@@ -558,6 +564,8 @@ async fn snapshot_writer_wins_before_fresh_cartridge_action_admission(pool: PgPo
             policy_version = 2,
             policy_status = 'suspended',
             policy_reason = 'Review paused.',
+            policy_snapshot_version = policy_snapshot_version + 1,
+            last_seen_snapshot_version = last_seen_snapshot_version + 1,
             updated_at = clock_timestamp()
         WHERE archive_sha256 = $2
         "#,
@@ -710,18 +718,21 @@ pub(crate) async fn acquisition_fixture(pool: &PgPool) -> AcquisitionFixture {
     let digest = snapshot_sha256(&signed_snapshot_bytes);
     publish_snapshot(
         pool,
-        "https://market.example.test",
-        &marketplace_public,
-        &payload,
-        &digest,
-        &signed_snapshot_bytes,
-        &[ReviewedReleaseInput {
-            entry: entry.clone(),
-            policy,
-            display_name: release.cartridge().manifest().display_name.clone(),
-            compatible: true,
-            imported: true,
-        }],
+        SnapshotPublication {
+            origin: "https://market.example.test",
+            key: &marketplace_public,
+            payload: &payload,
+            digest: &digest,
+            signed_snapshot: &signed_snapshot_bytes,
+            releases: &[ReviewedReleaseInput {
+                entry: entry.clone(),
+                policy,
+                display_name: release.cartridge().manifest().display_name.clone(),
+                compatible: true,
+                imported: true,
+            }],
+            marketplace_trust: None,
+        },
     )
     .await
     .expect("snapshot should publish");
@@ -824,7 +835,7 @@ async fn seed_cartridge_action_session(
     session_id
 }
 
-async fn publish_fixture_policy(
+pub(crate) async fn publish_fixture_policy(
     pool: &PgPool,
     fixture: &AcquisitionFixture,
     status: CatalogStatus,
@@ -843,6 +854,8 @@ async fn publish_fixture_policy(
             policy_version = 2,
             policy_status = 'suspended',
             policy_reason = 'Review paused.',
+            policy_snapshot_version = policy_snapshot_version + 1,
+            last_seen_snapshot_version = last_seen_snapshot_version + 1,
             updated_at = clock_timestamp()
         WHERE archive_sha256 = $2
         "#,

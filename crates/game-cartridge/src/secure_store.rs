@@ -209,11 +209,29 @@ mod platform {
             signed_policy_bytes: &[u8],
             catalog_key: &CatalogPublicKey,
         ) -> Result<SecureStageReport> {
+            self.stage_reviewed_release_for_use(
+                release,
+                signed_policy_bytes,
+                catalog_key,
+                LifecycleUse::NewLaunch,
+            )
+        }
+
+        /// Verify and retain immutable reviewed bytes for one explicit
+        /// lifecycle use. This permits an already-active session to refresh a
+        /// retired release without weakening the new-launch boundary.
+        pub fn stage_reviewed_release_for_use(
+            &self,
+            release: &VerifiedRelease,
+            signed_policy_bytes: &[u8],
+            catalog_key: &CatalogPublicKey,
+            use_kind: LifecycleUse,
+        ) -> Result<SecureStageReport> {
             let policy = verify_catalog_policy_bytes(signed_policy_bytes, catalog_key, release)?;
             let decision = lifecycle_decision(policy.status);
             self.cache_policy(&policy, signed_policy_bytes, catalog_key)?;
             let release_record = release_record(release);
-            let installed = !matches!(decision.new_launch, NewLaunchDecision::Deny);
+            let installed = ensure_allowed(&decision, use_kind).is_ok();
             if installed {
                 let digest = release.payload().archive_sha256.as_str();
                 write_immutable(
@@ -324,11 +342,15 @@ mod platform {
             if !valid_identifier(game_key) || !valid_sha256(archive_sha256) {
                 return Err(CartridgeError::InvalidActivation);
             }
-            let policy_bytes = read_at(
-                &self.policies,
-                &format!("{archive_sha256}.signed.json"),
-                MAX_POLICY_BYTES,
-            )?;
+            let name = policy_cache_name(archive_sha256, catalog_key)?;
+            let policy_bytes = match read_optional_at(&self.policies, &name, MAX_POLICY_BYTES)? {
+                Some(bytes) => bytes,
+                None => read_at(
+                    &self.policies,
+                    &format!("{archive_sha256}.signed.json"),
+                    MAX_POLICY_BYTES,
+                )?,
+            };
             self.resolve_checked(
                 game_key,
                 archive_sha256,
@@ -430,7 +452,7 @@ mod platform {
             .map_err(io_error)?;
             validate_secure_directory(&policy_lock, self.owner)?;
             flock(&policy_lock, FlockOperation::LockExclusive).map_err(io_error)?;
-            let name = format!("{}.signed.json", policy.archive_sha256);
+            let name = policy_cache_name(&policy.archive_sha256, catalog_key)?;
             if let Some(existing_bytes) = read_optional_at(&self.policies, &name, MAX_POLICY_BYTES)?
             {
                 let existing = verify_catalog_policy_signature(&existing_bytes, catalog_key)?;
@@ -448,6 +470,14 @@ mod platform {
             }
             atomic_replace(&self.policies, &name, bytes)
         }
+    }
+
+    fn policy_cache_name(archive_sha256: &str, catalog_key: &CatalogPublicKey) -> Result<String> {
+        if !valid_sha256(archive_sha256) {
+            return Err(CartridgeError::InvalidActivation);
+        }
+        let key_sha256 = sha256_hex(&canonical_json(catalog_key)?);
+        Ok(format!("{archive_sha256}.{key_sha256}.signed.json"))
     }
 
     fn release_record(release: &VerifiedRelease) -> SecureActivationRecord {

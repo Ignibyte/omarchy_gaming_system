@@ -22,6 +22,7 @@ omarchy-game-runtime = { path = "../game-runtime" }
 omarchy-game-signal-siege = { path = "../game-signal-siege" }
 omarchy-game-provider = { path = "../game-provider" }
 omarchygs-game-cartridge = { path = "../game-cartridge" }
+omarchygs-marketplace-trust = { path = "../marketplace-trust" }
 percent-encoding.workspace = true
 rand_core.workspace = true
 reqwest.workspace = true

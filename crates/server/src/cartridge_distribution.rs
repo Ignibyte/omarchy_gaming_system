@@ -6,12 +6,16 @@ use std::sync::Arc;
 use omarchygs_game_cartridge::{
     AcquisitionServerAdmission, CartridgeAcquisition, CatalogPublicKey, LifecycleUse,
     PublisherPublicKey, SecureCartridgeStore, SecureResolution, SignedCatalogPolicy,
-    rich_2d_host_profile, supported_sdk_identity, verify_acquisition_bytes,
+    rich_2d_host_profile, supported_sdk_identity, verify_acquisition_bytes_with_policy_key,
 };
+use omarchygs_marketplace_trust::MarketplaceTrustPayload;
 use sqlx::{FromRow, PgPool, types::Json};
 use uuid::Uuid;
 
-use crate::{cartridge_catalog::SNAPSHOT_ADVISORY_LOCK, marketplace_sync::LocalCatalogConfig};
+use crate::{
+    cartridge_catalog::{self, SNAPSHOT_ADVISORY_LOCK},
+    marketplace_sync::{LocalCatalogConfig, LocalMarketplaceTrust},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DistributionError {
@@ -33,17 +37,35 @@ impl DistributionError {
 #[derive(Clone)]
 pub struct CartridgeDistributionRuntime {
     store: Arc<SecureCartridgeStore>,
-    marketplace_key: CatalogPublicKey,
+    marketplace_trust: LocalMarketplaceTrust,
+}
+
+pub(crate) struct CurrentPolicyEvidence<'a> {
+    pub signed_bytes: &'a [u8],
+    pub marketplace_key: &'a CatalogPublicKey,
+    pub snapshot_version: u64,
 }
 
 impl CartridgeDistributionRuntime {
-    pub fn from_local_config(config: &LocalCatalogConfig) -> Result<Self, DistributionError> {
+    pub async fn from_local_config(
+        pool: &PgPool,
+        config: &LocalCatalogConfig,
+    ) -> Result<Self, DistributionError> {
+        cartridge_catalog::authorize_marketplace_trust(
+            pool,
+            config.marketplace_trust.channel_trust(),
+        )
+        .await
+        .map_err(|error| match error {
+            cartridge_catalog::CatalogError::Internal => DistributionError::Internal,
+            _ => DistributionError::Denied,
+        })?;
         let store = config
             .open_store()
             .map_err(|_| DistributionError::Internal)?;
         Ok(Self {
             store: Arc::new(store),
-            marketplace_key: config.marketplace_key.clone(),
+            marketplace_trust: config.marketplace_trust.clone(),
         })
     }
 
@@ -53,34 +75,69 @@ impl CartridgeDistributionRuntime {
     ) -> Self {
         Self {
             store: Arc::new(store),
-            marketplace_key,
+            marketplace_trust: LocalMarketplaceTrust::Manual(marketplace_key),
         }
     }
 
-    /// Return the exact marketplace trust root configured for this server
-    /// runtime. Database evidence must equal this key before it is used.
-    pub fn marketplace_key(&self) -> &CatalogPublicKey {
-        &self.marketplace_key
+    pub fn from_verified_store_with_trust(
+        store: SecureCartridgeStore,
+        marketplace_trust: LocalMarketplaceTrust,
+    ) -> Self {
+        Self {
+            store: Arc::new(store),
+            marketplace_trust,
+        }
+    }
+
+    pub fn authorize_marketplace_key(
+        &self,
+        key: &CatalogPublicKey,
+        snapshot_version: u64,
+    ) -> Result<(), DistributionError> {
+        self.marketplace_trust
+            .authorize_key(key, snapshot_version)
+            .map_err(|_| DistributionError::Denied)
+    }
+
+    pub fn authorize_current_marketplace_key(
+        &self,
+        key: &CatalogPublicKey,
+        snapshot_version: u64,
+    ) -> Result<(), DistributionError> {
+        self.marketplace_trust
+            .authorize_new_snapshot(key, snapshot_version)
+            .map_err(|_| DistributionError::Denied)
+    }
+
+    pub(crate) fn authorize_persisted_marketplace_trust(
+        &self,
+        root_sha256: Option<&str>,
+        payload: Option<&MarketplaceTrustPayload>,
+    ) -> Result<(), DistributionError> {
+        self.marketplace_trust
+            .authorize_persisted_state(root_sha256, payload)
+            .map_err(|_| DistributionError::Denied)
     }
 
     /// Re-resolve one exact retained release through the production secure
     /// store under the supplied signed lifecycle policy.
-    pub fn resolve_exact_release(
+    pub(crate) fn resolve_exact_release(
         &self,
         game_key: &str,
         archive_sha256: &str,
         publisher_key: &PublisherPublicKey,
-        signed_policy_bytes: &[u8],
+        policy: CurrentPolicyEvidence<'_>,
         use_kind: LifecycleUse,
     ) -> Result<SecureResolution, DistributionError> {
+        self.authorize_current_marketplace_key(policy.marketplace_key, policy.snapshot_version)?;
         self.store
             .resolve_exact(
                 game_key,
                 archive_sha256,
                 publisher_key,
                 &rich_2d_host_profile(),
-                signed_policy_bytes,
-                &self.marketplace_key,
+                policy.signed_bytes,
+                policy.marketplace_key,
                 use_kind,
             )
             .map_err(|_| DistributionError::Denied)
@@ -105,8 +162,13 @@ pub async fn acquire_exact(
                r.game_key, r.publisher_id, r.publisher_key,
                r.rules_version, r.cartridge_version,
                r.archive_sha256, r.signed_identity_sha256,
-               r.signed_policy, c.admission_revision,
-               s.signed_snapshot, s.marketplace_key
+               r.signed_policy, r.policy_marketplace_key,
+               r.policy_snapshot_version, c.admission_revision,
+               s.signed_snapshot, s.marketplace_key,
+               s.snapshot_version AS evidence_snapshot_version,
+               s.signed_snapshot AS policy_signed_snapshot,
+               s.trust_root_sha256,
+               s.trust_payload
         FROM server_cartridge_catalogs c
         JOIN marketplace_releases r ON r.id = c.active_release_id
         JOIN marketplace_sync_state s ON s.singleton
@@ -116,6 +178,7 @@ pub async fn acquire_exact(
           AND r.imported
           AND r.compatible
           AND r.last_seen_snapshot_version = s.snapshot_version
+          AND r.policy_snapshot_version = s.snapshot_version
           AND r.policy_status IN ('active', 'deprecated')
           AND s.signed_snapshot IS NOT NULL
           AND s.marketplace_key IS NOT NULL
@@ -162,9 +225,15 @@ pub async fn acquire_session_exact(
                release.archive_sha256,
                release.signed_identity_sha256,
                release.signed_policy,
+               release.policy_marketplace_key,
+               release.policy_snapshot_version,
                presentation.admission_revision,
                snapshot.signed_snapshot,
-               snapshot.marketplace_key
+               snapshot.marketplace_key,
+               snapshot.snapshot_version AS evidence_snapshot_version,
+               policy_snapshot.signed_snapshot AS policy_signed_snapshot,
+               policy_snapshot.trust_root_sha256,
+               policy_snapshot.trust_payload
         FROM game_session_cartridge_presentations AS presentation
         JOIN game_sessions AS session
           ON session.id = presentation.game_session_id
@@ -177,12 +246,16 @@ pub async fn acquire_session_exact(
           ON evidence.marketplace_release_id = release.id
         JOIN marketplace_snapshot_acquisition_evidence AS snapshot
           ON snapshot.snapshot_sha256 = evidence.snapshot_sha256
+        JOIN marketplace_sync_state AS policy_snapshot
+          ON policy_snapshot.singleton
         JOIN server_identity AS identity
           ON identity.singleton
         WHERE session.id = $2
           AND release.imported
           AND release.compatible
-        FOR SHARE OF session, participant, release, evidence, snapshot, identity
+          AND release.policy_snapshot_version = policy_snapshot.snapshot_version
+          AND policy_snapshot.signed_snapshot IS NOT NULL
+        FOR SHARE OF session, participant, release, evidence, snapshot, policy_snapshot, identity
         "#,
     )
     .bind(actor_id)
@@ -203,17 +276,33 @@ fn build_acquisition(
     row: AcquisitionRow,
     use_kind: LifecycleUse,
 ) -> Result<Vec<u8>, DistributionError> {
-    let database_key = row.marketplace_key.ok_or(DistributionError::Denied)?.0;
-    if database_key != runtime.marketplace_key {
-        return Err(DistributionError::Denied);
-    }
+    runtime.authorize_persisted_marketplace_trust(
+        row.trust_root_sha256.as_deref(),
+        row.trust_payload.as_ref().map(|payload| &payload.0),
+    )?;
+    let evidence_key = row.marketplace_key.ok_or(DistributionError::Denied)?.0;
+    let evidence_snapshot_version =
+        u64::try_from(row.evidence_snapshot_version).map_err(|_| DistributionError::Internal)?;
+    runtime.authorize_marketplace_key(&evidence_key, evidence_snapshot_version)?;
+    let policy_key = row
+        .policy_marketplace_key
+        .ok_or(DistributionError::Denied)?
+        .0;
+    let policy_snapshot_version = row
+        .policy_snapshot_version
+        .and_then(|version| u64::try_from(version).ok())
+        .ok_or(DistributionError::Denied)?;
     let policy_bytes =
         serde_json::to_vec(&row.signed_policy.0).map_err(|_| DistributionError::Internal)?;
     let resolution = runtime.resolve_exact_release(
         &row.game_key,
         &row.archive_sha256,
         &row.publisher_key.0,
-        &policy_bytes,
+        CurrentPolicyEvidence {
+            signed_bytes: &policy_bytes,
+            marketplace_key: &policy_key,
+            snapshot_version: policy_snapshot_version,
+        },
         use_kind,
     )?;
     let admission = AcquisitionServerAdmission {
@@ -228,10 +317,13 @@ fn build_acquisition(
         admission_revision: u64::try_from(row.admission_revision)
             .map_err(|_| DistributionError::Internal)?,
     };
-    let document = CartridgeAcquisition::from_verified_bytes(
+    let document = CartridgeAcquisition::from_verified_bytes_with_policy(
         admission.clone(),
-        runtime.marketplace_key.clone(),
+        evidence_key.clone(),
+        policy_key.clone(),
         &row.signed_snapshot.ok_or(DistributionError::Denied)?,
+        &row.policy_signed_snapshot
+            .ok_or(DistributionError::Denied)?,
         resolution.archive_bytes(),
         resolution.conformance_bytes(),
         resolution.attestation_bytes(),
@@ -241,14 +333,21 @@ fn build_acquisition(
         .to_bounded_json()
         .map_err(|_| DistributionError::Internal)?;
     let sdk = supported_sdk_identity().map_err(|_| DistributionError::Internal)?;
-    verify_acquisition_bytes(
+    let verified = verify_acquisition_bytes_with_policy_key(
         &bytes,
         &admission,
-        &runtime.marketplace_key,
+        &evidence_key,
+        &policy_key,
         &sdk,
         &rich_2d_host_profile(),
     )
     .map_err(|_| DistributionError::Denied)?;
+    if verified.snapshot().snapshot_version != evidence_snapshot_version
+        || verified.policy_snapshot_version() != policy_snapshot_version
+        || verified.policy_bytes() != policy_bytes
+    {
+        return Err(DistributionError::Denied);
+    }
     Ok(bytes)
 }
 
@@ -279,7 +378,13 @@ struct AcquisitionRow {
     archive_sha256: String,
     signed_identity_sha256: String,
     signed_policy: Json<SignedCatalogPolicy>,
+    policy_marketplace_key: Option<Json<CatalogPublicKey>>,
+    policy_snapshot_version: Option<i64>,
     admission_revision: i64,
     signed_snapshot: Option<Vec<u8>>,
     marketplace_key: Option<Json<CatalogPublicKey>>,
+    evidence_snapshot_version: i64,
+    policy_signed_snapshot: Option<Vec<u8>>,
+    trust_root_sha256: Option<String>,
+    trust_payload: Option<Json<MarketplaceTrustPayload>>,
 }

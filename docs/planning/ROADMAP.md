@@ -61,8 +61,12 @@ server-authoritative game runtime below.
   import, catalog activation, lifecycle policy, and rollback controls
 - [x] Player-facing acquisition, verification, content-addressed local cache,
   mounting, update, and removal of the selected server's signed cartridges
-- [ ] Public marketplace trust-key enrollment, authenticated rotation, and
-  reviewed package-channel distribution for player clients
+- [x] Offline-root-authenticated public marketplace trust enrollment,
+  active/retired/revoked key rotation, historical/current-policy evidence, and
+  reviewed native package-channel staging for player clients
+- [ ] Hosted marketplace/package publication operations, offline-root custody
+  and rotation, release review/signing procedures, mirrors, monitoring, and
+  incident response
 - [x] Bind exact admitted cartridges to authoritative sessions, compile matching
   mounted entry screens into trusted plans, and route declared actions through
   the session's existing compiled or registered-provider authority

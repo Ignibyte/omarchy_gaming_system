@@ -15,6 +15,12 @@ sources:
     resource: repo://client/qml/OnboardingController.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
+  - id: openwiki-source-bdfa1cdb36ece8d941ec8ebc
+    resource: repo://crates/client-cartridge-runtime/src/package_channel.rs
+  - id: openwiki-source-bc8915a33f270bc28a270170
+    resource: repo://crates/client-cartridge-runtime/src/service.rs
+  - id: openwiki-source-af488519fab8354e5e131df3
+    resource: repo://crates/client-cartridge-runtime/src/trust.rs
   - id: openwiki-source-37af4c6b51c86b62db25f85f
     resource: repo://crates/game-cartridge-renderer/Cargo.toml
   - id: openwiki-source-fdf115002c4aabad0babec70
@@ -31,10 +37,14 @@ sources:
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
+  - id: openwiki-source-217cb24d606877cd63b392ef
+    resource: repo://crates/marketplace-trust/src/lib.rs
   - id: openwiki-source-66facc66e34ad7f2a74321e1
     resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
+  - id: openwiki-source-5942cee1725f1a3f7bf01ec7
+    resource: repo://crates/server/src/cartridge_distribution.rs
   - id: openwiki-source-4b133589ca70bd174cf19eb9
     resource: repo://crates/server/src/connections.rs
   - id: openwiki-source-26aac996689c040c6aab6825
@@ -75,11 +85,11 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
+  - id: openwiki-source-d85e6ea816d7c91e9828f7b2
+    resource: repo://packaging/arch/omarchygs
   - id: openwiki-source-8df9ad1a3495f8360740ff03
     resource: repo://scripts/test-game-cartridge-sdk.sh
-  - id: openwiki-source-e08dc6155c081d7928029e27
-    resource: repo://scripts/test-operator-recovery.sh
-generated: {by: "codex", at: "2026-08-27T04:04:27.382Z"}
+generated: {by: "codex", at: "2026-08-27T10:39:16.768Z"}
 ---
 
 # Product and architecture boundaries
@@ -235,9 +245,11 @@ safety, and evidence sequence. Marketplace synchronization, server admission,
 and independently trusted player acquisition, caching, and server-profile
 mounting are implemented. Eligible session-to-cartridge binding, trusted
 entry-screen rendering, and server-authorized declared actions are also
-implemented. Federation, server identity fork/rotation, remote administration,
-external-provider onboarding, multi-screen cartridge navigation, and general
-plugins remain later slices.
+implemented, as are signed host-local multi-screen navigation and the
+offline-root-authenticated public trust/package channel. Federation, server
+identity fork/rotation, marketplace-root rotation, remote administration,
+external-provider onboarding, automatic privileged package installation,
+operator-custom trust, and general plugins remain later slices.
 
 The current server is a local development slice. Bearer tokens require
 production TLS in transit, and public login requires distributed attempt
@@ -344,14 +356,15 @@ connection choices, not a global account or federated community layer.
 
 The marketplace is distribution and review infrastructure rather than a global
 gameplay or catalog authority. Publisher integrity, marketplace review, the
-selected server's admission, and the player's configured marketplace trust key
+selected server's admission, and the player's configured marketplace trust
 remain separate decisions. The administrator imports and admits an exact
 release; players see the server-scoped metadata catalog; and a separately
 capability-advertised route serves only that exact release. The native client
-verifies the full marketplace key against its own configured trust anchor,
+verifies marketplace evidence against either its manual key or its packaged
+offline root and explicitly synchronized channel keyring,
 rechecks every release and admission proof, and writes private cached content
 plus an exact server-profile mount. The selected server cannot replace the
-client's marketplace key. An operator-custom cartridge has no
+client's key, root, or channel location. An operator-custom cartridge has no
 marketplace-review claim, but it remains signed inert data subject to every
 official-client package, schema, media, capability, digest, and trusted-render
 check.
@@ -362,8 +375,17 @@ server behavior uses a separately versioned module base. Future module hooks
 must be capability-scoped and typed, route protected mutations through core
 authorization, and define isolation, resource, failure, audit, compatibility,
 disable, upgrade, rollback, and recovery behavior. No general module runtime,
-dynamic Rust plugin ABI, marketplace service, operator-custom installer, or
+dynamic Rust plugin ABI, hosted marketplace service, operator-custom installer, or
 external-provider onboarding is implemented or authorized by this direction.
+
+The implemented public channel authenticates bounded trust and native package
+metadata, not gameplay or privileged installation. Its package bootstrap pins
+the public offline root, exact channel, platform, and minimum known trust
+versions; the companion may stage only an exact newer root-signed artifact as
+mode-0600 same-user data. It returns a fixed-path `pacman -U` command as text
+and never invokes a shell, sudo, or a package manager. Root custody and
+rotation, hosted publication, malware review, and the human privileged install
+remain separate operational boundaries.
 
 ### Portable game direction
 
@@ -404,7 +426,9 @@ privileged or shared launcher needs a dedicated service identity or equivalent
 external monotonic authority. The main client now browses platform catalog
 records, plays compiled Signal Siege, and separately acquires, privately caches,
 updates, removes, and mounts exact admitted signed cartridges when independent
-marketplace trust and server acquisition are available. A mount is only a
+marketplace trust and server acquisition are available. That trust may be a
+manual key or an enrolled packaged channel whose active, retired, and revoked
+keys are constrained to exact snapshot ranges. A mount is only a
 verified profile pointer into inert content: it does not create a game session
 or grant executable frontend authority. A separately created eligible session
 must pin the same exact admitted release before the companion can prepare its

@@ -350,6 +350,7 @@ fn reviewed_staging_never_writes_active_and_resolves_only_the_exact_digest() {
         generate_catalog_keypair("catalog-primary-v1", "omarchygs").unwrap();
     let active = policy_bytes(&release, &catalog_private, 1, CatalogStatus::Active);
     let suspended = policy_bytes(&release, &catalog_private, 2, CatalogStatus::Suspended);
+    let retired = policy_bytes(&release, &catalog_private, 3, CatalogStatus::Retired);
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().join("store");
     fs::create_dir(&root).unwrap();
@@ -417,6 +418,35 @@ fn reviewed_staging_never_writes_active_and_resolves_only_the_exact_digest() {
         ),
         Err(CartridgeError::InvalidCatalogPolicy)
     ));
+
+    let retired_session = store
+        .stage_reviewed_release_for_use(
+            &release,
+            &retired,
+            &catalog_public,
+            LifecycleUse::ActiveSession,
+        )
+        .unwrap();
+    assert!(retired_session.installed);
+    assert!(
+        !store
+            .stage_reviewed_release(&release, &retired, &catalog_public)
+            .unwrap()
+            .installed
+    );
+    assert!(
+        store
+            .resolve_exact(
+                "door-legends",
+                &release.payload().archive_sha256,
+                &fixture.public,
+                &host,
+                &retired,
+                &catalog_public,
+                LifecycleUse::ActiveSession,
+            )
+            .is_ok()
+    );
 }
 
 #[cfg(target_os = "linux")]

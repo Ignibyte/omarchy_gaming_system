@@ -5,6 +5,7 @@ export LC_ALL=C.UTF-8
 ogs_test_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 ogs_temp="$(mktemp -d)"
 ogs_fixture_pid=""
+ogs_channel_build_pid=""
 
 cleanup() {
   local ogs_status=$?
@@ -12,13 +13,18 @@ cleanup() {
     kill "$ogs_fixture_pid" 2>/dev/null || true
     wait "$ogs_fixture_pid" 2>/dev/null || true
   fi
+  if [[ -n "$ogs_channel_build_pid" ]] \
+    && kill -0 "$ogs_channel_build_pid" 2>/dev/null; then
+    kill "$ogs_channel_build_pid" 2>/dev/null || true
+    wait "$ogs_channel_build_pid" 2>/dev/null || true
+  fi
   rm -rf -- "$ogs_temp"
   exit "$ogs_status"
 }
 trap cleanup EXIT INT TERM
 
 for ogs_command in \
-  bsdtar cmp curl desktop-file-validate git jq makepkg pacman python3 \
+  bsdtar cargo cmp curl desktop-file-validate flock git jq makepkg pacman python3 \
   qml6 sha256sum stat timeout truncate; do
   command -v "$ogs_command" >/dev/null 2>&1 || {
     echo "Missing client package test command: $ogs_command" >&2
@@ -116,6 +122,58 @@ git -C "$ogs_test_root" status --porcelain=v1 -z >"$ogs_temp/status-after"
 cmp -- "$ogs_temp/status-before" "$ogs_temp/status-after" \
   || fail "package build modified source-tree status"
 
+cargo run --quiet --locked \
+  --manifest-path "$ogs_test_root/Cargo.toml" \
+  --package omarchygs-marketplace-trust \
+  --bin omarchygs-marketplace-channel -- \
+  generate-root package-root package-channel \
+  "$ogs_temp/package-root.private.json" \
+  "$ogs_temp/package-root.public.json" >/dev/null
+cargo run --quiet --locked \
+  --manifest-path "$ogs_test_root/Cargo.toml" \
+  --package omarchygs-marketplace-trust \
+  --bin omarchygs-marketplace-channel -- \
+  bootstrap "$ogs_temp/package-root.public.json" \
+  https://packages.example.test/v1/ trust.signed.json 1 1 \
+  arch-linux x86_64 0.1.0-1 "$ogs_temp/package-bootstrap.json" >/dev/null
+cp -- "$ogs_temp/package-bootstrap.json" "$ogs_temp/expected-package-bootstrap.json"
+"$ogs_test_root/scripts/build-client-package.sh" \
+  --channel-bootstrap "$ogs_temp/package-bootstrap.json" \
+  --output "$ogs_temp/build-channel" \
+  >"$ogs_temp/build-channel.out" 2>"$ogs_temp/build-channel.err" &
+ogs_channel_build_pid=$!
+ogs_channel_lock="/tmp/omarchygs-client-package-build-$(id -u)/build.lock"
+ogs_channel_lock_observed=false
+for _ in {1..400}; do
+  if ! flock -n "$ogs_channel_lock" true 2>/dev/null; then
+    ogs_channel_lock_observed=true
+    break
+  fi
+  kill -0 "$ogs_channel_build_pid" 2>/dev/null \
+    || fail "channel build stopped before acquiring its stable build lock"
+  sleep 0.05
+done
+[[ "$ogs_channel_lock_observed" == true ]] \
+  || fail "channel build did not acquire its stable build lock"
+printf '\n' >>"$ogs_temp/package-bootstrap.json"
+if ! wait "$ogs_channel_build_pid"; then
+  ogs_channel_build_pid=""
+  cat "$ogs_temp/build-channel.err" >&2
+  fail "channel build did not retain its verified bootstrap snapshot"
+fi
+ogs_channel_build_pid=""
+cp -- "$ogs_temp/expected-package-bootstrap.json" "$ogs_temp/tampered-bootstrap.json"
+printf '\n' >>"$ogs_temp/tampered-bootstrap.json"
+if "$ogs_test_root/scripts/build-client-package.sh" \
+  --channel-bootstrap "$ogs_temp/tampered-bootstrap.json" \
+  --output "$ogs_temp/rejected-channel-build" \
+  >"$ogs_temp/rejected-channel-build.out" \
+  2>"$ogs_temp/rejected-channel-build.err"; then
+  fail "builder accepted a non-canonical channel bootstrap"
+fi
+[[ ! -e "$ogs_temp/rejected-channel-build" ]] \
+  || fail "invalid channel bootstrap created a package output directory"
+
 mapfile -d '' -t ogs_first_packages < <(
   find "$ogs_temp/build-one" -maxdepth 1 -type f \
     -name '*.pkg.tar.*' ! -name '*.sig' ! -name '*.sha256' -print0
@@ -138,6 +196,24 @@ grep -Fxq -- "$ogs_package_digest  $ogs_package_name" "$ogs_package.sha256" \
   || fail "package SHA-256 sidecar does not bind the artifact"
 cmp -- "$ogs_package.sha256" "${ogs_second_packages[0]}.sha256" \
   || fail "reproducibility builds emitted different SHA-256 sidecars"
+
+mapfile -d '' -t ogs_channel_packages < <(
+  find "$ogs_temp/build-channel" -maxdepth 1 -type f \
+    -name '*.pkg.tar.*' ! -name '*.sig' ! -name '*.sha256' -print0
+)
+(( ${#ogs_channel_packages[@]} == 1 )) \
+  || fail "channel build did not emit exactly one package"
+mkdir -p -- "$ogs_temp/extracted-channel"
+bsdtar -xf "${ogs_channel_packages[0]}" -C "$ogs_temp/extracted-channel"
+ogs_packaged_bootstrap="$ogs_temp/extracted-channel/usr/share/omarchy-gaming-system/marketplace-channel-bootstrap.json"
+cmp -- "$ogs_temp/expected-package-bootstrap.json" "$ogs_packaged_bootstrap" \
+  || fail "channel package did not preserve the verified bootstrap"
+[[ "$(stat -c '%a' "$ogs_packaged_bootstrap")" == 644 ]] \
+  || fail "packaged channel bootstrap mode is not 0644"
+ogs_bootstrap_digest="$(sha256sum -- "$ogs_packaged_bootstrap" | awk '{print $1}')"
+grep -Fxq "channel_bootstrap_sha256=$ogs_bootstrap_digest" \
+  "$ogs_temp/extracted-channel/usr/share/doc/omarchy-gaming-system-client/BUILD-PROVENANCE" \
+  || fail "channel package provenance does not bind its bootstrap"
 
 pacman -Qip -- "$ogs_package" >/dev/null \
   || fail "pacman rejected client package metadata"
@@ -204,6 +280,8 @@ grep -Eq '^source_dirty=(true|false)$' "$ogs_provenance" \
   || fail "package provenance dirty state is invalid"
 grep -Eq '^source_sha256=[0-9a-f]{64}$' "$ogs_provenance" \
   || fail "package provenance source digest is invalid"
+grep -Fxq 'channel_bootstrap_sha256=none' "$ogs_provenance" \
+  || fail "manual client package falsely claims a public channel bootstrap"
 if grep -Fq -- "$ogs_test_root" "$ogs_provenance"; then
   fail "package provenance leaked the source path"
 fi

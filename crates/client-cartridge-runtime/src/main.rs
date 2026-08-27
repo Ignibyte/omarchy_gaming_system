@@ -10,8 +10,11 @@ use std::{
 
 use anyhow::{Context as _, Result, anyhow};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
-use omarchygs_client_cartridge_runtime::{ClientCartridgeCache, CompanionState, router};
+use omarchygs_client_cartridge_runtime::{
+    ClientCartridgeCache, ClientMarketplaceTrust, ClientTrustStore, CompanionState, router,
+};
 use omarchygs_game_cartridge::read_catalog_public_key;
+use omarchygs_marketplace_trust::read_public_channel_bootstrap;
 use rand_core::{OsRng, RngCore as _};
 use serde::Serialize;
 use tokio::net::TcpListener;
@@ -23,12 +26,24 @@ async fn main() -> Result<()> {
     let cache = Arc::new(
         ClientCartridgeCache::open(&arguments.cache_root).map_err(|error| anyhow!(error.code()))?,
     );
-    let trusted_marketplace_key = arguments
-        .marketplace_public_key_file
-        .as_deref()
-        .map(read_catalog_public_key)
-        .transpose()
-        .context("companion_marketplace_key_invalid")?;
+    let marketplace_trust = match (
+        arguments.marketplace_public_key_file.as_deref(),
+        arguments.marketplace_trust_bootstrap_file.as_deref(),
+    ) {
+        (Some(path), None) => ClientMarketplaceTrust::Manual(Arc::new(
+            read_catalog_public_key(path).context("companion_marketplace_key_invalid")?,
+        )),
+        (None, Some(path)) => {
+            let bootstrap = read_public_channel_bootstrap(path)
+                .map_err(|_| anyhow!("companion_marketplace_bootstrap_invalid"))?;
+            ClientMarketplaceTrust::Channel(Arc::new(
+                ClientTrustStore::open(&arguments.cache_root, bootstrap)
+                    .map_err(|error| anyhow!(error.code()))?,
+            ))
+        }
+        (None, None) => ClientMarketplaceTrust::None,
+        (Some(_), Some(_)) => return Err(anyhow!("companion_invalid_arguments")),
+    };
     let listener = TcpListener::bind(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0))
         .await
         .context("companion_bind_failed")?;
@@ -45,13 +60,9 @@ async fn main() -> Result<()> {
         pid: std::process::id(),
     };
     write_startup_document(&arguments.startup_file, &startup)?;
-    let state = CompanionState::new(
-        cache,
-        credential,
-        address.to_string(),
-        trusted_marketplace_key,
-    )
-    .map_err(|error| anyhow!(error.code()))?;
+    let state =
+        CompanionState::new_with_trust(cache, credential, address.to_string(), marketplace_trust)
+            .map_err(|error| anyhow!(error.code()))?;
     let result = axum::serve(listener, router(state))
         .with_graceful_shutdown(shutdown_signal())
         .await;
@@ -63,6 +74,7 @@ struct Arguments {
     startup_file: PathBuf,
     cache_root: PathBuf,
     marketplace_public_key_file: Option<PathBuf>,
+    marketplace_trust_bootstrap_file: Option<PathBuf>,
 }
 
 impl Arguments {
@@ -70,6 +82,7 @@ impl Arguments {
         let mut startup_file = None;
         let mut cache_root = None;
         let mut marketplace_public_key_file = None;
+        let mut marketplace_trust_bootstrap_file = None;
         for value in env::args_os().skip(1) {
             let value = value
                 .into_string()
@@ -89,6 +102,13 @@ impl Arguments {
                 {
                     return Err(anyhow!("companion_invalid_arguments"));
                 }
+            } else if let Some(path) = value.strip_prefix("--marketplace-trust-bootstrap-file=") {
+                if marketplace_trust_bootstrap_file
+                    .replace(PathBuf::from(path))
+                    .is_some()
+                {
+                    return Err(anyhow!("companion_invalid_arguments"));
+                }
             } else {
                 return Err(anyhow!("companion_invalid_arguments"));
             }
@@ -100,6 +120,9 @@ impl Arguments {
             || marketplace_public_key_file
                 .as_ref()
                 .is_some_and(|path| !path.is_absolute())
+            || marketplace_trust_bootstrap_file
+                .as_ref()
+                .is_some_and(|path| !path.is_absolute())
         {
             return Err(anyhow!("companion_invalid_arguments"));
         }
@@ -107,6 +130,7 @@ impl Arguments {
             startup_file,
             cache_root,
             marketplace_public_key_file,
+            marketplace_trust_bootstrap_file,
         })
     }
 }

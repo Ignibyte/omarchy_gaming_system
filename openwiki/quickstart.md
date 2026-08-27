@@ -19,14 +19,18 @@ sources:
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
-  - id: openwiki-source-939b835e7d6c679aae8394e7
-    resource: repo://crates/client-cartridge-runtime/src/remote.rs
+  - id: openwiki-source-bdfa1cdb36ece8d941ec8ebc
+    resource: repo://crates/client-cartridge-runtime/src/package_channel.rs
+  - id: openwiki-source-bc8915a33f270bc28a270170
+    resource: repo://crates/client-cartridge-runtime/src/service.rs
+  - id: openwiki-source-af488519fab8354e5e131df3
+    resource: repo://crates/client-cartridge-runtime/src/trust.rs
   - id: openwiki-source-20452fec62fdae4a8bc45707
     resource: repo://crates/game-cartridge/src/marketplace.rs
-  - id: openwiki-source-2c5e901f86bcbb656e1b9dfa
-    resource: repo://crates/game-cartridge/src/validate.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
+  - id: openwiki-source-217cb24d606877cd63b392ef
+    resource: repo://crates/marketplace-trust/src/lib.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-ba203ea2e600f294ab58ef02
@@ -59,8 +63,6 @@ sources:
     resource: repo://crates/server/src/reports.rs
   - id: openwiki-source-42fe6bf463fcb01dc5566e16
     resource: repo://crates/server/src/server_discovery.rs
-  - id: openwiki-source-b7ac90b7d5ad368e8fd1cca3
-    resource: repo://crates/server/src/session_cartridges.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
   - id: openwiki-source-76060b846b9222af2c790243
@@ -73,26 +75,22 @@ sources:
     resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
   - id: openwiki-source-872141f77f71851168245852
     resource: repo://docs/architecture/system-overview.md
-  - id: openwiki-source-831ed1de42e0dff0edb87b3b
-    resource: repo://docs/client-installation.md
-  - id: openwiki-source-c3d1d450d3a3561b368e5307
-    resource: repo://docs/planning/ROADMAP.md
   - id: openwiki-source-85dba8f87dd5947de337aca5
     resource: repo://docs/product-charter.md
   - id: openwiki-source-cb6494f7cbf0d5d23ffe082a
     resource: repo://migrations/0012_game_challenges.sql
   - id: openwiki-source-11256f84337d259ecf424a45
     resource: repo://migrations/0019_marketplace_catalog.sql
-  - id: openwiki-source-4c42600e46f86e7dec7951f1
-    resource: repo://migrations/0021_game_session_cartridge_presentations.sql
-  - id: openwiki-source-6e903c05353a3393af0fb6c8
-    resource: repo://migrations/0022_historical_session_cartridge_acquisition.sql
   - id: openwiki-source-449de92825ee702b9aa05d2a
     resource: repo://packaging/arch/client-runtime-files.txt
   - id: openwiki-source-d85e6ea816d7c91e9828f7b2
     resource: repo://packaging/arch/omarchygs
   - id: openwiki-source-c909643e4ac6a14f500d178e
     resource: repo://packaging/arch/PKGBUILD
+  - id: openwiki-source-6ef5cb9ff978eb09c62cd313
+    resource: repo://scripts/build-client-package.sh
+  - id: openwiki-source-1951c64828cbf175c78556c4
+    resource: repo://scripts/check-client-package-source.sh
   - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
     resource: repo://scripts/check-qml-style.py
   - id: openwiki-source-d69dbacb0ae7fe382ee46161
@@ -105,7 +103,7 @@ sources:
     resource: repo://scripts/test-operator-recovery.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-27T05:42:15.031Z"}
+generated: {by: "codex", at: "2026-08-27T10:39:16.768Z"}
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -141,8 +139,10 @@ export, signed release and catalog-policy verification, and a secure local
 cartridge importer. One owner-configured marketplace can now synchronize a
 canonical signed snapshot over guarded pinned HTTPS, stage exact reviewed
 releases, publish one atomic PostgreSQL inventory, and expose a separately
-admitted metadata-only catalog to authenticated players. An independently
-configured distribution runtime can also return the exact selected immutable
+admitted metadata-only catalog to authenticated players. Server trust can be
+either the legacy manual marketplace key or an offline-root-authenticated
+channel bundle with bounded active, retired, and revoked keys. An independently
+configured distribution runtime can return the exact selected immutable
 release and retained marketplace evidence through a bounded authenticated
 acquisition route. When the optional provider runtime is configured, the
 server also exposes the operator-pinned Door Legends provider release and routes its
@@ -156,7 +156,7 @@ page history, send messages, clear unread state, browse the compiled game
 catalog and session history, create or resolve challenges, and play Signal
 Siege through authoritative REST commands. The packaged client can also browse
 signed cartridge metadata and, when both server acquisition and a
-client-controlled marketplace trust key are available, acquire, verify,
+client-controlled marketplace trust mode is available, acquire, verify,
 privately cache, update, remove, and mount the exact admitted release for the
 selected server profile. Eligible newly created sessions now pin one exact
 admitted cartridge. A participant can explicitly acquire that immutable pin
@@ -181,22 +181,29 @@ device session, or clear the selected persona through controller logic.
 
 The same flagship client is now available as the native
 `omarchy-gaming-system-client` Arch package for private-alpha testing. The
-`x86_64` package contains the exact 39-file production QML inventory, a native
+`x86_64` package contains the exact 40-file production QML inventory, a native
 loopback cartridge companion, a relocatable `omarchygs` launcher, one Game
 desktop entry, and non-secret build provenance; it contains no Rust game
-server. These locally built artifacts are unsigned. Public package
-repository publication, release signing, and automatic updates remain future
-work. The package includes bounded public-only profiles for deliberately
-selecting among independent compatible servers; it does not persist credentials
-or federate their identity, moderation, catalog, or history.
+server. A normal local build remains unsigned. A reviewed build may instead
+embed a public bootstrap that pins an offline root, exact channel, platform,
+and minimum trust/snapshot versions. The Games screen can explicitly enroll or
+synchronize that channel and verify and stage an exact newer package artifact,
+but the client never invokes `pacman`, `sudo`, a shell, or an automatic
+installer. Hosted repository publication and its operational signing lifecycle
+remain future work. The package includes bounded public-only profiles for
+deliberately selecting among independent compatible servers; it does not
+persist credentials or federate their identity, moderation, catalog, or
+history.
 
 The private-alpha operator path is deliberately separate from the player API.
 `omarchygs-admin` uses a reviewed local `DATABASE_URL` to list a bounded report
 queue, resolve or dismiss an open report, reversibly suspend or reactivate an
 account, issue, inventory, or revoke registration invitations, inspect reviewed
 cartridges, and apply exact expected-state catalog selections. Its separate
-`marketplace-sync` action also requires a canonical HTTPS origin, exact
-marketplace public key, bounded DER root, and pre-provisioned secure store.
+`marketplace-sync` action also requires a canonical HTTPS origin, bounded DER
+TLS root, pre-provisioned secure store, and either one manual marketplace key
+or a matching offline-root-signed channel bundle. Mixed or partial trust
+configuration fails closed.
 Every mutation carries an operation UUID, actor, and reason and commits an
 immutable audit event with the state change. An invitation's 48-character raw
 bearer code
@@ -252,7 +259,10 @@ and participant-authorized cartridge actions for both existing authority paths.
 Ticket 035 retains immutable historical marketplace evidence, adds explicit
 participant acquisition for an old session pin, permits exact multi-release
 profile mounts, and adds signed host-only multi-screen navigation with
-screen-bound gameplay admission.
+screen-bound gameplay admission. Ticket 036 adds the packaged public-channel
+bootstrap, explicit monotonic enrollment and key rotation/revocation, separate
+historical-evidence and current-policy authorization, and a root-authenticated
+native-package staging channel without granting installer authority.
 
 ADR-0003 adds the owner-operated distribution and extension direction. Ticket
 032 implements its first server-side slice: one pinned marketplace can supply
@@ -281,7 +291,7 @@ plugin runtime is authorized today.
 | Change player reporting, account suspension, report disposition, invitation administration, operator audit, or platform restore | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `reports.rs`, `operator_admin.rs`, `bin/omarchygs-admin.rs`; migrations `0016`–`0017`; `docs/operators/operator-safety-and-recovery.md`; `docs/operators/private-alpha.md` | Report API and operator-domain PostgreSQL tests; real CLI test; recovery and private-alpha drills |
 | Change QML endpoint/profile selection, appearance/accessibility, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `ServerProfiles.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/components/`, `client/qml/screens/`, `client/qml/game/` | `scripts/check-qml-style.py`; `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
-| Change cartridge packaging, trusted rendering, SDK portability, provider integration, marketplace synchronization, server admission, player acquisition, session pinning, historical recovery, signed-screen navigation, or trusted launch | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/client-cartridge-runtime`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `session_cartridges.rs`; `marketplace_egress.rs`; `marketplace_sync.rs`; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `client/qml/CartridgeController.qml`; `GameController.qml`; `client/qml/cartridge`; migrations `0014`–`0015` and `0019`–`0022`; ADR-0002; Tickets 015–019 and 032–035 | Cartridge/renderer/SDK/provider focused scripts; marketplace and PostgreSQL lifecycle/admission tests; hostile companion/QML contract tests; clean-clone Door Legends pilot; native package smoke; threat/authority review and constitutional authority check |
+| Change cartridge packaging, trusted rendering, SDK portability, provider integration, marketplace trust enrollment, synchronization, server admission, player acquisition, session pinning, historical recovery, signed-screen navigation, package staging, or trusted launch | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/client-cartridge-runtime`; `crates/marketplace-trust`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `session_cartridges.rs`; `marketplace_sync.rs`; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `client/qml/MarketplaceController.qml`; `CartridgeController.qml`; `GameController.qml`; `client/qml/cartridge`; migrations `0014`–`0015` and `0019`–`0023`; ADR-0002; Tickets 015–019 and 032–036 | Cartridge/renderer/SDK/provider focused scripts; root-signed trust-channel test; marketplace and PostgreSQL lifecycle/admission/migration tests; hostile companion/QML contract tests; clean-clone Door Legends pilot; native package smoke; threat/authority review and constitutional authority check |
 | Change owner-operated server, custom-content, Provider SDK, or module/hook direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | Current-versus-future audit; provenance/authority review; official-client containment; extension isolation and lifecycle evidence before executable implementation |
 | Build, inspect, install, upgrade, remove, or diagnose the native player package | [Development and validation](development-and-validation.md) and `docs/client-installation.md` | `packaging/arch/`; `scripts/check-client-package-source.sh`; `scripts/build-client-package.sh`; `scripts/test-client-package.sh` | Source-contract check; extracted-package conformance; `bin/gate.sh --diff` before delivery |
 | Run or diagnose the local stack and quality gate | [Development and validation](development-and-validation.md) | `scripts/dev.sh`; `bin/gate.sh`; `client/qml/Main.qml` | `bin/gate.sh --fast` or `--diff` |
@@ -400,10 +410,12 @@ Core or Rich-2D plan for platform-owned QML components. They also export and
 self-verify a deterministic public SDK, create and verify signed reproducible
 release attestations, enforce signed five-state lifecycle policy, and stage a
 release through a Linux descriptor-relative secure store. The server-admin
-path now verifies one monotonic signed marketplace snapshot, retrieves each
-three-file release below a fixed guarded origin, and publishes current reviewed
-inventory only after the complete snapshot succeeds and retains its exact
-signed snapshot and marketplace key. Local selection remains a separate
+path verifies one monotonic signed marketplace snapshot under either a manual
+key or the root-channel's exact active key, retrieves each three-file release
+below a fixed guarded origin, and publishes current reviewed inventory only
+after the complete snapshot succeeds. PostgreSQL retains the exact signed
+snapshot, marketplace key, root-channel history, and per-release policy-key
+provenance. Local selection remains a separate
 idempotent audited database command. Public discovery always advertises
 `games.cartridge-catalog.v1` and, only when distribution is configured,
 advertises current exact acquisition, session presentation, and historical
@@ -415,8 +427,9 @@ writes only read-only plan/assets into a caller-created private directory and
 reports no provider, database, or credential use. The main QML connector's
 compiled Signal Siege surface is platform-owned trusted UI and does not claim a
 signed cartridge origin, digest, or render plan. The native companion now
-verifies acquisitions against a client-controlled marketplace public key,
-caches inert content privately, and maintains exact server-profile mounts. For
+verifies acquisitions against either a client-controlled manual marketplace
+key or an explicitly synchronized packaged-channel keyring, caches inert
+content privately, and maintains exact server-profile mounts. For
 an exact immutable session binding, it also compiles the authenticated view for
 one exact signed screen into a bounded plan, exposes only capability-scoped
 digest assets, and gives QML no cache path or publisher code. A missing mount is
@@ -448,6 +461,13 @@ as immutable historical provenance and requires it for future presentation
 pins. New action admissions also retain the exact signed screen. Reserved
 `navigate.<screen>` Buttons are accepted only as host-local presentation
 transitions and are rejected at the gameplay boundary.
+
+Migration 0023 binds every retained release policy to its exact marketplace
+key and historical snapshot version, persists root-channel continuity, permits
+only authenticated monotonic key transitions, and prevents a later singleton
+snapshot from rewriting older provenance. Acquisition v2 can therefore verify
+an old release snapshot under its eligible historical key while separately
+requiring the current policy-bearing snapshot under the active key.
 
 Current runtime identifiers use the gaming-system namespace; see [Runtime
 foundation](runtime-foundation.md) for the narrow local compatibility window

@@ -31,6 +31,9 @@ for ogs_required_path in \
   crates/client-cartridge-runtime/src/lib.rs \
   crates/client-cartridge-runtime/src/main.rs \
   crates/game-cartridge/Cargo.toml \
+  crates/game-provider/Cargo.toml \
+  crates/marketplace-trust/Cargo.toml \
+  crates/marketplace-trust/src/lib.rs \
   packaging/arch/PKGBUILD \
   packaging/arch/client-runtime-files.txt \
   packaging/arch/com.ignibyte.OmarchyGS.desktop \
@@ -43,7 +46,9 @@ done
 
 for ogs_rust_root in \
   crates/client-cartridge-runtime \
-  crates/game-cartridge; do
+  crates/game-cartridge \
+  crates/game-provider \
+  crates/marketplace-trust; do
   while IFS= read -r -d '' ogs_rust_path; do
     [[ -f "$ogs_rust_path" && ! -L "$ogs_rust_path" ]] \
       || fail "${ogs_rust_path#"$ogs_source_root/"} must be a non-symlink regular file"
@@ -60,6 +65,13 @@ grep -Fq -- '--marketplace-public-key-file=' "$ogs_source_root/packaging/arch/om
   || fail "client launcher must pass the marketplace trust key only to the companion"
 grep -Fq -- '--companion-marketplace-trusted=' "$ogs_source_root/packaging/arch/omarchygs" \
   || fail "client launcher must disclose marketplace trust readiness to trusted QML"
+grep -Fq -- '--marketplace-trust-bootstrap-file=' "$ogs_source_root/packaging/arch/omarchygs" \
+  || fail "client launcher must pass only the packaged channel bootstrap to the companion"
+grep -Fq 'manual marketplace trust and the packaged channel cannot be combined' \
+  "$ogs_source_root/packaging/arch/omarchygs" \
+  || fail "client launcher must reject mixed trust modes"
+grep -Fq 'channel_bootstrap_sha256=' "$ogs_source_root/packaging/arch/PKGBUILD" \
+  || fail "client package provenance must bind the optional channel bootstrap"
 
 if [[ -n "$(tail -c 1 -- "$ogs_manifest")" ]]; then
   fail "runtime manifest must end with a newline"

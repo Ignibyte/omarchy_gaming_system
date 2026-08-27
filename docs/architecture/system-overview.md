@@ -215,19 +215,21 @@ the first identity HTTP surfaces:
   activation, deactivation, upgrade, rollback, revision, and immutable audit.
   Lifecycle suspension, removal, or incompatibility fails closed without
   choosing another version. When the optional distribution runtime has its
-  exact public key and secure-store root, discovery advertises the authenticated
+  exact manual key or root-authenticated trust bundle plus secure-store root,
+  discovery advertises the authenticated
   current and historical exact acquisition routes plus session-presentation
   capabilities. The current route requires today's selected release; the
   participant route resolves only the immutable session pin through normalized
   retained signed snapshot/release evidence. Both apply current lifecycle
   authority and self-verify the canonical response.
-  The packaged loopback Rust companion requires a locally provisioned
-  client-controlled marketplace public key, rejects any server-envelope key
-  substitution, and independently verifies initial/final catalog admission
-  plus every marketplace, publisher, lifecycle, SDK, and byte claim before
+  The packaged loopback Rust companion requires a locally provisioned manual
+  marketplace key or explicitly enrolled offline-root channel, rejects any
+  server-envelope trust substitution, and independently verifies initial/final
+  catalog admission plus historical/current-policy marketplace keys and every
+  publisher, lifecycle, SDK, and byte claim before
   atomically staging shared content and an exact server-UUID-scoped read-only mount.
   Each profile can retain up to 128 game/digest/admission-revision mounts, each
-  with the trusted-key fingerprint. The QML Games screen exposes
+  with exact evidence/policy key fingerprints and snapshot versions. The QML Games screen exposes
   explicit install, update, and local removal. Eligible new compiled or
   registered-provider sessions pin one exact current release and admission
   revision in an immutable presentation row. The native companion resolves only
@@ -347,7 +349,9 @@ proof, guarded marketplace sync, reviewed server inventory, local catalog
 control, metadata-only player catalog, independently trusted client
 acquisition/multi-release mounting, immutable session presentation pins,
 historical pin recovery, trusted multi-screen launch, and screen-bound action
-admission exist. Signal Siege rules remain compiled into the trusted server for the
+admission exist. Offline-root trust enrollment, monotonic key
+rotation/revocation, dual-key acquisition v2, and authenticated native-package
+staging also exist without granting installer authority. Signal Siege rules remain compiled into the trusted server for the
 private alpha. The registered Door Legends pilot is the first portable
 playable and owns server-side gameplay only through the separately authenticated
 broker boundary. Raw

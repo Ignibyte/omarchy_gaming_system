@@ -9,10 +9,8 @@ sources:
     resource: repo://client/qml/cartridge/nodes/TrustedImageNode.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
-  - id: openwiki-source-152956378e80408d69d9dfb7
-    resource: repo://client/qml/tests/fixture/tst_games.qml
-  - id: openwiki-source-4f6d9bd2b8e769f9585e0296
-    resource: repo://client/qml/tests/fixture/tst_social.qml
+  - id: openwiki-source-f03bc5208aed9dab57ccb120
+    resource: repo://client/qml/tests/fixture/tst_marketplace.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
@@ -73,15 +71,17 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
+  - id: openwiki-source-90d72b449bfcd3fd8271063b
+    resource: repo://scripts/test-marketplace-trust-channel.sh
+  - id: openwiki-source-35eb2e46608670f6b3b620a4
+    resource: repo://scripts/test-marketplace-trust-migration.sh
   - id: openwiki-source-e08dc6155c081d7928029e27
     resource: repo://scripts/test-operator-recovery.sh
-  - id: openwiki-source-31a4e9d026860da100c233f9
-    resource: repo://scripts/test-provider-authority-pilot.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
-generated: {by: "codex", at: "2026-08-27T01:49:04.244Z"}
+generated: {by: "codex", at: "2026-08-27T10:39:16.768Z"}
 ---
 
 # Development and validation
@@ -165,10 +165,10 @@ changed-identity, incompatible, malformed, wrong-service, slow, and oversized
 fixture responders. Before the main fixture, separate QML writer and reader
 processes prove two public profiles survive process restart in the isolated
 configuration location. Before Qt starts, it runs
-`scripts/check-qml-style.py`: the 33-file visual policy centralizes six-digit
+`scripts/check-qml-style.py`: the production visual policy centralizes six-digit
 colors in `OgsTheme`, requires every visual `Text` block to select
 `Text.PlainText`, rejects automatic/rich text modes, and verifies the shared
-theme contract. The 46-case Qt corpus covers contrast, semantic headings and
+theme contract. The full Qt corpus covers contrast, semantic headings and
 status, deterministic initial focus and reversible traversal, settled deferred
 focus before input, Escape authority, persistent keyboard and pointer exit,
 session preservation on window close, keyboard behavior, field bounds,
@@ -179,8 +179,10 @@ and actions, retry-safe report submission and hostile report receipts, private
 message history, pagination, send/read, plain-text rendering, game discovery
 and challenge lifecycle, authoritative solo/versus commands, exact retry
 identity, revision refetch, hostile game-envelope
-rejection, invalid-session cleanup, masked invitation entry and clearing, and
-fixture-observed request contracts.
+rejection, invalid-session cleanup, masked invitation entry and clearing,
+marketplace enrollment/synchronization, key rotation and revocation, package
+inventory/staging, copy-only install text, and fixture-observed request
+contracts.
 Social and game tests run the production root at the
 640×420 minimum and reject extra private fields, oversized responses, and
 body-bearing requests to bodyless mutation endpoints.
@@ -214,25 +216,32 @@ It installs nothing and does not change the system package database. Before
 `makepkg`, `scripts/check-client-package-source.sh` requires a safe, sorted,
 unique, newline-terminated manifest that exactly matches the non-test
 production QML tree. It also requires the native companion and shared cartridge
-Rust sources, rejects symlink and non-regular inputs, binds the independent
-marketplace-key launcher plumbing, and checks version drift, launcher Bash, and
-the desktop entry.
+and marketplace-trust Rust sources, rejects symlink and non-regular inputs,
+binds both manual-key and packaged-channel launcher plumbing, and checks version
+drift, launcher Bash, and the desktop entry.
 
 The builder computes source-revision, dirty-state, and aggregate-digest
 provenance and serializes `makepkg` through a private, owner-checked stable
 workspace so identical source on one Omarchy build host produces identical
-package bytes. The artifact installs the exact 39-file QML inventory, the native
+package bytes. An optional absolute non-symlink public-channel bootstrap is
+copied once into private build-owned storage, verified there, and included in
+both source and installed build provenance so later caller-path mutation cannot
+change the authenticated input. The artifact installs the exact 40-file QML
+inventory, the native
 `omarchygs-client-cartridge-runtime` companion, `/usr/bin/omarchygs`, one
 application-menu entry, and the provenance record. It excludes the Rust game
 server, PostgreSQL, migrations, test fixtures, provider code, credentials, and
-marketplace keys.
+private marketplace keys.
 
 `scripts/test-client-package.sh` is the focused artifact entrypoint. It rejects
 missing, extra, duplicate, traversal, unsorted, unterminated, and symlink
 source fixtures; builds twice without changing Git status; compares the
 packages byte-for-byte; and checks exact Arch metadata, payload, types, modes,
 provenance, checksum, and desktop fields. It rejects a symlinked independent
-trust key before runtime state is created, then extracts the artifact without
+trust key before runtime state is created. It also builds an optional channel
+package from a verified bootstrap snapshot, proves later source-path mutation
+cannot alter the packaged bytes, and rejects noncanonical bootstrap tampering.
+It then extracts the artifact without
 `pacman -U` and launches packaged `Main.qml` plus the real native companion
 through the relocatable launcher against the bounded loopback discovery fixture
 under deterministic offscreen Qt. The smoke proves private cache creation and
@@ -247,14 +256,17 @@ Useful commands:
 ```
 
 See `docs/client-installation.md` for inspection, `pacman -U` installation and
-upgrade, launch, and `pacman -Rns` removal. Current artifacts are unsigned
-private-alpha output; a neighboring checksum is integrity evidence, not
-publisher authentication.
+upgrade, launch, and `pacman -Rns` removal. A normal artifact is unsigned
+private-alpha output; a neighboring checksum alone is integrity evidence, not
+publisher authentication. A reviewed channel build can later authenticate and
+stage an exact root-signed package record, but installation remains a separate
+human `pacman -U` operation.
 
 ## Canonical gate
 
 `bin/gate.sh --fast` runs the static development loop without writing a receipt.
-It includes native client package source admission. `bin/gate.sh --diff` adds
+It includes native client package source admission and the root-signed
+marketplace trust-channel proof at stage 15a. `bin/gate.sh --diff` adds
 the full native artifact and cartridge-acquisition conformance, isolated
 migrated PostgreSQL tests, and
 the live PostgreSQL → Rust game-catalog/health/account/session/persona/
@@ -281,22 +293,25 @@ The gate currently covers:
 6. the isolated Game Cartridge workspace format, Clippy, tests, binaries,
    rustdoc, signed package, broker/provider/probe exchange, privacy assertions,
    trusted-QML smoke, and frame/memory/package measurements;
-7. the native client source contract in every mode plus two reproducible Arch
-   builds, exact QML/companion package inspection, hostile independent-key
-   denial, private-cache creation, cleanup, and extracted production-QML smoke
-   in diff/full modes;
-8. fifty-three ignored server tests against SQLx-managed PostgreSQL databases
-   in diff/full modes, including exact cartridge distribution, no-fallback,
-   lifecycle, and concurrency cases;
+7. the native client source contract in every mode, deterministic
+   root/channel/bootstrap generation and transition tests, plus reproducible
+   manual and channel Arch builds, exact QML/companion package inspection,
+   hostile trust denial, private-cache creation, cleanup, and extracted
+   production-QML smoke in diff/full modes;
+8. the historical migration-0023 upgrade regression followed by the complete
+   ignored server test inventory against SQLx-managed PostgreSQL databases in
+   diff/full modes, including exact cartridge distribution, key rotation,
+   no-fallback, lifecycle, and concurrency cases;
 9. the live Signal Siege catalog, idempotent launch, bounded completed match,
    final replay/history/sync, health, registration, duplicate-conflict,
    session creation/list, persona creation/list/public lookup/edit/handle
    movement, connection, fail-closed unavailable-game challenge rejection,
    private inbox, player reporting, synchronization recovery, and block
    lifecycle, TOTP enrollment, challenged login, recovery replay rejection, MFA disablement,
-   session revocation, rejected-token, the two-process profile proof and 46-case
-   hostile/accessibility QML fixture corpus, including catalog-only compatibility
-   and cartridge trust/mount behavior,
+   session revocation, rejected-token, the two-process profile proof and full
+   hostile/accessibility QML fixture corpus, including catalog-only
+   compatibility, cartridge trust/mount behavior, channel enrollment, and
+   package staging,
    real QML registration/persona, social/report/inbox, MFA/persona, and two-authority
    Signal Siege challenge/versus/recovery flows, and the standalone QML shell
    smoke;

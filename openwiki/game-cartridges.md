@@ -17,16 +17,14 @@ sources:
     resource: repo://client/qml/game/SignalSiegeSurface.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
     resource: repo://client/qml/GameController.qml
-  - id: openwiki-source-152956378e80408d69d9dfb7
-    resource: repo://client/qml/tests/fixture/tst_games.qml
   - id: openwiki-source-2bc62522bf486443de88f261
     resource: repo://crates/client-cartridge-runtime/src/cache.rs
-  - id: openwiki-source-dc7f4e06ba23b051849cbe40
-    resource: repo://crates/client-cartridge-runtime/src/lib.rs
-  - id: openwiki-source-939b835e7d6c679aae8394e7
-    resource: repo://crates/client-cartridge-runtime/src/remote.rs
+  - id: openwiki-source-bdfa1cdb36ece8d941ec8ebc
+    resource: repo://crates/client-cartridge-runtime/src/package_channel.rs
   - id: openwiki-source-bc8915a33f270bc28a270170
     resource: repo://crates/client-cartridge-runtime/src/service.rs
+  - id: openwiki-source-af488519fab8354e5e131df3
+    resource: repo://crates/client-cartridge-runtime/src/trust.rs
   - id: openwiki-source-f4e5b7474eca8daeac03aaab
     resource: repo://crates/game-cartridge-renderer/src/bin/omarchygs-cartridge-preview.rs
   - id: openwiki-source-fdf115002c4aabad0babec70
@@ -35,6 +33,8 @@ sources:
     resource: repo://crates/game-cartridge-spike/README.md
   - id: openwiki-source-45df52cda75cb0ccadd8ef3e
     resource: repo://crates/game-cartridge-spike/src/lib.rs
+  - id: openwiki-source-30abbd4fc5d09b185331836c
+    resource: repo://crates/game-cartridge/src/acquisition.rs
   - id: openwiki-source-8899ed5703baed5a96fa4f93
     resource: repo://crates/game-cartridge/src/archive.rs
   - id: openwiki-source-b4a2591d7d7f80d847ef95ed
@@ -61,10 +61,10 @@ sources:
     resource: repo://crates/game-provider/src/egress.rs
   - id: openwiki-source-183d71a1a996865fb003e694
     resource: repo://crates/game-provider/src/registry.rs
+  - id: openwiki-source-217cb24d606877cd63b392ef
+    resource: repo://crates/marketplace-trust/src/lib.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
-  - id: openwiki-source-6e9cbe5bfa9c94fd24523bd3
-    resource: repo://crates/server/src/cartridge_catalog_api_tests.rs
   - id: openwiki-source-7243a317e3224aa82795a5fc
     resource: repo://crates/server/src/cartridge_catalog.rs
   - id: openwiki-source-5942cee1725f1a3f7bf01ec7
@@ -89,18 +89,12 @@ sources:
     resource: repo://docs/operators/owner-operated-servers.md
   - id: openwiki-source-ff39fa8dfffbd1a097ab5e16
     resource: repo://docs/planning/pipeline/completed/separate-repository-sdk-and-first-party-cartridge.notes.md
-  - id: openwiki-source-99837885b960ec6c07c5dcb7
-    resource: repo://examples/first-party-door-legends/cartridge/manifest.json
-  - id: openwiki-source-3b28096ad6f9667f4ceefdf5
-    resource: repo://examples/first-party-door-legends/cartridge/presentation.json
   - id: openwiki-source-047cb62ee1741c598c0f11a5
     resource: repo://migrations/0014_provider_security_foundation.sql
   - id: openwiki-source-c1f2a0cfcd9a603e8e6b291c
     resource: repo://migrations/0015_first_party_remote_provider_authority.sql
   - id: openwiki-source-11256f84337d259ecf424a45
     resource: repo://migrations/0019_marketplace_catalog.sql
-  - id: openwiki-source-6e903c05353a3393af0fb6c8
-    resource: repo://migrations/0022_historical_session_cartridge_acquisition.sql
   - id: openwiki-source-d69dbacb0ae7fe382ee46161
     resource: repo://scripts/test-game-cartridge-renderer.sh
   - id: openwiki-source-8df9ad1a3495f8360740ff03
@@ -109,9 +103,7 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-  - id: openwiki-source-31a4e9d026860da100c233f9
-    resource: repo://scripts/test-provider-authority-pilot.sh
-generated: {by: "codex", at: "2026-08-27T05:42:15.031Z"}
+generated: {by: "codex", at: "2026-08-27T10:39:16.768Z"}
 ---
 
 # Game Cartridges and portable provider direction
@@ -143,7 +135,10 @@ and sends declared actions back through the selected server's existing gameplay
 authority. Ticket 035 retains immutable historical marketplace evidence,
 allows a participant to install the exact old session pin after catalog change,
 keeps multiple exact releases mounted side by side, and adds bounded signed
-multi-screen host navigation with screen-bound action admission.
+multi-screen host navigation with screen-bound action admission. Ticket 036
+adds offline-root-authenticated public trust enrollment, monotonic marketplace
+key rotation/revocation, separate historical-evidence/current-policy keys, and
+root-authenticated native package staging without installer authority.
 Operator-custom trust, a public Provider SDK, external-provider
 onboarding, and server modules/hooks remain unimplemented.
 
@@ -215,11 +210,12 @@ packages that passed the verifier and content-addressed installation lifecycle.
 ## Owner-operated distribution status
 
 The deployment unit is an independently owner-operated OmarchyGS community.
-Ticket 032 lets that owner configure one canonical HTTPS marketplace origin,
-one exact Ed25519 marketplace key, one bounded DER TLS root, and one existing
-secure-store root. The owner can synchronize reviewed exact releases, inspect
-the resulting inventory, and independently select one permitted digest per
-game. Authenticated players see only the effective selected metadata.
+Its server may configure one canonical HTTPS marketplace origin, bounded DER
+TLS root, existing secure-store root, and either one manual Ed25519 marketplace
+key or an offline-root-verified trust bundle. The owner can synchronize
+reviewed exact releases, inspect the resulting inventory, and independently
+select one permitted digest per game. Authenticated players see only the
+effective selected metadata.
 
 When distribution is configured, the server advertises a separate acquisition
 capability and serves only the currently effective selected digest. It requires
@@ -236,22 +232,27 @@ selection. Current signed active-session lifecycle policy still decides whether
 the old release may be used; retained provenance alone is never authorization.
 
 The packaged client starts a native loopback companion with a random
-per-process credential. That companion requires a marketplace public key from
-client-controlled configuration, verifies the full key rather than trusting
-the server-supplied copy, then rechecks publisher release, marketplace snapshot,
-lifecycle policy, compatibility, digest, and selected-server admission before
-staging content. Private descriptor-relative storage keeps immutable cached
-content separate from exact server-profile mount records. A profile can retain
+per-process credential. Its marketplace authority is mutually exclusive:
+no-key mode keeps cartridge controls unavailable, manual mode accepts the
+existing client-controlled public key, and channel mode accepts only the
+package's offline root and fixed channel bootstrap. Channel enrollment is an
+explicit player action and never accepts trust material or a channel location
+from the selected server. The companion then rechecks publisher release,
+marketplace snapshot, lifecycle policy, compatibility, digest, and
+selected-server admission before staging content. Private descriptor-relative
+storage keeps immutable cached content separate from exact server-profile
+mount records. A profile can retain
 up to 128 records keyed by server identity/origin, game, archive digest, and
 admission revision, so installing an old session pin does not replace another
 release of the same game. Each mount records
-the trusted marketplace-key fingerprint; removal deletes only that exact
+the trusted marketplace-key fingerprints for historical evidence and current
+policy; removal deletes only that exact
 profile pointer and leaves authoritative game state unchanged. Session pinning
 is deliberately separate from the profile mount: an eligible new session stores
 one immutable current release and admission revision, while legacy or
 ineligible sessions remain honestly unbound. Later catalog selection never
 repins the session. The companion launches only when that server origin/UUID,
-client trust root, mount identity, digest, revision, signed policy, and
+client trust mode, mount identity, digest, revision, signed policy, and
 authoritative view agree; actions still travel only through the selected
 OmarchyGS server.
 
@@ -270,10 +271,12 @@ same-user companion to compile the authoritative view. If its exact mount is
 absent, trusted QML exposes an explicit install control only when historical
 acquisition, the helper credential, and independent marketplace trust are all
 available. The companion reads the participant-visible session before and
-after acquisition, verifies the returned evidence against the client key and
-immutable binding, and refuses changed admission or lifecycle state. It then
+after acquisition, verifies the returned historical evidence and current
+policy snapshot against their exact client-authorized keys and immutable
+binding, and refuses changed admission or lifecycle state. It then
 canonicalizes the selected origin, resolves only the exact profile mount under
-the client-controlled marketplace key and cached publisher identity, and runs
+the client-controlled marketplace trust state and cached publisher identity,
+and runs
 the production Rich-2D renderer on one requested signed screen. It returns the
 inert plan plus the accepted screen ID, signed entry ID, exact local navigation
 map, and a random per-plan loopback capability for digest-named PNG/WAV bytes.
@@ -309,8 +312,8 @@ server plugins remain later designs.
 Those are four distinct trust decisions: a publisher signature proves origin
 and unchanged bytes, marketplace review records that marketplace's assessment,
 server admission records the local operator's catalog decision, and the player
-client independently chooses which marketplace key it trusts. The selected
-server cannot replace that client trust anchor, and marketplace publication
+client independently chooses a manual key or packaged offline root/channel.
+The selected server cannot replace that client trust anchor, and marketplace publication
 cannot force server admission. A server may eventually admit an
 `operator-custom` cartridge with no marketplace-review claim, but that changes
 provenance rather than containment: the package remains signed, inert, bounded,
@@ -372,10 +375,50 @@ cooperating-writer races, but the exact store UID remains the local authority;
 a future privileged or shared launcher still needs a dedicated service identity
 or equivalent external monotonic authority.
 
+### Implemented public trust and package channel
+
+`omarchygs.marketplace-trust-channel/v2` is a host-distribution contract, not
+part of the Game Cartridge SDK. Its canonical signed payload binds one offline
+root and stable channel to a marketplace origin and authority, a validity
+window, strictly increasing bundle version, exact current marketplace snapshot
+version, ordered marketplace-key history, and bounded native package artifacts.
+The packaged bootstrap contains only the public root, fixed channel location,
+platform identity, installed package version, and minimum acceptable bundle
+and snapshot versions. Those floors let a first-run or cache-cleared client
+reject an older still-valid bundle that predates a packaged revocation.
+
+Exactly one final key is `active` and may authenticate the declared current
+marketplace snapshot. Earlier keys are `retired` for only their closed
+historical snapshot ranges or `revoked` for no use. A newer trust bundle must
+retain complete prior key identity and ranges, preserve the root, channel,
+origins, and authority, and make only monotonic active-to-retired/revoked or
+retired-to-revoked transitions. The same constraints protect PostgreSQL server
+trust and the client's private descriptor-bound trust store. A persisted bundle
+below a newly packaged minimum is not usable, but its authenticated bytes still
+constrain the next transition so terminal history cannot be erased.
+
+Acquisition v2 carries two independently authenticated facts when rotation
+requires them: the retained snapshot that established the immutable release
+may be signed by an eligible retired key, while current lifecycle policy must
+come from the separately signed current snapshot and active key. Version 1
+remains compatible when evidence and policy use the same key. Neither form lets
+the selected game server choose the client's trust root or channel.
+
+Root-signed package records bind platform, architecture, version, filename,
+size, SHA-256, source revision/digest, and build-provenance digest. The
+companion selects only a newer exact artifact for its packaged platform,
+streams it through guarded HTTPS into bounded mode-0600 same-user staging,
+rechecks current trust before publication, and returns a fixed-path
+`pacman -U` command as text. It never invokes a shell, package manager, sudo, or
+other privileged installer. Staging authenticates provenance and bytes; it is
+not a claim that a hosted marketplace service or malware-review operation
+exists.
+
 ### Implemented marketplace and server catalog flow
 
 The marketplace snapshot is bounded canonical JSON under its own signature
-domain. Strict Ed25519 verification binds one configured authority, a nonzero
+domain. Strict Ed25519 verification binds the manual authority or the public
+channel's exact active key, a nonzero
 monotonic snapshot version, bounded review facts, exact publisher/release
 identities, signed lifecycle policy, and unique sorted relative release
 directories. The snapshot and cartridge data cannot choose a host, scheme,
@@ -389,7 +432,8 @@ disables ambient proxies, redirects, referer, decompression, connection reuse,
 and unbounded response bodies. Tests alone can admit one exact generated
 loopback socket for the separately spawned TLS fixture.
 
-Synchronization first rejects stale or conflicting snapshot identity, then
+Synchronization first rejects stale or conflicting snapshot identity and, in
+channel mode, any version other than the root-declared current snapshot. It then
 downloads each release's existing `cartridge.ogsc`, `conformance.json`, and
 `release.signed.json` beneath its relative directory. The production release
 verifier reconstructs publisher and conformance identity before
@@ -398,6 +442,11 @@ writing the legacy active pointer. Immutable unreferenced bytes may remain
 after a later failure, but the current reviewed inventory advances only after
 all entries are staged and one serialized PostgreSQL transaction publishes the
 complete snapshot. Omitted releases remain historical and ineffective.
+PostgreSQL also persists the authenticated root fingerprint and complete trust
+payload plus each release policy's exact marketplace key and snapshot version.
+Security-sensitive live requests compare their runtime trust to that persisted
+state, so a separate administrator process's newer rotation or revocation takes
+effect without waiting for server restart.
 
 Marketplace lifecycle and server admission are separate facts. A local
 `catalog-apply` command carries an idempotency UUID, exact expected selection,
@@ -691,7 +740,11 @@ gate and failure routing.
    session pin without consulting current selection, mounts exact releases side
    by side, and adds signed host-local multi-screen navigation with screen-bound
    action authorization.
-11. Later tickets publish the Provider SDK, add explicitly labeled
+11. Ticket 036 adds the offline-root-signed public trust channel, monotonic
+   marketplace-key rotation and revocation, acquisition v2's separate evidence
+   and current-policy keys, and bounded native package staging without
+   privileged installation.
+12. Later tickets publish the Provider SDK, add explicitly labeled
    operator-custom cartridge trust, prove the server-module isolation model,
    and only then implement module administration and typed hooks.
 
@@ -722,4 +775,5 @@ decisions and monotonic policy versions.
 | Player acquisition, cache, and mounts | `acquisition.rs`; `cartridge_distribution.rs`; `crates/client-cartridge-runtime`; `CartridgeController.qml`; migration `0020`; launcher/package scripts; Ticket 033 | Exact-selection/no-fallback PostgreSQL tests; hostile acquisition corpus; descriptor-relative permission/race tests; independent-key substitution denial; catalog-only QML compatibility; reproducible native package and cleanup smoke |
 | Session pinning, trusted launch, and cartridge actions | `session_cartridges.rs`; migration `0021`; `crates/client-cartridge-runtime/src/render.rs`; `service.rs`; `GameController.qml`; `GameplayScreen.qml`; Ticket 034 | Immutable pin and admission tests; hostile origin/mount/lifecycle/action corpus; renderer/QML harness; clean-clone Door Legends authority pilot; canonical diff gate |
 | Historical session acquisition and signed-screen navigation | retained evidence in `cartridge_catalog.rs`; `cartridge_distribution.rs::acquire_session_exact`; migration `0022`; client runtime remote/cache/render/service modules; navigation validator/renderer; `GameController.qml`; Door Legends cartridge v2; Ticket 035 | Snapshot replay/omission immutability; participant privacy and catalog-independent exact acquisition; key/binding/lifecycle substitution denial; multi-release mounts; malformed/duplicate navigation; zero-network QML navigation/history; screen-bound gameplay and exact replay; clean-clone historical Door Legends pilot |
+| Public trust enrollment, key rotation, and native package staging | `crates/marketplace-trust`; client runtime trust/package modules; server marketplace/catalog/distribution/session modules; `MarketplaceController.qml`; migration `0023`; packaging scripts; Ticket 036 | Root/channel canonical and transition corpus; fresh-enrollment and floor-advance replay denial; live client/server revocation; acquisition-v2 dual-key verification; historical migration upgrade; QML trust/package states; deterministic manual/channel packages; root-signed channel gate |
 | Remaining owner-operated extension direction | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; roadmap | Custom-content provenance; provider/module separation; extension isolation, lifecycle, audit, and operator-responsibility review |

@@ -40,6 +40,7 @@ pub struct ClientCartridgeCache {
     _root: OwnedFd,
     profiles: OwnedFd,
     publisher_keys: OwnedFd,
+    policies: OwnedFd,
     lock_file: OwnedFd,
     process_lock: Mutex<()>,
     content: SecureCartridgeStore,
@@ -58,6 +59,7 @@ impl ClientCartridgeCache {
         validate_directory(&root_fd, owner)?;
         let profiles = open_or_create_directory(&root_fd, "profiles", owner)?;
         let publisher_keys = open_or_create_directory(&root_fd, "publisher-keys", owner)?;
+        let policies = open_or_create_directory(&root_fd, "policies", owner)?;
         open_or_create_directory(&root_fd, "content", owner)?;
         let lock_file = openat(
             &root_fd,
@@ -74,10 +76,15 @@ impl ClientCartridgeCache {
             _root: root_fd,
             profiles,
             publisher_keys,
+            policies,
             lock_file,
             process_lock: Mutex::new(()),
             content,
         })
+    }
+
+    pub fn mounts_all(&self, server_id: Uuid) -> Result<Vec<MountRecord>> {
+        self.with_mount_lock(|| Ok(self.read_profile(server_id)?.mounts))
     }
 
     pub fn mounts(
@@ -85,8 +92,16 @@ impl ClientCartridgeCache {
         server_id: Uuid,
         trusted_marketplace_key: &CatalogPublicKey,
     ) -> Result<Vec<MountRecord>> {
-        let trusted_key_sha256 = marketplace_key_sha256(trusted_marketplace_key)?;
-        self.with_mount_lock(|| Ok(self.read_profile(server_id, &trusted_key_sha256)?.mounts))
+        let expected = marketplace_key_sha256(trusted_marketplace_key)?;
+        let mounts = self.mounts_all(server_id)?;
+        if mounts
+            .iter()
+            .all(|mount| mount.marketplace_key_sha256 == expected)
+        {
+            Ok(mounts)
+        } else {
+            Err(CompanionError::MarketplaceUntrusted)
+        }
     }
 
     pub fn install(
@@ -94,17 +109,39 @@ impl ClientCartridgeCache {
         verified: &VerifiedAcquisition,
         mount: MountRecord,
     ) -> Result<MountRecord> {
+        self.install_for_use(verified, mount, LifecycleUse::NewLaunch)
+    }
+
+    pub(crate) fn install_session(
+        &self,
+        verified: &VerifiedAcquisition,
+        mount: MountRecord,
+    ) -> Result<MountRecord> {
+        self.install_for_use(verified, mount, LifecycleUse::ActiveSession)
+    }
+
+    fn install_for_use(
+        &self,
+        verified: &VerifiedAcquisition,
+        mount: MountRecord,
+        use_kind: LifecycleUse,
+    ) -> Result<MountRecord> {
         mount.validate()?;
-        let trusted_key_sha256 = marketplace_key_sha256(verified.marketplace_key())?;
-        if mount.marketplace_key_sha256 != trusted_key_sha256 {
+        let evidence_key_sha256 = marketplace_key_sha256(verified.marketplace_key())?;
+        let policy_key_sha256 = marketplace_key_sha256(verified.policy_marketplace_key())?;
+        if mount.marketplace_key_sha256 != evidence_key_sha256
+            || mount.policy_marketplace_key_sha256.as_deref() != Some(policy_key_sha256.as_str())
+            || mount.policy_snapshot_version != Some(verified.policy_snapshot_version())
+        {
             return Err(CompanionError::Rejected);
         }
         let staged = self
             .content
-            .stage_reviewed_release(
+            .stage_reviewed_release_for_use(
                 verified.release(),
                 verified.policy_bytes(),
-                verified.marketplace_key(),
+                verified.policy_marketplace_key(),
+                use_kind,
             )
             .map_err(|_| CompanionError::Cache)?;
         if !staged.installed || staged.release.archive_sha256 != mount.archive_sha256 {
@@ -112,7 +149,7 @@ impl ClientCartridgeCache {
         }
         let server_id = exact_uuid(&mount.server_id)?;
         self.with_mount_lock(|| {
-            let mut profile = self.read_profile(server_id, &trusted_key_sha256)?;
+            let mut profile = self.read_profile(server_id)?;
             if profile
                 .mounts
                 .iter()
@@ -121,6 +158,11 @@ impl ClientCartridgeCache {
                 return Err(CompanionError::Rejected);
             }
             self.write_publisher_key(&mount.archive_sha256, &verified.entry().publisher_key)?;
+            self.write_policy(
+                &mount.archive_sha256,
+                &policy_key_sha256,
+                verified.policy_bytes(),
+            )?;
             profile.mounts.retain(|existing| {
                 existing.game_key != mount.game_key
                     || existing.archive_sha256 != mount.archive_sha256
@@ -131,8 +173,38 @@ impl ClientCartridgeCache {
             if profile.mounts.len() > MAX_MOUNTS {
                 return Err(CompanionError::Cache);
             }
-            self.write_profile(server_id, &profile, &trusted_key_sha256)?;
+            self.write_profile_all(server_id, &profile)?;
             Ok(mount)
+        })
+    }
+
+    pub fn remove_exact(
+        &self,
+        server_id: Uuid,
+        game_key: &str,
+        digest: &str,
+        admission_revision: Option<u64>,
+    ) -> Result<bool> {
+        if !valid_identifier(game_key)
+            || !valid_sha256(digest)
+            || admission_revision.is_some_and(|revision| revision == 0)
+        {
+            return Err(CompanionError::InvalidInput);
+        }
+        self.with_mount_lock(|| {
+            let mut profile = self.read_profile(server_id)?;
+            let before = profile.mounts.len();
+            profile.mounts.retain(|mount| {
+                mount.game_key != game_key
+                    || mount.archive_sha256 != digest
+                    || admission_revision
+                        .is_some_and(|revision| mount.admission_revision != revision)
+            });
+            if profile.mounts.len() == before {
+                return Ok(false);
+            }
+            self.write_profile_all(server_id, &profile)?;
+            Ok(true)
         })
     }
 
@@ -144,28 +216,15 @@ impl ClientCartridgeCache {
         admission_revision: Option<u64>,
         trusted_marketplace_key: &CatalogPublicKey,
     ) -> Result<bool> {
-        if !valid_identifier(game_key)
-            || !valid_sha256(digest)
-            || admission_revision.is_some_and(|revision| revision == 0)
+        let expected = marketplace_key_sha256(trusted_marketplace_key)?;
+        if !self
+            .mounts_all(server_id)?
+            .iter()
+            .all(|mount| mount.marketplace_key_sha256 == expected)
         {
-            return Err(CompanionError::InvalidInput);
+            return Err(CompanionError::MarketplaceUntrusted);
         }
-        let trusted_key_sha256 = marketplace_key_sha256(trusted_marketplace_key)?;
-        self.with_mount_lock(|| {
-            let mut profile = self.read_profile(server_id, &trusted_key_sha256)?;
-            let before = profile.mounts.len();
-            profile.mounts.retain(|mount| {
-                mount.game_key != game_key
-                    || mount.archive_sha256 != digest
-                    || admission_revision
-                        .is_some_and(|revision| mount.admission_revision != revision)
-            });
-            if profile.mounts.len() == before {
-                return Ok(false);
-            }
-            self.write_profile(server_id, &profile, &trusted_key_sha256)?;
-            Ok(true)
-        })
+        self.remove_exact(server_id, game_key, digest, admission_revision)
     }
 
     pub(crate) fn resolve_mounted(
@@ -175,16 +234,15 @@ impl ClientCartridgeCache {
         game_key: &str,
         archive_sha256: &str,
         admission_revision: u64,
-        trusted_marketplace_key: &CatalogPublicKey,
+        trust: &impl CacheTrust,
     ) -> Result<SecureResolution> {
         let server_origin = canonical_origin(server_origin)?;
         if !valid_identifier(game_key) || !valid_sha256(archive_sha256) || admission_revision == 0 {
             return Err(CompanionError::InvalidInput);
         }
-        let trusted_key_sha256 = marketplace_key_sha256(trusted_marketplace_key)?;
-        let (mount, publisher_key) = self.with_mount_lock(|| {
+        let (mount, publisher_key, policy_bytes) = self.with_mount_lock(|| {
             let mount = self
-                .read_profile(server_id, &trusted_key_sha256)?
+                .read_profile(server_id)?
                 .mounts
                 .into_iter()
                 .find(|mount| {
@@ -198,19 +256,51 @@ impl ClientCartridgeCache {
             if publisher_key.publisher_id != mount.publisher_id {
                 return Err(CompanionError::Cache);
             }
-            Ok((mount, publisher_key))
+            let policy_fingerprint = mount
+                .policy_marketplace_key_sha256
+                .as_deref()
+                .unwrap_or(&mount.marketplace_key_sha256);
+            let policy_bytes = read_optional_regular_file(
+                &self.policies,
+                &policy_name(archive_sha256, policy_fingerprint),
+                omarchygs_game_cartridge::MAX_JSON_BYTES as u64,
+            )?;
+            Ok((mount, publisher_key, policy_bytes))
         })?;
-        let resolution = self
-            .content
-            .resolve_cached_exact(
+        let trust = trust.snapshot();
+        trust.key_by_fingerprint(&mount.marketplace_key_sha256, mount.snapshot_version)?;
+        let policy_fingerprint = mount
+            .policy_marketplace_key_sha256
+            .as_deref()
+            .unwrap_or(&mount.marketplace_key_sha256);
+        let policy_snapshot_version = mount
+            .policy_snapshot_version
+            .unwrap_or(mount.snapshot_version);
+        let policy_key = trust.key_by_fingerprint(policy_fingerprint, policy_snapshot_version)?;
+        trust.authorize_current_key(&policy_key, policy_snapshot_version)?;
+        let resolution = if let Some(policy_bytes) = policy_bytes {
+            self.content.resolve_exact(
                 game_key,
                 archive_sha256,
                 &publisher_key,
                 &rich_2d_host_profile(),
-                trusted_marketplace_key,
+                &policy_bytes,
+                &policy_key,
                 LifecycleUse::ActiveSession,
             )
-            .map_err(|_| CompanionError::AdmissionChanged)?;
+        } else if policy_fingerprint == mount.marketplace_key_sha256 {
+            self.content.resolve_cached_exact(
+                game_key,
+                archive_sha256,
+                &publisher_key,
+                &rich_2d_host_profile(),
+                &policy_key,
+                LifecycleUse::ActiveSession,
+            )
+        } else {
+            return Err(CompanionError::Cache);
+        }
+        .map_err(|_| CompanionError::AdmissionChanged)?;
         let activation = resolution.activation();
         if activation.publisher_id != mount.publisher_id
             || activation.cartridge_version != mount.cartridge_version
@@ -236,7 +326,7 @@ impl ClientCartridgeCache {
         result
     }
 
-    fn read_profile(&self, server_id: Uuid, trusted_key_sha256: &str) -> Result<ProfileDocument> {
+    fn read_profile(&self, server_id: Uuid) -> Result<ProfileDocument> {
         let name = profile_name(server_id);
         let file = match openat(
             &self.profiles,
@@ -263,17 +353,30 @@ impl ClientCartridgeCache {
         }
         let profile: ProfileDocument =
             serde_json::from_slice(&bytes).map_err(|_| CompanionError::Cache)?;
-        profile.validate(server_id, trusted_key_sha256)?;
+        profile.validate(server_id)?;
         Ok(profile)
     }
 
+    #[cfg(test)]
     fn write_profile(
         &self,
         server_id: Uuid,
         profile: &ProfileDocument,
         trusted_key_sha256: &str,
     ) -> Result<()> {
-        profile.validate(server_id, trusted_key_sha256)?;
+        if !valid_sha256(trusted_key_sha256)
+            || !profile
+                .mounts
+                .iter()
+                .all(|mount| mount.marketplace_key_sha256 == trusted_key_sha256)
+        {
+            return Err(CompanionError::Cache);
+        }
+        self.write_profile_all(server_id, profile)
+    }
+
+    fn write_profile_all(&self, server_id: Uuid, profile: &ProfileDocument) -> Result<()> {
+        profile.validate(server_id)?;
         let bytes = serde_json::to_vec(profile).map_err(|_| CompanionError::Cache)?;
         if bytes.is_empty() || bytes.len() as u64 > MAX_PROFILE_BYTES {
             return Err(CompanionError::Cache);
@@ -385,6 +488,61 @@ impl ClientCartridgeCache {
         }
         result
     }
+
+    fn write_policy(&self, archive_sha256: &str, key_sha256: &str, bytes: &[u8]) -> Result<()> {
+        if !valid_sha256(archive_sha256)
+            || !valid_sha256(key_sha256)
+            || bytes.is_empty()
+            || bytes.len() > omarchygs_game_cartridge::MAX_JSON_BYTES
+        {
+            return Err(CompanionError::Cache);
+        }
+        let target = policy_name(archive_sha256, key_sha256);
+        let temporary = temporary_name();
+        let fd = openat(
+            &self.policies,
+            temporary.as_str(),
+            OFlags::WRONLY | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::from_bits_truncate(0o600),
+        )
+        .map_err(|_| CompanionError::Cache)?;
+        let result = (|| {
+            validate_regular_file(&fd, geteuid())?;
+            let mut file = File::from(fd);
+            file.write_all(bytes).map_err(|_| CompanionError::Cache)?;
+            file.sync_all().map_err(|_| CompanionError::Cache)?;
+            fchmod(&file, Mode::from_bits_truncate(0o400)).map_err(|_| CompanionError::Cache)?;
+            file.sync_all().map_err(|_| CompanionError::Cache)?;
+            renameat(
+                &self.policies,
+                temporary.as_str(),
+                &self.policies,
+                target.as_str(),
+            )
+            .map_err(|_| CompanionError::Cache)?;
+            fsync(&self.policies).map_err(|_| CompanionError::Cache)
+        })();
+        if result.is_err() {
+            let _ = unlinkat(&self.policies, temporary.as_str(), AtFlags::empty());
+        }
+        result
+    }
+}
+
+pub(crate) trait CacheTrust {
+    fn snapshot(&self) -> crate::ClientTrustSnapshot;
+}
+
+impl CacheTrust for CatalogPublicKey {
+    fn snapshot(&self) -> crate::ClientTrustSnapshot {
+        crate::ClientTrustSnapshot::Manual(std::sync::Arc::new(self.clone()))
+    }
+}
+
+impl CacheTrust for crate::ClientTrustSnapshot {
+    fn snapshot(&self) -> crate::ClientTrustSnapshot {
+        self.clone()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -401,14 +559,20 @@ pub struct MountRecord {
     pub archive_sha256: String,
     pub signed_identity_sha256: String,
     pub marketplace_key_sha256: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub policy_marketplace_key_sha256: Option<String>,
     pub marketplace_id: String,
     pub marketplace_name: String,
     pub reviewed_by: String,
     pub review_summary: String,
     pub snapshot_version: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub policy_snapshot_version: Option<u64>,
     pub policy_version: u64,
     pub lifecycle_status: String,
     pub admission_revision: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trust_status: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub warning: Option<String>,
 }
@@ -444,14 +608,19 @@ impl MountRecord {
             archive_sha256: selected.archive_sha256.clone(),
             signed_identity_sha256: selected.signed_identity_sha256.clone(),
             marketplace_key_sha256: marketplace_key_sha256(verified.marketplace_key())?,
+            policy_marketplace_key_sha256: Some(marketplace_key_sha256(
+                verified.policy_marketplace_key(),
+            )?),
             marketplace_id: selected.marketplace.marketplace_id.clone(),
             marketplace_name: selected.marketplace.marketplace_name.clone(),
             reviewed_by: selected.marketplace.reviewed_by.clone(),
             review_summary: selected.marketplace.review_summary.clone(),
             snapshot_version: snapshot.snapshot_version,
+            policy_snapshot_version: Some(verified.policy_snapshot_version()),
             policy_version: selected.marketplace.policy_version,
             lifecycle_status: selected.marketplace.lifecycle_status.clone(),
             admission_revision: selected.server_admission.revision,
+            trust_status: None,
             warning: selected.warning.clone(),
         };
         mount.validate()?;
@@ -487,7 +656,7 @@ impl MountRecord {
             || snapshot.authority_id != verified.marketplace_key().authority_id
             || !matches!(
                 policy.status,
-                CatalogStatus::Active | CatalogStatus::Deprecated
+                CatalogStatus::Active | CatalogStatus::Deprecated | CatalogStatus::Retired
             )
         {
             return Err(CompanionError::Rejected);
@@ -504,14 +673,19 @@ impl MountRecord {
             archive_sha256: admission.archive_sha256.clone(),
             signed_identity_sha256: admission.signed_identity_sha256.clone(),
             marketplace_key_sha256: marketplace_key_sha256(verified.marketplace_key())?,
+            policy_marketplace_key_sha256: Some(marketplace_key_sha256(
+                verified.policy_marketplace_key(),
+            )?),
             marketplace_id: snapshot.authority_id.clone(),
             marketplace_name: snapshot.marketplace_name.clone(),
             reviewed_by: entry.reviewed_by.clone(),
             review_summary: entry.review_summary.clone(),
             snapshot_version: snapshot.snapshot_version,
+            policy_snapshot_version: Some(verified.policy_snapshot_version()),
             policy_version: policy.policy_version,
             lifecycle_status: lifecycle_name(policy.status).to_owned(),
             admission_revision: admission.admission_revision,
+            trust_status: None,
             warning: (policy.status == CatalogStatus::Deprecated).then(|| policy.reason.clone()),
         };
         mount.validate()?;
@@ -531,14 +705,32 @@ impl MountRecord {
             || !valid_sha256(&self.archive_sha256)
             || !valid_sha256(&self.signed_identity_sha256)
             || !valid_sha256(&self.marketplace_key_sha256)
+            || self
+                .policy_marketplace_key_sha256
+                .as_ref()
+                .is_some_and(|value| !valid_sha256(value))
+            || (self.policy_marketplace_key_sha256.is_none()
+                != self.policy_snapshot_version.is_none())
             || !valid_identifier(&self.marketplace_id)
             || !valid_text(&self.marketplace_name, 128)
             || !valid_identifier(&self.reviewed_by)
             || !valid_text(&self.review_summary, 512)
             || self.snapshot_version == 0
+            || self
+                .policy_snapshot_version
+                .is_some_and(|version| version == 0)
             || self.policy_version == 0
-            || !matches!(self.lifecycle_status.as_str(), "active" | "deprecated")
+            || !matches!(
+                self.lifecycle_status.as_str(),
+                "active" | "deprecated" | "retired"
+            )
             || self.admission_revision == 0
+            || self.trust_status.as_ref().is_some_and(|status| {
+                !matches!(
+                    status.as_str(),
+                    "trusted" | "retired" | "revoked" | "expired" | "unknown"
+                )
+            })
             || self
                 .warning
                 .as_ref()
@@ -566,7 +758,7 @@ impl ProfileDocument {
         }
     }
 
-    fn validate(&self, server_id: Uuid, trusted_key_sha256: &str) -> Result<()> {
+    fn validate(&self, server_id: Uuid) -> Result<()> {
         let expected_server_id = server_id.to_string();
         let expected_origin = self
             .mounts
@@ -574,11 +766,9 @@ impl ProfileDocument {
             .map(|mount| mount.server_origin.as_str());
         if self.format != PROFILE_FORMAT
             || self.mounts.len() > MAX_MOUNTS
-            || !valid_sha256(trusted_key_sha256)
             || !self.mounts.iter().all(|mount| {
                 mount.server_id == expected_server_id
                     && Some(mount.server_origin.as_str()) == expected_origin
-                    && mount.marketplace_key_sha256 == trusted_key_sha256
                     && mount.validate().is_ok()
             })
             || !self
@@ -713,6 +903,10 @@ fn read_optional_regular_file(
 
 fn profile_name(server_id: Uuid) -> String {
     format!("{server_id}.json")
+}
+
+fn policy_name(archive_sha256: &str, key_sha256: &str) -> String {
+    format!("{archive_sha256}.{key_sha256}.signed.json")
 }
 
 fn temporary_name() -> String {
@@ -969,14 +1163,17 @@ mod tests {
             archive_sha256: digest_character.to_string().repeat(64),
             signed_identity_sha256: "c".repeat(64),
             marketplace_key_sha256: marketplace_key_sha256.to_owned(),
+            policy_marketplace_key_sha256: None,
             marketplace_id: "marketplace".to_owned(),
             marketplace_name: "Test Marketplace".to_owned(),
             reviewed_by: "review-team".to_owned(),
             review_summary: "Reviewed exact release.".to_owned(),
             snapshot_version: 1,
+            policy_snapshot_version: None,
             policy_version: 1,
             lifecycle_status: "active".to_owned(),
             admission_revision: 1,
+            trust_status: None,
             warning: None,
         }
     }

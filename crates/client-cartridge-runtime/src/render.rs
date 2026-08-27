@@ -32,6 +32,14 @@ pub fn compile_mounted_render_plan(
     request: &RenderRequest,
     trusted_marketplace_key: &CatalogPublicKey,
 ) -> Result<PreparedPreview> {
+    compile_mounted_render_plan_with_trust(cache, request, trusted_marketplace_key)
+}
+
+pub(crate) fn compile_mounted_render_plan_with_trust(
+    cache: &ClientCartridgeCache,
+    request: &RenderRequest,
+    trusted_marketplace: &impl crate::cache::CacheTrust,
+) -> Result<PreparedPreview> {
     let server_origin = selected_origin(&request.server_origin)?
         .origin()
         .ascii_serialization();
@@ -57,7 +65,7 @@ pub fn compile_mounted_render_plan(
         &request.game_key,
         &request.archive_sha256,
         request.admission_revision,
-        trusted_marketplace_key,
+        trusted_marketplace,
     )?;
     let view_bytes = serde_json::to_vec(&request.view).map_err(|_| CompanionError::InvalidInput)?;
     compile_render_plan(
