@@ -76,10 +76,11 @@ result recorded.
 - A Game Cartridge is a signed inert frontend release rendered through
   platform-owned QML components. It contains no publisher QML, server rules,
   backend executable, credential, or independent network client.
-- Each owner-operated server controls its admitted catalog. The planned vetted
+- Each owner-operated server controls its admitted catalog. The vetted
   marketplace supplies reviewed exact releases; an operator may instead
-  establish an explicitly marked local trust domain for custom cartridges and
-  future server extensions without weakening official-client validation.
+  establish an explicitly marked local trust domain for inert custom
+  cartridges without weakening official-client validation. Future executable
+  server extensions remain a separate gated system.
 - Portable game backends use the brokered provider protocol and a future public
   Provider SDK. General server modules and hooks are a separate, versioned,
   capability-scoped extension family whose executable isolation must be

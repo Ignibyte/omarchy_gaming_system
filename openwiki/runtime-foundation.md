@@ -91,10 +91,7 @@ sources:
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
   - id: openwiki-source-a5928e7ee39885995efdc170
     resource: repo://scripts/dev.sh
-generated: {by: "codex", at: "2026-08-27T10:39:16.768Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-27T12:40:24.098Z
+generated: {by: "codex", at: "2026-08-27T17:23:12.264Z"}
 ---
 
 # Runtime foundation
@@ -127,6 +124,13 @@ without distribution. Distribution is enabled only when the complete
 configuration is valid; otherwise startup fails rather than advertising an
 acquisition capability that cannot serve exact retained bytes.
 
+The distribution runtime may also receive a complete public operator-custom
+configuration: the existing secure-store root, one checked public catalog key,
+and a bounded operator name. Startup verifies that public identity against the
+immutable database authority. Partial configuration or identity drift stops
+startup. The normal server never loads the separately configured admin private
+key used for custom import and lifecycle signing.
+
 Configuration lives in `crates/server/src/config.rs`. `DATABASE_URL` and
 `OGS_BIND_ADDRESS` can override development defaults; `BBS_BIND_ADDRESS` is a
 transitional fallback only when the new variable is absent. The defaults point
@@ -140,6 +144,9 @@ authenticators must receive the same protected key. Keep network, key, and
 credential policy explicit when introducing a non-local deployment profile.
 The optional provider secrets use unpadded base64url and the callback authority
 must be a bounded lowercase DNS authority with an optional nonzero port.
+Optional operator-custom distribution must be absent or complete; its public
+key path and store root are absolute checked inputs, while its private signing
+key belongs only to `omarchygs-admin` commands.
 
 ## Health flow
 
@@ -167,7 +174,9 @@ versioned capabilities. `games.cartridge-catalog.v1` is a base capability;
 exists. When the optional distribution runtime exists, discovery adds current
 exact cartridge acquisition, session presentation, and historical session
 acquisition capabilities together; otherwise none of those delivery claims is
-advertised. A missing durable identity returns a
+advertised. When that runtime also has a validated custom authority, discovery
+adds `games.operator-custom-cartridges.v1` and one bounded public authority
+candidate. The advertised key is not client trust. A missing durable identity returns a
 generic `503 server_discovery_unavailable` rather than database detail. This
 compatibility contract is separate from `/health`, which remains operational
 liveness.
@@ -388,8 +397,10 @@ corresponding screen becomes active.
 metadata-only server catalog and a separate authenticated loopback companion
 for local acquisition and mount operations. Catalog-only servers remain fully
 browsable; install and update controls require the separately advertised
-acquisition capability, an available companion, and client marketplace trust
-from either manual or packaged-channel mode. A mounted record is presentation
+acquisition capability, an available companion, and matching source-specific
+client trust. Marketplace rows use manual or packaged-channel trust.
+Operator-custom rows require an explicit native-companion pin of the canonical
+origin, stable server UUID, and exact advertised key. A mounted record is presentation
 inventory only and does
 not create a game session or execute cartridge-supplied code. Once a separately
 created session carries the exact immutable presentation binding, the game
@@ -397,7 +408,7 @@ controller may ask that companion to compile one exact mounted signed screen;
 mount presence alone remains insufficient. If that session's exact mount is
 missing, the Gameplay screen offers an explicit historical install only when
 the server capability, companion, helper credential, participant authority, and
-client-controlled marketplace trust all agree. Profiles retain exact digest and
+matching client-controlled trust all agree. Profiles retain exact digest and
 admission-revision mounts side by side rather than one mutable game pointer.
 
 The native package launcher owns the companion lifecycle. It supports no-trust,
@@ -412,7 +423,11 @@ removes runtime state when QML exits; an invalid trust input fails before either
 process is exposed.
 
 The companion exposes credential-protected no-store status, explicit trust
-synchronization, package inventory, and package staging routes. A channel sync
+synchronization, package inventory, package staging, and operator-custom trust
+inspection/enrollment/removal routes. QML sends an explicit fingerprint
+confirmation, but the native private descriptor-relative store remains the
+authority and rejects silent key replacement, cross-server reuse, malformed
+state, and removal while custom mounts remain. A channel sync
 fetches only the bootstrap's guarded canonical location, verifies the offline
 root, time window, package freshness floors, and complete key transition, then
 atomically publishes a mode-0600 signed bundle in the descriptor-bound private
@@ -690,7 +705,9 @@ status, authority, optional provider release and availability, state or
 authenticated provider view, optional allowlisted provider result, completion
 time, timestamps, seats, the existing public persona shape, and either no
 presentation or one exact non-secret cartridge binding with current signed
-active-session policy; they contain no account ownership, marketplace key,
+active-session policy. That binding retains its exact marketplace-vetted or
+operator-custom source; custom presentation also carries the bounded operator
+identity, key fingerprint, and mandatory warning. Responses contain no account ownership, marketplace key,
 local path, provider endpoint, credential, grant, or private provider rules
 state.
 Foreign, malformed, and absent session IDs share the same not-found result.
@@ -725,10 +742,11 @@ When distribution is configured, authenticated
 `GET /v1/personas/{persona_id}/game-sessions/{game_session_id}/cartridge-acquisition`
 owner-scopes the persona and requires it to participate in the durable session.
 It resolves the immutable presentation through retained signed marketplace
-evidence rather than current catalog selection, applies current active-session
-lifecycle policy, self-verifies the exact acquisition document, and keeps
+evidence or retained operator-custom attestation rather than current catalog
+selection, applies current active-session lifecycle policy, self-verifies the
+source-specific acquisition document, and keeps
 foreign, absent, or unavailable sessions behind the same denial.
-Acquisition v2 carries the retained evidence snapshot and the current
+Marketplace acquisition v2 carries the retained evidence snapshot and the current
 policy-bearing snapshot separately. The old evidence key may be retired only
 inside its authenticated historical range; the policy key must be the active
 key for the root-declared current snapshot. Version 1 remains accepted when
@@ -741,13 +759,16 @@ digest, optional compatibility screen, declared action, and object
 payload. New clients always send the accepted exact screen; omission means only
 the signed entry screen for legacy compatibility. Before either existing command path
 runs, `session_cartridges` participant-authorizes the session, share-locks the
-marketplace lifecycle snapshot, verifies the exact cached signed release and
+global cartridge lifecycle domain, verifies the exact source-specific cached signed release and
 current-screen action/payload, rejects the reserved host-navigation namespace,
 translates the command in host code, and inserts one immutable screen-bound
 action admission. An exact replay recovers the stored translated command and
 screen identity even after a later lifecycle change; a changed identity
 conflicts and a fresh action after suspension or revocation is denied. The admission
 transaction ends before compiled execution or provider network I/O.
+Custom policy writers take that same global domain exclusively before their
+per-game lock, so a queued denial commits before any later fresh admission;
+the immutable replay branch still resolves before current lifecycle policy.
 
 ## Registered-provider game flow
 
@@ -910,6 +931,12 @@ enforces monotonic trust/key/policy transitions. Server acquisition, session
 pinning, fresh action admission, and catalog administration compare the live
 runtime with this persisted trust in their database snapshot, so a stale
 process fails closed after another administrator advances or revokes trust.
+Migration `0024` adds the immutable server-bound operator-custom authority,
+immutable publisher/operator release evidence, monotonic signed policy,
+append-only custom audit, mutually exclusive source-aware catalog selection,
+and source-pinned current and historical session presentations. Database
+guards keep provenance immutable and require custom lifecycle writers to
+serialize with fresh cartridge-action admission.
 Add later
 capabilities through domain modules and thin handlers rather than placing policy
 directly in SQL or transport code.

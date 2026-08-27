@@ -4,14 +4,15 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `038`**
+- **Next ticket number: `039`**
 
 ## Open queue
 
-No open tickets.
+_No open tickets._
 
 ## Closed
 
+- [`TICKET-038` — Operator-custom cartridge trust, import, and player warnings](closed/TICKET-038-operator-custom-cartridge-trust-import-and-player-warnings.md)
 - [`TICKET-037` — Static marketplace publication, offline-root handoff, and mirror operations](closed/TICKET-037-static-marketplace-publication-offline-root-handoff-and-mirror-operations.md)
 - [`TICKET-036` — Public marketplace trust enrollment, rotation, and client package channel](closed/TICKET-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md)
 - [`TICKET-035` — Historical session cartridge acquisition and multi-screen navigation](closed/TICKET-035-historical-session-cartridge-acquisition-and-multi-screen-navigation.md)

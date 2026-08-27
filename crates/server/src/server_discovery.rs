@@ -2,6 +2,8 @@ use serde::Serialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use omarchy_gaming_system_server::operator_custom::OperatorCustomAuthority;
+
 pub(crate) const PROTOCOL_VERSION: u16 = 1;
 
 const BASE_CAPABILITIES: [&str; 12] = [
@@ -26,6 +28,8 @@ pub(crate) struct DiscoveryDocument {
     server_name: String,
     protocol_version: u16,
     capabilities: Vec<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    operator_custom: Option<OperatorCustomAuthority>,
 }
 
 pub(crate) async fn document(
@@ -33,6 +37,7 @@ pub(crate) async fn document(
     server_name: &str,
     provider_enabled: bool,
     cartridge_runtime_enabled: bool,
+    operator_custom: Option<&OperatorCustomAuthority>,
 ) -> Result<DiscoveryDocument, sqlx::Error> {
     let server_id =
         sqlx::query_scalar::<_, Uuid>("SELECT id FROM server_identity WHERE singleton = TRUE")
@@ -44,6 +49,7 @@ pub(crate) async fn document(
         server_name,
         provider_enabled,
         cartridge_runtime_enabled,
+        operator_custom,
     ))
 }
 
@@ -52,6 +58,7 @@ fn document_for(
     server_name: &str,
     provider_enabled: bool,
     cartridge_runtime_enabled: bool,
+    operator_custom: Option<&OperatorCustomAuthority>,
 ) -> DiscoveryDocument {
     let mut capabilities = BASE_CAPABILITIES.to_vec();
     if provider_enabled {
@@ -64,6 +71,10 @@ fn document_for(
         capabilities.push("games.session-cartridge-acquisition.v1");
         capabilities.sort_unstable();
     }
+    if operator_custom.is_some() {
+        capabilities.push("games.operator-custom-cartridges.v1");
+        capabilities.sort_unstable();
+    }
 
     DiscoveryDocument {
         service: "omarchy-gaming-system",
@@ -71,6 +82,7 @@ fn document_for(
         server_name: server_name.to_owned(),
         protocol_version: PROTOCOL_VERSION,
         capabilities,
+        operator_custom: operator_custom.cloned(),
     }
 }
 
@@ -88,8 +100,8 @@ mod tests {
     #[test]
     fn provider_capability_is_truthful_and_ordered() {
         let server_id = Uuid::from_u128(1);
-        let base = document_for(server_id, "Test Community", false, false);
-        let provider = document_for(server_id, "Test Community", true, false);
+        let base = document_for(server_id, "Test Community", false, false, None);
+        let provider = document_for(server_id, "Test Community", true, false, None);
 
         assert!(!base.capabilities.contains(&"games.registered-provider.v1"));
         assert!(
@@ -107,7 +119,7 @@ mod tests {
 
     #[test]
     fn acquisition_capability_is_truthful_and_ordered() {
-        let document = document_for(Uuid::from_u128(1), "Test Community", false, true);
+        let document = document_for(Uuid::from_u128(1), "Test Community", false, true, None);
         assert!(
             document
                 .capabilities

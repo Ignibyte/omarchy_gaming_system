@@ -79,10 +79,7 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-generated: {by: "codex", at: "2026-08-27T12:40:24.098Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-27T12:40:24.098Z
+generated: {by: "codex", at: "2026-08-27T17:23:12.264Z"}
 ---
 
 # Product and architecture boundaries
@@ -239,10 +236,13 @@ and independently trusted player acquisition, caching, and server-profile
 mounting are implemented. Eligible session-to-cartridge binding, trusted
 entry-screen rendering, and server-authorized declared actions are also
 implemented, as are signed host-local multi-screen navigation and the
-offline-root-authenticated public trust/package channel. Federation, server
+offline-root-authenticated public trust/package channel. Explicit
+operator-custom trust, source-aware server admission/history, and persistent
+unvetted player warnings are implemented without granting new executable or
+gameplay authority. Federation, server
 identity fork/rotation, marketplace-root rotation, remote administration,
 external-provider onboarding, automatic privileged package installation,
-operator-custom trust, and general plugins remain later slices.
+and general plugins remain later slices.
 
 The current server is a local development slice. Bearer tokens require
 production TLS in transit, and public login requires distributed attempt
@@ -290,11 +290,13 @@ history, exact replay, and QML gameplay are implemented; result-derived
 platform effects remain a later boundary.
 
 An eligible new compiled or provider session may additionally pin one exact
-currently admitted marketplace release and admission revision. That immutable
+currently admitted marketplace-vetted or operator-custom release and admission
+revision. That immutable
 row is presentation identity, not another rules owner: it is absent for legacy
 or ineligible sessions and never follows later catalog selection. Participant
-reads project only bounded non-secret presentation facts and the current signed
-active-session decision.
+reads project only bounded non-secret source provenance, the current signed
+active-session decision, and, for custom content, the public operator/key
+fingerprint plus mandatory warning.
 
 The QML authority boundary keeps the bearer in `OnboardingController` and gives
 `GameController` only the selected-persona request gateway. The game controller
@@ -308,7 +310,10 @@ WebSocket lifetime.
 For a bound session, the game controller gives the same-user companion only the
 selected public server origin/UUID, exact presentation binding, authoritative
 view, and trusted preferences. The companion requires the independently trusted
-marketplace key and exact local mount before compiling the signed entry screen.
+source key and exact source-specific local mount before compiling the signed
+entry screen. Marketplace trust comes from the manual key or enrolled root
+channel; operator-custom trust is an explicit exact origin/server/key pin that
+the selected server cannot silently replace.
 QML accepts only the host's bounded inert plan and capability-scoped digest
 assets. Every emitted action returns through the selected-persona gateway;
 OmarchyGS reauthorizes the participant and signed action contract before
@@ -338,7 +343,8 @@ code remain outside the first-alpha boundary and require separate decisions.
 
 ADR-0003 accepts each independently owner-operated OmarchyGS origin as its own
 community trust domain. Its standard server owns the accounts, personas,
-social state, catalog and launch policy, platform envelopes, projections,
+social state, catalog and custom-cartridge authority, launch policy, platform
+envelopes, projections,
 audit, and recovery created there. Compatible servers do not implicitly share
 identity, moderation, or history; federation remains a separate future design.
 The official client can now save and explicitly select up to sixteen exact
@@ -360,7 +366,10 @@ plus an exact server-profile mount. The selected server cannot replace the
 client's key, root, or channel location. An operator-custom cartridge has no
 marketplace-review claim, but it remains signed inert data subject to every
 official-client package, schema, media, capability, digest, and trusted-render
-check.
+check. Its administrator signs and admits exact public provenance; the player
+separately confirms the server origin, stable UUID, and exact key fingerprint.
+That custom decision changes provenance and consent only. OmarchyGS retains
+authentication, identity, social state, gameplay routing, audit, and recovery.
 
 Static publication is another separate authority boundary. The non-SDK
 publisher composes exact publisher releases, catalog review, an offline-root
@@ -376,7 +385,7 @@ must be capability-scoped and typed, route protected mutations through core
 authorization, and define isolation, resource, failure, audit, compatibility,
 disable, upgrade, rollback, and recovery behavior. No general module runtime,
 dynamic Rust plugin ABI, mutable hosted marketplace application service,
-operator-custom installer, or
+operator-custom executable/plugin loader, or
 external-provider onboarding is implemented or authorized by this direction.
 
 The implemented public channel authenticates bounded trust and native package
@@ -428,9 +437,10 @@ privileged or shared launcher needs a dedicated service identity or equivalent
 external monotonic authority. The main client now browses platform catalog
 records, plays compiled Signal Siege, and separately acquires, privately caches,
 updates, removes, and mounts exact admitted signed cartridges when independent
-marketplace trust and server acquisition are available. That trust may be a
-manual key or an enrolled packaged channel whose active, retired, and revoked
-keys are constrained to exact snapshot ranges. A mount is only a
+source-specific trust and server acquisition are available. Marketplace trust
+may be a manual key or an enrolled packaged channel whose active, retired, and
+revoked keys are constrained to exact snapshot ranges; operator-custom trust is
+the explicit per-server origin/UUID/key binding. A mount is only a
 verified profile pointer into inert content: it does not create a game session
 or grant executable frontend authority. A separately created eligible session
 must pin the same exact admitted release before the companion can prepare its

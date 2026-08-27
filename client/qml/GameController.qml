@@ -8,6 +8,7 @@ QtObject {
     property string helperEndpoint: ""
     property string helperCredential: ""
     property bool marketplaceTrusted: false
+    property bool operatorCustomTrusted: false
     property string statusText: ""
     property string errorText: ""
     property string loadState: "idle"
@@ -82,6 +83,7 @@ QtObject {
     onHelperEndpointChanged: reset()
     onHelperCredentialChanged: reset()
     onMarketplaceTrustedChanged: reset()
+    onOperatorCustomTrustedChanged: reset()
 
     function reset() {
         if (_expectedGeneration !== 0)
@@ -291,7 +293,7 @@ QtObject {
         if (busy || cartridgeRenderState !== "missing" || authority === null
                 || !_validSession(session) || !_validSessionPresentation(binding, session)
                 || !_sessionAcquisitionSupported() || helperEndpoint === ""
-                || helperCredential === "" || !marketplaceTrusted)
+                || helperCredential === "" || !_sessionTrustReady(binding))
             return false
         const configured = helperApi.configure(helperEndpoint)
         if (!configured.ok)
@@ -306,7 +308,9 @@ QtObject {
             "server_id": authority.server_id,
             "device_bearer": authority.device_bearer,
             "persona_id": actor.id,
-            "game_session_id": session.id
+            "game_session_id": session.id,
+            "provenance_class": binding.operator_custom === undefined
+                                ? "marketplace_vetted" : "operator_custom"
         }, true)
         if (_helperGeneration === 0) {
             _helperOperation = ""
@@ -581,7 +585,7 @@ QtObject {
         }
         const authority = sessionController.trustedCartridgeAuthority()
         if (authority === null || helperEndpoint === "" || helperCredential === ""
-                || !marketplaceTrusted || session.state === null) {
+                || !_sessionTrustReady(binding) || session.state === null) {
             cartridgeRenderState = "unavailable"
             return false
         }
@@ -607,6 +611,8 @@ QtObject {
             "admission_revision": binding.admission_revision,
             "lifecycle_status": binding.lifecycle_status,
             "active_session_policy": binding.active_session_policy,
+            "provenance_class": binding.operator_custom === undefined
+                                ? "marketplace_vetted" : "operator_custom",
             "view": session.state,
             "preferences": {
                 "scale": 1.0,
@@ -677,6 +683,14 @@ QtObject {
             loadState = "ready"
             statusText = "This mount needs current marketplace policy before it can render."
             errorText = ""
+            return
+        }
+        if (parsed.ok
+                && _errorCode(parsed.document) === "companion_operator_custom_untrusted") {
+            cartridgeRenderState = "unavailable"
+            loadState = "ready"
+            statusText = "This session needs its server operator key pinned before it can render."
+            errorText = "Return to Games and verify the full operator-key fingerprint."
             return
         }
         if (status !== 200 || !parsed.ok || !_validRenderResponse(parsed.document)) {
@@ -784,8 +798,17 @@ QtObject {
 
     function _sessionAcquisitionSupported() {
         const authority = sessionController.trustedCartridgeAuthority()
+        const binding = selectedSession === null ? null : selectedSession.presentation
         return authority !== null && authority.session_acquisition_supported === true
-                && helperEndpoint !== "" && helperCredential !== "" && marketplaceTrusted
+                && helperEndpoint !== "" && helperCredential !== ""
+                && _sessionTrustReady(binding)
+    }
+
+    function _sessionTrustReady(binding) {
+        if (!binding || typeof binding !== "object")
+            return false
+        return binding.operator_custom === undefined
+                ? marketplaceTrusted : operatorCustomTrusted
     }
 
     function _validSessionMountResponse(document) {
@@ -797,6 +820,8 @@ QtObject {
         const authority = sessionController.trustedCartridgeAuthority()
         if (binding === null || authority === null)
             return false
+        if (binding.operator_custom !== undefined)
+            return _validOperatorSessionMount(mount, binding, authority)
         const keys = ["format", "server_id", "server_origin", "game_key", "publisher_id",
                       "rules_version", "cartridge_version", "display_name", "archive_sha256",
                       "signed_identity_sha256", "marketplace_key_sha256", "marketplace_id",
@@ -841,6 +866,34 @@ QtObject {
                 && warningMatches
     }
 
+    function _validOperatorSessionMount(mount, binding, authority) {
+        const keys = ["format", "server_id", "server_origin", "game_key", "publisher_id",
+                      "rules_version", "cartridge_version", "display_name", "archive_sha256",
+                      "signed_identity_sha256", "operator_custom", "policy_version",
+                      "lifecycle_status", "admission_revision", "warning"]
+        if (mount.trust_status !== undefined)
+            keys.push("trust_status")
+        return _exactKeys(mount, keys)
+                && mount.format === "omarchygs.client-operator-custom-mount/v1"
+                && mount.server_id === authority.server_id
+                && mount.server_origin === authority.origin
+                && mount.game_key === binding.game_key
+                && mount.publisher_id === binding.publisher_id
+                && mount.rules_version === binding.rules_version
+                && mount.cartridge_version === binding.cartridge_version
+                && _boundedString(mount.display_name, 128, 1)
+                && mount.archive_sha256 === binding.archive_sha256
+                && mount.signed_identity_sha256 === binding.signed_identity_sha256
+                && _validOperatorCustomProvenance(mount.operator_custom)
+                && JSON.stringify(mount.operator_custom)
+                    === JSON.stringify(binding.operator_custom)
+                && Number.isSafeInteger(mount.policy_version) && mount.policy_version > 0
+                && mount.lifecycle_status === binding.lifecycle_status
+                && mount.admission_revision === binding.admission_revision
+                && mount.warning === binding.warning
+                && (mount.trust_status === undefined || mount.trust_status === "trusted")
+    }
+
     function _helperError(code) {
         const messages = {
             "companion_admission_changed": "The session pin changed before installation completed. Refresh and retry.",
@@ -848,6 +901,7 @@ QtObject {
             "companion_server_unavailable": "The selected server could not complete the cartridge download.",
             "companion_server_rejected": "The signed historical cartridge evidence was rejected.",
             "companion_marketplace_untrusted": "Synchronize current independently authenticated marketplace policy before installing.",
+            "companion_operator_custom_untrusted": "Pin this server's exact operator-custom key before installing, or remove its custom mounts before changing the pin.",
             "companion_cache_failure": "The private cartridge cache needs attention."
         }
         return messages[code] || "The local cartridge companion rejected the operation."
@@ -1150,6 +1204,9 @@ QtObject {
         const keys = ["format", "publisher_id", "game_key", "rules_version",
                       "cartridge_version", "archive_sha256", "signed_identity_sha256",
                       "admission_revision", "lifecycle_status", "active_session_policy"]
+        const hasOperatorCustom = binding.operator_custom !== undefined
+        if (hasOperatorCustom)
+            keys.push("operator_custom")
         if (binding.warning !== undefined)
             keys.push("warning")
         const policies = {
@@ -1168,9 +1225,29 @@ QtObject {
                 && Number.isSafeInteger(binding.admission_revision)
                 && binding.admission_revision > 0
                 && policies[binding.lifecycle_status] === binding.active_session_policy
-                && (binding.lifecycle_status === "deprecated"
+                && (hasOperatorCustom
+                    ? _validOperatorCustomProvenance(binding.operator_custom)
+                      && _boundedString(binding.warning, 1024, _customWarning().length)
+                      && binding.warning.indexOf(_customWarning()) === 0
+                    : binding.lifecycle_status === "deprecated"
                     ? _boundedString(binding.warning, 512, 1)
                     : binding.warning === undefined)
+    }
+
+    function _validOperatorCustomProvenance(value) {
+        return value && typeof value === "object"
+                && _exactKeys(value, ["provenance_class", "operator_name", "authority_id",
+                                      "key_id", "key_sha256", "warning"])
+                && value.provenance_class === "operator_custom"
+                && _boundedString(value.operator_name, 128, 1)
+                && /^[a-z][a-z0-9._-]{0,95}$/.test(value.authority_id)
+                && /^[a-z][a-z0-9._-]{0,95}$/.test(value.key_id)
+                && /^[0-9a-f]{64}$/.test(value.key_sha256)
+                && value.warning === _customWarning()
+    }
+
+    function _customWarning() {
+        return "Operator-custom content: not reviewed or supported by the OmarchyGS marketplace."
     }
 
     function _validCommandResponse(value, session) {

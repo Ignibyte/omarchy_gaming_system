@@ -26,6 +26,7 @@ omarchygs-marketplace-trust = { path = "../marketplace-trust" }
 percent-encoding.workspace = true
 rand_core.workspace = true
 reqwest.workspace = true
+rustix.workspace = true
 rustls.workspace = true
 serde.workspace = true
 serde_json.workspace = true

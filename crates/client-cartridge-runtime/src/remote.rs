@@ -5,8 +5,10 @@ use futures_util::StreamExt as _;
 use omarchygs_game_cartridge::{
     ACQUISITION_FORMAT, ACQUISITION_FORMAT_V2, AcquisitionServerAdmission, CartridgeAcquisition,
     CatalogPublicKey, MAX_ACQUISITION_DOCUMENT_BYTES, MAX_MARKETPLACE_SNAPSHOT_BYTES,
-    VerifiedAcquisition, rich_2d_host_profile, supported_sdk_identity,
+    OPERATOR_CUSTOM_WARNING, VerifiedAcquisition, VerifiedOperatorCustomAcquisition,
+    operator_custom_key_sha256, rich_2d_host_profile, supported_sdk_identity,
     verify_acquisition_bytes_with_policy_key, verify_marketplace_snapshot_bytes,
+    verify_operator_custom_acquisition_bytes,
 };
 use reqwest::{Client, Response, StatusCode, header};
 use serde::{Deserialize, Serialize};
@@ -14,13 +16,16 @@ use url::Url;
 use uuid::Uuid;
 use zeroize::Zeroizing;
 
-use crate::{ClientTrustSnapshot, CompanionError, MountRecord, Result};
+use crate::{
+    ClientTrustSnapshot, CompanionError, MountRecord, OperatorCustomMountRecord,
+    OperatorCustomTrust, Result,
+};
 
 const MAX_DISCOVERY_BYTES: usize = 16 * 1024;
 const MAX_CATALOG_BYTES: usize = 256 * 1024;
 const MAX_SESSION_BYTES: usize = 512 * 1024;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AcquireRequest {
     pub server_origin: String,
@@ -29,9 +34,11 @@ pub struct AcquireRequest {
     pub game_key: String,
     pub archive_sha256: String,
     pub admission_revision: u64,
+    #[serde(default)]
+    pub provenance_class: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SessionAcquireRequest {
     pub server_origin: String,
@@ -39,11 +46,28 @@ pub struct SessionAcquireRequest {
     pub device_bearer: String,
     pub persona_id: String,
     pub game_session_id: String,
+    #[serde(default)]
+    pub provenance_class: Option<String>,
 }
 
 pub struct RemoteAcquisition {
     pub verified: VerifiedAcquisition,
     pub mount: MountRecord,
+}
+
+pub struct RemoteOperatorCustomAcquisition {
+    pub verified: VerifiedOperatorCustomAcquisition,
+    pub mount: OperatorCustomMountRecord,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct OperatorCustomDiscovery {
+    pub operator_name: String,
+    pub authority_id: String,
+    pub key_id: String,
+    pub key_sha256: String,
+    pub public_key: CatalogPublicKey,
 }
 
 pub trait AcquisitionTrust {
@@ -97,6 +121,10 @@ pub async fn acquire(
         || !valid_sha256(&request.archive_sha256)
         || request.admission_revision == 0
         || !valid_bearer(&request.device_bearer)
+        || request
+            .provenance_class
+            .as_deref()
+            .is_some_and(|value| value != "marketplace_vetted")
     {
         return Err(CompanionError::InvalidInput);
     }
@@ -184,7 +212,12 @@ pub async fn acquire_session(
     let server_id = exact_uuid(&request.server_id)?;
     let persona_id = exact_uuid(&request.persona_id)?;
     let session_id = exact_uuid(&request.game_session_id)?;
-    if !valid_bearer(&request.device_bearer) {
+    if !valid_bearer(&request.device_bearer)
+        || request
+            .provenance_class
+            .as_deref()
+            .is_some_and(|value| value != "marketplace_vetted")
+    {
         return Err(CompanionError::InvalidInput);
     }
     let bearer = Zeroizing::new(std::mem::take(&mut request.device_bearer));
@@ -234,6 +267,171 @@ pub async fn acquire_session(
         &verified,
     )?;
     Ok(RemoteAcquisition { verified, mount })
+}
+
+pub async fn discover_operator_custom(
+    server_origin: &str,
+    expected_server_id: &str,
+) -> Result<OperatorCustomDiscovery> {
+    let origin = selected_origin(server_origin)?;
+    let server_id = exact_uuid(expected_server_id)?;
+    let discovery = fetch_discovery(&remote_client()?, &origin).await?;
+    validate_discovery(&discovery, server_id, "games.operator-custom-cartridges.v1")?;
+    let custom = discovery
+        .operator_custom
+        .ok_or(CompanionError::OperatorCustomUntrusted)?;
+    validate_operator_discovery(&custom)?;
+    Ok(custom)
+}
+
+pub async fn acquire_operator_custom(
+    mut request: AcquireRequest,
+    trusted_operator: &OperatorCustomTrust,
+) -> Result<RemoteOperatorCustomAcquisition> {
+    let origin = selected_origin(&request.server_origin)?;
+    let canonical_origin = origin.origin().ascii_serialization();
+    let server_id = exact_uuid(&request.server_id)?;
+    if !valid_identifier(&request.game_key)
+        || !valid_sha256(&request.archive_sha256)
+        || request.admission_revision == 0
+        || !valid_bearer(&request.device_bearer)
+        || !trusted_operator.matches(&canonical_origin, server_id)
+        || request
+            .provenance_class
+            .as_deref()
+            .is_some_and(|value| value != "operator_custom")
+    {
+        return Err(CompanionError::InvalidInput);
+    }
+    let bearer = Zeroizing::new(std::mem::take(&mut request.device_bearer));
+    let client = remote_client()?;
+    let discovery = fetch_discovery(&client, &origin).await?;
+    validate_discovery(&discovery, server_id, "games.operator-custom-cartridges.v1")?;
+    let advertised = discovery
+        .operator_custom
+        .ok_or(CompanionError::OperatorCustomUntrusted)?;
+    validate_operator_discovery(&advertised)?;
+    if !trusted_operator.matches_discovery(&advertised) {
+        return Err(CompanionError::OperatorCustomUntrusted);
+    }
+    let initial = fetch_catalog(&client, &origin, &bearer).await?;
+    let selected = select_release(
+        &initial,
+        &request.game_key,
+        &request.archive_sha256,
+        request.admission_revision,
+    )?;
+    validate_selected_custom(selected, trusted_operator)?;
+    let expected = selected.admission(server_id);
+    let acquisition_url = origin
+        .join(&format!(
+            "/v1/cartridges/{}/{}/acquisition",
+            request.game_key, request.archive_sha256
+        ))
+        .map_err(|_| CompanionError::InvalidInput)?;
+    let bytes = get_bytes(
+        &client,
+        acquisition_url,
+        Some(&bearer),
+        MAX_ACQUISITION_DOCUMENT_BYTES,
+        CompanionError::AdmissionChanged,
+    )
+    .await?;
+    let sdk = supported_sdk_identity().map_err(|_| CompanionError::Rejected)?;
+    let verified = verify_operator_custom_acquisition_bytes(
+        &bytes,
+        &expected,
+        &trusted_operator.public_key,
+        &sdk,
+        &rich_2d_host_profile(),
+    )
+    .map_err(|_| CompanionError::Rejected)?;
+    let final_catalog = fetch_catalog(&client, &origin, &bearer).await?;
+    let final_release = select_release(
+        &final_catalog,
+        &request.game_key,
+        &request.archive_sha256,
+        request.admission_revision,
+    )?;
+    if final_release != selected {
+        return Err(CompanionError::AdmissionChanged);
+    }
+    validate_selected_custom(final_release, trusted_operator)?;
+    let mount =
+        OperatorCustomMountRecord::from_verified(canonical_origin, server_id, selected, &verified)?;
+    Ok(RemoteOperatorCustomAcquisition { verified, mount })
+}
+
+pub async fn acquire_operator_custom_session(
+    mut request: SessionAcquireRequest,
+    trusted_operator: &OperatorCustomTrust,
+) -> Result<RemoteOperatorCustomAcquisition> {
+    let origin = selected_origin(&request.server_origin)?;
+    let canonical_origin = origin.origin().ascii_serialization();
+    let server_id = exact_uuid(&request.server_id)?;
+    let persona_id = exact_uuid(&request.persona_id)?;
+    let session_id = exact_uuid(&request.game_session_id)?;
+    if !valid_bearer(&request.device_bearer)
+        || !trusted_operator.matches(&canonical_origin, server_id)
+        || request
+            .provenance_class
+            .as_deref()
+            .is_some_and(|value| value != "operator_custom")
+    {
+        return Err(CompanionError::InvalidInput);
+    }
+    let bearer = Zeroizing::new(std::mem::take(&mut request.device_bearer));
+    let client = remote_client()?;
+    let discovery = fetch_discovery(&client, &origin).await?;
+    validate_discovery(&discovery, server_id, "games.operator-custom-cartridges.v1")?;
+    if !discovery
+        .operator_custom
+        .as_ref()
+        .is_some_and(|value| trusted_operator.matches_discovery(value))
+    {
+        return Err(CompanionError::OperatorCustomUntrusted);
+    }
+    let initial = fetch_session(&client, &origin, &bearer, persona_id, session_id).await?;
+    let presentation = initial.exact_presentation(session_id)?.clone();
+    validate_session_custom(&presentation, trusted_operator)?;
+    let expected = presentation.admission(server_id);
+    let acquisition_url = origin
+        .join(&format!(
+            "/v1/personas/{persona_id}/game-sessions/{session_id}/cartridge-acquisition"
+        ))
+        .map_err(|_| CompanionError::InvalidInput)?;
+    let bytes = get_bytes(
+        &client,
+        acquisition_url,
+        Some(&bearer),
+        MAX_ACQUISITION_DOCUMENT_BYTES,
+        CompanionError::AdmissionChanged,
+    )
+    .await?;
+    let sdk = supported_sdk_identity().map_err(|_| CompanionError::Rejected)?;
+    let verified = verify_operator_custom_acquisition_bytes(
+        &bytes,
+        &expected,
+        &trusted_operator.public_key,
+        &sdk,
+        &rich_2d_host_profile(),
+    )
+    .map_err(|_| CompanionError::Rejected)?;
+    let final_session = fetch_session(&client, &origin, &bearer, persona_id, session_id).await?;
+    if final_session.exact_presentation(session_id)? != &presentation {
+        return Err(CompanionError::AdmissionChanged);
+    }
+    let mount = OperatorCustomMountRecord::from_session_verified(
+        canonical_origin,
+        server_id,
+        &expected,
+        presentation
+            .operator_custom
+            .as_ref()
+            .ok_or(CompanionError::Rejected)?,
+        &verified,
+    )?;
+    Ok(RemoteOperatorCustomAcquisition { verified, mount })
 }
 
 fn authorized_acquisition_keys(
@@ -311,17 +509,29 @@ async fn require_discovery_capability(
     server_id: Uuid,
     capability: &str,
 ) -> Result<()> {
+    let discovery = fetch_discovery(client, origin).await?;
+    validate_discovery(&discovery, server_id, capability)
+}
+
+async fn fetch_discovery(client: &Client, origin: &Url) -> Result<DiscoveryDocument> {
     let discovery_url = origin
         .join("/.well-known/omarchygs")
         .map_err(|_| CompanionError::InvalidInput)?;
-    let discovery: DiscoveryDocument = get_json(
+    get_json(
         client,
         discovery_url,
         None,
         MAX_DISCOVERY_BYTES,
         CompanionError::Rejected,
     )
-    .await?;
+    .await
+}
+
+fn validate_discovery(
+    discovery: &DiscoveryDocument,
+    server_id: Uuid,
+    capability: &str,
+) -> Result<()> {
     if discovery.service != "omarchy-gaming-system"
         || discovery.server_id != server_id.to_string()
         || discovery.protocol_version != 1
@@ -330,6 +540,21 @@ async fn require_discovery_capability(
             .capabilities
             .iter()
             .any(|value| value == capability)
+    {
+        Err(CompanionError::Rejected)
+    } else {
+        Ok(())
+    }
+}
+
+fn validate_operator_discovery(value: &OperatorCustomDiscovery) -> Result<()> {
+    if !valid_text(&value.operator_name, 128)
+        || !valid_identifier(&value.authority_id)
+        || !valid_identifier(&value.key_id)
+        || value.public_key.authority_id != value.authority_id
+        || value.public_key.key_id != value.key_id
+        || operator_custom_key_sha256(&value.public_key).map_err(|_| CompanionError::Rejected)?
+            != value.key_sha256
     {
         Err(CompanionError::Rejected)
     } else {
@@ -521,6 +746,52 @@ fn select_release<'a>(
         .ok_or(CompanionError::AdmissionChanged)
 }
 
+fn validate_selected_custom(release: &CatalogRelease, trusted: &OperatorCustomTrust) -> Result<()> {
+    let custom = release
+        .operator_custom
+        .as_ref()
+        .ok_or(CompanionError::AdmissionChanged)?;
+    if release.marketplace.is_some()
+        || custom.provenance_class != "operator_custom"
+        || custom.operator_name != trusted.operator_name
+        || custom.authority_id != trusted.public_key.authority_id
+        || custom.key_id != trusted.public_key.key_id
+        || custom.key_sha256 != trusted.key_sha256
+        || custom.warning != OPERATOR_CUSTOM_WARNING
+        || release
+            .warning
+            .as_deref()
+            .is_none_or(|warning| !warning.starts_with(OPERATOR_CUSTOM_WARNING))
+        || custom.policy_version == 0
+        || !matches!(custom.lifecycle_status.as_str(), "active" | "deprecated")
+    {
+        Err(CompanionError::AdmissionChanged)
+    } else {
+        Ok(())
+    }
+}
+
+fn validate_session_custom(
+    presentation: &SessionPresentation,
+    trusted: &OperatorCustomTrust,
+) -> Result<()> {
+    let custom = presentation
+        .operator_custom
+        .as_ref()
+        .ok_or(CompanionError::AdmissionChanged)?;
+    if custom.provenance_class != "operator_custom"
+        || custom.operator_name != trusted.operator_name
+        || custom.authority_id != trusted.public_key.authority_id
+        || custom.key_id != trusted.public_key.key_id
+        || custom.key_sha256 != trusted.key_sha256
+        || custom.warning != OPERATOR_CUSTOM_WARNING
+    {
+        Err(CompanionError::AdmissionChanged)
+    } else {
+        Ok(())
+    }
+}
+
 fn sorted_capabilities(values: &[String]) -> bool {
     values.len() <= 32
         && values.iter().all(|value| {
@@ -580,6 +851,8 @@ struct DiscoveryDocument {
     server_name: String,
     protocol_version: u16,
     capabilities: Vec<String>,
+    #[serde(default)]
+    operator_custom: Option<OperatorCustomDiscovery>,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
@@ -631,17 +904,23 @@ struct SessionPresentation {
     lifecycle_status: String,
     active_session_policy: String,
     #[serde(default)]
+    operator_custom: Option<SessionOperatorCustomProvenance>,
+    #[serde(default)]
     warning: Option<String>,
 }
 
 impl SessionPresentation {
     fn validate(&self) -> Result<()> {
-        let warning_matches = match self.lifecycle_status.as_str() {
-            "active" | "retired" => self.warning.is_none(),
-            "deprecated" => self
+        let warning_matches = match (self.lifecycle_status.as_str(), &self.operator_custom) {
+            ("active" | "retired", None) => self.warning.is_none(),
+            ("deprecated", None) => self
                 .warning
                 .as_ref()
                 .is_some_and(|warning| valid_text(warning, 512)),
+            ("active" | "deprecated" | "retired", Some(custom)) => self
+                .warning
+                .as_ref()
+                .is_some_and(|warning| warning.starts_with(&custom.warning)),
             _ => false,
         };
         if self.format != "omarchygs.session-cartridge/v1"
@@ -661,7 +940,7 @@ impl SessionPresentation {
         }
     }
 
-    fn admission(&self, server_id: Uuid) -> AcquisitionServerAdmission {
+    pub(crate) fn admission(&self, server_id: Uuid) -> AcquisitionServerAdmission {
         AcquisitionServerAdmission {
             server_id: server_id.to_string(),
             game_key: self.game_key.clone(),
@@ -673,6 +952,17 @@ impl SessionPresentation {
             admission_revision: self.admission_revision,
         }
     }
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SessionOperatorCustomProvenance {
+    pub(crate) provenance_class: String,
+    pub(crate) operator_name: String,
+    pub(crate) authority_id: String,
+    pub(crate) key_id: String,
+    pub(crate) key_sha256: String,
+    pub(crate) warning: String,
 }
 
 #[derive(Deserialize)]
@@ -691,14 +981,17 @@ pub(crate) struct CatalogRelease {
     pub display_name: String,
     pub archive_sha256: String,
     pub signed_identity_sha256: String,
-    pub marketplace: MarketplaceProvenance,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub marketplace: Option<MarketplaceProvenance>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub operator_custom: Option<OperatorCustomProvenance>,
     pub server_admission: ServerAdmission,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub warning: Option<String>,
 }
 
 impl CatalogRelease {
-    fn admission(&self, server_id: Uuid) -> AcquisitionServerAdmission {
+    pub(crate) fn admission(&self, server_id: Uuid) -> AcquisitionServerAdmission {
         AcquisitionServerAdmission {
             server_id: server_id.to_string(),
             game_key: self.game_key.clone(),
@@ -720,6 +1013,19 @@ pub(crate) struct MarketplaceProvenance {
     pub marketplace_name: String,
     pub reviewed_by: String,
     pub review_summary: String,
+    pub policy_version: u64,
+    pub lifecycle_status: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct OperatorCustomProvenance {
+    pub provenance_class: String,
+    pub operator_name: String,
+    pub authority_id: String,
+    pub key_id: String,
+    pub key_sha256: String,
+    pub warning: String,
     pub policy_version: u64,
     pub lifecycle_status: String,
 }
@@ -752,9 +1058,11 @@ mod tests {
     };
     use omarchygs_game_cartridge::{
         AcquisitionServerAdmission, CartridgeAcquisition, CatalogStatus, MarketplaceReleaseEntry,
-        MarketplaceSnapshotPayload, RELEASE_ARCHIVE_PATH, RELEASE_ATTESTATION_PATH,
-        RELEASE_CONFORMANCE_PATH, create_release, export_sdk, generate_catalog_keypair,
-        generate_keypair, rich_2d_host_profile, sign_catalog_policy, sign_marketplace_snapshot,
+        MarketplaceSnapshotPayload, OperatorCustomAcquisition, RELEASE_ARCHIVE_PATH,
+        RELEASE_ATTESTATION_PATH, RELEASE_CONFORMANCE_PATH, create_release, export_sdk,
+        generate_catalog_keypair, generate_keypair, operator_custom_key_sha256,
+        rich_2d_host_profile, sign_catalog_policy, sign_marketplace_snapshot,
+        sign_operator_custom_release, signed_operator_custom_release_bytes,
         verify_release_directory,
     };
     use omarchygs_marketplace_trust::{
@@ -1006,6 +1314,7 @@ mod tests {
                 device_bearer: BEARER.to_owned(),
                 persona_id: PERSONA_ID.to_owned(),
                 game_session_id: SESSION_ID.to_owned(),
+                provenance_class: None,
             },
             &fixture.marketplace_public,
         )
@@ -1036,6 +1345,7 @@ mod tests {
                 device_bearer: BEARER.to_owned(),
                 persona_id: PERSONA_ID.to_owned(),
                 game_session_id: SESSION_ID.to_owned(),
+                provenance_class: None,
             },
             &fixture.marketplace_public,
         )
@@ -1044,6 +1354,81 @@ mod tests {
             Ok(_) => panic!("a changed final session pin must fail closed"),
             Err(error) => error,
         };
+        assert_eq!(error.code(), "companion_admission_changed");
+        changed_server.abort();
+    }
+
+    #[tokio::test]
+    async fn operator_custom_remote_acquisition_requires_exact_pin_and_rechecks_catalog() {
+        let fixture = RemoteFixture::new();
+        let (origin, server) = fixture.spawn_custom(false).await;
+        let discovery = discover_operator_custom(&origin, SERVER_ID)
+            .await
+            .expect("custom discovery should validate");
+        assert_eq!(discovery, fixture.operator_discovery);
+        let cache_temp = tempfile::tempdir().expect("cache temp should create");
+        let cache = ClientCartridgeCache::open(&cache_temp.path().join("cache"))
+            .expect("cache should open");
+        let trust = cache
+            .trust_operator_custom(
+                &origin,
+                Uuid::parse_str(SERVER_ID).unwrap(),
+                &discovery,
+                &discovery.key_sha256,
+            )
+            .expect("explicit exact operator pin should persist");
+        let acquired = acquire_operator_custom(fixture.custom_request(origin.clone()), &trust)
+            .await
+            .expect("custom acquisition should verify");
+        let mounted = cache
+            .install_operator_custom(&acquired.verified, acquired.mount)
+            .expect("verified custom acquisition should mount");
+        assert_eq!(mounted.operator_custom.provenance_class, "operator_custom");
+        assert_eq!(mounted.operator_custom.key_sha256, discovery.key_sha256);
+        assert!(mounted.warning.starts_with(OPERATOR_CUSTOM_WARNING));
+        let render_request: crate::RenderRequest = serde_json::from_value(json!({
+            "server_origin": origin,
+            "server_id": SERVER_ID,
+            "game_key": mounted.game_key,
+            "archive_sha256": mounted.archive_sha256,
+            "admission_revision": mounted.admission_revision,
+            "lifecycle_status": "active",
+            "active_session_policy": "continue",
+            "provenance_class": "operator_custom",
+            "view": {
+                "chronicle_label": "Read the chronicle",
+                "welcome": "Welcome to Door Legends. One choice opens the way.",
+                "status": "A weathered brass door waits in the dark.",
+                "enter_label": "Enter the brass door",
+                "lobby_label": "Return to the lobby"
+            }
+        }))
+        .expect("custom render request should parse");
+        crate::render::compile_operator_custom_render_plan(&cache, &render_request)
+            .expect("pinned custom mount should compile through trusted renderer");
+        server.abort();
+
+        let (changed_origin, changed_server) = fixture.spawn_custom(true).await;
+        let changed_discovery = discover_operator_custom(&changed_origin, SERVER_ID)
+            .await
+            .expect("changed fixture discovery should remain valid");
+        let changed_cache = ClientCartridgeCache::open(&cache_temp.path().join("changed-cache"))
+            .expect("changed cache should open");
+        let changed_trust = changed_cache
+            .trust_operator_custom(
+                &changed_origin,
+                Uuid::parse_str(SERVER_ID).unwrap(),
+                &changed_discovery,
+                &changed_discovery.key_sha256,
+            )
+            .expect("changed origin receives its own explicit pin");
+        let error =
+            match acquire_operator_custom(fixture.custom_request(changed_origin), &changed_trust)
+                .await
+            {
+                Ok(_) => panic!("changed final custom catalog must fail closed"),
+                Err(error) => error,
+            };
         assert_eq!(error.code(), "companion_admission_changed");
         changed_server.abort();
     }
@@ -1072,6 +1457,7 @@ mod tests {
             admission_revision: 1,
             lifecycle_status: "retired".to_owned(),
             active_session_policy: "continue".to_owned(),
+            operator_custom: None,
             warning: None,
         };
         assert!(
@@ -1083,8 +1469,11 @@ mod tests {
     struct RemoteFixture {
         _temp: tempfile::TempDir,
         acquisition: Arc<Vec<u8>>,
+        custom_acquisition: Arc<Vec<u8>>,
         catalog: Value,
+        custom_catalog: Value,
         marketplace_public: CatalogPublicKey,
+        operator_discovery: OperatorCustomDiscovery,
         admission: AcquisitionServerAdmission,
         lifecycle_status: String,
     }
@@ -1129,6 +1518,26 @@ mod tests {
                 &rich_2d_host_profile(),
             )
             .unwrap();
+            let (operator_private, operator_public) =
+                generate_catalog_keypair("custom-primary-v1", "test-community").unwrap();
+            let signed_operator = sign_operator_custom_release(
+                &release,
+                &publisher_public,
+                &operator_private,
+                SERVER_ID,
+                "Test Community Operator",
+            )
+            .unwrap();
+            let signed_operator = signed_operator_custom_release_bytes(&signed_operator).unwrap();
+            let custom_policy = sign_catalog_policy(
+                &release,
+                &operator_private,
+                1,
+                status,
+                "Local operator policy.",
+            )
+            .unwrap();
+            let custom_policy = serde_json::to_vec(&custom_policy).unwrap();
             let (marketplace_private, marketplace_public) =
                 generate_catalog_keypair("marketplace-primary-v1", "marketplace").unwrap();
             let policy = sign_catalog_policy(
@@ -1147,7 +1556,7 @@ mod tests {
                 cartridge_version: release.payload().cartridge_version,
                 archive_sha256: release.payload().archive_sha256.clone(),
                 signed_identity_sha256: release.payload().signed_identity_sha256.clone(),
-                publisher_key: publisher_public,
+                publisher_key: publisher_public.clone(),
                 reviewed_by: "review-team".to_owned(),
                 review_summary: "Bounded first-party review passed.".to_owned(),
                 policy,
@@ -1184,6 +1593,18 @@ mod tests {
             .unwrap()
             .to_bounded_json()
             .unwrap();
+            let custom_acquisition = OperatorCustomAcquisition::from_verified_bytes(
+                admission.clone(),
+                operator_public.clone(),
+                &signed_operator,
+                &custom_policy,
+                &fs::read(release_root.join(RELEASE_ARCHIVE_PATH)).unwrap(),
+                &fs::read(release_root.join(RELEASE_CONFORMANCE_PATH)).unwrap(),
+                &fs::read(release_root.join(RELEASE_ATTESTATION_PATH)).unwrap(),
+            )
+            .unwrap()
+            .to_bounded_json()
+            .unwrap();
             let catalog = json!({
                 "cartridges": [{
                     "game_key": admission.game_key,
@@ -1205,11 +1626,45 @@ mod tests {
                     "server_admission": {"revision": admission.admission_revision}
                 }]
             });
+            let key_sha256 = operator_custom_key_sha256(&operator_public).unwrap();
+            let operator_discovery = OperatorCustomDiscovery {
+                operator_name: "Test Community Operator".to_owned(),
+                authority_id: operator_public.authority_id.clone(),
+                key_id: operator_public.key_id.clone(),
+                key_sha256: key_sha256.clone(),
+                public_key: operator_public,
+            };
+            let custom_catalog = json!({
+                "cartridges": [{
+                    "game_key": admission.game_key,
+                    "publisher_id": admission.publisher_id,
+                    "rules_version": admission.rules_version,
+                    "cartridge_version": admission.cartridge_version,
+                    "display_name": release.cartridge().manifest().display_name,
+                    "archive_sha256": admission.archive_sha256,
+                    "signed_identity_sha256": admission.signed_identity_sha256,
+                    "operator_custom": {
+                        "provenance_class": "operator_custom",
+                        "operator_name": operator_discovery.operator_name,
+                        "authority_id": operator_discovery.authority_id,
+                        "key_id": operator_discovery.key_id,
+                        "key_sha256": key_sha256,
+                        "warning": OPERATOR_CUSTOM_WARNING,
+                        "policy_version": 1,
+                        "lifecycle_status": lifecycle_status
+                    },
+                    "server_admission": {"revision": admission.admission_revision},
+                    "warning": OPERATOR_CUSTOM_WARNING
+                }]
+            });
             Self {
                 _temp: temp,
                 acquisition: Arc::new(acquisition),
+                custom_acquisition: Arc::new(custom_acquisition),
                 catalog,
+                custom_catalog,
                 marketplace_public,
+                operator_discovery,
                 admission,
                 lifecycle_status,
             }
@@ -1223,6 +1678,19 @@ mod tests {
                 game_key: self.admission.game_key.clone(),
                 archive_sha256: self.admission.archive_sha256.clone(),
                 admission_revision: self.admission.admission_revision,
+                provenance_class: None,
+            }
+        }
+
+        fn custom_request(&self, server_origin: String) -> AcquireRequest {
+            AcquireRequest {
+                server_origin,
+                server_id: SERVER_ID.to_owned(),
+                device_bearer: BEARER.to_owned(),
+                game_key: self.admission.game_key.clone(),
+                archive_sha256: self.admission.archive_sha256.clone(),
+                admission_revision: self.admission.admission_revision,
+                provenance_class: Some("operator_custom".to_owned()),
             }
         }
 
@@ -1230,6 +1698,40 @@ mod tests {
             let state = FixtureState {
                 acquisition: self.acquisition.clone(),
                 catalog: self.catalog.clone(),
+                operator_custom: None,
+                catalog_calls: Arc::new(AtomicUsize::new(0)),
+                change_final_catalog,
+                session_calls: Arc::new(AtomicUsize::new(0)),
+                change_final_session: false,
+                game_key: self.admission.game_key.clone(),
+                digest: self.admission.archive_sha256.clone(),
+                admission: self.admission.clone(),
+                lifecycle_status: self.lifecycle_status.clone(),
+            };
+            let app = Router::new()
+                .route("/.well-known/omarchygs", get(discovery))
+                .route("/v1/cartridges", get(catalog))
+                .route(
+                    "/v1/cartridges/{game_key}/{digest}/acquisition",
+                    get(acquisition),
+                )
+                .with_state(state);
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let address = listener.local_addr().unwrap();
+            let handle = tokio::spawn(async move {
+                axum::serve(listener, app).await.unwrap();
+            });
+            (format!("http://{address}"), handle)
+        }
+
+        async fn spawn_custom(
+            &self,
+            change_final_catalog: bool,
+        ) -> (String, tokio::task::JoinHandle<()>) {
+            let state = FixtureState {
+                acquisition: self.custom_acquisition.clone(),
+                catalog: self.custom_catalog.clone(),
+                operator_custom: Some(self.operator_discovery.clone()),
                 catalog_calls: Arc::new(AtomicUsize::new(0)),
                 change_final_catalog,
                 session_calls: Arc::new(AtomicUsize::new(0)),
@@ -1262,6 +1764,7 @@ mod tests {
             let state = FixtureState {
                 acquisition: self.acquisition.clone(),
                 catalog: self.catalog.clone(),
+                operator_custom: None,
                 catalog_calls: Arc::new(AtomicUsize::new(0)),
                 change_final_catalog: false,
                 session_calls: Arc::new(AtomicUsize::new(0)),
@@ -1295,6 +1798,7 @@ mod tests {
     struct FixtureState {
         acquisition: Arc<Vec<u8>>,
         catalog: Value,
+        operator_custom: Option<OperatorCustomDiscovery>,
         catalog_calls: Arc<AtomicUsize>,
         change_final_catalog: bool,
         session_calls: Arc<AtomicUsize>,
@@ -1305,8 +1809,8 @@ mod tests {
         lifecycle_status: String,
     }
 
-    async fn discovery() -> Json<Value> {
-        Json(json!({
+    async fn discovery(State(state): State<FixtureState>) -> Json<Value> {
+        let mut document = json!({
             "service": "omarchy-gaming-system",
             "server_id": SERVER_ID,
             "server_name": "Remote fixture",
@@ -1316,7 +1820,17 @@ mod tests {
                 "games.cartridge-catalog.v1",
                 "games.session-cartridge-acquisition.v1"
             ]
-        }))
+        });
+        if let Some(operator_custom) = state.operator_custom {
+            document["capabilities"] = json!([
+                "games.cartridge-acquisition.v1",
+                "games.cartridge-catalog.v1",
+                "games.operator-custom-cartridges.v1",
+                "games.session-cartridge-acquisition.v1"
+            ]);
+            document["operator_custom"] = serde_json::to_value(operator_custom).unwrap();
+        }
+        Json(document)
     }
 
     async fn catalog(State(state): State<FixtureState>, headers: HeaderMap) -> Response {

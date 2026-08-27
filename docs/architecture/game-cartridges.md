@@ -366,18 +366,25 @@ same-user only.
 
 ### Operator-custom content
 
-An owner-operated server may eventually enable a server-local signing and
-catalog authority and import a custom cartridge without marketplace review.
+An owner-operated server may enable a server-local signing and catalog
+authority and import a custom cartridge without marketplace review.
 The source is recorded as `operator-custom`, along with the server/operator
 identity and exact digest; it cannot reuse a marketplace-vetted provenance
-label. Custom import is an explicit administrator action and remains disabled
-until its administration, warning, revocation, and audit path is implemented.
+label. Ticket 038 implements this as an explicit database-local administrator
+import, source-aware catalog selection, monotonic signed lifecycle, immutable
+audit, current and historical acquisition, and source-pinned session
+presentation. The normal server reads only the public operator key; the
+mode-0600 private key is required only by the local admin process.
 
 Marketplace bypass never means verifier bypass. An operator-custom cartridge
 has the same canonical inert format, signatures, bounds, media profiles,
 schema checks, trusted render-plan compilation, and lack of executable/network
 authority as a marketplace release. A server may distribute custom cartridge
-bytes to its players, but it may not turn those bytes into raw QML,
+bytes only after the player explicitly pins the exact canonical origin, stable
+server UUID, and advertised operator key in the local companion. The client
+stores that decision privately, does not follow key replacement, shows a
+permanent unreviewed warning and full fingerprint, and keeps marketplace and
+custom mount provenance separate. The server may not turn those bytes into raw QML,
 JavaScript, native client code, WebEngine content, or a direct provider URL.
 
 Custom executable server code is not a cartridge. Game rules use the registered
@@ -902,8 +909,10 @@ authority and policy decisions remain Ticket 019 work.
    screen-bound gameplay actions back through OmarchyGS.
 5. **Public backend SDK:** package the provider protocol as a supported starter
    server, versioned SDK, conformance suite, and operations contract.
-6. **Operator-custom trust:** add local cartridge signing/import, explicit
-   provenance and player warnings, and unchanged client verification.
+6. **Operator-custom trust — implemented:** local cartridge signing/import,
+   source-aware lifecycle/admission, explicit per-server client trust,
+   persistent provenance warnings, current/historical acquisition, and
+   unchanged inert-cartridge verification/rendering.
 7. **Server modules and hooks:** run the extension isolation spike, then build
    the selected versioned capability/lifecycle/audit model independently of the
    provider contract.

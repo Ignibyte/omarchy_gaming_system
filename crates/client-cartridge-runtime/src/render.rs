@@ -21,6 +21,8 @@ pub struct RenderRequest {
     pub lifecycle_status: String,
     pub active_session_policy: String,
     #[serde(default)]
+    pub provenance_class: Option<String>,
+    #[serde(default)]
     pub screen_id: Option<String>,
     pub view: Value,
     #[serde(default)]
@@ -39,6 +41,24 @@ pub(crate) fn compile_mounted_render_plan_with_trust(
     cache: &ClientCartridgeCache,
     request: &RenderRequest,
     trusted_marketplace: &impl crate::cache::CacheTrust,
+) -> Result<PreparedPreview> {
+    compile_mounted_render_plan_inner(cache, request, Some(trusted_marketplace))
+}
+
+pub(crate) fn compile_operator_custom_render_plan(
+    cache: &ClientCartridgeCache,
+    request: &RenderRequest,
+) -> Result<PreparedPreview> {
+    if request.provenance_class.as_deref() != Some("operator_custom") {
+        return Err(CompanionError::InvalidInput);
+    }
+    compile_mounted_render_plan_inner::<CatalogPublicKey>(cache, request, None)
+}
+
+fn compile_mounted_render_plan_inner<T: crate::cache::CacheTrust>(
+    cache: &ClientCartridgeCache,
+    request: &RenderRequest,
+    trusted_marketplace: Option<&T>,
 ) -> Result<PreparedPreview> {
     let server_origin = selected_origin(&request.server_origin)?
         .origin()
@@ -59,14 +79,28 @@ pub(crate) fn compile_mounted_render_plan_with_trust(
     {
         return Err(CompanionError::InvalidInput);
     }
-    let resolution = cache.resolve_mounted(
-        &server_origin,
-        server_id,
-        &request.game_key,
-        &request.archive_sha256,
-        request.admission_revision,
-        trusted_marketplace,
-    )?;
+    let resolution = match request.provenance_class.as_deref() {
+        None | Some("marketplace_vetted") => {
+            let trusted_marketplace =
+                trusted_marketplace.ok_or(CompanionError::MarketplaceUntrusted)?;
+            cache.resolve_mounted(
+                &server_origin,
+                server_id,
+                &request.game_key,
+                &request.archive_sha256,
+                request.admission_revision,
+                trusted_marketplace,
+            )
+        }
+        Some("operator_custom") => cache.resolve_operator_custom_mounted(
+            &server_origin,
+            server_id,
+            &request.game_key,
+            &request.archive_sha256,
+            request.admission_revision,
+        ),
+        Some(_) => Err(CompanionError::InvalidInput),
+    }?;
     let view_bytes = serde_json::to_vec(&request.view).map_err(|_| CompanionError::InvalidInput)?;
     compile_render_plan(
         resolution.cartridge(),

@@ -335,6 +335,8 @@ if find "$ogs_temp/runtime" -mindepth 1 -print -quit | grep -q .; then
   fail "invalid marketplace trust configuration left runtime state"
 fi
 
+# Leave room for cold QML parsing under host I/O pressure. Main.qml keeps its
+# independent 15-second post-load smoke deadline.
 env \
   HOME="$ogs_temp/home" \
   PATH=/usr/bin \
@@ -342,7 +344,7 @@ env \
   QT_QUICK_BACKEND=software \
   XDG_DATA_HOME="$ogs_temp/data" \
   XDG_RUNTIME_DIR="$ogs_temp/runtime" \
-  timeout 20 \
+  timeout 120 \
   "$ogs_temp/extracted/usr/bin/omarchygs" \
     --smoke-test \
     "--server-url=$ogs_fixture_url"

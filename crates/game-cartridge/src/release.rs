@@ -197,6 +197,29 @@ pub fn verify_release_directory(
 ) -> Result<VerifiedRelease> {
     validate_release_inventory(release_root)?;
     let sdk = verify_sdk_directory(sdk_root)?;
+    verify_release_directory_with_identity(release_root, public_key, &sdk, host)
+}
+
+/// Snapshot and verify the three-file release directory against the SDK
+/// identity compiled into this host. Each component is opened and read once;
+/// all later signing, staging, and persistence operates on the owned verified
+/// bytes rather than mutable source paths.
+pub fn verify_supported_release_directory(
+    release_root: &Path,
+    public_key: &PublisherPublicKey,
+    host: &HostProfile,
+) -> Result<VerifiedRelease> {
+    validate_release_inventory(release_root)?;
+    let sdk = crate::supported_sdk_identity()?;
+    verify_release_directory_with_identity(release_root, public_key, &sdk, host)
+}
+
+fn verify_release_directory_with_identity(
+    release_root: &Path,
+    public_key: &PublisherPublicKey,
+    sdk: &SdkIdentity,
+    host: &HostProfile,
+) -> Result<VerifiedRelease> {
     let archive = read_bounded_regular_file(
         &release_root.join(RELEASE_ARCHIVE_PATH),
         crate::MAX_ARCHIVE_BYTES as u64,
@@ -214,7 +237,7 @@ pub fn verify_release_directory(
         &conformance_bytes,
         &attestation_bytes,
         public_key,
-        &sdk,
+        sdk,
         host,
     )
 }

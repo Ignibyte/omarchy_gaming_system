@@ -22,11 +22,13 @@ use omarchygs_game_cartridge::CatalogPublicKey;
 use omarchygs_game_cartridge_renderer::{PreparedNavigation, RenderPlan, valid_asset_token};
 use rand_core::{OsRng, RngCore as _};
 
-use crate::render::compile_mounted_render_plan_with_trust;
+use crate::render::{compile_mounted_render_plan_with_trust, compile_operator_custom_render_plan};
 use crate::{
     AcquireRequest, ClientCartridgeCache, ClientMarketplaceTrust, ClientPackageChannel,
-    ClientPackageStatus, CompanionError, MountRecord, RenderRequest, SessionAcquireRequest,
-    StagedPackage, TrustStatus, acquire, acquire_session,
+    ClientPackageStatus, CompanionError, MountRecord, OperatorCustomDiscovery,
+    OperatorCustomMountRecord, OperatorCustomTrust, RenderRequest, SessionAcquireRequest,
+    StagedPackage, TrustStatus, acquire, acquire_operator_custom, acquire_operator_custom_session,
+    acquire_session, discover_operator_custom,
 };
 
 const MAX_RENDER_REQUEST_BYTES: usize = 512 * 1024;
@@ -92,6 +94,20 @@ pub fn router(state: CompanionState) -> Router {
         .route("/v1/mounts/{server_id}", get(list_mounts))
         .route("/v1/trust", get(trust_status))
         .route("/v1/trust/synchronize", post(synchronize_trust))
+        .route(
+            "/v1/operator-custom-trust/inspect",
+            post(inspect_operator_custom_trust).layer(DefaultBodyLimit::max(4 * 1024)),
+        )
+        .route(
+            "/v1/operator-custom-trust",
+            post(trust_operator_custom)
+                .delete(remove_operator_custom_trust)
+                .layer(DefaultBodyLimit::max(4 * 1024)),
+        )
+        .route(
+            "/v1/operator-custom-trust/remove",
+            post(remove_operator_custom_trust).layer(DefaultBodyLimit::max(4 * 1024)),
+        )
         .route("/v1/client-packages", get(client_packages))
         .route(
             "/v1/client-packages/stage",
@@ -142,7 +158,85 @@ async fn list_mounts(
                 .to_owned(),
         );
     }
-    Ok(Json(MountList { mounts }))
+    let cache = state.cache.clone();
+    let mut operator_custom_mounts =
+        tokio::task::spawn_blocking(move || cache.operator_custom_mounts(server_id))
+            .await
+            .map_err(|_| LocalError(CompanionError::Cache))?
+            .map_err(LocalError)?;
+    for mount in &mut operator_custom_mounts {
+        mount.trust_status = Some("trusted".to_owned());
+    }
+    Ok(Json(MountList {
+        mounts,
+        operator_custom_mounts,
+    }))
+}
+
+async fn inspect_operator_custom_trust(
+    State(state): State<CompanionState>,
+    headers: HeaderMap,
+    Json(request): Json<OperatorCustomTrustInspectRequest>,
+) -> std::result::Result<Json<OperatorCustomTrustInspection>, LocalError> {
+    authorize(&state, &headers)?;
+    let server_id = exact_uuid(&request.server_id)?;
+    let discovery = discover_operator_custom(&request.server_origin, &request.server_id)
+        .await
+        .map_err(LocalError)?;
+    let cache = state.cache.clone();
+    let origin = request.server_origin.clone();
+    let trust =
+        tokio::task::spawn_blocking(move || cache.operator_custom_trust(&origin, server_id))
+            .await
+            .map_err(|_| LocalError(CompanionError::Cache))?
+            .map_err(LocalError)?;
+    let trusted = trust
+        .as_ref()
+        .is_some_and(|trust| trust.matches_discovery(&discovery));
+    Ok(Json(OperatorCustomTrustInspection { discovery, trusted }))
+}
+
+async fn trust_operator_custom(
+    State(state): State<CompanionState>,
+    headers: HeaderMap,
+    Json(request): Json<OperatorCustomTrustCommand>,
+) -> std::result::Result<Json<OperatorCustomTrustResponse>, LocalError> {
+    authorize(&state, &headers)?;
+    let server_id = exact_uuid(&request.server_id)?;
+    let discovery = discover_operator_custom(&request.server_origin, &request.server_id)
+        .await
+        .map_err(LocalError)?;
+    let cache = state.cache.clone();
+    let origin = request.server_origin;
+    let confirmed = request.confirmed_key_sha256;
+    let trust = tokio::task::spawn_blocking(move || {
+        cache.trust_operator_custom(&origin, server_id, &discovery, &confirmed)
+    })
+    .await
+    .map_err(|_| LocalError(CompanionError::Cache))?
+    .map_err(LocalError)?;
+    Ok(Json(OperatorCustomTrustResponse { trust }))
+}
+
+async fn remove_operator_custom_trust(
+    State(state): State<CompanionState>,
+    headers: HeaderMap,
+    Json(request): Json<OperatorCustomTrustCommand>,
+) -> std::result::Result<Json<OperatorCustomTrustRemoval>, LocalError> {
+    authorize(&state, &headers)?;
+    let server_id = exact_uuid(&request.server_id)?;
+    let cache = state.cache.clone();
+    let removed = tokio::task::spawn_blocking(move || {
+        cache.remove_operator_custom_trust(
+            &request.server_origin,
+            server_id,
+            &request.confirmed_key_sha256,
+        )
+    })
+    .await
+    .map_err(|_| LocalError(CompanionError::Cache))?
+    .map_err(LocalError)?;
+    Ok(Json(OperatorCustomTrustRemoval { removed }))
 }
 
 async fn trust_status(
@@ -207,6 +301,37 @@ async fn install(
     Json(request): Json<AcquireRequest>,
 ) -> std::result::Result<Json<MountResponse>, LocalError> {
     authorize(&state, &headers)?;
+    let server_id = exact_uuid(&request.server_id)?;
+    if request.provenance_class.as_deref() == Some("operator_custom") {
+        let cache = state.cache.clone();
+        let origin = request.server_origin.clone();
+        let operator_trust =
+            tokio::task::spawn_blocking(move || cache.operator_custom_trust(&origin, server_id))
+                .await
+                .map_err(|_| LocalError(CompanionError::Cache))?
+                .map_err(LocalError)?
+                .ok_or(LocalError(CompanionError::OperatorCustomUntrusted))?;
+        let acquired = acquire_operator_custom(request, &operator_trust)
+            .await
+            .map_err(LocalError)?;
+        let cache = state.cache.clone();
+        let mount = tokio::task::spawn_blocking(move || {
+            cache.install_operator_custom(&acquired.verified, acquired.mount)
+        })
+        .await
+        .map_err(|_| LocalError(CompanionError::Cache))?
+        .map_err(LocalError)?;
+        return Ok(Json(MountResponse {
+            mount: InstalledMount::OperatorCustom(mount),
+        }));
+    }
+    if request
+        .provenance_class
+        .as_deref()
+        .is_some_and(|value| value != "marketplace_vetted")
+    {
+        return Err(LocalError(CompanionError::InvalidInput));
+    }
     let trust = state.marketplace_trust.snapshot().map_err(LocalError)?;
     let acquired = acquire(request, &trust).await.map_err(LocalError)?;
     let current = state.marketplace_trust.snapshot().map_err(LocalError)?;
@@ -228,7 +353,9 @@ async fn install(
             .await
             .map_err(|_| LocalError(CompanionError::Cache))?
             .map_err(LocalError)?;
-    Ok(Json(MountResponse { mount }))
+    Ok(Json(MountResponse {
+        mount: InstalledMount::Marketplace(mount),
+    }))
 }
 
 async fn install_session(
@@ -237,6 +364,37 @@ async fn install_session(
     Json(request): Json<SessionAcquireRequest>,
 ) -> std::result::Result<Json<MountResponse>, LocalError> {
     authorize(&state, &headers)?;
+    let server_id = exact_uuid(&request.server_id)?;
+    if request.provenance_class.as_deref() == Some("operator_custom") {
+        let cache = state.cache.clone();
+        let origin = request.server_origin.clone();
+        let operator_trust =
+            tokio::task::spawn_blocking(move || cache.operator_custom_trust(&origin, server_id))
+                .await
+                .map_err(|_| LocalError(CompanionError::Cache))?
+                .map_err(LocalError)?
+                .ok_or(LocalError(CompanionError::OperatorCustomUntrusted))?;
+        let acquired = acquire_operator_custom_session(request, &operator_trust)
+            .await
+            .map_err(LocalError)?;
+        let cache = state.cache.clone();
+        let mount = tokio::task::spawn_blocking(move || {
+            cache.install_operator_custom_session(&acquired.verified, acquired.mount)
+        })
+        .await
+        .map_err(|_| LocalError(CompanionError::Cache))?
+        .map_err(LocalError)?;
+        return Ok(Json(MountResponse {
+            mount: InstalledMount::OperatorCustom(mount),
+        }));
+    }
+    if request
+        .provenance_class
+        .as_deref()
+        .is_some_and(|value| value != "marketplace_vetted")
+    {
+        return Err(LocalError(CompanionError::InvalidInput));
+    }
     let trust = state.marketplace_trust.snapshot().map_err(LocalError)?;
     let acquired = acquire_session(request, &trust).await.map_err(LocalError)?;
     let current = state.marketplace_trust.snapshot().map_err(LocalError)?;
@@ -259,7 +417,9 @@ async fn install_session(
     .await
     .map_err(|_| LocalError(CompanionError::Cache))?
     .map_err(LocalError)?;
-    Ok(Json(MountResponse { mount }))
+    Ok(Json(MountResponse {
+        mount: InstalledMount::Marketplace(mount),
+    }))
 }
 
 async fn remove(
@@ -271,12 +431,25 @@ async fn remove(
     let server_id = exact_uuid(&request.server_id)?;
     let cache = state.cache.clone();
     let removed = tokio::task::spawn_blocking(move || {
-        cache.remove_exact(
-            server_id,
-            &request.game_key,
-            &request.archive_sha256,
-            request.admission_revision,
-        )
+        if request.provenance_class.as_deref() == Some("operator_custom") {
+            cache.remove_operator_custom_exact(
+                server_id,
+                &request.game_key,
+                &request.archive_sha256,
+                request.admission_revision,
+            )
+        } else if request.provenance_class.is_none()
+            || request.provenance_class.as_deref() == Some("marketplace_vetted")
+        {
+            cache.remove_exact(
+                server_id,
+                &request.game_key,
+                &request.archive_sha256,
+                request.admission_revision,
+            )
+        } else {
+            Err(CompanionError::InvalidInput)
+        }
     })
     .await
     .map_err(|_| LocalError(CompanionError::Cache))?
@@ -290,14 +463,21 @@ async fn render_plan(
     Json(request): Json<RenderRequest>,
 ) -> std::result::Result<Json<RenderPlanResponse>, LocalError> {
     authorize(&state, &headers)?;
-    let trust = state.marketplace_trust.snapshot().map_err(LocalError)?;
     let cache = state.cache.clone();
-    let prepared = tokio::task::spawn_blocking(move || {
-        compile_mounted_render_plan_with_trust(&cache, &request, &trust)
-    })
-    .await
-    .map_err(|_| LocalError(CompanionError::Cache))?
-    .map_err(LocalError)?;
+    let prepared = if request.provenance_class.as_deref() == Some("operator_custom") {
+        tokio::task::spawn_blocking(move || compile_operator_custom_render_plan(&cache, &request))
+            .await
+            .map_err(|_| LocalError(CompanionError::Cache))?
+            .map_err(LocalError)?
+    } else {
+        let trust = state.marketplace_trust.snapshot().map_err(LocalError)?;
+        tokio::task::spawn_blocking(move || {
+            compile_mounted_render_plan_with_trust(&cache, &request, &trust)
+        })
+        .await
+        .map_err(|_| LocalError(CompanionError::Cache))?
+        .map_err(LocalError)?
+    };
     let capability = state
         .render_assets
         .lock()
@@ -428,12 +608,55 @@ async fn no_store(mut response: Response) -> Response {
 #[serde(deny_unknown_fields)]
 struct MountList {
     mounts: Vec<MountRecord>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    operator_custom_mounts: Vec<OperatorCustomMountRecord>,
 }
 
 #[derive(Serialize)]
 #[serde(deny_unknown_fields)]
 struct MountResponse {
-    mount: MountRecord,
+    mount: InstalledMount,
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+enum InstalledMount {
+    Marketplace(MountRecord),
+    OperatorCustom(OperatorCustomMountRecord),
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct OperatorCustomTrustInspectRequest {
+    server_origin: String,
+    server_id: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct OperatorCustomTrustCommand {
+    server_origin: String,
+    server_id: String,
+    confirmed_key_sha256: String,
+}
+
+#[derive(Serialize)]
+#[serde(deny_unknown_fields)]
+struct OperatorCustomTrustInspection {
+    discovery: OperatorCustomDiscovery,
+    trusted: bool,
+}
+
+#[derive(Serialize)]
+#[serde(deny_unknown_fields)]
+struct OperatorCustomTrustResponse {
+    trust: OperatorCustomTrust,
+}
+
+#[derive(Serialize)]
+#[serde(deny_unknown_fields)]
+struct OperatorCustomTrustRemoval {
+    removed: bool,
 }
 
 #[derive(Deserialize)]
@@ -444,6 +667,8 @@ struct RemoveRequest {
     archive_sha256: String,
     #[serde(default)]
     admission_revision: Option<u64>,
+    #[serde(default)]
+    provenance_class: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -564,7 +789,9 @@ impl IntoResponse for LocalError {
             CompanionError::AdmissionChanged => StatusCode::CONFLICT,
             CompanionError::MountMissing => StatusCode::NOT_FOUND,
             CompanionError::Unavailable => StatusCode::SERVICE_UNAVAILABLE,
-            CompanionError::MarketplaceUntrusted => StatusCode::SERVICE_UNAVAILABLE,
+            CompanionError::MarketplaceUntrusted | CompanionError::OperatorCustomUntrusted => {
+                StatusCode::SERVICE_UNAVAILABLE
+            }
             CompanionError::Rejected | CompanionError::Cache | CompanionError::Render => {
                 StatusCode::INTERNAL_SERVER_ERROR
             }

@@ -260,7 +260,7 @@ QtObject {
         if (!hasSession || !_validPersona(selectedPersona) || currentServer === null
                 || currentServer.capabilities.indexOf("games.cartridge-catalog.v1") === -1)
             return null
-        return {
+        const authority = {
             "origin": serverUrl,
             "server_id": currentServer.server_id,
             "device_bearer": api.trustedBearer(),
@@ -269,6 +269,9 @@ QtObject {
             "session_acquisition_supported": currentServer.capabilities.indexOf(
                     "games.session-cartridge-acquisition.v1") !== -1
         }
+        if (currentServer.operator_custom !== undefined)
+            authority.operator_custom = currentServer.operator_custom
+        return authority
     }
 
     function cancelPlayerRequest() {
@@ -543,14 +546,19 @@ QtObject {
     }
 
     function _validatedDiscovery(document) {
-        if (!api.exactKeys(document, ["service", "server_id", "server_name",
-                                      "protocol_version", "capabilities"])
+        const keys = ["service", "server_id", "server_name",
+                      "protocol_version", "capabilities"]
+        if (document.operator_custom !== undefined)
+            keys.push("operator_custom")
+        if (!api.exactKeys(document, keys)
                 || document.service !== "omarchy-gaming-system"
                 || !_validUuid(document.server_id)
                 || !_boundedPublicString(document.server_name, 64, 1)
                 || !Number.isInteger(document.protocol_version)
                 || !Array.isArray(document.capabilities)
-                || document.capabilities.length > 32)
+                || document.capabilities.length > 32
+                || (document.operator_custom !== undefined
+                    && !_validOperatorCustom(document.operator_custom)))
             return {"ok": false}
         let previous = ""
         for (let index = 0; index < document.capabilities.length; index++) {
@@ -567,17 +575,39 @@ QtObject {
                 || !required.every(function(capability) {
                     return document.capabilities.indexOf(capability) !== -1
                 })
+        const profile = {
+            "origin": serverUrl,
+            "server_id": document.server_id,
+            "server_name": document.server_name,
+            "protocol_version": document.protocol_version,
+            "capabilities": document.capabilities.slice()
+        }
+        if (document.operator_custom !== undefined)
+            profile.operator_custom = document.operator_custom
         return {
             "ok": true,
             "incompatible": incompatible,
-            "profile": {
-                "origin": serverUrl,
-                "server_id": document.server_id,
-                "server_name": document.server_name,
-                "protocol_version": document.protocol_version,
-                "capabilities": document.capabilities.slice()
-            }
+            "profile": profile
         }
+    }
+
+    function _validOperatorCustom(value) {
+        if (!value || typeof value !== "object"
+                || !api.exactKeys(value, ["operator_name", "authority_id", "key_id",
+                                          "key_sha256", "public_key"])
+                || !_boundedPublicString(value.operator_name, 128, 1)
+                || !/^[a-z][a-z0-9._-]{0,95}$/.test(value.authority_id)
+                || !/^[a-z][a-z0-9._-]{0,95}$/.test(value.key_id)
+                || !/^[0-9a-f]{64}$/.test(value.key_sha256))
+            return false
+        const key = value.public_key
+        return key && typeof key === "object"
+                && api.exactKeys(key, ["format_version", "algorithm", "key_id",
+                                       "authority_id", "verifying_key"])
+                && key.format_version === 1 && key.algorithm === "ed25519"
+                && key.key_id === value.key_id && key.authority_id === value.authority_id
+                && typeof key.verifying_key === "string"
+                && /^[A-Za-z0-9_-]{43}$/.test(key.verifying_key)
     }
 
     function _boundedPublicString(value, maximum, minimum) {

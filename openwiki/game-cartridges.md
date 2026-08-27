@@ -101,10 +101,7 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-27T12:40:24.098Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-27T12:40:24.098Z
+generated: {by: "codex", at: "2026-08-27T17:23:12.264Z"}
 ---
 
 # Game Cartridges and portable provider direction
@@ -145,8 +142,11 @@ catalog review, a public offline-root request/response handoff, immutable
 version activation, exact local verification, guarded mirror probes, and a
 catalog-compromise/rollback drill. The publisher remains operator tooling and
 does not enter the Game Cartridge SDK.
-Operator-custom trust, a public Provider SDK, external-provider
-onboarding, and server modules/hooks remain unimplemented.
+Ticket 038 adds the explicit server-scoped operator-custom trust path,
+including admin-only signing/import and lifecycle, source-aware server
+admission/session history, player-confirmed client key pins, source-specific
+mounts, and persistent unvetted warnings. A public Provider SDK,
+external-provider onboarding, and server modules/hooks remain unimplemented.
 
 Ticket 014 contributes an isolated executable architecture proof. Its broker,
 provider, and QML surface are not a public SDK or deployed runtime. Ticket 018
@@ -221,21 +221,27 @@ TLS root, existing secure-store root, and either one manual Ed25519 marketplace
 key or an offline-root-verified trust bundle. The owner can synchronize
 reviewed exact releases, inspect the resulting inventory, and independently
 select one permitted digest per game. Authenticated players see only the
-effective selected metadata.
+effective selected metadata. The same catalog may also select an explicitly
+unvetted operator-custom release signed under the server's stable local
+authority; the two sources are a mutually exclusive provenance union rather
+than interchangeable digest aliases.
 
 When distribution is configured, the server advertises a separate acquisition
-capability and serves only the currently effective selected digest. It requires
-the database selection, retained signed marketplace snapshot and key, lifecycle
-policy, and immutable secure-store bytes to agree; the response is bounded and
-self-verified, with no fallback to another release.
+capability and serves only the currently effective selected source and digest.
+A marketplace response requires the retained signed snapshot and key; a custom
+response requires the immutable server authority and operator attestation.
+Both require current lifecycle, exact database admission, publisher evidence,
+and immutable secure-store bytes to agree. The response is bounded and
+self-verified, with no fallback to another release or provenance class.
 
 That current-selection path is deliberately separate from session recovery.
 Every newly created presentation pin now requires immutable normalized evidence
-for the exact signed marketplace snapshot and release that established its
-provenance. A participant-authorized historical route resolves the exact
-session pin through that retained evidence, not through today's catalog
-selection. Current signed active-session lifecycle policy still decides whether
-the old release may be used; retained provenance alone is never authorization.
+for the exact marketplace-vetted or operator-custom release that established
+its provenance. A participant-authorized historical route resolves the exact
+session pin through that source's retained evidence, not through today's
+catalog selection. Current signed active-session lifecycle policy still
+decides whether the old release may be used; retained provenance alone is
+never authorization.
 
 The packaged client starts a native loopback companion with a random
 per-process credential. Its marketplace authority is mutually exclusive:
@@ -247,18 +253,30 @@ from the selected server. The companion then rechecks publisher release,
 marketplace snapshot, lifecycle policy, compatibility, digest, and
 selected-server admission before staging content. Private descriptor-relative
 storage keeps immutable cached content separate from exact server-profile
-mount records. A profile can retain
+mount records.
+
+Operator-custom trust is a second, explicit companion-owned decision. The
+selected server may advertise its public key only as a candidate. Enrollment
+binds the canonical origin, stable server UUID, complete key, and fingerprint
+in a private descriptor-relative record; an existing binding cannot be
+silently replaced or reused for another origin. Custom acquisition rechecks
+discovery and catalog state around transfer, independently verifies the
+operator and publisher evidence, and writes a source-specific mount. Removal
+is refused until the profile's custom mounts have been removed. The Games UI
+keeps the unvetted warning, operator identity, and key fingerprint visible and
+keeps install/play disabled until the exact pin is current.
+
+A profile can retain
 up to 128 records keyed by server identity/origin, game, archive digest, and
 admission revision, so installing an old session pin does not replace another
-release of the same game. Each mount records
-the trusted marketplace-key fingerprints for historical evidence and current
-policy; removal deletes only that exact
+release of the same game. Each mount records its exact source-specific trust
+identity and policy evidence; removal deletes only that exact
 profile pointer and leaves authoritative game state unchanged. Session pinning
 is deliberately separate from the profile mount: an eligible new session stores
 one immutable current release and admission revision, while legacy or
 ineligible sessions remain honestly unbound. Later catalog selection never
 repins the session. The companion launches only when that server origin/UUID,
-client trust mode, mount identity, digest, revision, signed policy, and
+source trust, mount identity, digest, revision, signed policy, and
 authoritative view agree; actions still travel only through the selected
 OmarchyGS server.
 
@@ -267,21 +285,24 @@ OmarchyGS server.
 The participant-visible session projection now includes either no presentation
 or one exact `omarchygs.session-cartridge/v1` binding. It exposes the stable
 publisher/game/rules/cartridge identity, archive and signed-identity digests,
-pinned admission revision, current lifecycle, and active-session decision, but
-not marketplace keys, filesystem paths, provider endpoints, grants, or
-credentials. Suspended and revoked presentation authority fails closed;
+pinned admission revision, source provenance, current lifecycle, and
+active-session decision. Custom bindings also retain the public operator name,
+key fingerprint, and mandatory unvetted warning, but no binding exposes
+marketplace keys, filesystem paths, provider endpoints, grants, or credentials.
+Suspended and revoked presentation authority fails closed;
 deprecated and retired releases follow their signed active-session policy.
 
 For a continuing bound session, `GameController` asks the authenticated
 same-user companion to compile the authoritative view. If its exact mount is
 absent, trusted QML exposes an explicit install control only when historical
-acquisition, the helper credential, and independent marketplace trust are all
+acquisition, the helper credential, and the matching source-specific client
+trust are all
 available. The companion reads the participant-visible session before and
 after acquisition, verifies the returned historical evidence and current
-policy snapshot against their exact client-authorized keys and immutable
+policy evidence against its exact client-authorized key and immutable
 binding, and refuses changed admission or lifecycle state. It then
-canonicalizes the selected origin, resolves only the exact profile mount under
-the client-controlled marketplace trust state and cached publisher identity,
+canonicalizes the selected origin, resolves only the exact source-specific
+profile mount under client-controlled trust and cached publisher identity,
 and runs
 the production Rich-2D renderer on one requested signed screen. It returns the
 inert plan plus the accepted screen ID, signed entry ID, exact local navigation
@@ -318,9 +339,10 @@ server plugins remain later designs.
 Those are four distinct trust decisions: a publisher signature proves origin
 and unchanged bytes, marketplace review records that marketplace's assessment,
 server admission records the local operator's catalog decision, and the player
-client independently chooses a manual key or packaged offline root/channel.
-The selected server cannot replace that client trust anchor, and marketplace publication
-cannot force server admission. A server may eventually admit an
+client independently chooses a marketplace key/root-channel or an exact
+server-scoped operator-custom key pin. The selected server cannot replace that
+client trust anchor, and marketplace publication cannot force server
+admission. A server may admit an
 `operator-custom` cartridge with no marketplace-review claim, but that changes
 provenance rather than containment: the package remains signed, inert, bounded,
 schema-checked, content-addressed, and rendered only through trusted QML. A
@@ -485,21 +507,34 @@ Security-sensitive live requests compare their runtime trust to that persisted
 state, so a separate administrator process's newer rotation or revocation takes
 effect without waiting for server restart.
 
-Marketplace lifecycle and server admission are separate facts. A local
+Marketplace lifecycle, operator-custom lifecycle, and server admission are
+separate facts. A local
 `catalog-apply` command carries an idempotency UUID, exact expected selection,
-exact desired selection, actor, and reason. It serializes one game, resolves
-the desired current permitted digest through the secure store, updates at most
-one selected release, increments the admission revision, and appends its
-immutable audit receipt in the same transaction. Marketplace suspension,
-removal, incompatibility, or local deactivation immediately hides the selection
-without falling back to another digest. A newer authenticated policy can make
-the same retained exact selection effective again; choosing another release or
-rolling back remains explicit.
+exact desired source and digest, actor, and reason. It serializes one game,
+resolves the desired current permitted source through the secure store, updates
+at most one selected release, increments the admission revision, and appends
+its immutable source transition in the same transaction. Lifecycle suspension,
+removal, incompatibility, or local deactivation immediately hides the
+selection without falling back to another digest or source. A newer
+authenticated policy can make the same retained exact selection effective
+again; choosing another release or rolling back remains explicit.
 
-Public discovery advertises `games.cartridge-catalog.v1`. The authenticated
+Admin-only custom import snapshots the publisher key and three fixed release
+components once, verifies the production SDK/host contract, signs the
+server-scoped attestation and initial policy, and publishes immutable authority,
+release, and audit state. Policy updates are monotonic and take the global
+exclusive lifecycle lock before the per-game lock. Fresh cartridge actions use
+the same global domain in shared mode, so a queued suspension or revocation
+commits before a later admission; an exact already-admitted action still
+replays from its immutable receipt.
+
+Public discovery advertises `games.cartridge-catalog.v1` and adds
+`games.operator-custom-cartridges.v1` plus a bounded public authority candidate
+only when custom distribution is valid. The authenticated
 `GET /v1/cartridges` endpoint returns only current imported, compatible,
-selected `active` or `deprecated` releases with bounded marketplace provenance,
-exact digests, admission revision, and any deprecation warning. It exposes no
+selected `active` or `deprecated` releases as an exact
+`marketplace_vetted`/`operator_custom` union with source-appropriate public
+provenance, exact digests, admission revision, and warning. It exposes no
 acquisition URL, local path, public-key material, raw signed record, operator
 reason, executable document, or alternate release fallback.
 
@@ -784,9 +819,12 @@ gate and failure routing.
 12. Ticket 037 adds deterministic static publication, a public offline-root
    handoff, immutable activation, exact local and hosted verification, mirror
    comparison, and catalog-compromise/rollback rehearsal.
-13. Later tickets publish the Provider SDK, add explicitly labeled
-   operator-custom cartridge trust, prove the server-module isolation model,
-   and only then implement module administration and typed hooks.
+13. Ticket 038 adds explicitly labeled operator-custom cartridge trust,
+   admin-only import/lifecycle, exact source-aware admission/history, explicit
+   client key pins, and persistent player warnings without adding executable
+   authority.
+14. Later tickets publish the Provider SDK, prove the server-module isolation
+   model, and only then implement module administration and typed hooks.
 
 First-party games use the same public schemas and conformance suite intended
 for later publishers. They may have a higher catalog trust tier, but never a
@@ -817,4 +855,5 @@ decisions and monotonic policy versions.
 | Historical session acquisition and signed-screen navigation | retained evidence in `cartridge_catalog.rs`; `cartridge_distribution.rs::acquire_session_exact`; migration `0022`; client runtime remote/cache/render/service modules; navigation validator/renderer; `GameController.qml`; Door Legends cartridge v2; Ticket 035 | Snapshot replay/omission immutability; participant privacy and catalog-independent exact acquisition; key/binding/lifecycle substitution denial; multi-release mounts; malformed/duplicate navigation; zero-network QML navigation/history; screen-bound gameplay and exact replay; clean-clone historical Door Legends pilot |
 | Public trust enrollment, key rotation, and native package staging | `crates/marketplace-trust`; client runtime trust/package modules; server marketplace/catalog/distribution/session modules; `MarketplaceController.qml`; migration `0023`; packaging scripts; Ticket 036 | Root/channel canonical and transition corpus; fresh-enrollment and floor-advance replay denial; live client/server revocation; acquisition-v2 dual-key verification; historical migration upgrade; QML trust/package states; deterministic manual/channel packages; root-signed channel gate |
 | Static marketplace publication and offline-root operations | `crates/marketplace-publisher`; `docs/operators/marketplace-publication.md`; Ticket 037 | `scripts/test-marketplace-publication.sh`; canonical plan/handoff, release and package verification, network-unshared offline sign, exact immutable tree, concurrency, mirror, rotation, rollback, receipt, and security evidence |
-| Remaining owner-operated extension direction | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; roadmap | Custom-content provenance; provider/module separation; extension isolation, lifecycle, audit, and operator-responsibility review |
+| Operator-custom trust, import, lifecycle, and warnings | `operator_custom.rs` in the cartridge/server domains; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `session_cartridges.rs`; client runtime cache/remote/service; QML cartridge/game controllers and Games screen; migration `0024`; Ticket 038 | Canonical attestation/acquisition hostile corpus; PostgreSQL import/policy/selection/action races and recovery; private exact client trust and source-specific mounts; warning/keyboard QML tests; security diff scan and writer-first linearization regression |
+| Remaining owner-operated extension direction | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; roadmap | Provider/module separation; extension isolation, lifecycle, audit, and operator-responsibility review |

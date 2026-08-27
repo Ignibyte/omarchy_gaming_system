@@ -316,6 +316,67 @@ Back/Entry history locally, and sends only screen-bound non-navigation actions
 back to the selected server. Door Legends cartridge v2 proves cyclic Lobby and
 Chronicle navigation plus real provider gameplay from either screen.
 
+### Import operator-custom cartridges
+
+An owner-operated server can opt into a distinct unreviewed cartridge trust
+domain. Custom cartridges remain publisher-signed inert data and pass the same
+SDK, schema, media, capability, archive, and trusted-renderer checks; they do
+not carry QML, JavaScript, native code, network credentials, or game-backend
+authority. They are never labeled marketplace reviewed.
+
+Generate a dedicated operator catalog keypair once and protect the private
+file as signing authority:
+
+```bash
+cargo run -p omarchygs-game-cartridge --bin omarchygs-cartridge -- \
+  catalog-keygen my-community custom-primary-v1 \
+  /etc/omarchygs/custom-cartridge.private.json \
+  /etc/omarchygs/custom-cartridge.public.json
+chmod 0600 /etc/omarchygs/custom-cartridge.private.json
+```
+
+The normal server must receive only the public configuration. It rejects an
+environment containing the custom private-key variable:
+
+```bash
+export OGS_CARTRIDGE_STORE_ROOT=/var/lib/omarchygs/cartridges
+export OGS_CUSTOM_CARTRIDGE_OPERATOR_NAME="Example Community Operator"
+export OGS_CUSTOM_CARTRIDGE_PUBLIC_KEY=/etc/omarchygs/custom-cartridge.public.json
+unset OGS_CUSTOM_CARTRIDGE_PRIVATE_KEY
+```
+
+For one local admin invocation, add the matching absolute mode-0600 private
+key and use a mode-0600 import document:
+
+```json
+{
+  "idempotency_key": "60aa9c2b-3e46-4646-a247-57399c622a42",
+  "release_directory": "/srv/omarchygs/releases/door-legends",
+  "publisher_public_key_file": "/etc/omarchygs/publishers/ignibyte.public.json",
+  "policy_version": 1,
+  "lifecycle_status": "active",
+  "actor": "oncall-sysop",
+  "reason": "Admit a locally reviewed private game",
+  "acknowledge_marketplace_warning": true
+}
+```
+
+```bash
+export OGS_CUSTOM_CARTRIDGE_PRIVATE_KEY=/etc/omarchygs/custom-cartridge.private.json
+DATABASE_URL="$DATABASE_URL" target/debug/omarchygs-admin \
+  custom-cartridge-import ./custom-import.json
+unset OGS_CUSTOM_CARTRIDGE_PRIVATE_KEY
+```
+
+Select the imported digest with `catalog-apply` and
+`{"state":"custom_release","archive_sha256":"<digest>"}`. Lifecycle changes
+use `custom-cartridge-policy-apply`; they must name a strictly newer policy
+version and re-supply the exact release directory and publisher public key for
+verification. Players see the operator identity, permanent unreviewed warning,
+and full key fingerprint, then explicitly pin that exact origin/server UUID/key
+in their local companion before installation or play. A key mismatch fails
+closed; custom mounts must be removed before the local trust pin can be removed.
+
 See [owner-operated servers](docs/operators/owner-operated-servers.md) and
 [operator safety and platform recovery](docs/operators/operator-safety-and-recovery.md)
 for the authority, lifecycle, and backup boundaries.

@@ -4,4 +4,6 @@
 /.codegraph/
 /.env
 /build/
+__pycache__/
+*.py[cod]
 *.user

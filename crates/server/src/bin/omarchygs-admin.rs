@@ -15,10 +15,15 @@ mod registration_invites;
 
 use omarchy_gaming_system_server::{
     cartridge_catalog::{
-        CatalogCommand, CatalogError, apply_catalog_command, authorize_marketplace_trust,
-        list_inventory,
+        CatalogCommand, CatalogError, apply_catalog_command_with_sources,
+        authorize_marketplace_trust, list_inventory,
     },
     marketplace_sync::{self, LocalCatalogConfig, MarketplaceSyncConfig, MarketplaceSyncError},
+    operator_custom::{
+        CustomImportCommand, CustomPolicyCommand, MAX_CUSTOM_COMMAND_BYTES,
+        OperatorCustomAdminConfig, OperatorCustomError, apply_custom_policy,
+        authorize_public_authority, import_custom_release,
+    },
 };
 use omarchygs_game_cartridge::rich_2d_host_profile;
 use operator_admin::{
@@ -43,6 +48,7 @@ enum AdminError {
     Operator(OperatorError),
     Marketplace(MarketplaceSyncError),
     Catalog(CatalogError),
+    Custom(OperatorCustomError),
 }
 
 impl AdminError {
@@ -51,6 +57,7 @@ impl AdminError {
             Self::Operator(error) => error.code(),
             Self::Marketplace(error) => error.code(),
             Self::Catalog(error) => error.code(),
+            Self::Custom(error) => error.code(),
         }
     }
 }
@@ -70,6 +77,12 @@ impl From<MarketplaceSyncError> for AdminError {
 impl From<CatalogError> for AdminError {
     fn from(error: CatalogError) -> Self {
         Self::Catalog(error)
+    }
+}
+
+impl From<OperatorCustomError> for AdminError {
+    fn from(error: OperatorCustomError) -> Self {
+        Self::Custom(error)
     }
 }
 
@@ -180,21 +193,83 @@ async fn run() -> Result<(), AdminError> {
         let command: CatalogCommand = serde_json::from_slice(&document)
             .map_err(|_| AdminError::Catalog(CatalogError::InvalidInput))?;
         command.validate()?;
-        let config = LocalCatalogConfig::from_environment()?;
-        authorize_marketplace_trust(&pool, config.marketplace_trust.channel_trust()).await?;
-        let store = config.open_store()?;
-        let marketplace_key = config.active_key()?;
+        let marketplace = LocalCatalogConfig::optional_from_environment()?;
+        let custom = if env::var_os("OGS_CUSTOM_CARTRIDGE_PRIVATE_KEY").is_some() {
+            Some(OperatorCustomAdminConfig::from_environment()?)
+        } else {
+            None
+        };
+        if marketplace.is_none() && custom.is_none() {
+            return Err(CatalogError::Denied.into());
+        }
+        if let Some(config) = marketplace.as_ref() {
+            authorize_marketplace_trust(&pool, config.marketplace_trust.channel_trust()).await?;
+        }
+        let custom_public = custom
+            .as_ref()
+            .map(OperatorCustomAdminConfig::public_config);
+        if let Some(config) = custom_public.as_ref() {
+            authorize_public_authority(&pool, config).await?;
+        }
+        let store = match (marketplace.as_ref(), custom.as_ref()) {
+            (Some(marketplace), Some(custom)) => {
+                if marketplace.store_root != custom.store_root {
+                    return Err(CatalogError::Denied.into());
+                }
+                marketplace.open_store()?
+            }
+            (Some(marketplace), None) => marketplace.open_store()?,
+            (None, Some(custom)) => custom.open_store()?,
+            (None, None) => return Err(CatalogError::Denied.into()),
+        };
+        let marketplace_key = marketplace
+            .as_ref()
+            .map(LocalCatalogConfig::active_key)
+            .transpose()?;
         serde_json::to_value(
-            apply_catalog_command(
+            apply_catalog_command_with_sources(
                 &pool,
                 &store,
-                &marketplace_key,
+                marketplace_key.as_ref(),
+                custom.as_ref().map(|config| &config.public_key),
                 &rich_2d_host_profile(),
                 &command,
             )
             .await?,
         )
         .map_err(|_| AdminError::Operator(OperatorError::Internal))?
+    } else if action == OsStr::new("custom-cartridge-import") {
+        let document_path = arguments
+            .next()
+            .map(PathBuf::from)
+            .ok_or(AdminError::Custom(OperatorCustomError::InvalidInput))?;
+        if arguments.next().is_some() {
+            return Err(OperatorCustomError::InvalidInput.into());
+        }
+        let document = read_bounded(&document_path, MAX_CUSTOM_COMMAND_BYTES)
+            .map_err(|_| AdminError::Custom(OperatorCustomError::InvalidInput))?;
+        let command: CustomImportCommand = serde_json::from_slice(&document)
+            .map_err(|_| AdminError::Custom(OperatorCustomError::InvalidInput))?;
+        command.validate()?;
+        let config = OperatorCustomAdminConfig::from_environment()?;
+        serde_json::to_value(import_custom_release(&pool, &config, &command).await?)
+            .map_err(|_| AdminError::Custom(OperatorCustomError::Internal))?
+    } else if action == OsStr::new("custom-cartridge-policy-apply") {
+        let document_path = arguments
+            .next()
+            .map(PathBuf::from)
+            .ok_or(AdminError::Custom(OperatorCustomError::InvalidInput))?;
+        if arguments.next().is_some() {
+            return Err(OperatorCustomError::InvalidInput.into());
+        }
+        let document = read_bounded(&document_path, MAX_CUSTOM_COMMAND_BYTES)
+            .map_err(|_| AdminError::Custom(OperatorCustomError::InvalidInput))?;
+        let command: CustomPolicyCommand = serde_json::from_slice(&document)
+            .map_err(|_| AdminError::Custom(OperatorCustomError::InvalidInput))?;
+        command.validate()?;
+        let config = OperatorCustomAdminConfig::from_environment()?;
+        serde_json::to_value(apply_custom_policy(&pool, &config, &command).await?)
+            .map_err(|_| AdminError::Custom(OperatorCustomError::Internal))?
     } else {
         return Err(OperatorError::InvalidInput.into());
     };

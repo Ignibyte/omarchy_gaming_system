@@ -130,6 +130,12 @@ struct GameSessionRow {
     presentation_admission_revision: Option<i64>,
     presentation_lifecycle_status: Option<String>,
     presentation_lifecycle_reason: Option<String>,
+    presentation_provenance_class: Option<String>,
+    presentation_operator_name: Option<String>,
+    presentation_operator_authority_id: Option<String>,
+    presentation_operator_key_id: Option<String>,
+    presentation_operator_key_sha256: Option<String>,
+    presentation_operator_warning: Option<String>,
     result_outcome: Option<String>,
     result_summary: Option<Json<Value>>,
     result_revision: Option<i64>,
@@ -437,15 +443,26 @@ pub async fn list_sessions(
             session.provider_release_id,
             session.provider_availability,
             view.view AS provider_view,
-            release.publisher_id AS presentation_publisher_id,
-            release.game_key AS presentation_game_key,
-            release.rules_version AS presentation_rules_version,
-            release.cartridge_version AS presentation_cartridge_version,
-            release.archive_sha256 AS presentation_archive_sha256,
-            release.signed_identity_sha256 AS presentation_signed_identity_sha256,
+            COALESCE(release.publisher_id, custom.publisher_id) AS presentation_publisher_id,
+            COALESCE(release.game_key, custom.game_key) AS presentation_game_key,
+            COALESCE(release.rules_version, custom.rules_version) AS presentation_rules_version,
+            COALESCE(release.cartridge_version, custom.cartridge_version)
+                AS presentation_cartridge_version,
+            COALESCE(release.archive_sha256, custom.archive_sha256)
+                AS presentation_archive_sha256,
+            COALESCE(release.signed_identity_sha256, custom.signed_identity_sha256)
+                AS presentation_signed_identity_sha256,
             presentation.admission_revision AS presentation_admission_revision,
-            release.policy_status AS presentation_lifecycle_status,
-            release.policy_reason AS presentation_lifecycle_reason,
+            COALESCE(release.policy_status, custom.policy_status)
+                AS presentation_lifecycle_status,
+            COALESCE(release.policy_reason, custom.policy_reason)
+                AS presentation_lifecycle_reason,
+            presentation.provenance_class AS presentation_provenance_class,
+            custom.operator_name AS presentation_operator_name,
+            custom.operator_key ->> 'authority_id' AS presentation_operator_authority_id,
+            custom.operator_key ->> 'key_id' AS presentation_operator_key_id,
+            custom.operator_key_sha256 AS presentation_operator_key_sha256,
+            custom.warning AS presentation_operator_warning,
             result.outcome AS result_outcome,
             result.public_summary AS result_summary,
             result.provider_revision AS result_revision,
@@ -466,6 +483,8 @@ pub async fn list_sessions(
           ON presentation.game_session_id = session.id
         LEFT JOIN marketplace_releases AS release
           ON release.id = presentation.marketplace_release_id
+        LEFT JOIN operator_custom_releases AS custom
+          ON custom.id = presentation.operator_custom_release_id
         ORDER BY session.created_at DESC, session.id DESC
         LIMIT $2
         "#,
@@ -507,15 +526,26 @@ pub(crate) async fn load_session_for_participant(
             session.provider_release_id,
             session.provider_availability,
             view.view AS provider_view,
-            release.publisher_id AS presentation_publisher_id,
-            release.game_key AS presentation_game_key,
-            release.rules_version AS presentation_rules_version,
-            release.cartridge_version AS presentation_cartridge_version,
-            release.archive_sha256 AS presentation_archive_sha256,
-            release.signed_identity_sha256 AS presentation_signed_identity_sha256,
+            COALESCE(release.publisher_id, custom.publisher_id) AS presentation_publisher_id,
+            COALESCE(release.game_key, custom.game_key) AS presentation_game_key,
+            COALESCE(release.rules_version, custom.rules_version) AS presentation_rules_version,
+            COALESCE(release.cartridge_version, custom.cartridge_version)
+                AS presentation_cartridge_version,
+            COALESCE(release.archive_sha256, custom.archive_sha256)
+                AS presentation_archive_sha256,
+            COALESCE(release.signed_identity_sha256, custom.signed_identity_sha256)
+                AS presentation_signed_identity_sha256,
             presentation.admission_revision AS presentation_admission_revision,
-            release.policy_status AS presentation_lifecycle_status,
-            release.policy_reason AS presentation_lifecycle_reason,
+            COALESCE(release.policy_status, custom.policy_status)
+                AS presentation_lifecycle_status,
+            COALESCE(release.policy_reason, custom.policy_reason)
+                AS presentation_lifecycle_reason,
+            presentation.provenance_class AS presentation_provenance_class,
+            custom.operator_name AS presentation_operator_name,
+            custom.operator_key ->> 'authority_id' AS presentation_operator_authority_id,
+            custom.operator_key ->> 'key_id' AS presentation_operator_key_id,
+            custom.operator_key_sha256 AS presentation_operator_key_sha256,
+            custom.warning AS presentation_operator_warning,
             result.outcome AS result_outcome,
             result.public_summary AS result_summary,
             result.provider_revision AS result_revision,
@@ -536,6 +566,8 @@ pub(crate) async fn load_session_for_participant(
           ON presentation.game_session_id = session.id
         LEFT JOIN marketplace_releases AS release
           ON release.id = presentation.marketplace_release_id
+        LEFT JOIN operator_custom_releases AS custom
+          ON custom.id = presentation.operator_custom_release_id
         WHERE session.id = $2
         "#,
     )
@@ -842,6 +874,12 @@ async fn load_session_participants(
                     row.presentation_admission_revision,
                     row.presentation_lifecycle_status,
                     row.presentation_lifecycle_reason,
+                    row.presentation_provenance_class,
+                    row.presentation_operator_name,
+                    row.presentation_operator_authority_id,
+                    row.presentation_operator_key_id,
+                    row.presentation_operator_key_sha256,
+                    row.presentation_operator_warning,
                 ) {
                     (
                         Some(publisher_id),
@@ -853,6 +891,12 @@ async fn load_session_participants(
                         Some(admission_revision),
                         Some(lifecycle_status),
                         Some(lifecycle_reason),
+                        Some(provenance_class),
+                        operator_name,
+                        operator_authority_id,
+                        operator_key_id,
+                        operator_key_sha256,
+                        operator_warning,
                     ) => Some(
                         session_cartridges::project_presentation(
                             publisher_id,
@@ -864,10 +908,32 @@ async fn load_session_participants(
                             admission_revision,
                             lifecycle_status,
                             lifecycle_reason,
+                            provenance_class,
+                            operator_name,
+                            operator_authority_id,
+                            operator_key_id,
+                            operator_key_sha256,
+                            operator_warning,
                         )
                         .map_err(|_| GameError::Internal)?,
                     ),
-                    (None, None, None, None, None, None, None, None, None) => None,
+                    (
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                    ) => None,
                     _ => return Err(GameError::Internal),
                 },
                 result: match (

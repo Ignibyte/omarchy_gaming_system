@@ -121,8 +121,11 @@ QtObject {
     }
 
     function _validProfile(profile) {
-        if (!_endpointRules.exactKeys(profile, ["origin", "server_id", "server_name",
-                                                 "protocol_version", "capabilities"]))
+        const keys = ["origin", "server_id", "server_name",
+                      "protocol_version", "capabilities"]
+        if (profile.operator_custom !== undefined)
+            keys.push("operator_custom")
+        if (!_endpointRules.exactKeys(profile, keys))
             return false
         const normalized = _endpointRules.normalizeEndpoint(profile.origin)
         if (!normalized.ok || normalized.url !== profile.origin
@@ -130,7 +133,9 @@ QtObject {
                 || !_boundedPublicString(profile.server_name, 64, 1)
                 || profile.protocol_version !== 1
                 || !Array.isArray(profile.capabilities)
-                || profile.capabilities.length > maximumCapabilities)
+                || profile.capabilities.length > maximumCapabilities
+                || (profile.operator_custom !== undefined
+                    && !_validOperatorCustom(profile.operator_custom)))
             return false
 
         let previous = ""
@@ -146,13 +151,35 @@ QtObject {
     }
 
     function _copyProfile(profile) {
-        return {
+        const copied = {
             "origin": profile.origin,
             "server_id": profile.server_id,
             "server_name": profile.server_name,
             "protocol_version": profile.protocol_version,
             "capabilities": profile.capabilities.slice()
         }
+        if (profile.operator_custom !== undefined)
+            copied.operator_custom = profile.operator_custom
+        return copied
+    }
+
+    function _validOperatorCustom(value) {
+        if (!value || typeof value !== "object"
+                || !_endpointRules.exactKeys(value, ["operator_name", "authority_id", "key_id",
+                                                    "key_sha256", "public_key"])
+                || !_boundedPublicString(value.operator_name, 128, 1)
+                || !/^[a-z][a-z0-9._-]{0,95}$/.test(value.authority_id)
+                || !/^[a-z][a-z0-9._-]{0,95}$/.test(value.key_id)
+                || !/^[0-9a-f]{64}$/.test(value.key_sha256))
+            return false
+        const key = value.public_key
+        return key && typeof key === "object"
+                && _endpointRules.exactKeys(key, ["format_version", "algorithm", "key_id",
+                                              "authority_id", "verifying_key"])
+                && key.format_version === 1 && key.algorithm === "ed25519"
+                && key.key_id === value.key_id && key.authority_id === value.authority_id
+                && typeof key.verifying_key === "string"
+                && /^[A-Za-z0-9_-]{43}$/.test(key.verifying_key)
     }
 
     function _boundedPublicString(value, maximum, minimum) {

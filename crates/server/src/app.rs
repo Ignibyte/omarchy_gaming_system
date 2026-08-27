@@ -850,6 +850,10 @@ async fn discover_server(State(state): State<AppState>) -> Response {
         &state.server_name,
         state.provider_runtime.is_some(),
         state.cartridge_distribution.is_some(),
+        state
+            .cartridge_distribution
+            .as_ref()
+            .and_then(CartridgeDistributionRuntime::operator_custom_authority),
     )
     .await
     {

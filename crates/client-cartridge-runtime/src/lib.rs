@@ -8,9 +8,16 @@ mod render;
 mod service;
 mod trust;
 
-pub use cache::{ClientCartridgeCache, MountRecord};
+pub use cache::{
+    ClientCartridgeCache, MountRecord, OperatorCustomMountProvenance, OperatorCustomMountRecord,
+    OperatorCustomTrust,
+};
 pub use package_channel::{ClientPackageChannel, ClientPackageStatus, StagedPackage};
-pub use remote::{AcquireRequest, SessionAcquireRequest, acquire, acquire_session};
+pub use remote::{
+    AcquireRequest, OperatorCustomDiscovery, SessionAcquireRequest, acquire,
+    acquire_operator_custom, acquire_operator_custom_session, acquire_session,
+    discover_operator_custom,
+};
 pub use render::{RenderRequest, compile_mounted_render_plan};
 pub use service::{CompanionState, router};
 pub use trust::{ClientMarketplaceTrust, ClientTrustSnapshot, ClientTrustStore, TrustStatus};
@@ -29,6 +36,8 @@ pub enum CompanionError {
     Rejected,
     #[error("no independently trusted marketplace key is configured")]
     MarketplaceUntrusted,
+    #[error("the server operator custom-cartridge key is not explicitly trusted")]
+    OperatorCustomUntrusted,
     #[error("cartridge is no longer admitted")]
     AdmissionChanged,
     #[error("the exact server-profile cartridge mount is absent")]
@@ -47,6 +56,7 @@ impl CompanionError {
             Self::Unavailable => "companion_server_unavailable",
             Self::Rejected => "companion_server_rejected",
             Self::MarketplaceUntrusted => "companion_marketplace_untrusted",
+            Self::OperatorCustomUntrusted => "companion_operator_custom_untrusted",
             Self::AdmissionChanged => "companion_admission_changed",
             Self::MountMissing => "companion_mount_missing",
             Self::Cache => "companion_cache_failure",

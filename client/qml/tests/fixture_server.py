@@ -69,6 +69,10 @@ DISCOVERY_CAPABILITIES = [
 CARTRIDGE_DIGEST = "a" * 64
 CARTRIDGE_IDENTITY = "b" * 64
 COMPANION_TOKEN = "C" * 43
+OPERATOR_KEY_SHA256 = "e" * 64
+OPERATOR_WARNING = (
+    "Operator-custom content: not reviewed or supported by the OmarchyGS marketplace."
+)
 
 
 def persona(persona_id: str, handle: str, display_name: str) -> dict[str, Any]:
@@ -104,6 +108,7 @@ class FixtureState:
         self.incoming_challenge_status = "pending"
         self.outgoing_challenge_status = "absent"
         self.cartridge_mounted = False
+        self.operator_trusted = False
 
     def reset_social(self) -> None:
         with self.lock:
@@ -122,6 +127,7 @@ class FixtureState:
             self.incoming_challenge_status = "pending"
             self.outgoing_challenge_status = "absent"
             self.cartridge_mounted = False
+            self.operator_trusted = False
 
     def record_call(self, call: str) -> None:
         with self.lock:
@@ -234,6 +240,15 @@ class Handler(BaseHTTPRequestHandler):
                 document["capabilities"].remove("games.cartridge-acquisition.v1")
                 self._json(200, document)
                 return
+            if self.state.mode == "custom":
+                document = self._discovery_document(
+                    SERVER_ID, "Operator Cartridge Fixture Community"
+                )
+                document["capabilities"].append("games.operator-custom-cartridges.v1")
+                document["capabilities"].sort()
+                document["operator_custom"] = self._operator_discovery()
+                self._json(200, document)
+                return
             self._json(200, self._discovery_document(
                 SERVER_ID, "Fixture Community"
             ))
@@ -293,13 +308,23 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/v1/cartridges":
             if not self._require_social_bearer():
                 return
-            self._json(200, {"cartridges": [self._cartridge_release()]})
+            release = (self._operator_cartridge_release()
+                       if self.state.mode == "custom" else self._cartridge_release())
+            self._json(200, {"cartridges": [release]})
             return
         if path == f"/v1/mounts/{SERVER_ID}":
             if not self._require_companion_bearer():
                 return
-            mounts = [self._cartridge_mount()] if self.state.cartridge_mounted else []
-            self._json(200, {"mounts": mounts})
+            if self.state.mode == "custom":
+                mounts = ([self._operator_cartridge_mount()]
+                          if self.state.cartridge_mounted else [])
+                self._json(200, {
+                    "mounts": [],
+                    "operator_custom_mounts": mounts,
+                })
+            else:
+                mounts = [self._cartridge_mount()] if self.state.cartridge_mounted else []
+                self._json(200, {"mounts": mounts})
             return
         if path == "/v1/personas":
             token = self._bearer()
@@ -454,33 +479,78 @@ class Handler(BaseHTTPRequestHandler):
         document = self._read_json()
         if document is None:
             return
+        if self.path == "/v1/operator-custom-trust/inspect":
+            if not self._require_companion_bearer():
+                return
+            if set(document) != {"server_origin", "server_id"} \
+                    or document.get("server_id") != SERVER_ID:
+                self.state.violate("operator trust inspection was not exactly server-bound")
+            self._json(200, {
+                "discovery": self._operator_discovery(),
+                "trusted": self.state.operator_trusted,
+            })
+            return
+        if self.path == "/v1/operator-custom-trust":
+            if not self._require_companion_bearer():
+                return
+            if set(document) != {"server_origin", "server_id", "confirmed_key_sha256"} \
+                    or document.get("server_id") != SERVER_ID \
+                    or document.get("confirmed_key_sha256") != OPERATOR_KEY_SHA256:
+                self.state.violate("operator trust pin was not exactly confirmed")
+            self.state.operator_trusted = True
+            self._json(200, {"trust": self._operator_trust()})
+            return
+        if self.path == "/v1/operator-custom-trust/remove":
+            if not self._require_companion_bearer():
+                return
+            if set(document) != {"server_origin", "server_id", "confirmed_key_sha256"} \
+                    or document.get("server_id") != SERVER_ID \
+                    or document.get("confirmed_key_sha256") != OPERATOR_KEY_SHA256:
+                self.state.violate("operator trust removal was not exactly confirmed")
+            if self.state.cartridge_mounted:
+                self._json(503, {"error": {
+                    "code": "companion_operator_custom_untrusted",
+                }})
+                return
+            removed = self.state.operator_trusted
+            self.state.operator_trusted = False
+            self._json(200, {"removed": removed})
+            return
         if self.path == "/v1/acquisitions":
             if not self._require_companion_bearer():
                 return
             if set(document) != {
                 "server_origin", "server_id", "device_bearer", "game_key",
-                "archive_sha256", "admission_revision"
+                "archive_sha256", "admission_revision", "provenance_class"
             }:
                 self.state.violate("cartridge acquisition body did not have exact keys")
+            expected_provenance = ("operator_custom" if self.state.mode == "custom"
+                                   else "marketplace_vetted")
             if document.get("server_id") != SERVER_ID \
                     or document.get("device_bearer") != TOKEN_S \
                     or document.get("game_key") != "door-legends" \
                     or document.get("archive_sha256") != CARTRIDGE_DIGEST \
-                    or document.get("admission_revision") != 3:
+                    or document.get("admission_revision") != 3 \
+                    or document.get("provenance_class") != expected_provenance:
                 self.state.violate("cartridge acquisition did not preserve exact authority")
             self.state.cartridge_mounted = True
-            self._json(200, {"mount": self._cartridge_mount()})
+            mount = (self._operator_cartridge_mount()
+                     if self.state.mode == "custom" else self._cartridge_mount())
+            self._json(200, {"mount": mount})
             return
         if self.path == "/v1/removals":
             if not self._require_companion_bearer():
                 return
             if set(document) != {"server_id", "game_key", "archive_sha256",
-                                 "admission_revision"}:
+                                 "admission_revision", "provenance_class"}:
                 self.state.violate("cartridge removal body did not have exact keys")
+            expected_provenance = ("operator_custom" if self.state.mode == "custom"
+                                   else "marketplace_vetted")
             if document.get("server_id") != SERVER_ID \
                     or document.get("game_key") != "door-legends" \
                     or document.get("archive_sha256") != CARTRIDGE_DIGEST \
-                    or document.get("admission_revision") != 3:
+                    or document.get("admission_revision") != 3 \
+                    or document.get("provenance_class") != expected_provenance:
                 self.state.violate("cartridge removal crossed profile authority")
             self.state.cartridge_mounted = False
             self._json(200, {"removed": True})
@@ -489,12 +559,13 @@ class Handler(BaseHTTPRequestHandler):
             if not self._require_companion_bearer():
                 return
             if set(document) != {"server_origin", "server_id", "device_bearer",
-                                 "persona_id", "game_session_id"}:
+                                 "persona_id", "game_session_id", "provenance_class"}:
                 self.state.violate("session acquisition body did not have exact keys")
             if document.get("server_id") != SERVER_ID \
                     or document.get("device_bearer") != TOKEN_S \
                     or document.get("persona_id") != SOCIAL_ACTOR_ID \
-                    or document.get("game_session_id") != SOLO_GAME_SESSION_ID:
+                    or document.get("game_session_id") != SOLO_GAME_SESSION_ID \
+                    or document.get("provenance_class") != "marketplace_vetted":
                 self.state.violate("session acquisition did not preserve participant authority")
             self.state.cartridge_mounted = True
             self._json(200, {"mount": self._cartridge_mount()})
@@ -507,11 +578,13 @@ class Handler(BaseHTTPRequestHandler):
                 return
             allowed = {"server_origin", "server_id", "game_key", "archive_sha256",
                        "admission_revision", "lifecycle_status", "active_session_policy",
-                       "view", "preferences"}
+                       "provenance_class", "view", "preferences"}
             if "screen_id" in document:
                 allowed.add("screen_id")
             if set(document) != allowed:
                 self.state.violate("render-plan body did not have exact keys")
+            if document.get("provenance_class") != "marketplace_vetted":
+                self.state.violate("render-plan body did not preserve cartridge provenance")
             screen_id = document.get("screen_id", "lobby")
             if screen_id not in {"lobby", "chronicle"}:
                 self._error(422, "companion_render_failure", "unknown signed screen")
@@ -732,6 +805,25 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self) -> None:  # noqa: N802
         self.state.record_call(f"DELETE {self.path}")
+        if self.path == "/v1/operator-custom-trust":
+            document = self._read_json()
+            if document is None:
+                return
+            if not self._require_companion_bearer():
+                return
+            if set(document) != {"server_origin", "server_id", "confirmed_key_sha256"} \
+                    or document.get("server_id") != SERVER_ID \
+                    or document.get("confirmed_key_sha256") != OPERATOR_KEY_SHA256:
+                self.state.violate("operator trust removal was not exactly confirmed")
+            if self.state.cartridge_mounted:
+                self._json(503, {"error": {
+                    "code": "companion_operator_custom_untrusted",
+                }})
+                return
+            removed = self.state.operator_trusted
+            self.state.operator_trusted = False
+            self._json(200, {"removed": removed})
+            return
         if not self._require_social_bearer():
             return
         prefix = f"/v1/personas/{SOCIAL_ACTOR_ID}"
@@ -1044,6 +1136,80 @@ class Handler(BaseHTTPRequestHandler):
             "admission_revision": release["server_admission"]["revision"],
         }
 
+    @staticmethod
+    def _operator_discovery() -> dict[str, Any]:
+        return {
+            "operator_name": "Fixture Server Operator",
+            "authority_id": "fixture-operator",
+            "key_id": "fixture-key",
+            "key_sha256": OPERATOR_KEY_SHA256,
+            "public_key": {
+                "format_version": 1,
+                "algorithm": "ed25519",
+                "key_id": "fixture-key",
+                "authority_id": "fixture-operator",
+                "verifying_key": "K" * 43,
+            },
+        }
+
+    def _operator_trust(self) -> dict[str, Any]:
+        discovery = self._operator_discovery()
+        return {
+            "format": "omarchygs.client-operator-custom-trust/v1",
+            "server_id": SERVER_ID,
+            "server_origin": f"http://{self.headers.get('Host', '')}",
+            "operator_name": discovery["operator_name"],
+            "key_sha256": discovery["key_sha256"],
+            "public_key": discovery["public_key"],
+        }
+
+    def _operator_cartridge_release(self) -> dict[str, Any]:
+        discovery = self._operator_discovery()
+        return {
+            "game_key": "door-legends",
+            "publisher_id": "ignibyte",
+            "rules_version": 1,
+            "cartridge_version": 2,
+            "display_name": "Door Legends Operator Edition",
+            "archive_sha256": CARTRIDGE_DIGEST,
+            "signed_identity_sha256": CARTRIDGE_IDENTITY,
+            "operator_custom": {
+                "provenance_class": "operator_custom",
+                "operator_name": discovery["operator_name"],
+                "authority_id": discovery["authority_id"],
+                "key_id": discovery["key_id"],
+                "key_sha256": discovery["key_sha256"],
+                "warning": OPERATOR_WARNING,
+                "policy_version": 1,
+                "lifecycle_status": "active",
+            },
+            "server_admission": {"revision": 3},
+            "warning": OPERATOR_WARNING,
+        }
+
+    def _operator_cartridge_mount(self) -> dict[str, Any]:
+        release = self._operator_cartridge_release()
+        custom = release["operator_custom"].copy()
+        custom.pop("policy_version")
+        custom.pop("lifecycle_status")
+        return {
+            "format": "omarchygs.client-operator-custom-mount/v1",
+            "server_id": SERVER_ID,
+            "server_origin": f"http://{self.headers.get('Host', '')}",
+            "game_key": release["game_key"],
+            "publisher_id": release["publisher_id"],
+            "rules_version": release["rules_version"],
+            "cartridge_version": release["cartridge_version"],
+            "display_name": release["display_name"],
+            "archive_sha256": release["archive_sha256"],
+            "signed_identity_sha256": release["signed_identity_sha256"],
+            "operator_custom": custom,
+            "policy_version": 1,
+            "lifecycle_status": "active",
+            "admission_revision": 3,
+            "warning": OPERATOR_WARNING,
+        }
+
     def _cartridge_render(self, screen_id: str) -> dict[str, Any]:
         target = "chronicle" if screen_id == "lobby" else "lobby"
         navigation_action = f"navigate.{target}"
@@ -1236,7 +1402,7 @@ def main() -> int:
     mode = sys.argv[2]
     if mode not in {
         "normal", "server_two", "catalog_only", "identity_changed", "incompatible", "slow",
-        "malformed", "wrong_identity", "oversized",
+        "malformed", "wrong_identity", "oversized", "custom",
     }:
         print(f"unsupported fixture mode: {mode}", file=sys.stderr)
         return 2

@@ -210,6 +210,96 @@ TestCase {
         verify(!controller.install(controller.catalog[0]))
     }
 
+    function test_operator_custom_requires_exact_pin_and_persists_warning() {
+        const onboarding = applicationWindow.onboardingController
+        onboarding.showServerConfiguration()
+        verify(onboarding.connectToServer(fixtureConfig.custom_url))
+        tryCompare(onboarding, "state", "access", 5000)
+        signInAndSelectActor()
+
+        activate(object("homeGamesButton"))
+        tryCompare(onboarding, "state", "games")
+        const controller = applicationWindow.cartridgeController
+        controller.helperEndpoint = fixtureConfig.custom_url
+        controller.helperCredential = "C".repeat(43)
+        verify(controller.refresh())
+        tryVerify(function() {
+            return !controller.busy && controller.loadState === "ready"
+        }, 5000, controller.statusText + " // " + controller.errorText)
+        verify(controller.operatorCustomAvailable)
+        verify(!controller.operatorCustomTrusted)
+        compare(controller.operatorCustomDiscovery.key_sha256, "e".repeat(64))
+        compare(controller.catalog.length, 1)
+        const release = controller.catalog[0]
+        const gameController = applicationWindow.gameController
+        tryVerify(function() { return gameController.sessions.length === 1 }, 5000)
+        const session = clone(gameController.sessions[0])
+        compare(release.warning,
+                "Operator-custom content: not reviewed or supported by the OmarchyGS marketplace.")
+        verify(!controller.install(release))
+
+        const trustButton = object("operatorCustomTrustButton")
+        verify(trustButton.visible)
+        verify(trustButton.Accessible.description.indexOf("e".repeat(64)) !== -1)
+        activate(trustButton)
+        tryVerify(function() { return !controller.busy && controller.operatorCustomTrusted }, 5000)
+        verify(applicationWindow.gameController.operatorCustomTrusted)
+        verify(controller.install(release))
+        tryVerify(function() {
+            return !controller.busy && controller.operatorCustomMounts.length === 1
+        }, 5000, controller.statusText + " // " + controller.errorText)
+        verify(controller.isMountedExact(release))
+
+        verify(object("operatorCustomUntrustButton").visible)
+        verify(controller.removeOperatorCustomTrust())
+        tryVerify(function() {
+            return !controller.busy && controller.errorText.indexOf("Remove custom mounts") !== -1
+        }, 5000, controller.statusText + " // " + controller.errorText)
+        verify(controller.operatorCustomTrusted)
+
+        session.game_key = "door-legends"
+        session.authority = "registered_provider"
+        session.provider_release_id = "55555555-5555-4555-8555-555555555555"
+        session.availability = "ready"
+        session.state = {"status": "A server-operated door waits."}
+        session.presentation = {
+            "format": "omarchygs.session-cartridge/v1",
+            "publisher_id": "ignibyte",
+            "game_key": "door-legends",
+            "rules_version": 1,
+            "cartridge_version": 2,
+            "archive_sha256": "a".repeat(64),
+            "signed_identity_sha256": "b".repeat(64),
+            "admission_revision": 3,
+            "lifecycle_status": "active",
+            "active_session_policy": "continue",
+            "operator_custom": {
+                "provenance_class": "operator_custom",
+                "operator_name": "Fixture Server Operator",
+                "authority_id": "fixture-operator",
+                "key_id": "fixture-key",
+                "key_sha256": "e".repeat(64),
+                "warning": release.warning
+            },
+            "warning": release.warning
+        }
+        verify(gameController._validSession(session))
+        gameController.selectedSession = session
+        verify(onboarding.showPlayerScreen("gameplay"))
+        const warning = object("operatorCustomGameplayWarning")
+        verify(warning.visible)
+        verify(warning.message.indexOf("not reviewed") !== -1)
+        verify(warning.message.indexOf("e".repeat(64)) !== -1)
+        verify(onboarding.showPlayerScreen("games"))
+
+        verify(controller.remove(release))
+        tryVerify(function() {
+            return !controller.busy && controller.operatorCustomMounts.length === 0
+        }, 5000, controller.statusText + " // " + controller.errorText)
+        activate(object("operatorCustomUntrustButton"))
+        tryVerify(function() { return !controller.busy && !controller.operatorCustomTrusted }, 5000)
+    }
+
     function test_hostile_envelopes_preserve_safe_state_and_provider_is_inert() {
         applicationWindow.width = 920
         applicationWindow.height = 600

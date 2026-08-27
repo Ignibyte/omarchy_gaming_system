@@ -12,6 +12,7 @@ mod io;
 mod keys;
 mod lifecycle;
 mod marketplace;
+mod operator_custom;
 mod release;
 mod sdk;
 mod secure_store;
@@ -30,6 +31,7 @@ pub use keys::{
 };
 pub use lifecycle::*;
 pub use marketplace::*;
+pub use operator_custom::*;
 pub use release::*;
 pub use sdk::*;
 pub use secure_store::*;

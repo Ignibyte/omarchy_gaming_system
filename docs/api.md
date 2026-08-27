@@ -38,8 +38,29 @@ exact compatibility document:
 
 `games.cartridge-acquisition.v1`, `games.session-cartridge.v1`, and
 `games.session-cartridge-acquisition.v1` are present only when the server has a
-complete reviewed cartridge-distribution configuration. Metadata-only servers
-omit all three and do not register either acquisition route.
+complete marketplace or operator-custom cartridge-distribution configuration.
+Metadata-only servers omit all three and do not register either acquisition
+route. An operator-custom server also advertises
+`games.operator-custom-cartridges.v1` and one exact `operator_custom` object:
+
+```json
+{
+  "operator_name": "Example Community Operator",
+  "authority_id": "my-community",
+  "key_id": "custom-primary-v1",
+  "key_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "public_key": {
+    "format_version": 1,
+    "algorithm": "ed25519",
+    "key_id": "custom-primary-v1",
+    "authority_id": "my-community",
+    "verifying_key": "<43-character base64url public key>"
+  }
+}
+```
+
+That public object is a candidate for an explicit player trust decision, not
+automatic trust. It contains no private key or marketplace-review claim.
 
 The UUID is generated once by migration `0018`, is immutable in ordinary
 database operation, and survives PostgreSQL dump/restore. The public name is
@@ -806,8 +827,8 @@ owner-scope the acting persona before disclosing objects, and return
 
 This metadata-only endpoint requires a valid device-session Bearer token and
 returns `Cache-Control: no-store` on success and failure. It lists only exact
-server selections that are present in the current marketplace snapshot,
-imported, compatible with this host, and currently `active` or `deprecated`:
+marketplace-vetted or operator-custom selections that are imported, compatible
+with this host, and currently `active` or `deprecated`:
 
 ```json
 {
@@ -836,12 +857,17 @@ imported, compatible with this host, and currently `active` or `deprecated`:
 }
 ```
 
-`warning` is present only for a deprecated release and contains its public
-lifecycle reason. Suspended, denied, removed, incompatible, unimported, and
+Marketplace rows retain exactly the shape above. An operator-custom row replaces
+`marketplace` with an exact `operator_custom` object containing
+`provenance_class: operator_custom`, operator/authority/key identity, the full
+key SHA-256, fixed unreviewed warning, policy version, and lifecycle status.
+Its release-level `warning` is always present and starts with that same fixed
+warning; deprecated content appends the bounded lifecycle reason. Suspended,
+denied, removed, incompatible, unimported, and
 locally inactive releases are omitted; the server never substitutes another
 version. The response deliberately excludes marketplace URLs, local paths,
-public-key material, raw signed records, operator identities/reasons, and
-download authority. Missing or invalid authentication returns the normal
+public-key material, raw signed records, private material, operator reasons,
+and download authority. Missing or invalid authentication returns the normal
 `invalid_session` envelope. A database read failure returns 500
 `internal_error`.
 
@@ -894,6 +920,12 @@ canonical `application/json` with `Cache-Control: no-store`:
 }
 ```
 
+For operator-custom selections the same route instead emits canonical
+`omarchygs.operator-custom-acquisition/v1`, containing exact server admission,
+the public operator key, signed server-scoped custom attestation, signed current
+lifecycle policy, archive, conformance, and publisher release attestation. It
+contains no marketplace key, snapshot, reviewer, root, URL, or support claim.
+
 The server resolves the exact immutable store entry and self-verifies the
 envelope before returning it. The response includes public verification
 evidence but no marketplace URL, download redirect, filesystem destination,
@@ -907,7 +939,10 @@ verifies publisher identity, lifecycle policy, SDK/host
 compatibility, archive, conformance, and attestation, then re-reads the catalog
 before mounting it. The response key is public evidence, not a trust-on-first-use
 channel; clients must not learn their marketplace trust root from this route or
-any other selected-server response.
+any other selected-server response. For custom content, the companion instead
+requires a pre-existing local pin for the exact canonical origin, stable server
+UUID, and operator key, verifies operator plus publisher signatures, then
+re-reads the catalog before mounting.
 
 The v1 document remains accepted by compatible clients when historical
 evidence and current policy use the same exact key, but current servers emit v2
@@ -926,19 +961,19 @@ returns 500 `internal_error`.
 This route exists only while `games.session-cartridge-acquisition.v1` is
 advertised. It requires a valid device-session Bearer that owns `persona_id`,
 and that persona must participate in the requested session. Success returns the
-same canonical `omarchygs.cartridge-acquisition/v2` document as the current
-catalog route, with `Cache-Control: no-store`.
+same provenance-specific marketplace or operator-custom acquisition document
+as the current catalog route, with `Cache-Control: no-store`.
 
 The release is selected only by the session's immutable presentation pin and
-its retained signed marketplace snapshot/release evidence. Today's server
+its retained signed marketplace or operator-custom release evidence. Today's server
 catalog selection is deliberately not consulted and cannot substitute another
 digest. Current signed active-session policy still applies: retained historical
 provenance proves origin and unchanged bytes, not present authorization.
 
 The native companion reads the participant-visible session before acquisition,
 derives the exact expected server admission, verifies the acquisition with its
-client-controlled manual or channel trust, including separate evidence and
-current-policy keys when rotated, then reads the session again before
+client-controlled marketplace trust or exact per-server operator pin, then
+reads the session again before
 publishing the exact mount. A changed pin, server, lifecycle decision, digest,
 revision, or evidence fails closed.
 
@@ -1089,7 +1124,11 @@ currently admitted release and returns this bounded participant-visible shape:
 }
 ```
 
-Deprecated bindings also include the signed bounded `warning`. Lifecycle can be
+Operator-custom bindings additionally include an exact `operator_custom`
+provenance object with operator/authority/key identity, full key SHA-256, and
+the fixed unreviewed warning; their outer `warning` is always present so the
+client can display it throughout gameplay. Deprecated marketplace bindings
+include only the signed bounded lifecycle `warning`. Lifecycle can be
 `active`, `deprecated`, `suspended`, `revoked`, or `retired`; the corresponding
 active-session policy is `continue`, `suspend`, or `terminate`. The immutable
 pin never follows a later catalog selection. Marketplace keys, operator reasons,

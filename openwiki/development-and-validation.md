@@ -92,9 +92,6 @@ sources:
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
 generated: {by: "codex", at: "2026-08-27T12:40:24.098Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-27T12:40:24.098Z
 ---
 
 # Development and validation

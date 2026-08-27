@@ -10,11 +10,18 @@ QtObject {
     property bool marketplaceTrusted: false
     property var catalog: []
     property var mounts: []
+    property var operatorCustomMounts: []
+    property var operatorCustomTrust: null
+    property bool operatorCustomTrusted: false
     property string statusText: ""
     property string errorText: ""
     property string loadState: "idle"
     readonly property bool busy: _serverGeneration !== 0 || _helperGeneration !== 0
     readonly property bool helperAvailable: helperEndpoint !== "" && helperCredential !== ""
+    readonly property bool operatorCustomAvailable: _authority !== null
+                                                    && _authority.operator_custom !== undefined
+    readonly property var operatorCustomDiscovery: operatorCustomAvailable
+                                                   ? _authority.operator_custom : null
     readonly property bool acquisitionSupported: _authority !== null
                                                  && _authority.acquisition_supported === true
 
@@ -55,6 +62,9 @@ QtObject {
         _authority = null
         catalog = []
         mounts = []
+        operatorCustomMounts = []
+        operatorCustomTrust = null
+        operatorCustomTrusted = false
         statusText = ""
         errorText = ""
         loadState = "idle"
@@ -97,11 +107,14 @@ QtObject {
     }
 
     function install(release) {
-        if (!_readyForMutation(release) || !helperAvailable || !marketplaceTrusted
+        if (!_readyForMutation(release) || !helperAvailable
+                || (_isCustomRelease(release) ? !operatorCustomTrusted : !marketplaceTrusted)
                 || !acquisitionSupported || isMountedExact(release))
             return false
         errorText = ""
-        statusText = "Installing exact signed cartridge..."
+        statusText = _isCustomRelease(release)
+                ? "Installing operator-custom cartridge with pinned server trust..."
+                : "Installing exact signed cartridge..."
         loadState = "loading"
         _helperOperation = "cartridge_install"
         _helperGeneration = helperApi.request(_helperOperation, "POST", "/v1/acquisitions", {
@@ -110,7 +123,9 @@ QtObject {
             "device_bearer": _authority.device_bearer,
             "game_key": release.game_key,
             "archive_sha256": release.archive_sha256,
-            "admission_revision": release.server_admission.revision
+            "admission_revision": release.server_admission.revision,
+            "provenance_class": _isCustomRelease(release)
+                                ? "operator_custom" : "marketplace_vetted"
         }, true)
         return _helperGeneration !== 0
     }
@@ -127,7 +142,9 @@ QtObject {
             "server_id": _authority.server_id,
             "game_key": mount.game_key,
             "archive_sha256": mount.archive_sha256,
-            "admission_revision": mount.admission_revision
+            "admission_revision": mount.admission_revision,
+            "provenance_class": _isCustomRelease(release)
+                    ? "operator_custom" : "marketplace_vetted"
         }, true)
         return _helperGeneration !== 0
     }
@@ -147,14 +164,49 @@ QtObject {
     function mountForExact(release) {
         if (!_validRelease(release))
             return null
-        for (let index = 0; index < mounts.length; index++) {
-            const mount = mounts[index]
+        const candidates = _isCustomRelease(release) ? operatorCustomMounts : mounts
+        for (let index = 0; index < candidates.length; index++) {
+            const mount = candidates[index]
             if (mount.game_key === release.game_key
                     && mount.archive_sha256 === release.archive_sha256
                     && mount.admission_revision === release.server_admission.revision)
                 return mount
         }
         return null
+    }
+
+    function trustOperatorCustom() {
+        if (busy || !helperAvailable || _authority === null
+                || _authority.operator_custom === undefined)
+            return false
+        errorText = ""
+        statusText = "Pinning this server's operator-custom key..."
+        loadState = "loading"
+        _helperOperation = "operator_custom_trust"
+        _helperGeneration = helperApi.request(_helperOperation, "POST",
+                                               "/v1/operator-custom-trust", {
+            "server_origin": _authority.origin,
+            "server_id": _authority.server_id,
+            "confirmed_key_sha256": _authority.operator_custom.key_sha256
+        }, true)
+        return _helperGeneration !== 0
+    }
+
+    function removeOperatorCustomTrust() {
+        if (busy || !helperAvailable || !operatorCustomTrusted
+                || _authority === null || _authority.operator_custom === undefined)
+            return false
+        errorText = ""
+        statusText = "Removing this server's operator-custom trust pin..."
+        loadState = "loading"
+        _helperOperation = "operator_custom_untrust"
+        _helperGeneration = helperApi.request(_helperOperation, "POST",
+                                               "/v1/operator-custom-trust/remove", {
+            "server_origin": _authority.origin,
+            "server_id": _authority.server_id,
+            "confirmed_key_sha256": _authority.operator_custom.key_sha256
+        }, true)
+        return _helperGeneration !== 0
     }
 
     function actionLabel(release) {
@@ -189,17 +241,24 @@ QtObject {
         catalog = parsed.document.cartridges
         if (!helperAvailable) {
             mounts = []
+            operatorCustomMounts = []
             loadState = "unavailable"
             statusText = acquisitionSupported
                     ? "Cartridges are available; install the native companion to mount them."
                     : "This server publishes cartridge metadata but does not offer downloads."
             return
         }
-        statusText = "Loading local cartridge mounts..."
-        _helperOperation = "cartridge_mounts"
-        _helperGeneration = helperApi.request(
-                    _helperOperation, "GET", "/v1/mounts/" + _authority.server_id,
-                    null, true)
+        if (_authority.operator_custom !== undefined) {
+            statusText = "Checking this server's operator-custom trust pin..."
+            _helperOperation = "operator_custom_inspect"
+            _helperGeneration = helperApi.request(_helperOperation, "POST",
+                                                   "/v1/operator-custom-trust/inspect", {
+                "server_origin": _authority.origin,
+                "server_id": _authority.server_id
+            }, true)
+        } else {
+            _loadMounts()
+        }
     }
 
     function _handleHelper(generation, operation, status, body, transportError) {
@@ -218,14 +277,44 @@ QtObject {
             errorText = _helperError(parsed.ok ? _errorCode(parsed.document) : "")
             return
         }
-        if (operation === "cartridge_mounts") {
+        if (operation === "operator_custom_inspect") {
+            if (!_validOperatorTrustInspection(parsed.document)) {
+                _protocolFailure("The operator-custom trust inspection was not accepted.")
+                return
+            }
+            operatorCustomTrust = parsed.document.discovery
+            operatorCustomTrusted = parsed.document.trusted
+            _loadMounts()
+            return
+        }
+        if (operation === "operator_custom_trust") {
+            if (!serverApi.exactKeys(parsed.document, ["trust"])
+                    || !_validOperatorTrust(parsed.document.trust)) {
+                _protocolFailure("The operator-custom trust receipt was not accepted.")
+                return
+            }
+            operatorCustomTrusted = true
+            operatorCustomTrust = _authority.operator_custom
+            statusText = "Operator-custom key pinned for this exact server and origin."
+        } else if (operation === "operator_custom_untrust") {
+            if (!serverApi.exactKeys(parsed.document, ["removed"])
+                    || parsed.document.removed !== true) {
+                _protocolFailure("The operator-custom trust removal was not accepted.")
+                return
+            }
+            operatorCustomTrusted = false
+            operatorCustomTrust = _authority.operator_custom
+            statusText = "Operator-custom trust pin removed."
+        } else if (operation === "cartridge_mounts") {
             if (!_validMountList(parsed.document)) {
                 _protocolFailure("The local mount inventory was not accepted.")
                 return
             }
             mounts = parsed.document.mounts
+            operatorCustomMounts = parsed.document.operator_custom_mounts === undefined
+                    ? [] : parsed.document.operator_custom_mounts
             loadState = "ready"
-            statusText = !marketplaceTrusted
+            statusText = !marketplaceTrusted && !operatorCustomTrusted
                     ? "Local mounts are visible for exact removal; synchronize marketplace trust to install or play cartridges."
                     : catalog.length === 0
                     ? "No signed cartridges are available on this server."
@@ -236,7 +325,8 @@ QtObject {
         }
         if (operation === "cartridge_install") {
             if (!serverApi.exactKeys(parsed.document, ["mount"])
-                    || !_validMount(parsed.document.mount)) {
+                    || (!_validMount(parsed.document.mount)
+                        && !_validCustomMount(parsed.document.mount))) {
                 _protocolFailure("The installed mount receipt was not accepted.")
                 return
             }
@@ -254,6 +344,14 @@ QtObject {
         Qt.callLater(function() { root.refresh() })
     }
 
+    function _loadMounts() {
+        statusText = "Loading local cartridge mounts..."
+        _helperOperation = "cartridge_mounts"
+        _helperGeneration = helperApi.request(
+                    _helperOperation, "GET", "/v1/mounts/" + _authority.server_id,
+                    null, true)
+    }
+
     function _validCatalog(document) {
         return serverApi.exactKeys(document, ["cartridges"])
                 && Array.isArray(document.cartridges)
@@ -268,7 +366,13 @@ QtObject {
             return false
         const keys = ["game_key", "publisher_id", "rules_version",
                       "cartridge_version", "display_name", "archive_sha256",
-                      "signed_identity_sha256", "marketplace", "server_admission"]
+                      "signed_identity_sha256", "server_admission"]
+        const hasMarketplace = release.marketplace !== undefined
+        const hasCustom = release.operator_custom !== undefined
+        if (hasMarketplace)
+            keys.push("marketplace")
+        if (hasCustom)
+            keys.push("operator_custom")
         if (release.warning !== undefined)
             keys.push("warning")
         return serverApi.exactKeys(release, keys)
@@ -279,11 +383,15 @@ QtObject {
                 && _validText(release.display_name, 128)
                 && _validDigest(release.archive_sha256)
                 && _validDigest(release.signed_identity_sha256)
-                && _validMarketplace(release.marketplace)
+                && hasMarketplace !== hasCustom
+                && (hasMarketplace ? _validMarketplace(release.marketplace)
+                                   : _validOperatorCustom(release.operator_custom))
                 && serverApi.exactKeys(release.server_admission, ["revision"])
                 && Number.isInteger(release.server_admission.revision)
                 && release.server_admission.revision > 0
-                && (release.warning === undefined || _validText(release.warning, 512))
+                && (release.warning === undefined || _validText(release.warning, 1024))
+                && (!hasCustom || (typeof release.warning === "string"
+                    && release.warning.indexOf(_customWarning()) === 0))
     }
 
     function _validMarketplace(value) {
@@ -300,10 +408,38 @@ QtObject {
                 && ["active", "deprecated"].indexOf(value.lifecycle_status) !== -1
     }
 
+    function _validOperatorCustom(value) {
+        return serverApi.exactKeys(value, ["provenance_class", "operator_name",
+                                          "authority_id", "key_id", "key_sha256",
+                                          "warning", "policy_version",
+                                          "lifecycle_status"])
+                && value.provenance_class === "operator_custom"
+                && _validText(value.operator_name, 128)
+                && _validIdentifier(value.authority_id)
+                && _validIdentifier(value.key_id)
+                && _validDigest(value.key_sha256)
+                && value.warning === _customWarning()
+                && Number.isInteger(value.policy_version) && value.policy_version > 0
+                && ["active", "deprecated"].indexOf(value.lifecycle_status) !== -1
+    }
+
+    function _isCustomRelease(release) {
+        return release && release.operator_custom !== undefined
+    }
+
     function _validMountList(document) {
-        return serverApi.exactKeys(document, ["mounts"])
+        const keys = ["mounts"]
+        if (document.operator_custom_mounts !== undefined)
+            keys.push("operator_custom_mounts")
+        return serverApi.exactKeys(document, keys)
                 && Array.isArray(document.mounts) && document.mounts.length <= 128
                 && document.mounts.every(function(mount) { return root._validMount(mount) })
+                && (document.operator_custom_mounts === undefined
+                    || (Array.isArray(document.operator_custom_mounts)
+                        && document.operator_custom_mounts.length <= 128
+                        && document.operator_custom_mounts.every(function(mount) {
+                            return root._validCustomMount(mount)
+                        })))
     }
 
     function _validMount(mount) {
@@ -357,6 +493,102 @@ QtObject {
                 && (mount.warning === undefined || _validText(mount.warning, 512))
     }
 
+    function _validCustomMount(mount) {
+        if (!mount || typeof mount !== "object")
+            return false
+        const keys = ["format", "server_id", "server_origin", "game_key",
+                      "publisher_id", "rules_version", "cartridge_version",
+                      "display_name", "archive_sha256", "signed_identity_sha256",
+                      "operator_custom", "policy_version", "lifecycle_status",
+                      "admission_revision", "warning"]
+        if (mount.trust_status !== undefined)
+            keys.push("trust_status")
+        return serverApi.exactKeys(mount, keys)
+                && mount.format === "omarchygs.client-operator-custom-mount/v1"
+                && mount.server_id === _authority.server_id
+                && mount.server_origin === _authority.origin
+                && _validIdentifier(mount.game_key) && _validIdentifier(mount.publisher_id)
+                && Number.isInteger(mount.rules_version) && mount.rules_version > 0
+                && Number.isInteger(mount.cartridge_version) && mount.cartridge_version > 0
+                && _validText(mount.display_name, 128)
+                && _validDigest(mount.archive_sha256)
+                && _validDigest(mount.signed_identity_sha256)
+                && _validOperatorMountProvenance(mount.operator_custom)
+                && Number.isInteger(mount.policy_version) && mount.policy_version > 0
+                && ["active", "deprecated", "retired"].indexOf(mount.lifecycle_status) !== -1
+                && Number.isInteger(mount.admission_revision) && mount.admission_revision > 0
+                && typeof mount.warning === "string"
+                && mount.warning.indexOf(_customWarning()) === 0
+                && (mount.trust_status === undefined || mount.trust_status === "trusted")
+    }
+
+    function _validOperatorMountProvenance(value) {
+        return serverApi.exactKeys(value, ["provenance_class", "operator_name",
+                                          "authority_id", "key_id", "key_sha256",
+                                          "warning"])
+                && value.provenance_class === "operator_custom"
+                && _validText(value.operator_name, 128)
+                && _validIdentifier(value.authority_id)
+                && _validIdentifier(value.key_id)
+                && _validDigest(value.key_sha256)
+                && value.warning === _customWarning()
+    }
+
+    function _validOperatorTrustInspection(document) {
+        return serverApi.exactKeys(document, ["discovery", "trusted"])
+                && typeof document.trusted === "boolean"
+                && _validOperatorDiscovery(document.discovery)
+                && _authority.operator_custom !== undefined
+                && JSON.stringify(document.discovery)
+                    === JSON.stringify(_authority.operator_custom)
+    }
+
+    function _validOperatorDiscovery(value) {
+        return value && typeof value === "object"
+                && serverApi.exactKeys(value, ["operator_name", "authority_id", "key_id",
+                                               "key_sha256", "public_key"])
+                && _validText(value.operator_name, 128)
+                && _validIdentifier(value.authority_id) && _validIdentifier(value.key_id)
+                && _validDigest(value.key_sha256)
+                && value.public_key && typeof value.public_key === "object"
+                && serverApi.exactKeys(value.public_key, ["format_version", "algorithm",
+                                                          "key_id", "authority_id",
+                                                          "verifying_key"])
+                && value.public_key.format_version === 1
+                && value.public_key.algorithm === "ed25519"
+                && value.public_key.key_id === value.key_id
+                && value.public_key.authority_id === value.authority_id
+                && typeof value.public_key.verifying_key === "string"
+                && /^[A-Za-z0-9_-]{43}$/.test(value.public_key.verifying_key)
+    }
+
+    function _validOperatorTrust(value) {
+        return value && typeof value === "object"
+                && serverApi.exactKeys(value, ["format", "server_id", "server_origin",
+                                               "operator_name", "key_sha256", "public_key"])
+                && value.public_key && typeof value.public_key === "object"
+                && value.format === "omarchygs.client-operator-custom-trust/v1"
+                && value.server_id === _authority.server_id
+                && value.server_origin === _authority.origin
+                && _validText(value.operator_name, 128)
+                && _validDigest(value.key_sha256)
+                && _validOperatorDiscovery({
+                    "operator_name": value.operator_name,
+                    "authority_id": value.public_key.authority_id,
+                    "key_id": value.public_key.key_id,
+                    "key_sha256": value.key_sha256,
+                    "public_key": value.public_key
+                })
+                && value.operator_name === _authority.operator_custom.operator_name
+                && value.key_sha256 === _authority.operator_custom.key_sha256
+                && JSON.stringify(value.public_key)
+                    === JSON.stringify(_authority.operator_custom.public_key)
+    }
+
+    function _customWarning() {
+        return "Operator-custom content: not reviewed or supported by the OmarchyGS marketplace."
+    }
+
     function _parse(body) {
         if (typeof body !== "string" || body.length === 0)
             return {"ok": false}
@@ -381,6 +613,7 @@ QtObject {
             "companion_server_unavailable": "The selected server could not complete the download.",
             "companion_server_rejected": "The signed cartridge evidence was rejected.",
             "companion_marketplace_untrusted": "Enroll or synchronize current independently authenticated marketplace trust before using cartridges.",
+            "companion_operator_custom_untrusted": "Explicit operator-custom trust is missing, changed, or still protects mounted cartridges. Remove custom mounts before removing the pin.",
             "companion_cache_failure": "The private local cartridge cache needs attention."
         }
         return messages[code] || "The local cartridge companion rejected the operation."

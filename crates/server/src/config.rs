@@ -5,6 +5,7 @@ use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use omarchy_gaming_system_server::marketplace_sync::LocalCatalogConfig;
 
 use crate::mfa::MfaCipher;
+use omarchy_gaming_system_server::operator_custom::OperatorCustomPublicConfig;
 
 const DEFAULT_BIND_ADDRESS: &str = "127.0.0.1:8080";
 const DEFAULT_DATABASE_URL: &str =
@@ -18,6 +19,7 @@ pub struct Config {
     pub mfa_cipher: MfaCipher,
     pub provider: Option<ProviderConfig>,
     pub cartridge_distribution: Option<LocalCatalogConfig>,
+    pub operator_custom: Option<OperatorCustomPublicConfig>,
 }
 
 pub struct ProviderConfig {
@@ -53,6 +55,13 @@ impl Config {
                     "marketplace distribution must be absent or complete: set OGS_CARTRIDGE_STORE_ROOT with either OGS_MARKETPLACE_PUBLIC_KEY or all of OGS_MARKETPLACE_TRUST_ROOT, OGS_MARKETPLACE_TRUST_BUNDLE, and OGS_MARKETPLACE_TRUST_CHANNEL_ORIGIN"
                 )
             })?;
+        let operator_custom = OperatorCustomPublicConfig::optional_from_environment().map_err(
+            |_| {
+                anyhow!(
+                    "operator-custom distribution must be absent or complete: set OGS_CARTRIDGE_STORE_ROOT, OGS_CUSTOM_CARTRIDGE_PUBLIC_KEY, and OGS_CUSTOM_CARTRIDGE_OPERATOR_NAME"
+                )
+            },
+        )?;
 
         Ok(Self {
             bind_address,
@@ -61,6 +70,7 @@ impl Config {
             mfa_cipher,
             provider,
             cartridge_distribution,
+            operator_custom,
         })
     }
 }

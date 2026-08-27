@@ -501,6 +501,7 @@ async fn local_operator_cli_lists_public_catalog_facts_and_deactivates_exact_rel
             "id",
             "operation_id",
             "previous_archive_sha256",
+            "previous_provenance_class",
             "resulting_archive_sha256",
         ],
     );
@@ -537,6 +538,79 @@ async fn local_operator_cli_lists_public_catalog_facts_and_deactivates_exact_rel
     );
     assert!(!rejected.status.success());
     assert_eq!(rejected.stderr, b"operator_invalid_input\n");
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+async fn custom_cartridge_cli_requires_matching_owner_private_signing_key(pool: PgPool) {
+    let database_url = isolated_database_url(&pool).await;
+    let temp = TempDir::new().expect("custom CLI directory should create");
+    let store_root = temp.path().join("store");
+    std::fs::create_dir(&store_root).expect("store root should create");
+    std::fs::set_permissions(&store_root, std::fs::Permissions::from_mode(0o700))
+        .expect("store permissions should restrict");
+    let (private_key, public_key) =
+        generate_catalog_keypair("custom-primary-v1", "test-community").expect("custom key");
+    let (_, substituted_public) =
+        generate_catalog_keypair("custom-primary-v2", "test-community").expect("other key");
+    let private_path = temp.path().join("custom.private.json");
+    let public_path = temp.path().join("custom.public.json");
+    let substituted_path = temp.path().join("substituted.public.json");
+    write_private_json(
+        &private_path,
+        &serde_json::to_value(&private_key).expect("private key should serialize"),
+    );
+    write_private_json(
+        &public_path,
+        &serde_json::to_value(&public_key).expect("public key should serialize"),
+    );
+    write_private_json(
+        &substituted_path,
+        &serde_json::to_value(&substituted_public).expect("other key should serialize"),
+    );
+    let command_path = temp.path().join("import.json");
+    write_private_json(
+        &command_path,
+        &json!({
+            "idempotency_key": Uuid::new_v4(),
+            "release_directory": temp.path().join("missing-release"),
+            "publisher_public_key_file": temp.path().join("missing-publisher.json"),
+            "policy_version": 1,
+            "lifecycle_status": "active",
+            "actor": "cli-sysop",
+            "reason": "Prove signing key configuration fails before import",
+            "acknowledge_marketplace_warning": true
+        }),
+    );
+
+    let mismatched = run_custom_admin(
+        &database_url,
+        &command_path,
+        &private_path,
+        &substituted_path,
+        &store_root,
+    );
+    assert!(!mismatched.status.success());
+    assert!(mismatched.stdout.is_empty());
+    assert_eq!(mismatched.stderr, b"operator_custom_invalid_config\n");
+
+    std::fs::set_permissions(&private_path, std::fs::Permissions::from_mode(0o644))
+        .expect("private key mode should change");
+    let public_private = run_custom_admin(
+        &database_url,
+        &command_path,
+        &private_path,
+        &public_path,
+        &store_root,
+    );
+    assert!(!public_private.status.success());
+    assert!(public_private.stdout.is_empty());
+    assert_eq!(public_private.stderr, b"operator_custom_invalid_config\n");
+    let authority_count: i64 = sqlx::query_scalar("SELECT count(*) FROM operator_custom_authority")
+        .fetch_one(&pool)
+        .await
+        .expect("authority count should query");
+    assert_eq!(authority_count, 0);
 }
 
 fn exact_keys(value: &Value, expected: &[&str]) {
@@ -580,6 +654,30 @@ fn run_catalog_admin(
         .env("OGS_CARTRIDGE_STORE_ROOT", store_root)
         .output()
         .expect("catalog CLI should execute")
+}
+
+fn run_custom_admin(
+    database_url: &url::Url,
+    command_path: &std::path::Path,
+    private_key: &std::path::Path,
+    public_key: &std::path::Path,
+    store_root: &std::path::Path,
+) -> std::process::Output {
+    Command::new(env!("CARGO_BIN_EXE_omarchygs-admin"))
+        .args([
+            "custom-cartridge-import",
+            command_path.to_str().expect("UTF-8 path"),
+        ])
+        .env("DATABASE_URL", database_url.as_str())
+        .env(
+            "OGS_CUSTOM_CARTRIDGE_OPERATOR_NAME",
+            "Test Community Operator",
+        )
+        .env("OGS_CUSTOM_CARTRIDGE_PRIVATE_KEY", private_key)
+        .env("OGS_CUSTOM_CARTRIDGE_PUBLIC_KEY", public_key)
+        .env("OGS_CARTRIDGE_STORE_ROOT", store_root)
+        .output()
+        .expect("custom CLI should execute")
 }
 
 async fn isolated_database_url(pool: &PgPool) -> url::Url {

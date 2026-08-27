@@ -1,13 +1,13 @@
 # Owner-operated OmarchyGS servers
 
 Status: stable identity/discovery, isolated flagship-client profiles,
-marketplace-vetted catalog administration, and exact player cartridge
-acquisition/cache/multi-release mounting plus historical session recovery and
-live-session trusted multi-screen cartridge rendering are implemented. Public
+marketplace-vetted and operator-custom catalog administration, exact player
+cartridge acquisition/cache/multi-release mounting, historical session
+recovery, and live-session trusted multi-screen rendering are implemented. Public
 offline-root trust enrollment, marketplace-key rotation/revocation, and
 authenticated client-package staging are implemented too. The direction is accepted by
 [`ADR-0003`](../architecture/adr-0003-owner-operated-server-and-extension-boundary.md);
-operator-custom content and module administration remain follow-up work.
+module administration remains follow-up work.
 
 ## Operating model
 
@@ -44,16 +44,18 @@ back up, moderate, or certify an independent administrator's deployment.
 
 ## Game provenance
 
-Server catalogs distinguish these provenance classes; the first is implemented
-and the other two remain staged work:
+Server catalogs distinguish these provenance classes. Marketplace-vetted and
+operator-custom are implemented; a distinct built-in first-party distribution
+class remains staged work:
 
 - **marketplace-vetted:** the exact publisher release and review/provenance
   record came through the OmarchyGS marketplace, then the local operator chose
   to import and activate it;
 - **first-party:** the release ships with or is operated directly by the
   OmarchyGS project under its documented lifecycle; and
-- **operator-custom:** the local administrator signed/imported the release or
-  installed supporting server code without marketplace review.
+- **operator-custom:** the local administrator signed/imported the inert
+  release without marketplace review; supporting server code is a separate
+  provider/module trust decision.
 
 Marketplace publication never forces a server to list a game. Conversely, a
 local operator's decision never turns custom content into marketplace-vetted
@@ -201,10 +203,38 @@ compiled or provider authority.
 
 ## Custom cartridges and code
 
-An administrator will be able to enable a local trust domain and import custom
-cartridges. Marketplace bypass does not mean parser, package, or client-safety
-bypass: a custom cartridge remains signed inert data, is content-addressed,
-passes the same byte/media/schema/capability checks, and renders only through
+An administrator can enable a local trust domain and import custom cartridges.
+Generate one dedicated catalog keypair with `omarchygs-cartridge
+catalog-keygen`. Keep the private document absolute, owned by the invoking
+account, mode 0600, and outside the server service environment. Both admin and
+server configurations name the same public key, bounded operator name, and
+private mode-0700 `OGS_CARTRIDGE_STORE_ROOT`; the admin additionally supplies
+the matching `OGS_CUSTOM_CARTRIDGE_PRIVATE_KEY`. A mismatch, symlink, wrong
+owner/mode, partial environment, or public/private substitution fails closed.
+
+`omarchygs-admin custom-cartridge-import` accepts one bounded mode-0600 command
+with an idempotency UUID, absolute publisher release/key inputs, initial policy
+version/status, actor/reason, and an explicit unreviewed-warning
+acknowledgement. It snapshots and verifies the publisher release, signs the
+server-scoped operator attestation and policy, stages immutable bytes, and then
+atomically publishes provenance and audit. `custom-cartridge-policy-apply`
+re-verifies the retained exact release and requires a strictly newer policy.
+`catalog-apply` selects custom content with `state: custom_release`; expected
+and desired source plus digest prevent marketplace/custom ambiguity.
+
+Normal server startup uses `OGS_CUSTOM_CARTRIDGE_PUBLIC_KEY` and
+`OGS_CUSTOM_CARTRIDGE_OPERATOR_NAME` but rejects the private-key variable.
+Discovery exposes the public candidate and full fingerprint. A player must
+explicitly pin the exact origin/server UUID/key through the authenticated local
+companion before custom install, historical recovery, or rendering. The pin is
+private and immutable; key replacement or cross-server reuse fails closed, and
+custom mounts must be removed before the pin can be removed. Catalog and
+gameplay screens permanently disclose the operator, fingerprint, and absence
+of marketplace review.
+
+Marketplace bypass does not mean parser, package, or client-safety bypass: a
+custom cartridge remains signed inert data, is content-addressed, passes the
+same byte/media/schema/capability checks, and renders only through
 platform-owned QML components. It cannot ship raw QML, JavaScript, native
 client code, credentials, or an arbitrary network client.
 

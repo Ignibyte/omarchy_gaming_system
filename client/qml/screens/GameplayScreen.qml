@@ -10,6 +10,10 @@ Item {
 
     required property var controller
     required property var sessionController
+    readonly property var sessionBinding: controller.selectedSession === null
+                                          ? null : controller.selectedSession.presentation
+    readonly property bool operatorCustomSession: sessionBinding !== null
+                                                   && sessionBinding.operator_custom !== undefined
 
     Components.OgsTheme { id: theme }
 
@@ -91,6 +95,19 @@ Item {
             }
 
             Components.OgsStatusBanner {
+                objectName: "operatorCustomGameplayWarning"
+                Layout.fillWidth: true
+                visible: root.operatorCustomSession
+                message: !root.operatorCustomSession ? ""
+                         : root.sessionBinding.warning + " Server operator: "
+                           + root.sessionBinding.operator_custom.operator_name
+                           + ". Full key fingerprint: "
+                           + root.sessionBinding.operator_custom.key_sha256
+                tone: "warning"
+                accessibleDescription: "Persistent unreviewed operator-custom cartridge warning and exact key fingerprint"
+            }
+
+            Components.OgsStatusBanner {
                 Layout.fillWidth: true
                 visible: controller.selectedSession !== null && !controller.presentation.supported
                          && controller.cartridgeRenderPlan === null
@@ -102,7 +119,9 @@ Item {
             Components.OgsStatusBanner {
                 Layout.fillWidth: true
                 visible: controller.cartridgeRenderState === "missing"
-                message: "This session's exact cartridge is missing or needs current marketplace policy. Authoritative game state remains available."
+                message: root.operatorCustomSession
+                         ? "This session's exact operator-custom cartridge is missing. Pin this server's full operator-key fingerprint from Games before installing it. Authoritative game state remains available."
+                         : "This session's exact cartridge is missing or needs current marketplace policy. Authoritative game state remains available."
                 tone: "warning"
             }
 
@@ -112,7 +131,9 @@ Item {
                 visible: controller.cartridgeInstallAvailable
                 text: "INSTALL / REFRESH CARTRIDGE"
                 accessibleName: "Install or refresh this session's exact signed cartridge"
-                accessibleDescription: "Download and verify the immutable release and its current marketplace policy"
+                accessibleDescription: root.operatorCustomSession
+                                       ? "Download only after this server's exact operator key is pinned; this cartridge is not marketplace reviewed"
+                                       : "Download and verify the immutable release and its current marketplace policy"
                 enabled: !controller.busy
                 onClicked: controller.installPinnedCartridge()
             }

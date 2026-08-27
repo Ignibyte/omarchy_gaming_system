@@ -374,3 +374,10 @@ and in this register.
 | `BF-omarchy-gaming-system-offline-response-path-chmod-race-001` | failure | `aar/AAR-037-static-marketplace-publication-offline-root-handoff-and-mirror-operations.md` |
 | `PR-omarchy-gaming-system-bind-permissions-to-opened-file-descriptors-001` | rule | `aar/AAR-037-static-marketplace-publication-offline-root-handoff-and-mirror-operations.md` |
 | `AD-omarchy-gaming-system-static-marketplace-publication-and-offline-root-handoff-001` | decision | `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md`; `../../architecture/system-overview.md`; `../../operators/marketplace-publication.md` |
+| `BF-omarchy-gaming-system-custom-policy-action-linearization-race-001` | failure | `aar/AAR-038-operator-custom-cartridge-trust-import-and-player-warnings.md` |
+| `BF-omarchy-gaming-system-package-smoke-preload-watchdog-conflation-001` | failure | `aar/AAR-038-operator-custom-cartridge-trust-import-and-player-warnings.md` |
+| `BF-omarchy-gaming-system-contract-test-observer-request-pollution-001` | failure | `aar/AAR-038-operator-custom-cartridge-trust-import-and-player-warnings.md` |
+| `PR-omarchy-gaming-system-share-lifecycle-writer-use-admission-lock-domain-001` | rule | `aar/AAR-038-operator-custom-cartridge-trust-import-and-player-warnings.md` |
+| `PR-omarchy-gaming-system-separate-process-startup-and-post-load-watchdogs-001` | rule | `aar/AAR-038-operator-custom-cartridge-trust-import-and-player-warnings.md` |
+| `PR-omarchy-gaming-system-observe-exact-request-contracts-outside-tested-interface-001` | rule | `aar/AAR-038-operator-custom-cartridge-trust-import-and-player-warnings.md` |
+| `AD-omarchy-gaming-system-operator-custom-cartridge-trust-boundary-001` | decision | `../../architecture/game-cartridges.md`; `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md` |

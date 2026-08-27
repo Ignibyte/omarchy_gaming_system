@@ -301,14 +301,83 @@ INSERT INTO server_cartridge_catalogs (
 INSERT INTO cartridge_catalog_audit_events (
     id, operation_id, catalog_id, action, actor, reason,
     previous_archive_sha256, resulting_archive_sha256,
-    admission_revision
+    admission_revision, previous_provenance_class,
+    resulting_provenance_class
 ) VALUES (
     'c2000000-0000-4000-8000-000000000001',
     'c3000000-0000-4000-8000-000000000001',
     'c1000000-0000-4000-8000-000000000001',
     'activate_cartridge', 'recovery-drill-sysop',
     'Prove cartridge admission survives restore', NULL,
-    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 3
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 3,
+    NULL, 'marketplace_vetted'
+);
+
+INSERT INTO operator_custom_authority (
+    server_id, operator_name, authority_id, key_id, public_key, key_sha256
+) SELECT
+    id, 'Recovery Fixture Operator', 'recovery-community', 'custom-primary-v1',
+    '{"format_version":1,"algorithm":"ed25519","authority_id":"recovery-community","key_id":"custom-primary-v1","verifying_key":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}'::jsonb,
+    'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd'
+FROM server_identity WHERE singleton;
+
+INSERT INTO operator_custom_releases (
+    id, import_operation_id, game_key, publisher_id, publisher_key,
+    rules_version, cartridge_version, archive_sha256,
+    signed_identity_sha256, display_name, operator_key,
+    operator_key_sha256, operator_name, signed_operator_attestation,
+    attestation_version, warning, signed_policy, policy_version,
+    policy_status, policy_reason, compatible, imported
+) VALUES (
+    'd0000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    'recovery-custom', 'ignibyte', '{"key_id":"publisher-primary-v1"}'::jsonb,
+    1, 1,
+    'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+    'Recovery Custom',
+    '{"authority_id":"recovery-community","key_id":"custom-primary-v1"}'::jsonb,
+    'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+    'Recovery Fixture Operator', '{"attestation":"recovery-fixture"}'::jsonb,
+    1,
+    'Operator-custom content: not reviewed or supported by the OmarchyGS marketplace.',
+    '{"policy":"recovery-fixture"}'::jsonb, 2, 'retired',
+    'Retained for an active historical session.', TRUE, TRUE
+);
+
+INSERT INTO operator_custom_audit_events (
+    id, operation_id, release_id, action, actor, reason,
+    previous_policy_version, previous_policy_status,
+    resulting_policy_version, resulting_policy_status
+) VALUES (
+    'd2000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    'd0000000-0000-4000-8000-000000000001',
+    'import_custom_cartridge', 'recovery-drill-sysop',
+    'Prove operator-custom provenance survives restore',
+    NULL, NULL, 2, 'retired'
+);
+
+INSERT INTO server_cartridge_catalogs (
+    id, game_key, active_custom_release_id, admission_revision
+) VALUES (
+    'd3000000-0000-4000-8000-000000000001', 'recovery-custom',
+    'd0000000-0000-4000-8000-000000000001', 4
+);
+
+INSERT INTO cartridge_catalog_audit_events (
+    id, operation_id, catalog_id, action, actor, reason,
+    previous_archive_sha256, resulting_archive_sha256,
+    admission_revision, previous_provenance_class,
+    resulting_provenance_class
+) VALUES (
+    'd4000000-0000-4000-8000-000000000001',
+    'd5000000-0000-4000-8000-000000000001',
+    'd3000000-0000-4000-8000-000000000001',
+    'activate_cartridge', 'recovery-drill-sysop',
+    'Prove custom admission survives restore', NULL,
+    'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    4, NULL, 'operator_custom'
 );
 SQL
 
@@ -365,8 +434,15 @@ assert_scalar "$ogs_source_url" \
   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:3" \
   "source cartridge selection"
 assert_scalar "$ogs_source_url" \
-  "SELECT count(*) FROM cartridge_catalog_audit_events" 1 \
+  "SELECT count(*) FROM cartridge_catalog_audit_events" 2 \
   "source cartridge catalog audit count"
+assert_scalar "$ogs_source_url" \
+  "SELECT r.archive_sha256 || ':' || r.policy_status || ':' || c.admission_revision FROM server_cartridge_catalogs c JOIN operator_custom_releases r ON r.id = c.active_custom_release_id WHERE c.game_key = 'recovery-custom'" \
+  "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:retired:4" \
+  "source operator-custom selection"
+assert_scalar "$ogs_source_url" \
+  "SELECT count(*) FROM operator_custom_audit_events" 1 \
+  "source operator-custom audit count"
 
 write_table_counts "$ogs_source_url" "$ogs_temp/source-counts.tsv"
 pg_dump "$ogs_source_url" --format=custom --file="$ogs_temp/platform.backup"
@@ -406,6 +482,13 @@ assert_scalar "$ogs_restore_url" \
 assert_scalar "$ogs_restore_url" \
   "SELECT count(*) FROM cartridge_catalog_audit_events WHERE catalog_id = 'c1000000-0000-4000-8000-000000000001'" \
   1 "restored cartridge catalog audit"
+assert_scalar "$ogs_restore_url" \
+  "SELECT r.archive_sha256 || ':' || r.policy_status || ':' || c.admission_revision FROM server_cartridge_catalogs c JOIN operator_custom_releases r ON r.id = c.active_custom_release_id WHERE c.game_key = 'recovery-custom'" \
+  "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee:retired:4" \
+  "restored operator-custom selection"
+assert_scalar "$ogs_restore_url" \
+  "SELECT count(*) FROM operator_custom_audit_events WHERE release_id = 'd0000000-0000-4000-8000-000000000001'" \
+  1 "restored operator-custom audit"
 
 if psql "$ogs_restore_url" -v ON_ERROR_STOP=1 \
   -c "UPDATE operator_audit_events SET reason = 'forbidden'" >/dev/null 2>&1; then
@@ -420,6 +503,16 @@ fi
 if psql "$ogs_restore_url" -v ON_ERROR_STOP=1 \
   -c "UPDATE cartridge_catalog_audit_events SET reason = 'forbidden'" >/dev/null 2>&1; then
   echo "restored cartridge catalog audit accepted mutation" >&2
+  exit 1
+fi
+if psql "$ogs_restore_url" -v ON_ERROR_STOP=1 \
+  -c "UPDATE operator_custom_releases SET archive_sha256 = repeat('0', 64) WHERE id = 'd0000000-0000-4000-8000-000000000001'" >/dev/null 2>&1; then
+  echo "restored operator-custom release accepted identity mutation" >&2
+  exit 1
+fi
+if psql "$ogs_restore_url" -v ON_ERROR_STOP=1 \
+  -c "DELETE FROM operator_custom_audit_events WHERE id = 'd2000000-0000-4000-8000-000000000001'" >/dev/null 2>&1; then
+  echo "restored operator-custom audit accepted deletion" >&2
   exit 1
 fi
 

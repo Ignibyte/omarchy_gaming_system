@@ -165,8 +165,18 @@ impl LocalCatalogConfig {
             || root_path.is_some()
             || bundle_path.is_some()
             || channel_origin.is_some();
-        if !any_trust && store_root.is_none() {
-            return Ok(None);
+        if !any_trust {
+            if store_root.is_none() {
+                return Ok(None);
+            }
+            let custom_key_present = env::var_os("OGS_CUSTOM_CARTRIDGE_PUBLIC_KEY").is_some()
+                || env::var_os("OGS_CUSTOM_CARTRIDGE_PRIVATE_KEY").is_some();
+            let custom_name_present = env::var_os("OGS_CUSTOM_CARTRIDGE_OPERATOR_NAME").is_some();
+            return if custom_key_present && custom_name_present {
+                Ok(None)
+            } else {
+                Err(MarketplaceSyncError::InvalidConfig)
+            };
         }
         let store_root = store_root.ok_or(MarketplaceSyncError::InvalidConfig)?;
         let marketplace_trust = match (key_path, root_path, bundle_path, channel_origin) {

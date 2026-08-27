@@ -27,7 +27,19 @@ pub struct SessionCartridgePresentation {
     pub lifecycle_status: String,
     pub active_session_policy: &'static str,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub operator_custom: Option<SessionOperatorCustomProvenance>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub warning: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct SessionOperatorCustomProvenance {
+    pub provenance_class: &'static str,
+    pub operator_name: String,
+    pub authority_id: String,
+    pub key_id: String,
+    pub key_sha256: String,
+    pub warning: String,
 }
 
 /// A cartridge action translated by the host after the exact signed screen
@@ -86,77 +98,111 @@ pub async fn pin_new_session(
     }
     let row = sqlx::query_as::<_, PinnableReleaseRow>(
         r#"
-        SELECT release.id AS release_id,
-               release.game_key,
-               release.publisher_id,
-               release.publisher_key,
-               release.rules_version,
-               release.cartridge_version,
-               release.archive_sha256,
-               release.signed_identity_sha256,
-               release.signed_policy,
-               release.policy_marketplace_key,
-               release.policy_snapshot_version,
-               catalog.admission_revision,
-               sync.snapshot_version,
-               sync.trust_root_sha256,
-               sync.trust_payload
-        FROM server_cartridge_catalogs AS catalog
-        JOIN marketplace_releases AS release
-          ON release.id = catalog.active_release_id
-        JOIN marketplace_release_acquisition_evidence AS evidence
-          ON evidence.marketplace_release_id = release.id
-        JOIN marketplace_sync_state AS sync
-          ON sync.singleton
-        WHERE catalog.game_key = $1
-          AND release.rules_version = $2
-          AND release.imported
-          AND release.compatible
-          AND release.last_seen_snapshot_version = sync.snapshot_version
-          AND release.policy_status IN ('active', 'deprecated')
-        FOR SHARE OF release, catalog, sync
+        SELECT * FROM (
+            SELECT release.id AS marketplace_release_id,
+                   NULL::uuid AS operator_custom_release_id,
+                   'marketplace_vetted'::text AS provenance_class,
+                   release.game_key, release.publisher_id, release.publisher_key,
+                   release.rules_version, release.cartridge_version,
+                   release.archive_sha256, release.signed_identity_sha256,
+                   release.signed_policy, release.policy_marketplace_key,
+                   release.policy_snapshot_version,
+                   NULL::jsonb AS operator_key,
+                   catalog.admission_revision, sync.snapshot_version,
+                   sync.trust_root_sha256, sync.trust_payload
+            FROM server_cartridge_catalogs AS catalog
+            JOIN marketplace_releases AS release
+              ON release.id = catalog.active_release_id
+            JOIN marketplace_release_acquisition_evidence AS evidence
+              ON evidence.marketplace_release_id = release.id
+            JOIN marketplace_sync_state AS sync ON sync.singleton
+            WHERE catalog.game_key = $1
+              AND release.rules_version = $2
+              AND release.imported
+              AND release.compatible
+              AND release.last_seen_snapshot_version = sync.snapshot_version
+              AND release.policy_status IN ('active', 'deprecated')
+            UNION ALL
+            SELECT NULL::uuid AS marketplace_release_id,
+                   release.id AS operator_custom_release_id,
+                   'operator_custom'::text AS provenance_class,
+                   release.game_key, release.publisher_id, release.publisher_key,
+                   release.rules_version, release.cartridge_version,
+                   release.archive_sha256, release.signed_identity_sha256,
+                   release.signed_policy, NULL::jsonb AS policy_marketplace_key,
+                   NULL::bigint AS policy_snapshot_version,
+                   release.operator_key,
+                   catalog.admission_revision, NULL::bigint AS snapshot_version,
+                   NULL::text AS trust_root_sha256, NULL::jsonb AS trust_payload
+            FROM server_cartridge_catalogs AS catalog
+            JOIN operator_custom_releases AS release
+              ON release.id = catalog.active_custom_release_id
+            WHERE catalog.game_key = $1
+              AND release.rules_version = $2
+              AND release.imported
+              AND release.compatible
+              AND release.policy_status IN ('active', 'deprecated')
+        ) AS candidate
         "#,
     )
     .bind(game_key)
     .bind(i64::from(rules_version))
     .fetch_optional(&mut **transaction)
     .await
-    .map_err(|_| SessionCartridgeError::Internal)?;
+    .map_err(|error| {
+        tracing::error!(%error, "session cartridge candidate lookup failed");
+        SessionCartridgeError::Internal
+    })?;
     let Some(row) = row else {
         return Ok(false);
     };
     if expected_archive_sha256.is_some_and(|digest| digest != row.archive_sha256.as_str()) {
         return Ok(false);
     }
-    runtime
-        .authorize_persisted_marketplace_trust(
-            row.trust_root_sha256.as_deref(),
-            row.trust_payload.as_ref().map(|payload| &payload.0),
-        )
-        .map_err(|_| SessionCartridgeError::Denied)?;
-    let policy_key = row
-        .policy_marketplace_key
-        .ok_or(SessionCartridgeError::Denied)?
-        .0;
-    let policy_snapshot_version = row
-        .policy_snapshot_version
-        .and_then(|version| u64::try_from(version).ok())
-        .ok_or(SessionCartridgeError::Denied)?;
     let policy_bytes =
         serde_json::to_vec(&row.signed_policy.0).map_err(|_| SessionCartridgeError::Internal)?;
-    let resolution = runtime
-        .resolve_exact_release(
+    let resolution = match row.provenance_class.as_str() {
+        "marketplace_vetted" => {
+            runtime
+                .authorize_persisted_marketplace_trust(
+                    row.trust_root_sha256.as_deref(),
+                    row.trust_payload.as_ref().map(|payload| &payload.0),
+                )
+                .map_err(|_| SessionCartridgeError::Denied)?;
+            let policy_key = row
+                .policy_marketplace_key
+                .as_ref()
+                .ok_or(SessionCartridgeError::Denied)?;
+            let policy_snapshot_version = row
+                .policy_snapshot_version
+                .and_then(|version| u64::try_from(version).ok())
+                .ok_or(SessionCartridgeError::Denied)?;
+            runtime.resolve_exact_release(
+                &row.game_key,
+                &row.archive_sha256,
+                &row.publisher_key.0,
+                CurrentPolicyEvidence {
+                    signed_bytes: &policy_bytes,
+                    marketplace_key: &policy_key.0,
+                    snapshot_version: policy_snapshot_version,
+                },
+                LifecycleUse::NewLaunch,
+            )
+        }
+        "operator_custom" => runtime.resolve_exact_custom_release(
             &row.game_key,
             &row.archive_sha256,
             &row.publisher_key.0,
-            CurrentPolicyEvidence {
-                signed_bytes: &policy_bytes,
-                marketplace_key: &policy_key,
-                snapshot_version: policy_snapshot_version,
-            },
+            &policy_bytes,
+            &row.operator_key
+                .as_ref()
+                .ok_or(SessionCartridgeError::Denied)?
+                .0,
             LifecycleUse::NewLaunch,
-        )
-        .map_err(|_| SessionCartridgeError::Denied)?;
+        ),
+        _ => return Err(SessionCartridgeError::Denied),
+    }
+    .map_err(|_| SessionCartridgeError::Denied)?;
     let activation = resolution.activation();
     if activation.game_key != row.game_key
         || activation.publisher_id != row.publisher_id
@@ -171,13 +217,16 @@ pub async fn pin_new_session(
     sqlx::query(
         r#"
         INSERT INTO game_session_cartridge_presentations (
-            game_session_id, marketplace_release_id, admission_revision
+            game_session_id, marketplace_release_id, operator_custom_release_id,
+            provenance_class, admission_revision
         )
-        VALUES ($1, $2, $3)
+        VALUES ($1, $2, $3, $4, $5)
         "#,
     )
     .bind(game_session_id)
-    .bind(row.release_id)
+    .bind(row.marketplace_release_id)
+    .bind(row.operator_custom_release_id)
+    .bind(&row.provenance_class)
     .bind(row.admission_revision)
     .execute(&mut **transaction)
     .await
@@ -233,17 +282,21 @@ pub async fn admit_session_action(
                session.game_key,
                session.game_version,
                presentation.marketplace_release_id,
+               presentation.operator_custom_release_id,
+               presentation.provenance_class,
                presentation.admission_revision,
-               release.publisher_id,
-               release.publisher_key,
-               release.cartridge_version,
-               release.archive_sha256,
-               release.signed_identity_sha256,
-               release.signed_policy,
-               release.policy_version,
-               release.policy_status,
+               COALESCE(release.publisher_id, custom.publisher_id) AS publisher_id,
+               COALESCE(release.publisher_key, custom.publisher_key) AS publisher_key,
+               COALESCE(release.cartridge_version, custom.cartridge_version) AS cartridge_version,
+               COALESCE(release.archive_sha256, custom.archive_sha256) AS archive_sha256,
+               COALESCE(release.signed_identity_sha256, custom.signed_identity_sha256)
+                   AS signed_identity_sha256,
+               COALESCE(release.signed_policy, custom.signed_policy) AS signed_policy,
+               COALESCE(release.policy_version, custom.policy_version) AS policy_version,
+               COALESCE(release.policy_status, custom.policy_status) AS policy_status,
                release.policy_marketplace_key,
                release.policy_snapshot_version,
+               custom.operator_key,
                sync.trust_root_sha256,
                sync.trust_payload
         FROM game_sessions AS session
@@ -252,10 +305,12 @@ pub async fn admit_session_action(
          AND participant.persona_id = $1
         JOIN game_session_cartridge_presentations AS presentation
           ON presentation.game_session_id = session.id
-        JOIN marketplace_releases AS release
+        LEFT JOIN marketplace_releases AS release
           ON release.id = presentation.marketplace_release_id
-        JOIN marketplace_sync_state AS sync
-          ON sync.singleton
+        LEFT JOIN operator_custom_releases AS custom
+          ON custom.id = presentation.operator_custom_release_id
+        LEFT JOIN marketplace_sync_state AS sync
+          ON presentation.provenance_class = 'marketplace_vetted' AND sync.singleton
         WHERE session.id = $2
         FOR UPDATE OF session
         "#,
@@ -327,35 +382,50 @@ pub async fn admit_session_action(
     if row.archive_sha256 != archive_sha256 {
         return Err(SessionCartridgeError::Denied);
     }
-    runtime
-        .authorize_persisted_marketplace_trust(
-            row.trust_root_sha256.as_deref(),
-            row.trust_payload.as_ref().map(|payload| &payload.0),
-        )
-        .map_err(|_| SessionCartridgeError::Denied)?;
-    let policy_key = row
-        .policy_marketplace_key
-        .ok_or(SessionCartridgeError::Denied)?
-        .0;
-    let policy_snapshot_version = row
-        .policy_snapshot_version
-        .and_then(|version| u64::try_from(version).ok())
-        .ok_or(SessionCartridgeError::Denied)?;
     let policy_bytes =
         serde_json::to_vec(&row.signed_policy.0).map_err(|_| SessionCartridgeError::Internal)?;
-    let resolution = runtime
-        .resolve_exact_release(
+    let resolution = match row.provenance_class.as_str() {
+        "marketplace_vetted" => {
+            runtime
+                .authorize_persisted_marketplace_trust(
+                    row.trust_root_sha256.as_deref(),
+                    row.trust_payload.as_ref().map(|payload| &payload.0),
+                )
+                .map_err(|_| SessionCartridgeError::Denied)?;
+            let policy_key = row
+                .policy_marketplace_key
+                .as_ref()
+                .ok_or(SessionCartridgeError::Denied)?;
+            let policy_snapshot_version = row
+                .policy_snapshot_version
+                .and_then(|version| u64::try_from(version).ok())
+                .ok_or(SessionCartridgeError::Denied)?;
+            runtime.resolve_exact_release(
+                &row.game_key,
+                &row.archive_sha256,
+                &row.publisher_key.0,
+                CurrentPolicyEvidence {
+                    signed_bytes: &policy_bytes,
+                    marketplace_key: &policy_key.0,
+                    snapshot_version: policy_snapshot_version,
+                },
+                LifecycleUse::ActiveSession,
+            )
+        }
+        "operator_custom" => runtime.resolve_exact_custom_release(
             &row.game_key,
             &row.archive_sha256,
             &row.publisher_key.0,
-            CurrentPolicyEvidence {
-                signed_bytes: &policy_bytes,
-                marketplace_key: &policy_key,
-                snapshot_version: policy_snapshot_version,
-            },
+            &policy_bytes,
+            &row.operator_key
+                .as_ref()
+                .ok_or(SessionCartridgeError::Denied)?
+                .0,
             LifecycleUse::ActiveSession,
-        )
-        .map_err(|_| SessionCartridgeError::Denied)?;
+        ),
+        _ => return Err(SessionCartridgeError::Denied),
+    }
+    .map_err(|_| SessionCartridgeError::Denied)?;
     let manifest = resolution.cartridge().manifest();
     if manifest.game_key != row.game_key
         || i64::from(manifest.rules_version) != row.game_version
@@ -378,6 +448,8 @@ pub async fn admit_session_action(
             idempotency_key,
             actor_persona_id,
             marketplace_release_id,
+            operator_custom_release_id,
+            provenance_class,
             admission_revision,
             authority,
             expected_revision,
@@ -393,7 +465,8 @@ pub async fn admit_session_action(
         )
         VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8,
-            $9, $10, $11, $12, $13, $14, $15, $16
+            $9, $10, $11, $12, $13, $14, $15, $16,
+            $17, $18
         )
         "#,
     )
@@ -401,6 +474,8 @@ pub async fn admit_session_action(
     .bind(idempotency_key)
     .bind(actor_id)
     .bind(row.marketplace_release_id)
+    .bind(row.operator_custom_release_id)
+    .bind(&row.provenance_class)
     .bind(row.admission_revision)
     .bind(&row.authority)
     .bind(expected_revision)
@@ -439,6 +514,12 @@ pub fn project_presentation(
     admission_revision: i64,
     lifecycle_status: String,
     lifecycle_reason: String,
+    provenance_class: String,
+    operator_name: Option<String>,
+    operator_authority_id: Option<String>,
+    operator_key_id: Option<String>,
+    operator_key_sha256: Option<String>,
+    operator_warning: Option<String>,
 ) -> Result<SessionCartridgePresentation, SessionCartridgeError> {
     let status = parse_catalog_status(&lifecycle_status)?;
     let active_session_policy = match lifecycle_decision(status).active_session {
@@ -455,6 +536,41 @@ pub fn project_presentation(
     {
         return Err(SessionCartridgeError::Internal);
     }
+    let (operator_custom, warning) = match provenance_class.as_str() {
+        "marketplace_vetted" => {
+            if operator_name.is_some()
+                || operator_authority_id.is_some()
+                || operator_key_id.is_some()
+                || operator_key_sha256.is_some()
+                || operator_warning.is_some()
+            {
+                return Err(SessionCartridgeError::Internal);
+            }
+            (
+                None,
+                (status == CatalogStatus::Deprecated).then_some(lifecycle_reason),
+            )
+        }
+        "operator_custom" => {
+            let operator_warning = operator_warning.ok_or(SessionCartridgeError::Internal)?;
+            (
+                Some(SessionOperatorCustomProvenance {
+                    provenance_class: "operator_custom",
+                    operator_name: operator_name.ok_or(SessionCartridgeError::Internal)?,
+                    authority_id: operator_authority_id.ok_or(SessionCartridgeError::Internal)?,
+                    key_id: operator_key_id.ok_or(SessionCartridgeError::Internal)?,
+                    key_sha256: operator_key_sha256.ok_or(SessionCartridgeError::Internal)?,
+                    warning: operator_warning.clone(),
+                }),
+                Some(if status == CatalogStatus::Deprecated {
+                    format!("{operator_warning} {lifecycle_reason}")
+                } else {
+                    operator_warning
+                }),
+            )
+        }
+        _ => return Err(SessionCartridgeError::Internal),
+    };
     Ok(SessionCartridgePresentation {
         format: "omarchygs.session-cartridge/v1",
         publisher_id,
@@ -468,7 +584,8 @@ pub fn project_presentation(
             .map_err(|_| SessionCartridgeError::Internal)?,
         lifecycle_status,
         active_session_policy,
-        warning: (status == CatalogStatus::Deprecated).then_some(lifecycle_reason),
+        operator_custom,
+        warning,
     })
 }
 
@@ -536,7 +653,9 @@ fn valid_plain_text(value: &str, max_chars: usize) -> bool {
 
 #[derive(FromRow)]
 struct PinnableReleaseRow {
-    release_id: Uuid,
+    marketplace_release_id: Option<Uuid>,
+    operator_custom_release_id: Option<Uuid>,
+    provenance_class: String,
     game_key: String,
     publisher_id: String,
     publisher_key: Json<PublisherPublicKey>,
@@ -549,8 +668,9 @@ struct PinnableReleaseRow {
     admission_revision: i64,
     policy_marketplace_key: Option<Json<CatalogPublicKey>>,
     policy_snapshot_version: Option<i64>,
+    operator_key: Option<Json<CatalogPublicKey>>,
     #[allow(dead_code)]
-    snapshot_version: i64,
+    snapshot_version: Option<i64>,
     trust_root_sha256: Option<String>,
     trust_payload: Option<Json<MarketplaceTrustPayload>>,
 }
@@ -562,7 +682,9 @@ struct ActionReleaseRow {
     authority: String,
     game_key: String,
     game_version: i64,
-    marketplace_release_id: Uuid,
+    marketplace_release_id: Option<Uuid>,
+    operator_custom_release_id: Option<Uuid>,
+    provenance_class: String,
     admission_revision: i64,
     publisher_id: String,
     publisher_key: Json<PublisherPublicKey>,
@@ -574,6 +696,7 @@ struct ActionReleaseRow {
     policy_status: String,
     policy_marketplace_key: Option<Json<CatalogPublicKey>>,
     policy_snapshot_version: Option<i64>,
+    operator_key: Option<Json<CatalogPublicKey>>,
     trust_root_sha256: Option<String>,
     trust_payload: Option<Json<MarketplaceTrustPayload>>,
 }

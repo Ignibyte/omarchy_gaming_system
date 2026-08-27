@@ -117,7 +117,9 @@ The platform database includes invitation digests and lifecycle metadata,
 accounts, hashed credentials, encrypted MFA state, session digests, personas,
 social/inbox data, game history, reports, the last verified marketplace
 snapshot, reviewed release inventory, local cartridge selections, and immutable
-operator/catalog audit. Protect dumps as secrets, encrypt them at rest,
+operator/catalog audit. Operator-custom authority, exact release attestations,
+signed lifecycle state, source-aware selections, and immutable custom audit are
+also included. Protect dumps as secrets, encrypt them at rest,
 restrict file permissions, retain off-host copies, and define a tested
 retention/deletion policy. The provider authority pilot uses a separate
 database and requires its own documented backup.
@@ -140,7 +142,8 @@ Before switching traffic, compare table counts and focused security/history
 state, start the production server against the isolated restore, prove revoked
 and suspended sessions remain denied, compare the public `server_id` from
 `/.well-known/omarchygs`, compare marketplace/catalog rows and admission
-revisions, and exercise the operator, catalog-audit, and identity immutability
+revisions, compare operator-custom authority/release/policy/audit rows when
+enabled, and exercise the operator, catalog-audit, and identity immutability
 guards. The separately stored cartridge root and marketplace/TLS key material
 are not contained in PostgreSQL; restore them from their own protected backup
 and verify exact digests before resuming sync or distribution.
@@ -177,8 +180,13 @@ operator JSON, shell history, repository, log, or support note.
 The marketplace public key and explicit TLS root are configuration trust
 anchors, while marketplace private signing keys never belong on a community
 server. The descriptor-relative cartridge store is separate persistent state;
-back it up with exact ownership/modes and content digests. Provider
-grant/message secrets, TLS private keys, backup-encryption keys, and future
+back it up with exact ownership/modes and content digests. The operator-custom
+public and private keys are also outside PostgreSQL. Back up the public key with
+server configuration and protect the mode-0600 private signing key separately
+from the normal service; losing it prevents new imports or lifecycle changes,
+while substituting another key is intentionally rejected. Player trust pins
+live on each client and are not restored from the server. Provider grant/message
+secrets, TLS private keys, backup-encryption keys, and future
 module signing keys are also separate custody domains.
 
 ## Current limitations

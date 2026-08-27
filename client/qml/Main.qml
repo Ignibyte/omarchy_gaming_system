@@ -91,6 +91,7 @@ ApplicationWindow {
         helperEndpoint: root.argumentValue("--companion-endpoint=", "")
         helperCredential: root.argumentValue("--companion-credential=", "")
         marketplaceTrusted: marketplace.marketplaceReady
+        operatorCustomTrusted: cartridges.operatorCustomTrusted
     }
 
     MarketplaceController {

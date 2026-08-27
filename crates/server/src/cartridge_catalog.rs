@@ -97,8 +97,12 @@ pub struct CatalogInventoryRelease {
     pub display_name: String,
     pub archive_sha256: String,
     pub signed_identity_sha256: String,
-    pub reviewed_by: String,
-    pub review_summary: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reviewed_by: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub review_summary: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operator_custom: Option<PlayerOperatorCustomProvenance>,
     pub policy_version: u64,
     pub policy_status: String,
     pub policy_reason: String,
@@ -119,10 +123,25 @@ pub struct PlayerCartridgeRelease {
     pub display_name: String,
     pub archive_sha256: String,
     pub signed_identity_sha256: String,
-    pub marketplace: PlayerMarketplaceProvenance,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub marketplace: Option<PlayerMarketplaceProvenance>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operator_custom: Option<PlayerOperatorCustomProvenance>,
     pub server_admission: PlayerServerAdmission,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub warning: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct PlayerOperatorCustomProvenance {
+    pub provenance_class: &'static str,
+    pub operator_name: String,
+    pub authority_id: String,
+    pub key_id: String,
+    pub key_sha256: String,
+    pub warning: String,
+    pub policy_version: u64,
+    pub lifecycle_status: String,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -146,13 +165,24 @@ pub struct PlayerServerAdmission {
 pub enum CatalogSelection {
     Inactive,
     Release { archive_sha256: String },
+    CustomRelease { archive_sha256: String },
 }
 
 impl CatalogSelection {
     fn digest(&self) -> Option<&str> {
         match self {
             Self::Inactive => None,
-            Self::Release { archive_sha256 } => Some(archive_sha256),
+            Self::Release { archive_sha256 } | Self::CustomRelease { archive_sha256 } => {
+                Some(archive_sha256)
+            }
+        }
+    }
+
+    fn provenance_class(&self) -> Option<&'static str> {
+        match self {
+            Self::Inactive => None,
+            Self::Release { .. } => Some("marketplace_vetted"),
+            Self::CustomRelease { .. } => Some("operator_custom"),
         }
     }
 
@@ -197,6 +227,10 @@ pub struct CatalogAuditReceipt {
     pub action: String,
     pub previous_archive_sha256: Option<String>,
     pub resulting_archive_sha256: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_provenance_class: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resulting_provenance_class: Option<String>,
     pub admission_revision: u64,
     pub created_at: String,
 }
@@ -520,19 +554,40 @@ pub async fn list_inventory(pool: &PgPool) -> Result<CatalogInventory, CatalogEr
     .map_err(|_| CatalogError::Internal)?;
     let rows = sqlx::query_as::<_, InventoryRow>(
         r#"
-        SELECT r.game_key, r.publisher_id,
-               r.publisher_key ->> 'key_id' AS publisher_key_id,
-               r.rules_version, r.cartridge_version, r.display_name,
-               r.archive_sha256, r.signed_identity_sha256,
-               r.reviewed_by, r.review_summary, r.policy_version,
-               r.policy_status, r.policy_reason, r.compatible, r.imported,
-               r.last_seen_snapshot_version,
-               c.active_release_id = r.id AS selected,
-               COALESCE(c.admission_revision, 0) AS admission_revision
-        FROM marketplace_releases r
-        LEFT JOIN server_cartridge_catalogs c ON c.game_key = r.game_key
-        ORDER BY r.game_key, r.rules_version DESC, r.cartridge_version DESC,
-                 r.archive_sha256
+        SELECT * FROM (
+            SELECT r.game_key, r.publisher_id,
+                   r.publisher_key ->> 'key_id' AS publisher_key_id,
+                   r.rules_version, r.cartridge_version, r.display_name,
+                   r.archive_sha256, r.signed_identity_sha256,
+                   'marketplace_vetted'::text AS provenance_class,
+                   r.reviewed_by, r.review_summary,
+                   NULL::text AS operator_name, NULL::text AS authority_id,
+                   NULL::text AS operator_key_id, NULL::text AS operator_key_sha256,
+                   NULL::text AS custom_warning,
+                   r.policy_version, r.policy_status, r.policy_reason,
+                   r.compatible, r.imported, r.last_seen_snapshot_version,
+                   c.active_release_id = r.id AS selected,
+                   COALESCE(c.admission_revision, 0) AS admission_revision
+            FROM marketplace_releases r
+            LEFT JOIN server_cartridge_catalogs c ON c.game_key = r.game_key
+            UNION ALL
+            SELECT r.game_key, r.publisher_id,
+                   r.publisher_key ->> 'key_id' AS publisher_key_id,
+                   r.rules_version, r.cartridge_version, r.display_name,
+                   r.archive_sha256, r.signed_identity_sha256,
+                   'operator_custom'::text AS provenance_class,
+                   NULL::text AS reviewed_by, NULL::text AS review_summary,
+                   r.operator_name, r.operator_key ->> 'authority_id' AS authority_id,
+                   r.operator_key ->> 'key_id' AS operator_key_id,
+                   r.operator_key_sha256, r.warning AS custom_warning,
+                   r.policy_version, r.policy_status, r.policy_reason,
+                   r.compatible, r.imported, NULL::bigint AS last_seen_snapshot_version,
+                   c.active_custom_release_id = r.id AS selected,
+                   COALESCE(c.admission_revision, 0) AS admission_revision
+            FROM operator_custom_releases r
+            LEFT JOIN server_cartridge_catalogs c ON c.game_key = r.game_key
+        ) AS inventory
+        ORDER BY game_key, rules_version DESC, cartridge_version DESC, archive_sha256
         LIMIT $1
         "#,
     )
@@ -559,20 +614,45 @@ pub async fn list_player_catalog(
 ) -> Result<Vec<PlayerCartridgeRelease>, CatalogError> {
     let rows = sqlx::query_as::<_, PlayerCatalogRow>(
         r#"
-        SELECT r.game_key, r.publisher_id, r.rules_version,
-               r.cartridge_version, r.display_name, r.archive_sha256,
-               r.signed_identity_sha256, s.authority_id AS marketplace_id,
-               s.marketplace_name, r.reviewed_by, r.review_summary,
-               r.policy_version, r.policy_status, r.policy_reason,
-               c.admission_revision
-        FROM server_cartridge_catalogs c
-        JOIN marketplace_releases r ON r.id = c.active_release_id
-        JOIN marketplace_sync_state s ON s.singleton
-        WHERE r.imported
-          AND r.compatible
-          AND r.last_seen_snapshot_version = s.snapshot_version
-          AND r.policy_status IN ('active', 'deprecated')
-        ORDER BY r.game_key, r.rules_version, r.cartridge_version
+        SELECT * FROM (
+            SELECT r.game_key, r.publisher_id, r.rules_version,
+                   r.cartridge_version, r.display_name, r.archive_sha256,
+                   r.signed_identity_sha256,
+                   'marketplace_vetted'::text AS provenance_class,
+                   s.authority_id AS marketplace_id, s.marketplace_name,
+                   r.reviewed_by, r.review_summary,
+                   NULL::text AS operator_name, NULL::text AS authority_id,
+                   NULL::text AS key_id, NULL::text AS key_sha256,
+                   NULL::text AS custom_warning,
+                   r.policy_version, r.policy_status, r.policy_reason,
+                   c.admission_revision
+            FROM server_cartridge_catalogs c
+            JOIN marketplace_releases r ON r.id = c.active_release_id
+            JOIN marketplace_sync_state s ON s.singleton
+            WHERE r.imported
+              AND r.compatible
+              AND r.last_seen_snapshot_version = s.snapshot_version
+              AND r.policy_status IN ('active', 'deprecated')
+            UNION ALL
+            SELECT r.game_key, r.publisher_id, r.rules_version,
+                   r.cartridge_version, r.display_name, r.archive_sha256,
+                   r.signed_identity_sha256,
+                   'operator_custom'::text AS provenance_class,
+                   NULL::text AS marketplace_id, NULL::text AS marketplace_name,
+                   NULL::text AS reviewed_by, NULL::text AS review_summary,
+                   r.operator_name, r.operator_key ->> 'authority_id' AS authority_id,
+                   r.operator_key ->> 'key_id' AS key_id,
+                   r.operator_key_sha256 AS key_sha256,
+                   r.warning AS custom_warning,
+                   r.policy_version, r.policy_status, r.policy_reason,
+                   c.admission_revision
+            FROM server_cartridge_catalogs c
+            JOIN operator_custom_releases r ON r.id = c.active_custom_release_id
+            WHERE r.imported
+              AND r.compatible
+              AND r.policy_status IN ('active', 'deprecated')
+        ) AS releases
+        ORDER BY game_key, rules_version, cartridge_version
         LIMIT 129
         "#,
     )
@@ -589,6 +669,18 @@ pub async fn apply_catalog_command(
     pool: &PgPool,
     store: &SecureCartridgeStore,
     marketplace_key: &CatalogPublicKey,
+    host: &HostProfile,
+    command: &CatalogCommand,
+) -> Result<CatalogAuditReceipt, CatalogError> {
+    apply_catalog_command_with_sources(pool, store, Some(marketplace_key), None, host, command)
+        .await
+}
+
+pub async fn apply_catalog_command_with_sources(
+    pool: &PgPool,
+    store: &SecureCartridgeStore,
+    marketplace_key: Option<&CatalogPublicKey>,
+    operator_custom_key: Option<&CatalogPublicKey>,
     host: &HostProfile,
     command: &CatalogCommand,
 ) -> Result<CatalogAuditReceipt, CatalogError> {
@@ -622,52 +714,66 @@ pub async fn apply_catalog_command(
     .await
     .map_err(|_| CatalogError::Internal)?;
     let current = fetch_catalog_state(&mut transaction, &command.game_key).await?;
-    if current.archive_sha256.as_deref() != command.expected.digest() {
+    if current.selection()? != command.expected {
         return Err(CatalogError::Conflict);
     }
 
-    let desired = match command.desired.digest() {
-        Some(digest) => Some(
-            fetch_activatable_release(&mut transaction, &command.game_key, digest)
+    let desired = match &command.desired {
+        CatalogSelection::Inactive => None,
+        CatalogSelection::Release { archive_sha256 } => Some(DesiredRelease::Marketplace(
+            fetch_activatable_release(&mut transaction, &command.game_key, archive_sha256)
                 .await?
                 .ok_or(CatalogError::Denied)?,
-        ),
-        None => None,
+        )),
+        CatalogSelection::CustomRelease { archive_sha256 } => Some(DesiredRelease::Custom(
+            fetch_activatable_custom_release(&mut transaction, &command.game_key, archive_sha256)
+                .await?
+                .ok_or(CatalogError::Denied)?,
+        )),
     };
-    let sync_key = fetch_marketplace_key(&mut transaction)
-        .await?
-        .ok_or(CatalogError::Denied)?;
-    if sync_key.marketplace_key.as_ref().map(|key| &key.0) != Some(marketplace_key) {
-        return Err(CatalogError::Denied);
-    }
     if let Some(desired) = &desired {
-        if desired.policy_marketplace_key.as_ref().map(|key| &key.0) != Some(marketplace_key)
-            || desired
-                .policy_snapshot_version
-                .is_none_or(|version| version <= 0)
-        {
-            return Err(CatalogError::Denied);
+        match desired {
+            DesiredRelease::Marketplace(desired) => {
+                let marketplace_key = marketplace_key.ok_or(CatalogError::Denied)?;
+                let sync_key = fetch_marketplace_key(&mut transaction)
+                    .await?
+                    .ok_or(CatalogError::Denied)?;
+                if sync_key.marketplace_key.as_ref().map(|key| &key.0) != Some(marketplace_key)
+                    || desired.policy_marketplace_key.as_ref().map(|key| &key.0)
+                        != Some(marketplace_key)
+                    || desired
+                        .policy_snapshot_version
+                        .is_none_or(|version| version <= 0)
+                {
+                    return Err(CatalogError::Denied);
+                }
+                resolve_selected_release(store, desired, marketplace_key, host, &command.game_key)?;
+            }
+            DesiredRelease::Custom(desired) => {
+                let operator_custom_key = operator_custom_key.ok_or(CatalogError::Denied)?;
+                if &desired.operator_key.0 != operator_custom_key {
+                    return Err(CatalogError::Denied);
+                }
+                resolve_custom_selected_release(
+                    store,
+                    desired,
+                    operator_custom_key,
+                    host,
+                    &command.game_key,
+                )?;
+            }
         }
-        let policy_bytes =
-            serde_json::to_vec(&desired.signed_policy.0).map_err(|_| CatalogError::Internal)?;
-        store
-            .resolve_exact(
-                &command.game_key,
-                &desired.archive_sha256,
-                &desired.publisher_key.0,
-                host,
-                &policy_bytes,
-                marketplace_key,
-                LifecycleUse::NewLaunch,
-            )
-            .map_err(|error| match error {
-                omarchygs_game_cartridge::CartridgeError::Io(_) => CatalogError::Internal,
-                _ => CatalogError::Denied,
-            })?;
     }
 
     let action = transition_action(&current, desired.as_ref())?;
-    let resulting_release_id = desired.as_ref().map(|release| release.id);
+    let resulting_marketplace_release_id = desired.as_ref().and_then(|release| match release {
+        DesiredRelease::Marketplace(release) => Some(release.id),
+        DesiredRelease::Custom(_) => None,
+    });
+    let resulting_custom_release_id = desired.as_ref().and_then(|release| match release {
+        DesiredRelease::Marketplace(_) => None,
+        DesiredRelease::Custom(release) => Some(release.id),
+    });
     let revision = current
         .admission_revision
         .checked_add(1)
@@ -676,13 +782,15 @@ pub async fn apply_catalog_command(
         r#"
         UPDATE server_cartridge_catalogs
         SET active_release_id = $2,
-            admission_revision = $3,
+            active_custom_release_id = $3,
+            admission_revision = $4,
             updated_at = clock_timestamp()
         WHERE id = $1
         "#,
     )
     .bind(current.id)
-    .bind(resulting_release_id)
+    .bind(resulting_marketplace_release_id)
+    .bind(resulting_custom_release_id)
     .bind(revision)
     .execute(&mut *transaction)
     .await
@@ -692,11 +800,13 @@ pub async fn apply_catalog_command(
         INSERT INTO cartridge_catalog_audit_events (
             operation_id, catalog_id, action, actor, reason,
             previous_archive_sha256, resulting_archive_sha256,
+            previous_provenance_class, resulting_provenance_class,
             admission_revision, created_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, clock_timestamp())
-        RETURNING id, operation_id, $9::text AS game_key, action, actor, reason,
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, clock_timestamp())
+        RETURNING id, operation_id, $11::text AS game_key, action, actor, reason,
                   previous_archive_sha256, resulting_archive_sha256,
+                  previous_provenance_class, resulting_provenance_class,
                   admission_revision,
                   to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at
         "#,
@@ -708,6 +818,8 @@ pub async fn apply_catalog_command(
     .bind(&command.reason)
     .bind(&current.archive_sha256)
     .bind(command.desired.digest())
+    .bind(current.provenance_class())
+    .bind(command.desired.provenance_class())
     .bind(revision)
     .bind(&command.game_key)
     .fetch_one(&mut *transaction)
@@ -818,10 +930,14 @@ async fn fetch_catalog_state(
 ) -> Result<CatalogStateRow, CatalogError> {
     sqlx::query_as::<_, CatalogStateRow>(
         r#"
-        SELECT c.id, c.admission_revision, r.id AS release_id,
-               r.archive_sha256, r.rules_version, r.cartridge_version
+        SELECT c.id, c.admission_revision,
+               r.id AS release_id, custom.id AS custom_release_id,
+               COALESCE(r.archive_sha256, custom.archive_sha256) AS archive_sha256,
+               COALESCE(r.rules_version, custom.rules_version) AS rules_version,
+               COALESCE(r.cartridge_version, custom.cartridge_version) AS cartridge_version
         FROM server_cartridge_catalogs c
         LEFT JOIN marketplace_releases r ON r.id = c.active_release_id
+        LEFT JOIN operator_custom_releases custom ON custom.id = c.active_custom_release_id
         WHERE c.game_key = $1
         FOR UPDATE OF c
         "#,
@@ -831,6 +947,84 @@ async fn fetch_catalog_state(
     .await
     .map_err(|_| CatalogError::Internal)?
     .ok_or(CatalogError::Internal)
+}
+
+async fn fetch_activatable_custom_release(
+    transaction: &mut Transaction<'_, Postgres>,
+    game_key: &str,
+    digest: &str,
+) -> Result<Option<ActivatableCustomReleaseRow>, CatalogError> {
+    sqlx::query_as::<_, ActivatableCustomReleaseRow>(
+        r#"
+        SELECT id, archive_sha256, rules_version, cartridge_version,
+               publisher_key, signed_policy, operator_key
+        FROM operator_custom_releases
+        WHERE game_key = $1
+          AND archive_sha256 = $2
+          AND imported
+          AND compatible
+          AND policy_status IN ('active', 'deprecated')
+        FOR SHARE
+        "#,
+    )
+    .bind(game_key)
+    .bind(digest)
+    .fetch_optional(&mut **transaction)
+    .await
+    .map_err(|_| CatalogError::Internal)
+}
+
+fn resolve_selected_release(
+    store: &SecureCartridgeStore,
+    desired: &ActivatableReleaseRow,
+    marketplace_key: &CatalogPublicKey,
+    host: &HostProfile,
+    game_key: &str,
+) -> Result<(), CatalogError> {
+    let policy_bytes =
+        serde_json::to_vec(&desired.signed_policy.0).map_err(|_| CatalogError::Internal)?;
+    store
+        .resolve_exact(
+            game_key,
+            &desired.archive_sha256,
+            &desired.publisher_key.0,
+            host,
+            &policy_bytes,
+            marketplace_key,
+            LifecycleUse::NewLaunch,
+        )
+        .map(|_| ())
+        .map_err(map_store_error)
+}
+
+fn resolve_custom_selected_release(
+    store: &SecureCartridgeStore,
+    desired: &ActivatableCustomReleaseRow,
+    operator_custom_key: &CatalogPublicKey,
+    host: &HostProfile,
+    game_key: &str,
+) -> Result<(), CatalogError> {
+    let policy_bytes =
+        serde_json::to_vec(&desired.signed_policy.0).map_err(|_| CatalogError::Internal)?;
+    store
+        .resolve_exact(
+            game_key,
+            &desired.archive_sha256,
+            &desired.publisher_key.0,
+            host,
+            &policy_bytes,
+            operator_custom_key,
+            LifecycleUse::NewLaunch,
+        )
+        .map(|_| ())
+        .map_err(map_store_error)
+}
+
+fn map_store_error(error: omarchygs_game_cartridge::CartridgeError) -> CatalogError {
+    match error {
+        omarchygs_game_cartridge::CartridgeError::Io(_) => CatalogError::Internal,
+        _ => CatalogError::Denied,
+    }
 }
 
 async fn fetch_activatable_release(
@@ -880,6 +1074,7 @@ async fn fetch_audit_replay(
         r#"
         SELECT a.id, a.operation_id, c.game_key, a.action, a.actor, a.reason,
                a.previous_archive_sha256, a.resulting_archive_sha256,
+               a.previous_provenance_class, a.resulting_provenance_class,
                a.admission_revision,
                to_char(a.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at
         FROM cartridge_catalog_audit_events a
@@ -900,6 +1095,8 @@ fn exact_audit_replay(
     if row.game_key != command.game_key
         || row.previous_archive_sha256.as_deref() != command.expected.digest()
         || row.resulting_archive_sha256.as_deref() != command.desired.digest()
+        || row.previous_provenance_class.as_deref() != command.expected.provenance_class()
+        || row.resulting_provenance_class.as_deref() != command.desired.provenance_class()
         || row.actor != command.actor
         || row.reason != command.reason
     {
@@ -910,7 +1107,7 @@ fn exact_audit_replay(
 
 fn transition_action(
     current: &CatalogStateRow,
-    desired: Option<&ActivatableReleaseRow>,
+    desired: Option<&DesiredRelease>,
 ) -> Result<&'static str, CatalogError> {
     match (current.archive_sha256.as_ref(), desired) {
         (None, Some(_)) => Ok("activate_cartridge"),
@@ -920,7 +1117,7 @@ fn transition_action(
                 current.rules_version.ok_or(CatalogError::Internal)?,
                 current.cartridge_version.ok_or(CatalogError::Internal)?,
             );
-            let next = (desired.rules_version, desired.cartridge_version);
+            let next = (desired.rules_version(), desired.cartridge_version());
             match next.cmp(&previous) {
                 std::cmp::Ordering::Less => Ok("rollback_cartridge"),
                 std::cmp::Ordering::Greater => Ok("upgrade_cartridge"),
@@ -965,8 +1162,27 @@ fn inventory_release(
     row: InventoryRow,
     current_version: Option<i64>,
 ) -> Result<CatalogInventoryRelease, CatalogError> {
-    let present = current_version == Some(row.last_seen_snapshot_version);
+    let present = match row.provenance_class.as_str() {
+        "marketplace_vetted" => current_version == row.last_seen_snapshot_version,
+        "operator_custom" => true,
+        _ => return Err(CatalogError::Internal),
+    };
     let permitted = matches!(row.policy_status.as_str(), "active" | "deprecated");
+    let operator_custom = if row.provenance_class == "operator_custom" {
+        Some(PlayerOperatorCustomProvenance {
+            provenance_class: "operator_custom",
+            operator_name: row.operator_name.ok_or(CatalogError::Internal)?,
+            authority_id: row.authority_id.ok_or(CatalogError::Internal)?,
+            key_id: row.operator_key_id.ok_or(CatalogError::Internal)?,
+            key_sha256: row.operator_key_sha256.ok_or(CatalogError::Internal)?,
+            warning: row.custom_warning.ok_or(CatalogError::Internal)?,
+            policy_version: u64::try_from(row.policy_version)
+                .map_err(|_| CatalogError::Internal)?,
+            lifecycle_status: row.policy_status.clone(),
+        })
+    } else {
+        None
+    };
     Ok(CatalogInventoryRelease {
         game_key: row.game_key,
         publisher_id: row.publisher_id,
@@ -979,6 +1195,7 @@ fn inventory_release(
         signed_identity_sha256: row.signed_identity_sha256,
         reviewed_by: row.reviewed_by,
         review_summary: row.review_summary,
+        operator_custom,
         policy_version: u64::try_from(row.policy_version).map_err(|_| CatalogError::Internal)?,
         policy_status: row.policy_status,
         policy_reason: row.policy_reason,
@@ -997,10 +1214,43 @@ fn inventory_release(
 }
 
 fn player_release(row: PlayerCatalogRow) -> Result<PlayerCartridgeRelease, CatalogError> {
-    let warning = if row.policy_status == "deprecated" {
-        Some(row.policy_reason.clone())
-    } else {
-        None
+    let policy_version = u64::try_from(row.policy_version).map_err(|_| CatalogError::Internal)?;
+    let (marketplace, operator_custom, warning) = match row.provenance_class.as_str() {
+        "marketplace_vetted" => (
+            Some(PlayerMarketplaceProvenance {
+                provenance_class: "marketplace_vetted",
+                marketplace_id: row.marketplace_id.ok_or(CatalogError::Internal)?,
+                marketplace_name: row.marketplace_name.ok_or(CatalogError::Internal)?,
+                reviewed_by: row.reviewed_by.ok_or(CatalogError::Internal)?,
+                review_summary: row.review_summary.ok_or(CatalogError::Internal)?,
+                policy_version,
+                lifecycle_status: row.policy_status.clone(),
+            }),
+            None,
+            (row.policy_status == "deprecated").then(|| row.policy_reason.clone()),
+        ),
+        "operator_custom" => {
+            let custom_warning = row.custom_warning.ok_or(CatalogError::Internal)?;
+            (
+                None,
+                Some(PlayerOperatorCustomProvenance {
+                    provenance_class: "operator_custom",
+                    operator_name: row.operator_name.ok_or(CatalogError::Internal)?,
+                    authority_id: row.authority_id.ok_or(CatalogError::Internal)?,
+                    key_id: row.key_id.ok_or(CatalogError::Internal)?,
+                    key_sha256: row.key_sha256.ok_or(CatalogError::Internal)?,
+                    warning: custom_warning.clone(),
+                    policy_version,
+                    lifecycle_status: row.policy_status.clone(),
+                }),
+                Some(if row.policy_status == "deprecated" {
+                    format!("{custom_warning} {}", row.policy_reason)
+                } else {
+                    custom_warning
+                }),
+            )
+        }
+        _ => return Err(CatalogError::Internal),
     };
     Ok(PlayerCartridgeRelease {
         game_key: row.game_key,
@@ -1011,16 +1261,8 @@ fn player_release(row: PlayerCatalogRow) -> Result<PlayerCartridgeRelease, Catal
         display_name: row.display_name,
         archive_sha256: row.archive_sha256,
         signed_identity_sha256: row.signed_identity_sha256,
-        marketplace: PlayerMarketplaceProvenance {
-            provenance_class: "marketplace_vetted",
-            marketplace_id: row.marketplace_id,
-            marketplace_name: row.marketplace_name,
-            reviewed_by: row.reviewed_by,
-            review_summary: row.review_summary,
-            policy_version: u64::try_from(row.policy_version)
-                .map_err(|_| CatalogError::Internal)?,
-            lifecycle_status: row.policy_status,
-        },
+        marketplace,
+        operator_custom,
         server_admission: PlayerServerAdmission {
             revision: u64::try_from(row.admission_revision).map_err(|_| CatalogError::Internal)?,
         },
@@ -1036,6 +1278,8 @@ fn audit_receipt(row: AuditRow) -> Result<CatalogAuditReceipt, CatalogError> {
         action: row.action,
         previous_archive_sha256: row.previous_archive_sha256,
         resulting_archive_sha256: row.resulting_archive_sha256,
+        previous_provenance_class: row.previous_provenance_class,
+        resulting_provenance_class: row.resulting_provenance_class,
         admission_revision: u64::try_from(row.admission_revision)
             .map_err(|_| CatalogError::Internal)?,
         created_at: row.created_at,
@@ -1264,14 +1508,20 @@ struct InventoryRow {
     display_name: String,
     archive_sha256: String,
     signed_identity_sha256: String,
-    reviewed_by: String,
-    review_summary: String,
+    provenance_class: String,
+    reviewed_by: Option<String>,
+    review_summary: Option<String>,
+    operator_name: Option<String>,
+    authority_id: Option<String>,
+    operator_key_id: Option<String>,
+    operator_key_sha256: Option<String>,
+    custom_warning: Option<String>,
     policy_version: i64,
     policy_status: String,
     policy_reason: String,
     compatible: bool,
     imported: bool,
-    last_seen_snapshot_version: i64,
+    last_seen_snapshot_version: Option<i64>,
     selected: Option<bool>,
     admission_revision: i64,
 }
@@ -1285,10 +1535,16 @@ struct PlayerCatalogRow {
     display_name: String,
     archive_sha256: String,
     signed_identity_sha256: String,
-    marketplace_id: String,
-    marketplace_name: String,
-    reviewed_by: String,
-    review_summary: String,
+    provenance_class: String,
+    marketplace_id: Option<String>,
+    marketplace_name: Option<String>,
+    reviewed_by: Option<String>,
+    review_summary: Option<String>,
+    operator_name: Option<String>,
+    authority_id: Option<String>,
+    key_id: Option<String>,
+    key_sha256: Option<String>,
+    custom_warning: Option<String>,
     policy_version: i64,
     policy_status: String,
     policy_reason: String,
@@ -1299,11 +1555,39 @@ struct PlayerCatalogRow {
 struct CatalogStateRow {
     id: Uuid,
     admission_revision: i64,
-    #[allow(dead_code)]
     release_id: Option<Uuid>,
+    custom_release_id: Option<Uuid>,
     archive_sha256: Option<String>,
     rules_version: Option<i64>,
     cartridge_version: Option<i64>,
+}
+
+impl CatalogStateRow {
+    fn provenance_class(&self) -> Option<&'static str> {
+        match (self.release_id, self.custom_release_id) {
+            (Some(_), None) => Some("marketplace_vetted"),
+            (None, Some(_)) => Some("operator_custom"),
+            (None, None) => None,
+            (Some(_), Some(_)) => None,
+        }
+    }
+
+    fn selection(&self) -> Result<CatalogSelection, CatalogError> {
+        match (self.provenance_class(), self.archive_sha256.as_ref()) {
+            (None, None) if self.release_id.is_none() && self.custom_release_id.is_none() => {
+                Ok(CatalogSelection::Inactive)
+            }
+            (Some("marketplace_vetted"), Some(archive_sha256)) => Ok(CatalogSelection::Release {
+                archive_sha256: archive_sha256.clone(),
+            }),
+            (Some("operator_custom"), Some(archive_sha256)) => {
+                Ok(CatalogSelection::CustomRelease {
+                    archive_sha256: archive_sha256.clone(),
+                })
+            }
+            _ => Err(CatalogError::Internal),
+        }
+    }
 }
 
 #[derive(FromRow)]
@@ -1316,6 +1600,38 @@ struct ActivatableReleaseRow {
     signed_policy: Json<SignedCatalogPolicy>,
     policy_marketplace_key: Option<Json<CatalogPublicKey>>,
     policy_snapshot_version: Option<i64>,
+}
+
+#[derive(FromRow)]
+struct ActivatableCustomReleaseRow {
+    id: Uuid,
+    archive_sha256: String,
+    rules_version: i64,
+    cartridge_version: i64,
+    publisher_key: Json<PublisherPublicKey>,
+    signed_policy: Json<SignedCatalogPolicy>,
+    operator_key: Json<CatalogPublicKey>,
+}
+
+enum DesiredRelease {
+    Marketplace(ActivatableReleaseRow),
+    Custom(ActivatableCustomReleaseRow),
+}
+
+impl DesiredRelease {
+    fn rules_version(&self) -> i64 {
+        match self {
+            Self::Marketplace(release) => release.rules_version,
+            Self::Custom(release) => release.rules_version,
+        }
+    }
+
+    fn cartridge_version(&self) -> i64 {
+        match self {
+            Self::Marketplace(release) => release.cartridge_version,
+            Self::Custom(release) => release.cartridge_version,
+        }
+    }
 }
 
 #[derive(FromRow)]
@@ -1333,6 +1649,8 @@ struct AuditRow {
     reason: String,
     previous_archive_sha256: Option<String>,
     resulting_archive_sha256: Option<String>,
+    previous_provenance_class: Option<String>,
+    resulting_provenance_class: Option<String>,
     admission_revision: i64,
     created_at: String,
 }

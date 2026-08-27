@@ -10,8 +10,10 @@ use std::{
 };
 
 use omarchygs_game_cartridge::{
-    AcquisitionServerAdmission, CatalogPublicKey, CatalogStatus, LifecycleUse, PublisherPublicKey,
-    SecureCartridgeStore, SecureResolution, VerifiedAcquisition, rich_2d_host_profile,
+    AcquisitionServerAdmission, CatalogPublicKey, CatalogStatus, LifecycleUse,
+    OPERATOR_CUSTOM_WARNING, PublisherPublicKey, SecureCartridgeStore, SecureResolution,
+    VerifiedAcquisition, VerifiedOperatorCustomAcquisition, operator_custom_key_sha256,
+    rich_2d_host_profile,
 };
 use rand_core::{OsRng, RngCore as _};
 use rustix::{
@@ -27,11 +29,16 @@ use uuid::Uuid;
 
 use crate::{
     CompanionError, Result,
-    remote::{CatalogRelease, selected_origin},
+    remote::{
+        CatalogRelease, OperatorCustomDiscovery, SessionOperatorCustomProvenance, selected_origin,
+    },
 };
 
 const PROFILE_FORMAT: &str = "omarchygs.client-profile-mounts/v1";
 const MOUNT_FORMAT: &str = "omarchygs.client-cartridge-mount/v1";
+const CUSTOM_PROFILE_FORMAT: &str = "omarchygs.client-operator-custom-mounts/v1";
+const CUSTOM_MOUNT_FORMAT: &str = "omarchygs.client-operator-custom-mount/v1";
+const OPERATOR_TRUST_FORMAT: &str = "omarchygs.client-operator-custom-trust/v1";
 const MAX_PROFILE_BYTES: u64 = 256 * 1024;
 const MAX_PUBLISHER_KEY_BYTES: u64 = 64 * 1024;
 const MAX_MOUNTS: usize = 128;
@@ -39,6 +46,8 @@ const MAX_MOUNTS: usize = 128;
 pub struct ClientCartridgeCache {
     _root: OwnedFd,
     profiles: OwnedFd,
+    custom_profiles: OwnedFd,
+    operator_trust: OwnedFd,
     publisher_keys: OwnedFd,
     policies: OwnedFd,
     lock_file: OwnedFd,
@@ -58,6 +67,8 @@ impl ClientCartridgeCache {
         .map_err(|_| CompanionError::Cache)?;
         validate_directory(&root_fd, owner)?;
         let profiles = open_or_create_directory(&root_fd, "profiles", owner)?;
+        let custom_profiles = open_or_create_directory(&root_fd, "custom-profiles", owner)?;
+        let operator_trust = open_or_create_directory(&root_fd, "operator-trust", owner)?;
         let publisher_keys = open_or_create_directory(&root_fd, "publisher-keys", owner)?;
         let policies = open_or_create_directory(&root_fd, "policies", owner)?;
         open_or_create_directory(&root_fd, "content", owner)?;
@@ -75,6 +86,8 @@ impl ClientCartridgeCache {
         Ok(Self {
             _root: root_fd,
             profiles,
+            custom_profiles,
+            operator_trust,
             publisher_keys,
             policies,
             lock_file,
@@ -85,6 +98,104 @@ impl ClientCartridgeCache {
 
     pub fn mounts_all(&self, server_id: Uuid) -> Result<Vec<MountRecord>> {
         self.with_mount_lock(|| Ok(self.read_profile(server_id)?.mounts))
+    }
+
+    pub fn operator_custom_mounts(
+        &self,
+        server_id: Uuid,
+    ) -> Result<Vec<OperatorCustomMountRecord>> {
+        self.with_mount_lock(|| Ok(self.read_custom_profile(server_id)?.mounts))
+    }
+
+    pub fn operator_custom_trust(
+        &self,
+        server_origin: &str,
+        server_id: Uuid,
+    ) -> Result<Option<OperatorCustomTrust>> {
+        let server_origin = canonical_origin(server_origin)?;
+        self.with_mount_lock(|| {
+            let Some(bytes) = read_optional_regular_file(
+                &self.operator_trust,
+                &profile_name(server_id),
+                MAX_PROFILE_BYTES,
+            )?
+            else {
+                return Ok(None);
+            };
+            let trust: OperatorCustomTrust =
+                serde_json::from_slice(&bytes).map_err(|_| CompanionError::Cache)?;
+            if serde_json::to_vec(&trust).map_err(|_| CompanionError::Cache)? != bytes
+                || trust.validate().is_err()
+                || !trust.matches(&server_origin, server_id)
+            {
+                return Err(CompanionError::Cache);
+            }
+            Ok(Some(trust))
+        })
+    }
+
+    pub fn trust_operator_custom(
+        &self,
+        server_origin: &str,
+        server_id: Uuid,
+        discovery: &OperatorCustomDiscovery,
+        confirmed_key_sha256: &str,
+    ) -> Result<OperatorCustomTrust> {
+        let server_origin = canonical_origin(server_origin)?;
+        if confirmed_key_sha256 != discovery.key_sha256 {
+            return Err(CompanionError::OperatorCustomUntrusted);
+        }
+        let trust = OperatorCustomTrust::from_discovery(server_origin, server_id, discovery)?;
+        self.with_mount_lock(|| {
+            let target = profile_name(server_id);
+            if let Some(bytes) =
+                read_optional_regular_file(&self.operator_trust, &target, MAX_PROFILE_BYTES)?
+            {
+                let current: OperatorCustomTrust =
+                    serde_json::from_slice(&bytes).map_err(|_| CompanionError::Cache)?;
+                return if current == trust {
+                    Ok(current)
+                } else {
+                    Err(CompanionError::OperatorCustomUntrusted)
+                };
+            }
+            let bytes = serde_json::to_vec(&trust).map_err(|_| CompanionError::Cache)?;
+            write_private_document(&self.operator_trust, &target, &bytes)?;
+            Ok(trust)
+        })
+    }
+
+    pub fn remove_operator_custom_trust(
+        &self,
+        server_origin: &str,
+        server_id: Uuid,
+        confirmed_key_sha256: &str,
+    ) -> Result<bool> {
+        let server_origin = canonical_origin(server_origin)?;
+        if !valid_sha256(confirmed_key_sha256) {
+            return Err(CompanionError::InvalidInput);
+        }
+        self.with_mount_lock(|| {
+            if !self.read_custom_profile(server_id)?.mounts.is_empty() {
+                return Err(CompanionError::OperatorCustomUntrusted);
+            }
+            let target = profile_name(server_id);
+            let Some(bytes) =
+                read_optional_regular_file(&self.operator_trust, &target, MAX_PROFILE_BYTES)?
+            else {
+                return Ok(false);
+            };
+            let trust: OperatorCustomTrust =
+                serde_json::from_slice(&bytes).map_err(|_| CompanionError::Cache)?;
+            if !trust.matches(&server_origin, server_id) || trust.key_sha256 != confirmed_key_sha256
+            {
+                return Err(CompanionError::OperatorCustomUntrusted);
+            }
+            unlinkat(&self.operator_trust, &target, AtFlags::empty())
+                .map_err(|_| CompanionError::Cache)?;
+            fsync(&self.operator_trust).map_err(|_| CompanionError::Cache)?;
+            Ok(true)
+        })
     }
 
     pub fn mounts(
@@ -118,6 +229,85 @@ impl ClientCartridgeCache {
         mount: MountRecord,
     ) -> Result<MountRecord> {
         self.install_for_use(verified, mount, LifecycleUse::ActiveSession)
+    }
+
+    pub fn install_operator_custom(
+        &self,
+        verified: &VerifiedOperatorCustomAcquisition,
+        mount: OperatorCustomMountRecord,
+    ) -> Result<OperatorCustomMountRecord> {
+        self.install_operator_custom_for_use(verified, mount, LifecycleUse::NewLaunch)
+    }
+
+    pub(crate) fn install_operator_custom_session(
+        &self,
+        verified: &VerifiedOperatorCustomAcquisition,
+        mount: OperatorCustomMountRecord,
+    ) -> Result<OperatorCustomMountRecord> {
+        self.install_operator_custom_for_use(verified, mount, LifecycleUse::ActiveSession)
+    }
+
+    fn install_operator_custom_for_use(
+        &self,
+        verified: &VerifiedOperatorCustomAcquisition,
+        mount: OperatorCustomMountRecord,
+        use_kind: LifecycleUse,
+    ) -> Result<OperatorCustomMountRecord> {
+        mount.validate()?;
+        let key_sha256 = operator_custom_key_sha256(verified.operator_key())
+            .map_err(|_| CompanionError::Rejected)?;
+        if mount.operator_custom.key_sha256 != key_sha256
+            || mount.operator_custom.operator_name != verified.attestation().operator_name
+            || mount.policy_version != verified.policy().policy_version
+            || mount.lifecycle_status != lifecycle_name(verified.policy().status)
+        {
+            return Err(CompanionError::Rejected);
+        }
+        let staged = self
+            .content
+            .stage_reviewed_release_for_use(
+                verified.release(),
+                verified.policy_bytes(),
+                verified.operator_key(),
+                use_kind,
+            )
+            .map_err(|_| CompanionError::Cache)?;
+        if !staged.installed || staged.release.archive_sha256 != mount.archive_sha256 {
+            return Err(CompanionError::AdmissionChanged);
+        }
+        let server_id = exact_uuid(&mount.server_id)?;
+        let trusted = self
+            .operator_custom_trust(&mount.server_origin, server_id)?
+            .ok_or(CompanionError::OperatorCustomUntrusted)?;
+        if trusted.public_key != *verified.operator_key()
+            || trusted.key_sha256 != mount.operator_custom.key_sha256
+        {
+            return Err(CompanionError::OperatorCustomUntrusted);
+        }
+        self.with_mount_lock(|| {
+            let mut profile = self.read_custom_profile(server_id)?;
+            if profile
+                .mounts
+                .iter()
+                .any(|existing| existing.server_origin != mount.server_origin)
+            {
+                return Err(CompanionError::Rejected);
+            }
+            self.write_publisher_key(&mount.archive_sha256, &verified.attestation().publisher_key)?;
+            self.write_policy(&mount.archive_sha256, &key_sha256, verified.policy_bytes())?;
+            profile.mounts.retain(|existing| {
+                existing.game_key != mount.game_key
+                    || existing.archive_sha256 != mount.archive_sha256
+                    || existing.admission_revision != mount.admission_revision
+            });
+            profile.mounts.push(mount.clone());
+            profile.mounts.sort_by(custom_mount_order);
+            if profile.mounts.len() > MAX_MOUNTS {
+                return Err(CompanionError::Cache);
+            }
+            self.write_custom_profile(server_id, &profile)?;
+            Ok(mount)
+        })
     }
 
     fn install_for_use(
@@ -204,6 +394,36 @@ impl ClientCartridgeCache {
                 return Ok(false);
             }
             self.write_profile_all(server_id, &profile)?;
+            Ok(true)
+        })
+    }
+
+    pub fn remove_operator_custom_exact(
+        &self,
+        server_id: Uuid,
+        game_key: &str,
+        digest: &str,
+        admission_revision: Option<u64>,
+    ) -> Result<bool> {
+        if !valid_identifier(game_key)
+            || !valid_sha256(digest)
+            || admission_revision.is_some_and(|revision| revision == 0)
+        {
+            return Err(CompanionError::InvalidInput);
+        }
+        self.with_mount_lock(|| {
+            let mut profile = self.read_custom_profile(server_id)?;
+            let before = profile.mounts.len();
+            profile.mounts.retain(|mount| {
+                mount.game_key != game_key
+                    || mount.archive_sha256 != digest
+                    || admission_revision
+                        .is_some_and(|revision| mount.admission_revision != revision)
+            });
+            if profile.mounts.len() == before {
+                return Ok(false);
+            }
+            self.write_custom_profile(server_id, &profile)?;
             Ok(true)
         })
     }
@@ -313,6 +533,72 @@ impl ClientCartridgeCache {
         Ok(resolution)
     }
 
+    pub(crate) fn resolve_operator_custom_mounted(
+        &self,
+        server_origin: &str,
+        server_id: Uuid,
+        game_key: &str,
+        archive_sha256: &str,
+        admission_revision: u64,
+    ) -> Result<SecureResolution> {
+        let server_origin = canonical_origin(server_origin)?;
+        if !valid_identifier(game_key) || !valid_sha256(archive_sha256) || admission_revision == 0 {
+            return Err(CompanionError::InvalidInput);
+        }
+        let trust = self
+            .operator_custom_trust(&server_origin, server_id)?
+            .ok_or(CompanionError::OperatorCustomUntrusted)?;
+        let (mount, publisher_key, policy_bytes) = self.with_mount_lock(|| {
+            let mount = self
+                .read_custom_profile(server_id)?
+                .mounts
+                .into_iter()
+                .find(|mount| {
+                    mount.server_origin == server_origin
+                        && mount.game_key == game_key
+                        && mount.archive_sha256 == archive_sha256
+                        && mount.admission_revision == admission_revision
+                })
+                .ok_or(CompanionError::MountMissing)?;
+            let publisher_key = self.read_publisher_key(archive_sha256)?;
+            let policy_bytes = read_regular_file(
+                &self.policies,
+                &policy_name(archive_sha256, &mount.operator_custom.key_sha256),
+                omarchygs_game_cartridge::MAX_JSON_BYTES as u64,
+            )?;
+            Ok((mount, publisher_key, policy_bytes))
+        })?;
+        if trust.key_sha256 != mount.operator_custom.key_sha256
+            || trust.public_key.authority_id != mount.operator_custom.authority_id
+            || trust.public_key.key_id != mount.operator_custom.key_id
+            || publisher_key.publisher_id != mount.publisher_id
+        {
+            return Err(CompanionError::OperatorCustomUntrusted);
+        }
+        let resolution = self
+            .content
+            .resolve_exact(
+                game_key,
+                archive_sha256,
+                &publisher_key,
+                &rich_2d_host_profile(),
+                &policy_bytes,
+                &trust.public_key,
+                LifecycleUse::ActiveSession,
+            )
+            .map_err(|_| CompanionError::AdmissionChanged)?;
+        let activation = resolution.activation();
+        if activation.publisher_id != mount.publisher_id
+            || activation.cartridge_version != mount.cartridge_version
+            || activation.archive_sha256 != mount.archive_sha256
+            || activation.signed_identity_sha256 != mount.signed_identity_sha256
+            || resolution.cartridge().manifest().rules_version != mount.rules_version
+        {
+            return Err(CompanionError::Cache);
+        }
+        Ok(resolution)
+    }
+
     fn with_mount_lock<T>(&self, operation: impl FnOnce() -> Result<T>) -> Result<T> {
         let _process = self
             .process_lock
@@ -355,6 +641,33 @@ impl ClientCartridgeCache {
             serde_json::from_slice(&bytes).map_err(|_| CompanionError::Cache)?;
         profile.validate(server_id)?;
         Ok(profile)
+    }
+
+    fn read_custom_profile(&self, server_id: Uuid) -> Result<CustomProfileDocument> {
+        let Some(bytes) = read_optional_regular_file(
+            &self.custom_profiles,
+            &profile_name(server_id),
+            MAX_PROFILE_BYTES,
+        )?
+        else {
+            return Ok(CustomProfileDocument::empty());
+        };
+        let profile: CustomProfileDocument =
+            serde_json::from_slice(&bytes).map_err(|_| CompanionError::Cache)?;
+        if serde_json::to_vec(&profile).map_err(|_| CompanionError::Cache)? != bytes {
+            return Err(CompanionError::Cache);
+        }
+        profile.validate(server_id)?;
+        Ok(profile)
+    }
+
+    fn write_custom_profile(&self, server_id: Uuid, profile: &CustomProfileDocument) -> Result<()> {
+        profile.validate(server_id)?;
+        let bytes = serde_json::to_vec(profile).map_err(|_| CompanionError::Cache)?;
+        if bytes.is_empty() || bytes.len() as u64 > MAX_PROFILE_BYTES {
+            return Err(CompanionError::Cache);
+        }
+        write_private_document(&self.custom_profiles, &profile_name(server_id), &bytes)
     }
 
     #[cfg(test)]
@@ -587,12 +900,17 @@ impl MountRecord {
         let snapshot = verified.snapshot();
         let entry = verified.entry();
         let policy = verified.policy();
-        if snapshot.authority_id != selected.marketplace.marketplace_id
-            || snapshot.marketplace_name != selected.marketplace.marketplace_name
-            || entry.reviewed_by != selected.marketplace.reviewed_by
-            || entry.review_summary != selected.marketplace.review_summary
-            || policy.policy_version != selected.marketplace.policy_version
-            || lifecycle_name(policy.status) != selected.marketplace.lifecycle_status
+        let marketplace = selected
+            .marketplace
+            .as_ref()
+            .ok_or(CompanionError::Rejected)?;
+        if selected.operator_custom.is_some()
+            || snapshot.authority_id != marketplace.marketplace_id
+            || snapshot.marketplace_name != marketplace.marketplace_name
+            || entry.reviewed_by != marketplace.reviewed_by
+            || entry.review_summary != marketplace.review_summary
+            || policy.policy_version != marketplace.policy_version
+            || lifecycle_name(policy.status) != marketplace.lifecycle_status
         {
             return Err(CompanionError::Rejected);
         }
@@ -611,14 +929,14 @@ impl MountRecord {
             policy_marketplace_key_sha256: Some(marketplace_key_sha256(
                 verified.policy_marketplace_key(),
             )?),
-            marketplace_id: selected.marketplace.marketplace_id.clone(),
-            marketplace_name: selected.marketplace.marketplace_name.clone(),
-            reviewed_by: selected.marketplace.reviewed_by.clone(),
-            review_summary: selected.marketplace.review_summary.clone(),
+            marketplace_id: marketplace.marketplace_id.clone(),
+            marketplace_name: marketplace.marketplace_name.clone(),
+            reviewed_by: marketplace.reviewed_by.clone(),
+            review_summary: marketplace.review_summary.clone(),
             snapshot_version: snapshot.snapshot_version,
             policy_snapshot_version: Some(verified.policy_snapshot_version()),
-            policy_version: selected.marketplace.policy_version,
-            lifecycle_status: selected.marketplace.lifecycle_status.clone(),
+            policy_version: marketplace.policy_version,
+            lifecycle_status: marketplace.lifecycle_status.clone(),
             admission_revision: selected.server_admission.revision,
             trust_status: None,
             warning: selected.warning.clone(),
@@ -743,11 +1061,314 @@ impl MountRecord {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct OperatorCustomTrust {
+    pub format: String,
+    pub server_id: String,
+    pub server_origin: String,
+    pub operator_name: String,
+    pub key_sha256: String,
+    pub public_key: CatalogPublicKey,
+}
+
+impl OperatorCustomTrust {
+    fn from_discovery(
+        server_origin: String,
+        server_id: Uuid,
+        discovery: &OperatorCustomDiscovery,
+    ) -> Result<Self> {
+        let trust = Self {
+            format: OPERATOR_TRUST_FORMAT.to_owned(),
+            server_id: server_id.to_string(),
+            server_origin,
+            operator_name: discovery.operator_name.clone(),
+            key_sha256: discovery.key_sha256.clone(),
+            public_key: discovery.public_key.clone(),
+        };
+        trust.validate()?;
+        if trust.public_key.authority_id != discovery.authority_id
+            || trust.public_key.key_id != discovery.key_id
+        {
+            return Err(CompanionError::Rejected);
+        }
+        Ok(trust)
+    }
+
+    fn validate(&self) -> Result<()> {
+        if self.format != OPERATOR_TRUST_FORMAT
+            || exact_uuid(&self.server_id).is_err()
+            || canonical_origin(&self.server_origin).is_err()
+            || !valid_text(&self.operator_name, 128)
+            || !valid_sha256(&self.key_sha256)
+            || operator_custom_key_sha256(&self.public_key).map_err(|_| CompanionError::Cache)?
+                != self.key_sha256
+        {
+            Err(CompanionError::Cache)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub(crate) fn matches(&self, server_origin: &str, server_id: Uuid) -> bool {
+        self.server_origin == server_origin && self.server_id == server_id.to_string()
+    }
+
+    pub(crate) fn matches_discovery(&self, discovery: &OperatorCustomDiscovery) -> bool {
+        self.operator_name == discovery.operator_name
+            && self.key_sha256 == discovery.key_sha256
+            && self.public_key == discovery.public_key
+            && self.public_key.authority_id == discovery.authority_id
+            && self.public_key.key_id == discovery.key_id
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct OperatorCustomMountProvenance {
+    pub provenance_class: String,
+    pub operator_name: String,
+    pub authority_id: String,
+    pub key_id: String,
+    pub key_sha256: String,
+    pub warning: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct OperatorCustomMountRecord {
+    pub format: String,
+    pub server_id: String,
+    pub server_origin: String,
+    pub game_key: String,
+    pub publisher_id: String,
+    pub rules_version: u32,
+    pub cartridge_version: u32,
+    pub display_name: String,
+    pub archive_sha256: String,
+    pub signed_identity_sha256: String,
+    pub operator_custom: OperatorCustomMountProvenance,
+    pub policy_version: u64,
+    pub lifecycle_status: String,
+    pub admission_revision: u64,
+    pub warning: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trust_status: Option<String>,
+}
+
+impl OperatorCustomMountRecord {
+    pub(crate) fn from_verified(
+        server_origin: String,
+        server_id: Uuid,
+        selected: &CatalogRelease,
+        verified: &VerifiedOperatorCustomAcquisition,
+    ) -> Result<Self> {
+        let custom = selected
+            .operator_custom
+            .as_ref()
+            .ok_or(CompanionError::Rejected)?;
+        let attestation = verified.attestation();
+        let policy = verified.policy();
+        if selected.marketplace.is_some()
+            || custom.operator_name != attestation.operator_name
+            || custom.authority_id != attestation.authority_id
+            || custom.key_id != verified.operator_key().key_id
+            || custom.key_sha256 != attestation.operator_key_sha256
+            || custom.warning != attestation.warning
+            || custom.policy_version != policy.policy_version
+            || custom.lifecycle_status != lifecycle_name(policy.status)
+        {
+            return Err(CompanionError::Rejected);
+        }
+        Self::build(
+            server_origin,
+            server_id,
+            selected.admission(server_id),
+            selected.display_name.clone(),
+            OperatorCustomMountProvenance {
+                provenance_class: custom.provenance_class.clone(),
+                operator_name: custom.operator_name.clone(),
+                authority_id: custom.authority_id.clone(),
+                key_id: custom.key_id.clone(),
+                key_sha256: custom.key_sha256.clone(),
+                warning: custom.warning.clone(),
+            },
+            policy.policy_version,
+            lifecycle_name(policy.status),
+            selected.warning.clone().ok_or(CompanionError::Rejected)?,
+        )
+    }
+
+    pub(crate) fn from_session_verified(
+        server_origin: String,
+        server_id: Uuid,
+        admission: &AcquisitionServerAdmission,
+        custom: &SessionOperatorCustomProvenance,
+        verified: &VerifiedOperatorCustomAcquisition,
+    ) -> Result<Self> {
+        let manifest = verified.release().cartridge().manifest();
+        let attestation = verified.attestation();
+        let policy = verified.policy();
+        if admission.server_id != server_id.to_string()
+            || admission.game_key != manifest.game_key
+            || admission.publisher_id != manifest.publisher_id
+            || admission.rules_version != manifest.rules_version
+            || admission.cartridge_version != manifest.cartridge_version
+            || admission.archive_sha256 != verified.release().payload().archive_sha256
+            || admission.signed_identity_sha256
+                != verified.release().payload().signed_identity_sha256
+            || admission.admission_revision == 0
+            || custom.operator_name != attestation.operator_name
+            || custom.authority_id != attestation.authority_id
+            || custom.key_id != verified.operator_key().key_id
+            || custom.key_sha256 != attestation.operator_key_sha256
+            || custom.warning != attestation.warning
+            || !matches!(
+                policy.status,
+                CatalogStatus::Active | CatalogStatus::Deprecated | CatalogStatus::Retired
+            )
+        {
+            return Err(CompanionError::Rejected);
+        }
+        let warning = if policy.status == CatalogStatus::Deprecated {
+            format!("{} {}", custom.warning, policy.reason)
+        } else {
+            custom.warning.clone()
+        };
+        Self::build(
+            server_origin,
+            server_id,
+            admission.clone(),
+            manifest.display_name.clone(),
+            OperatorCustomMountProvenance {
+                provenance_class: custom.provenance_class.clone(),
+                operator_name: custom.operator_name.clone(),
+                authority_id: custom.authority_id.clone(),
+                key_id: custom.key_id.clone(),
+                key_sha256: custom.key_sha256.clone(),
+                warning: custom.warning.clone(),
+            },
+            policy.policy_version,
+            lifecycle_name(policy.status),
+            warning,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn build(
+        server_origin: String,
+        server_id: Uuid,
+        admission: AcquisitionServerAdmission,
+        display_name: String,
+        operator_custom: OperatorCustomMountProvenance,
+        policy_version: u64,
+        lifecycle_status: &str,
+        warning: String,
+    ) -> Result<Self> {
+        let mount = Self {
+            format: CUSTOM_MOUNT_FORMAT.to_owned(),
+            server_id: server_id.to_string(),
+            server_origin,
+            game_key: admission.game_key,
+            publisher_id: admission.publisher_id,
+            rules_version: admission.rules_version,
+            cartridge_version: admission.cartridge_version,
+            display_name,
+            archive_sha256: admission.archive_sha256,
+            signed_identity_sha256: admission.signed_identity_sha256,
+            operator_custom,
+            policy_version,
+            lifecycle_status: lifecycle_status.to_owned(),
+            admission_revision: admission.admission_revision,
+            warning,
+            trust_status: None,
+        };
+        mount.validate()?;
+        Ok(mount)
+    }
+
+    fn validate(&self) -> Result<()> {
+        if self.format != CUSTOM_MOUNT_FORMAT
+            || exact_uuid(&self.server_id).is_err()
+            || canonical_origin(&self.server_origin).is_err()
+            || !valid_identifier(&self.game_key)
+            || !valid_identifier(&self.publisher_id)
+            || self.rules_version == 0
+            || self.cartridge_version == 0
+            || !valid_text(&self.display_name, 128)
+            || !valid_sha256(&self.archive_sha256)
+            || !valid_sha256(&self.signed_identity_sha256)
+            || self.operator_custom.provenance_class != "operator_custom"
+            || !valid_text(&self.operator_custom.operator_name, 128)
+            || !valid_identifier(&self.operator_custom.authority_id)
+            || !valid_identifier(&self.operator_custom.key_id)
+            || !valid_sha256(&self.operator_custom.key_sha256)
+            || self.operator_custom.warning != OPERATOR_CUSTOM_WARNING
+            || self.policy_version == 0
+            || !matches!(
+                self.lifecycle_status.as_str(),
+                "active" | "deprecated" | "retired"
+            )
+            || self.admission_revision == 0
+            || !self.warning.starts_with(OPERATOR_CUSTOM_WARNING)
+            || !valid_text(&self.warning, 1024)
+            || self
+                .trust_status
+                .as_ref()
+                .is_some_and(|status| status != "trusted")
+        {
+            Err(CompanionError::Cache)
+        } else {
+            Ok(())
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ProfileDocument {
     format: String,
     mounts: Vec<MountRecord>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CustomProfileDocument {
+    format: String,
+    mounts: Vec<OperatorCustomMountRecord>,
+}
+
+impl CustomProfileDocument {
+    fn empty() -> Self {
+        Self {
+            format: CUSTOM_PROFILE_FORMAT.to_owned(),
+            mounts: Vec::new(),
+        }
+    }
+
+    fn validate(&self, server_id: Uuid) -> Result<()> {
+        let expected_server_id = server_id.to_string();
+        let expected_origin = self
+            .mounts
+            .first()
+            .map(|mount| mount.server_origin.as_str());
+        if self.format != CUSTOM_PROFILE_FORMAT
+            || self.mounts.len() > MAX_MOUNTS
+            || !self.mounts.iter().all(|mount| {
+                mount.server_id == expected_server_id
+                    && Some(mount.server_origin.as_str()) == expected_origin
+                    && mount.validate().is_ok()
+            })
+            || !self
+                .mounts
+                .windows(2)
+                .all(|pair| custom_mount_identity(&pair[0]) < custom_mount_identity(&pair[1]))
+        {
+            Err(CompanionError::Cache)
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl ProfileDocument {
@@ -793,6 +1414,21 @@ fn mount_identity(mount: &MountRecord) -> (&str, &str, u64) {
 
 fn mount_order(left: &MountRecord, right: &MountRecord) -> std::cmp::Ordering {
     mount_identity(left).cmp(&mount_identity(right))
+}
+
+fn custom_mount_identity(mount: &OperatorCustomMountRecord) -> (&str, &str, u64) {
+    (
+        mount.game_key.as_str(),
+        mount.archive_sha256.as_str(),
+        mount.admission_revision,
+    )
+}
+
+fn custom_mount_order(
+    left: &OperatorCustomMountRecord,
+    right: &OperatorCustomMountRecord,
+) -> std::cmp::Ordering {
+    custom_mount_identity(left).cmp(&custom_mount_identity(right))
 }
 
 fn canonical_origin(value: &str) -> Result<String> {
@@ -899,6 +1535,34 @@ fn read_optional_regular_file(
         return Err(CompanionError::Cache);
     }
     Ok(Some(bytes))
+}
+
+fn write_private_document(parent: &OwnedFd, target: &str, bytes: &[u8]) -> Result<()> {
+    if bytes.is_empty() || bytes.len() as u64 > MAX_PROFILE_BYTES {
+        return Err(CompanionError::Cache);
+    }
+    let temporary = temporary_name();
+    let fd = openat(
+        parent,
+        temporary.as_str(),
+        OFlags::WRONLY | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+        Mode::from_bits_truncate(0o600),
+    )
+    .map_err(|_| CompanionError::Cache)?;
+    let result = (|| {
+        validate_regular_file(&fd, geteuid())?;
+        let mut file = File::from(fd);
+        file.write_all(bytes).map_err(|_| CompanionError::Cache)?;
+        file.sync_all().map_err(|_| CompanionError::Cache)?;
+        fchmod(&file, Mode::from_bits_truncate(0o400)).map_err(|_| CompanionError::Cache)?;
+        file.sync_all().map_err(|_| CompanionError::Cache)?;
+        renameat(parent, temporary.as_str(), parent, target).map_err(|_| CompanionError::Cache)?;
+        fsync(parent).map_err(|_| CompanionError::Cache)
+    })();
+    if result.is_err() {
+        let _ = unlinkat(parent, temporary.as_str(), AtFlags::empty());
+    }
+    result
 }
 
 fn profile_name(server_id: Uuid) -> String {
@@ -1125,6 +1789,100 @@ mod tests {
         fs::create_dir(&public).expect("public should create");
         fs::set_permissions(&public, fs::Permissions::from_mode(0o755)).expect("mode should set");
         assert!(ClientCartridgeCache::open(&public).is_err());
+    }
+
+    #[test]
+    fn operator_custom_trust_is_explicit_server_scoped_private_and_restart_safe() {
+        let temp = tempfile::tempdir().expect("temp should create");
+        let root = temp.path().join("cache");
+        let cache = ClientCartridgeCache::open(&root).expect("cache should open");
+        let (_, public_key) = generate_catalog_keypair("server-custom-v1", "community-one")
+            .expect("operator key should generate");
+        let fingerprint =
+            operator_custom_key_sha256(&public_key).expect("operator key should hash");
+        let discovery = OperatorCustomDiscovery {
+            operator_name: "Community One".to_owned(),
+            authority_id: public_key.authority_id.clone(),
+            key_id: public_key.key_id.clone(),
+            key_sha256: fingerprint.clone(),
+            public_key: public_key.clone(),
+        };
+        let server_id = Uuid::from_u128(1);
+        assert!(
+            cache
+                .trust_operator_custom(
+                    "https://games.example.test",
+                    server_id,
+                    &discovery,
+                    &"0".repeat(64),
+                )
+                .is_err(),
+            "trust requires an exact explicit fingerprint confirmation"
+        );
+        let trusted = cache
+            .trust_operator_custom(
+                "https://games.example.test",
+                server_id,
+                &discovery,
+                &fingerprint,
+            )
+            .expect("exact operator key should pin");
+        assert!(trusted.matches_discovery(&discovery));
+        let trust_path = root
+            .join("operator-trust")
+            .join(format!("{server_id}.json"));
+        assert_eq!(
+            fs::metadata(&trust_path)
+                .expect("trust descriptor should exist")
+                .permissions()
+                .mode()
+                & 0o777,
+            0o400
+        );
+        drop(cache);
+        let reopened = ClientCartridgeCache::open(&root).expect("cache should reopen");
+        assert_eq!(
+            reopened
+                .operator_custom_trust("https://games.example.test", server_id)
+                .expect("trust should read"),
+            Some(trusted)
+        );
+        let (_, replacement_key) = generate_catalog_keypair("server-custom-v2", "community-one")
+            .expect("replacement key should generate");
+        let replacement = OperatorCustomDiscovery {
+            operator_name: "Community One".to_owned(),
+            authority_id: replacement_key.authority_id.clone(),
+            key_id: replacement_key.key_id.clone(),
+            key_sha256: operator_custom_key_sha256(&replacement_key)
+                .expect("replacement key should hash"),
+            public_key: replacement_key,
+        };
+        assert!(
+            reopened
+                .trust_operator_custom(
+                    "https://games.example.test",
+                    server_id,
+                    &replacement,
+                    &replacement.key_sha256,
+                )
+                .is_err(),
+            "an advertised key change must not rotate an existing pin"
+        );
+        assert!(
+            reopened
+                .remove_operator_custom_trust(
+                    "https://games.example.test",
+                    server_id,
+                    &fingerprint,
+                )
+                .expect("exact trust removal should succeed")
+        );
+        assert!(
+            reopened
+                .operator_custom_trust("https://games.example.test", server_id)
+                .expect("removed trust should read")
+                .is_none()
+        );
     }
 
     #[test]

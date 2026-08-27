@@ -298,6 +298,86 @@ Item {
 
             Components.OgsSectionLabel {
                 Layout.fillWidth: true
+                visible: cartridgeController.operatorCustomAvailable
+                text: "SERVER OPERATOR CARTRIDGES"
+            }
+
+            Components.OgsStatusBanner {
+                Layout.fillWidth: true
+                visible: cartridgeController.operatorCustomAvailable
+                message: cartridgeController.operatorCustomTrusted
+                         ? "Trusted only for this exact server and origin. Operator-custom cartridges are not reviewed or supported by the OmarchyGS marketplace."
+                         : "Not trusted. Operator-custom cartridges are not reviewed or supported by the OmarchyGS marketplace. Verify the full fingerprint with this server's operator before pinning it."
+                tone: cartridgeController.operatorCustomTrusted ? "warning" : "error"
+                accessibleDescription: "Persistent operator-custom cartridge trust warning"
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: cartridgeController.operatorCustomAvailable
+                spacing: 4
+
+                Text {
+                    Layout.fillWidth: true
+                    text: cartridgeController.operatorCustomDiscovery === null ? ""
+                          : "OPERATOR "
+                            + cartridgeController.operatorCustomDiscovery.operator_name
+                            + " // AUTHORITY "
+                            + cartridgeController.operatorCustomDiscovery.authority_id
+                            + " // KEY "
+                            + cartridgeController.operatorCustomDiscovery.key_id
+                    textFormat: Text.PlainText
+                    color: theme.textSecondary
+                    font.family: theme.fontFamily
+                    font.pixelSize: theme.captionSize
+                    wrapMode: Text.WrapAnywhere
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: cartridgeController.operatorCustomDiscovery === null ? ""
+                          : "FULL SHA-256 FINGERPRINT // "
+                            + cartridgeController.operatorCustomDiscovery.key_sha256
+                    textFormat: Text.PlainText
+                    color: cartridgeController.operatorCustomTrusted
+                           ? theme.warning : theme.danger
+                    font.family: theme.fontFamily
+                    font.pixelSize: theme.captionSize
+                    font.bold: true
+                    wrapMode: Text.WrapAnywhere
+                }
+
+                RowLayout {
+                    Layout.alignment: Qt.AlignRight
+
+                    Components.OgsButton {
+                        objectName: "operatorCustomTrustButton"
+                        visible: !cartridgeController.operatorCustomTrusted
+                        text: "PIN EXACT KEY"
+                        accessibleName: "Trust this exact server operator cartridge key"
+                        accessibleDescription: cartridgeController.operatorCustomDiscovery === null
+                                               ? "" : "Pin full SHA-256 fingerprint "
+                                                 + cartridgeController.operatorCustomDiscovery.key_sha256
+                        enabled: cartridgeController.helperAvailable
+                                 && !cartridgeController.busy
+                        onClicked: cartridgeController.trustOperatorCustom()
+                    }
+
+                    Components.OgsButton {
+                        objectName: "operatorCustomUntrustButton"
+                        visible: cartridgeController.operatorCustomTrusted
+                        text: "REMOVE PIN"
+                        accessibleName: "Remove this server operator cartridge trust pin"
+                        accessibleDescription: "Custom cartridge mounts must be removed first"
+                        enabled: cartridgeController.helperAvailable
+                                 && !cartridgeController.busy
+                        onClicked: cartridgeController.removeOperatorCustomTrust()
+                    }
+                }
+            }
+
+            Components.OgsSectionLabel {
+                Layout.fillWidth: true
                 text: "SIGNED SERVER CARTRIDGES (" + cartridgeController.catalog.length + ")"
             }
 
@@ -330,9 +410,12 @@ Item {
                 delegate: Components.OgsCard {
                     required property var modelData
                     readonly property var exactMount: cartridgeController.mountForExact(modelData)
+                    readonly property bool operatorCustom: modelData.operator_custom !== undefined
                     Layout.fillWidth: true
-                    Layout.preferredHeight: exactMount === null ? 126 : 176
-                    tone: modelData.marketplace.lifecycle_status === "deprecated"
+                    Layout.preferredHeight: exactMount === null ? 176 : 218
+                    tone: operatorCustom
+                          || (!operatorCustom
+                              && modelData.marketplace.lifecycle_status === "deprecated")
                           ? "warning" : "info"
                     highlighted: cartridgeController.isMountedExact(modelData)
 
@@ -362,8 +445,11 @@ Item {
                                     + (exactMount.trust_status === undefined
                                        ? "TRUSTED" : exactMount.trust_status.toUpperCase())
                                     + " // EVIDENCE KEY "
-                                    + exactMount.marketplace_key_sha256
-                                    + (exactMount.policy_marketplace_key_sha256 === undefined
+                                    + (operatorCustom
+                                       ? exactMount.operator_custom.key_sha256
+                                       : exactMount.marketplace_key_sha256)
+                                    + (operatorCustom
+                                       || exactMount.policy_marketplace_key_sha256 === undefined
                                        ? "" : " // POLICY KEY "
                                          + exactMount.policy_marketplace_key_sha256)
                             textFormat: Text.PlainText
@@ -380,11 +466,17 @@ Item {
 
                         Text {
                             Layout.fillWidth: true
-                            text: modelData.marketplace.marketplace_name + " // REVIEWED BY "
-                                  + modelData.marketplace.reviewed_by.toUpperCase() + " // "
-                                  + modelData.marketplace.lifecycle_status.toUpperCase()
+                            text: operatorCustom
+                                  ? "SERVER OPERATOR "
+                                    + modelData.operator_custom.operator_name
+                                    + " // NOT MARKETPLACE REVIEWED // "
+                                    + modelData.operator_custom.lifecycle_status.toUpperCase()
+                                  : modelData.marketplace.marketplace_name + " // REVIEWED BY "
+                                    + modelData.marketplace.reviewed_by.toUpperCase() + " // "
+                                    + modelData.marketplace.lifecycle_status.toUpperCase()
                             textFormat: Text.PlainText
-                            color: modelData.marketplace.lifecycle_status === "deprecated"
+                            color: operatorCustom
+                                   || modelData.marketplace.lifecycle_status === "deprecated"
                                    ? theme.warning : theme.textSecondary
                             font.family: theme.fontFamily
                             font.pixelSize: theme.captionSize
@@ -399,7 +491,7 @@ Item {
                             color: theme.warning
                             font.family: theme.fontFamily
                             font.pixelSize: theme.captionSize
-                            elide: Text.ElideRight
+                            wrapMode: Text.Wrap
                         }
 
                         RowLayout {
@@ -412,7 +504,9 @@ Item {
                                 accessibleDescription: "Verify and mount the exact signed release for this server profile"
                                 enabled: !cartridgeController.busy
                                          && cartridgeController.helperAvailable
-                                         && cartridgeController.marketplaceTrusted
+                                         && (operatorCustom
+                                             ? cartridgeController.operatorCustomTrusted
+                                             : cartridgeController.marketplaceTrusted)
                                          && cartridgeController.acquisitionSupported
                                          && !cartridgeController.isMountedExact(modelData)
                                 onClicked: cartridgeController.install(modelData)
