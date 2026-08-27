@@ -351,7 +351,14 @@ acquisition/multi-release mounting, immutable session presentation pins,
 historical pin recovery, trusted multi-screen launch, and screen-bound action
 admission exist. Offline-root trust enrollment, monotonic key
 rotation/revocation, dual-key acquisition v2, and authenticated native-package
-staging also exist without granting installer authority. Signal Siege rules remain compiled into the trusted server for the
+staging also exist without granting installer authority. A non-SDK publication
+tool now composes those contracts into deterministic immutable channel and
+marketplace trees through separate online catalog-signing and network-less
+offline-root steps. One atomic local pointer selects a fully verified version;
+guarded probes authenticate exact bytes across operator-supplied mirrors
+without adding client fallback or another authority. Official hosting, human
+root custody, and in-band root replacement remain deployment work outside the
+repository. Signal Siege rules remain compiled into the trusted server for the
 private alpha. The registered Door Legends pilot is the first portable
 playable and owns server-side gameplay only through the separately authenticated
 broker boundary. Raw

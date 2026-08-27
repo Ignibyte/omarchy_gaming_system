@@ -19,24 +19,16 @@ sources:
     resource: repo://client/qml/SocialController.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
-  - id: openwiki-source-af488519fab8354e5e131df3
-    resource: repo://crates/client-cartridge-runtime/src/trust.rs
-  - id: openwiki-source-30abbd4fc5d09b185331836c
-    resource: repo://crates/game-cartridge/src/acquisition.rs
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
-  - id: openwiki-source-217cb24d606877cd63b392ef
-    resource: repo://crates/marketplace-trust/src/lib.rs
   - id: openwiki-source-66facc66e34ad7f2a74321e1
     resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-ba203ea2e600f294ab58ef02
     resource: repo://crates/server/src/bin/omarchygs-admin.rs
-  - id: openwiki-source-5942cee1725f1a3f7bf01ec7
-    resource: repo://crates/server/src/cartridge_distribution.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
     resource: repo://crates/server/src/challenge_api_tests.rs
   - id: openwiki-source-a3892e0554790e3efc606fe1
@@ -53,8 +45,6 @@ sources:
     resource: repo://crates/server/src/games.rs
   - id: openwiki-source-a13fe4db1eee073d0a7e2c4d
     resource: repo://crates/server/src/main.rs
-  - id: openwiki-source-f6dda000394ac1ba6bba8f65
-    resource: repo://crates/server/src/marketplace_sync.rs
   - id: openwiki-source-1f3bbf6debbcae2e3b3c3b61
     resource: repo://crates/server/src/mfa_api_tests.rs
   - id: openwiki-source-83e16151ac88c29a31cb79d2
@@ -99,13 +89,12 @@ sources:
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-  - id: openwiki-source-1db5e045968bcac71129c0fd
-    resource: repo://migrations/0023_marketplace_trust_key_rotation.sql
-  - id: openwiki-source-d85e6ea816d7c91e9828f7b2
-    resource: repo://packaging/arch/omarchygs
   - id: openwiki-source-a5928e7ee39885995efdc170
     resource: repo://scripts/dev.sh
 generated: {by: "codex", at: "2026-08-27T10:39:16.768Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-27T12:40:24.098Z
 ---
 
 # Runtime foundation

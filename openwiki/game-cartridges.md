@@ -17,14 +17,8 @@ sources:
     resource: repo://client/qml/game/SignalSiegeSurface.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
     resource: repo://client/qml/GameController.qml
-  - id: openwiki-source-2bc62522bf486443de88f261
-    resource: repo://crates/client-cartridge-runtime/src/cache.rs
-  - id: openwiki-source-bdfa1cdb36ece8d941ec8ebc
-    resource: repo://crates/client-cartridge-runtime/src/package_channel.rs
   - id: openwiki-source-bc8915a33f270bc28a270170
     resource: repo://crates/client-cartridge-runtime/src/service.rs
-  - id: openwiki-source-af488519fab8354e5e131df3
-    resource: repo://crates/client-cartridge-runtime/src/trust.rs
   - id: openwiki-source-f4e5b7474eca8daeac03aaab
     resource: repo://crates/game-cartridge-renderer/src/bin/omarchygs-cartridge-preview.rs
   - id: openwiki-source-fdf115002c4aabad0babec70
@@ -33,8 +27,6 @@ sources:
     resource: repo://crates/game-cartridge-spike/README.md
   - id: openwiki-source-45df52cda75cb0ccadd8ef3e
     resource: repo://crates/game-cartridge-spike/src/lib.rs
-  - id: openwiki-source-30abbd4fc5d09b185331836c
-    resource: repo://crates/game-cartridge/src/acquisition.rs
   - id: openwiki-source-8899ed5703baed5a96fa4f93
     resource: repo://crates/game-cartridge/src/archive.rs
   - id: openwiki-source-b4a2591d7d7f80d847ef95ed
@@ -61,8 +53,14 @@ sources:
     resource: repo://crates/game-provider/src/egress.rs
   - id: openwiki-source-183d71a1a996865fb003e694
     resource: repo://crates/game-provider/src/registry.rs
-  - id: openwiki-source-217cb24d606877cd63b392ef
-    resource: repo://crates/marketplace-trust/src/lib.rs
+  - id: openwiki-source-2bc4557686cbe5b8dfa44f45
+    resource: repo://crates/marketplace-publisher/src/lib.rs
+  - id: openwiki-source-14be4e0321d2897243f11e10
+    resource: repo://crates/marketplace-publisher/src/probe.rs
+  - id: openwiki-source-18fcba4155ece2440818ba7e
+    resource: repo://crates/marketplace-publisher/src/store.rs
+  - id: openwiki-source-7495094e6001dc09ac9490e6
+    resource: repo://crates/marketplace-trust/src/transport.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-7243a317e3224aa82795a5fc
@@ -77,14 +75,14 @@ sources:
     resource: repo://crates/server/src/provider_game_api_tests.rs
   - id: openwiki-source-0e10f198b5749ecebf761185
     resource: repo://crates/server/src/provider_games.rs
-  - id: openwiki-source-b7ac90b7d5ad368e8fd1cca3
-    resource: repo://crates/server/src/session_cartridges.rs
   - id: openwiki-source-408aa68caebee417a5a319b8
     resource: repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md
   - id: openwiki-source-bfc109ee5d2c2f6c0f5c5f77
     resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
     resource: repo://docs/architecture/game-cartridges.md
+  - id: openwiki-source-fa645fac0603cca986708fed
+    resource: repo://docs/operators/marketplace-publication.md
   - id: openwiki-source-36d583174a7a0018316f71c7
     resource: repo://docs/operators/owner-operated-servers.md
   - id: openwiki-source-ff39fa8dfffbd1a097ab5e16
@@ -103,7 +101,10 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-27T10:39:16.768Z"}
+generated: {by: "codex", at: "2026-08-27T12:40:24.098Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-27T12:40:24.098Z
 ---
 
 # Game Cartridges and portable provider direction
@@ -139,6 +140,11 @@ multi-screen host navigation with screen-bound action admission. Ticket 036
 adds offline-root-authenticated public trust enrollment, monotonic marketplace
 key rotation/revocation, separate historical-evidence/current-policy keys, and
 root-authenticated native package staging without installer authority.
+Ticket 037 adds deterministic static publication operations with online
+catalog review, a public offline-root request/response handoff, immutable
+version activation, exact local verification, guarded mirror probes, and a
+catalog-compromise/rollback drill. The publisher remains operator tooling and
+does not enter the Game Cartridge SDK.
 Operator-custom trust, a public Provider SDK, external-provider
 onboarding, and server modules/hooks remain unimplemented.
 
@@ -413,6 +419,37 @@ rechecks current trust before publication, and returns a fixed-path
 other privileged installer. Staging authenticates provenance and bytes; it is
 not a claim that a hosted marketplace service or malware-review operation
 exists.
+
+### Implemented static marketplace publication
+
+`omarchygs-marketplace-publisher` composes the existing release, catalog,
+trust-channel, and package contracts without adding a consumer protocol or SDK
+surface. `prepare` reads an owner-private input workspace and explicit catalog
+key, verifies the supported SDK and every exact release, signs lifecycle policy
+and one catalog snapshot, snapshots package bytes, and emits only public
+prepared state plus a canonical offline request. `offline-sign` accepts that
+request and an explicit owner-only root key, independently validates the root,
+validity window, key history, package inventory, snapshot ownership, and prior
+transition, and emits a request-bound public signed response without network
+work.
+
+`finalize` re-verifies the entire handoff and authentic chain before creating a
+private temporary tree. The selected static layout contains identical
+`publication.json` manifests beneath `channel/` and `marketplace/`, exact
+`trust.signed.json` and native packages in the former, and the signed snapshot
+plus each exact release triple in the latter. Complete trees are renamed into
+immutable bundle-and-manifest-digest versions; one cross-process lock and a
+validated relative `current` link serialize monotonic activation. Local
+verification rejects extra, missing, linked, mutable-mode, oversized, stale,
+or digest-divergent state.
+
+The hosted probe reuses the trust channel's guarded HTTPS transport, requires
+operator-held minimum bundle and snapshot versions plus an optional exact
+publication digest, streams bounded package bodies, authenticates every
+root/catalog/publisher claim and artifact, and requires all supplied mirrors to
+serve one identity. Mirrors add availability only. Real roots, HSM/media
+custody, public origins, CDN/object-store rollout, staffing, monitoring, and
+incident coordination remain external deployment work.
 
 ### Implemented marketplace and server catalog flow
 
@@ -744,7 +781,10 @@ gate and failure routing.
    marketplace-key rotation and revocation, acquisition v2's separate evidence
    and current-policy keys, and bounded native package staging without
    privileged installation.
-12. Later tickets publish the Provider SDK, add explicitly labeled
+12. Ticket 037 adds deterministic static publication, a public offline-root
+   handoff, immutable activation, exact local and hosted verification, mirror
+   comparison, and catalog-compromise/rollback rehearsal.
+13. Later tickets publish the Provider SDK, add explicitly labeled
    operator-custom cartridge trust, prove the server-module isolation model,
    and only then implement module administration and typed hooks.
 
@@ -776,4 +816,5 @@ decisions and monotonic policy versions.
 | Session pinning, trusted launch, and cartridge actions | `session_cartridges.rs`; migration `0021`; `crates/client-cartridge-runtime/src/render.rs`; `service.rs`; `GameController.qml`; `GameplayScreen.qml`; Ticket 034 | Immutable pin and admission tests; hostile origin/mount/lifecycle/action corpus; renderer/QML harness; clean-clone Door Legends authority pilot; canonical diff gate |
 | Historical session acquisition and signed-screen navigation | retained evidence in `cartridge_catalog.rs`; `cartridge_distribution.rs::acquire_session_exact`; migration `0022`; client runtime remote/cache/render/service modules; navigation validator/renderer; `GameController.qml`; Door Legends cartridge v2; Ticket 035 | Snapshot replay/omission immutability; participant privacy and catalog-independent exact acquisition; key/binding/lifecycle substitution denial; multi-release mounts; malformed/duplicate navigation; zero-network QML navigation/history; screen-bound gameplay and exact replay; clean-clone historical Door Legends pilot |
 | Public trust enrollment, key rotation, and native package staging | `crates/marketplace-trust`; client runtime trust/package modules; server marketplace/catalog/distribution/session modules; `MarketplaceController.qml`; migration `0023`; packaging scripts; Ticket 036 | Root/channel canonical and transition corpus; fresh-enrollment and floor-advance replay denial; live client/server revocation; acquisition-v2 dual-key verification; historical migration upgrade; QML trust/package states; deterministic manual/channel packages; root-signed channel gate |
+| Static marketplace publication and offline-root operations | `crates/marketplace-publisher`; `docs/operators/marketplace-publication.md`; Ticket 037 | `scripts/test-marketplace-publication.sh`; canonical plan/handoff, release and package verification, network-unshared offline sign, exact immutable tree, concurrency, mirror, rotation, rollback, receipt, and security evidence |
 | Remaining owner-operated extension direction | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; roadmap | Custom-content provenance; provider/module separation; extension isolation, lifecycle, audit, and operator-responsibility review |

@@ -15,12 +15,6 @@ sources:
     resource: repo://client/qml/OnboardingController.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
-  - id: openwiki-source-bdfa1cdb36ece8d941ec8ebc
-    resource: repo://crates/client-cartridge-runtime/src/package_channel.rs
-  - id: openwiki-source-bc8915a33f270bc28a270170
-    resource: repo://crates/client-cartridge-runtime/src/service.rs
-  - id: openwiki-source-af488519fab8354e5e131df3
-    resource: repo://crates/client-cartridge-runtime/src/trust.rs
   - id: openwiki-source-37af4c6b51c86b62db25f85f
     resource: repo://crates/game-cartridge-renderer/Cargo.toml
   - id: openwiki-source-fdf115002c4aabad0babec70
@@ -37,14 +31,12 @@ sources:
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
-  - id: openwiki-source-217cb24d606877cd63b392ef
-    resource: repo://crates/marketplace-trust/src/lib.rs
+  - id: openwiki-source-2bc4557686cbe5b8dfa44f45
+    resource: repo://crates/marketplace-publisher/src/lib.rs
   - id: openwiki-source-66facc66e34ad7f2a74321e1
     resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
-  - id: openwiki-source-5942cee1725f1a3f7bf01ec7
-    resource: repo://crates/server/src/cartridge_distribution.rs
   - id: openwiki-source-4b133589ca70bd174cf19eb9
     resource: repo://crates/server/src/connections.rs
   - id: openwiki-source-26aac996689c040c6aab6825
@@ -75,6 +67,8 @@ sources:
     resource: repo://docs/architecture/game-cartridges.md
   - id: openwiki-source-872141f77f71851168245852
     resource: repo://docs/architecture/system-overview.md
+  - id: openwiki-source-fa645fac0603cca986708fed
+    resource: repo://docs/operators/marketplace-publication.md
   - id: openwiki-source-36d583174a7a0018316f71c7
     resource: repo://docs/operators/owner-operated-servers.md
   - id: openwiki-source-c3d1d450d3a3561b368e5307
@@ -85,11 +79,10 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-  - id: openwiki-source-d85e6ea816d7c91e9828f7b2
-    resource: repo://packaging/arch/omarchygs
-  - id: openwiki-source-8df9ad1a3495f8360740ff03
-    resource: repo://scripts/test-game-cartridge-sdk.sh
-generated: {by: "codex", at: "2026-08-27T10:39:16.768Z"}
+generated: {by: "codex", at: "2026-08-27T12:40:24.098Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-27T12:40:24.098Z
 ---
 
 # Product and architecture boundaries
@@ -369,13 +362,21 @@ marketplace-review claim, but it remains signed inert data subject to every
 official-client package, schema, media, capability, digest, and trusted-render
 check.
 
+Static publication is another separate authority boundary. The non-SDK
+publisher composes exact publisher releases, catalog review, an offline-root
+authorization, immutable hosting bytes, server synchronization, and native
+package metadata without allowing any one step to manufacture the others or
+to become gameplay authority. Its local ceremony and mirror drills do not
+prove real production root custody, hosting, monitoring, or staff separation.
+
 Executable extension families stay separate. Portable game rules use the
 authenticated provider boundary and a future public Provider SDK; general
 server behavior uses a separately versioned module base. Future module hooks
 must be capability-scoped and typed, route protected mutations through core
 authorization, and define isolation, resource, failure, audit, compatibility,
 disable, upgrade, rollback, and recovery behavior. No general module runtime,
-dynamic Rust plugin ABI, hosted marketplace service, operator-custom installer, or
+dynamic Rust plugin ABI, mutable hosted marketplace application service,
+operator-custom installer, or
 external-provider onboarding is implemented or authorized by this direction.
 
 The implemented public channel authenticates bounded trust and native package
@@ -383,9 +384,10 @@ metadata, not gameplay or privileged installation. Its package bootstrap pins
 the public offline root, exact channel, platform, and minimum known trust
 versions; the companion may stage only an exact newer root-signed artifact as
 mode-0600 same-user data. It returns a fixed-path `pacman -U` command as text
-and never invokes a shell, sudo, or a package manager. Root custody and
-rotation, hosted publication, malware review, and the human privileged install
-remain separate operational boundaries.
+and never invokes a shell, sudo, or a package manager. Local deterministic
+publication and rotation drills now exist, while real root custody, public
+hosting, malware review, monitoring, and the human privileged install remain
+separate external operational boundaries.
 
 ### Portable game direction
 

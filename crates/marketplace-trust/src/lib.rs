@@ -555,6 +555,36 @@ pub fn trust_root_sha256(key: &TrustRootPublicKey) -> Result<String> {
     Ok(sha256_hex(&canonical_json(key)?))
 }
 
+/// Validate one complete public trust payload before an offline root ceremony.
+///
+/// This grants no authority: callers still need a canonical root signature and
+/// time validation before using the payload. Publication tooling uses it to
+/// reject malformed handoff requests without gaining access to private root
+/// material.
+pub fn validate_marketplace_trust_payload(
+    payload: &MarketplaceTrustPayload,
+    root: &TrustRootPublicKey,
+) -> Result<()> {
+    root.validate()?;
+    validate_payload(payload, root)
+}
+
+/// Validate an unsigned next payload against already authenticated trust.
+///
+/// This is limited to offline-publication preflight. It does not make the next
+/// payload authoritative; only [`verify_marketplace_trust_bytes`] can do that.
+pub fn validate_marketplace_trust_transition(
+    previous: &MarketplaceTrust,
+    next: &MarketplaceTrustPayload,
+    root: &TrustRootPublicKey,
+) -> Result<()> {
+    validate_marketplace_trust_payload(next, root)?;
+    if previous.root_sha256() != trust_root_sha256(root)? {
+        return Err(TrustError::Rollback);
+    }
+    verify_payload_transition(previous.payload(), next)
+}
+
 pub fn read_trust_root_private_key(path: &Path) -> Result<TrustRootPrivateKey> {
     let bytes = read_checked_file(path, MAX_ROOT_KEY_BYTES, true)?;
     let key: TrustRootPrivateKey =

@@ -3,6 +3,10 @@ type: "Reference"
 title: "Omarchy Gaming System engineering quickstart"
 openwiki_generated: true
 sources:
+  - id: openwiki-source-0bb8016edf4f4744d3a09cf4
+    resource: repo://bin/gate.sh
+  - id: openwiki-source-0196de8872a3fef5b0b350d3
+    resource: repo://client/qml/CartridgeController.qml
   - id: openwiki-source-998b0f5a7b56d7475101b7a2
     resource: repo://client/qml/components/OgsTheme.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
@@ -19,26 +23,24 @@ sources:
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
-  - id: openwiki-source-bdfa1cdb36ece8d941ec8ebc
-    resource: repo://crates/client-cartridge-runtime/src/package_channel.rs
   - id: openwiki-source-bc8915a33f270bc28a270170
     resource: repo://crates/client-cartridge-runtime/src/service.rs
-  - id: openwiki-source-af488519fab8354e5e131df3
-    resource: repo://crates/client-cartridge-runtime/src/trust.rs
   - id: openwiki-source-20452fec62fdae4a8bc45707
     resource: repo://crates/game-cartridge/src/marketplace.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
-  - id: openwiki-source-217cb24d606877cd63b392ef
-    resource: repo://crates/marketplace-trust/src/lib.rs
+  - id: openwiki-source-eac208eae3530bb62f49d2bc
+    resource: repo://crates/marketplace-publisher/src/bin/omarchygs-marketplace-publisher.rs
+  - id: openwiki-source-2bc4557686cbe5b8dfa44f45
+    resource: repo://crates/marketplace-publisher/src/lib.rs
+  - id: openwiki-source-18fcba4155ece2440818ba7e
+    resource: repo://crates/marketplace-publisher/src/store.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-ba203ea2e600f294ab58ef02
     resource: repo://crates/server/src/bin/omarchygs-admin.rs
   - id: openwiki-source-7243a317e3224aa82795a5fc
     resource: repo://crates/server/src/cartridge_catalog.rs
-  - id: openwiki-source-5942cee1725f1a3f7bf01ec7
-    resource: repo://crates/server/src/cartridge_distribution.rs
   - id: openwiki-source-a3892e0554790e3efc606fe1
     resource: repo://crates/server/src/challenges.rs
   - id: openwiki-source-4b133589ca70bd174cf19eb9
@@ -73,8 +75,16 @@ sources:
     resource: repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md
   - id: openwiki-source-bfc109ee5d2c2f6c0f5c5f77
     resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
+  - id: openwiki-source-c22435ddb0c3a9abfe95d9af
+    resource: repo://docs/architecture/game-cartridges.md
   - id: openwiki-source-872141f77f71851168245852
     resource: repo://docs/architecture/system-overview.md
+  - id: openwiki-source-831ed1de42e0dff0edb87b3b
+    resource: repo://docs/client-installation.md
+  - id: openwiki-source-fa645fac0603cca986708fed
+    resource: repo://docs/operators/marketplace-publication.md
+  - id: openwiki-source-c3d1d450d3a3561b368e5307
+    resource: repo://docs/planning/ROADMAP.md
   - id: openwiki-source-85dba8f87dd5947de337aca5
     resource: repo://docs/product-charter.md
   - id: openwiki-source-cb6494f7cbf0d5d23ffe082a
@@ -87,23 +97,16 @@ sources:
     resource: repo://packaging/arch/omarchygs
   - id: openwiki-source-c909643e4ac6a14f500d178e
     resource: repo://packaging/arch/PKGBUILD
-  - id: openwiki-source-6ef5cb9ff978eb09c62cd313
-    resource: repo://scripts/build-client-package.sh
-  - id: openwiki-source-1951c64828cbf175c78556c4
-    resource: repo://scripts/check-client-package-source.sh
   - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
     resource: repo://scripts/check-qml-style.py
-  - id: openwiki-source-d69dbacb0ae7fe382ee46161
-    resource: repo://scripts/test-game-cartridge-renderer.sh
-  - id: openwiki-source-8df9ad1a3495f8360740ff03
-    resource: repo://scripts/test-game-cartridge-sdk.sh
-  - id: openwiki-source-68106a790eb8acc94f8d3540
-    resource: repo://scripts/test-game-cartridge.sh
-  - id: openwiki-source-e08dc6155c081d7928029e27
-    resource: repo://scripts/test-operator-recovery.sh
-  - id: openwiki-source-513cfb82a80f03b4b9a1484e
-    resource: repo://scripts/test-provider-conformance.sh
-generated: {by: "codex", at: "2026-08-27T10:39:16.768Z"}
+  - id: openwiki-source-e8e6f7d2dadb4ddb710ef9c6
+    resource: repo://scripts/test-marketplace-publication.sh
+  - id: openwiki-source-90d72b449bfcd3fd8271063b
+    resource: repo://scripts/test-marketplace-trust-channel.sh
+generated: {by: "codex", at: "2026-08-27T12:40:24.098Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-27T12:40:24.098Z
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -189,8 +192,11 @@ embed a public bootstrap that pins an offline root, exact channel, platform,
 and minimum trust/snapshot versions. The Games screen can explicitly enroll or
 synchronize that channel and verify and stage an exact newer package artifact,
 but the client never invokes `pacman`, `sudo`, a shell, or an automatic
-installer. Hosted repository publication and its operational signing lifecycle
-remain future work. The package includes bounded public-only profiles for
+installer. Deterministic static publication, offline-root handoff, immutable
+activation, and guarded mirror verification now exist as local operator
+tooling. Real public origins, root custody, repository signing, CDN rollout,
+monitoring, and automatic privileged installation remain future operations.
+The package includes bounded public-only profiles for
 deliberately selecting among independent compatible servers; it does not
 persist credentials or federate their identity, moderation, catalog, or
 history.
@@ -263,6 +269,11 @@ screen-bound gameplay admission. Ticket 036 adds the packaged public-channel
 bootstrap, explicit monotonic enrollment and key rotation/revocation, separate
 historical-evidence and current-policy authorization, and a root-authenticated
 native-package staging channel without granting installer authority.
+Ticket 037 adds a separate non-SDK publisher that verifies reviewed releases
+and packages online, hands one public canonical request to an offline root
+signer, finalizes and atomically selects an exact immutable static tree, and
+verifies one or more hosted mirrors without merging publisher, catalog, root,
+hosting, server-admission, or client-installation authority.
 
 ADR-0003 adds the owner-operated distribution and extension direction. Ticket
 032 implements its first server-side slice: one pinned marketplace can supply
@@ -292,6 +303,7 @@ plugin runtime is authorized today.
 | Change QML endpoint/profile selection, appearance/accessibility, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `ServerProfiles.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/components/`, `client/qml/screens/`, `client/qml/game/` | `scripts/check-qml-style.py`; `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
 | Change cartridge packaging, trusted rendering, SDK portability, provider integration, marketplace trust enrollment, synchronization, server admission, player acquisition, session pinning, historical recovery, signed-screen navigation, package staging, or trusted launch | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/client-cartridge-runtime`; `crates/marketplace-trust`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `session_cartridges.rs`; `marketplace_sync.rs`; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `client/qml/MarketplaceController.qml`; `CartridgeController.qml`; `GameController.qml`; `client/qml/cartridge`; migrations `0014`–`0015` and `0019`–`0023`; ADR-0002; Tickets 015–019 and 032–036 | Cartridge/renderer/SDK/provider focused scripts; root-signed trust-channel test; marketplace and PostgreSQL lifecycle/admission/migration tests; hostile companion/QML contract tests; clean-clone Door Legends pilot; native package smoke; threat/authority review and constitutional authority check |
+| Change static marketplace preparation, offline-root signing, immutable activation, local verification, or mirror probes | [Game Cartridges](game-cartridges.md) and [Development and validation](development-and-validation.md) | `crates/marketplace-publisher`; `docs/operators/marketplace-publication.md`; Ticket 037 | `scripts/test-marketplace-publication.sh`; exact-tree, network-less ceremony, mirror, rotation, rollback, security, and canonical diff-gate evidence |
 | Change owner-operated server, custom-content, Provider SDK, or module/hook direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | Current-versus-future audit; provenance/authority review; official-client containment; extension isolation and lifecycle evidence before executable implementation |
 | Build, inspect, install, upgrade, remove, or diagnose the native player package | [Development and validation](development-and-validation.md) and `docs/client-installation.md` | `packaging/arch/`; `scripts/check-client-package-source.sh`; `scripts/build-client-package.sh`; `scripts/test-client-package.sh` | Source-contract check; extracted-package conformance; `bin/gate.sh --diff` before delivery |
 | Run or diagnose the local stack and quality gate | [Development and validation](development-and-validation.md) | `scripts/dev.sh`; `bin/gate.sh`; `client/qml/Main.qml` | `bin/gate.sh --fast` or `--diff` |

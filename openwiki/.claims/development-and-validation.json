@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0d57ce57d44d9c95e63c99fb23a51a14f4f606dbc77eb60bdd5a1b24bbdbb945",
+  "pageVersion": "sha256:5aad35029824ab9021872eba5368e8f1f473029509bd2ac5a241625c0c731f80",
   "claims": [
     {
       "id": "claim_e75f82f846ca444594c51ed0f48b894b",
@@ -21,50 +21,22 @@
       "statement": "Smoke mode runs the QML connector offscreen; the shell exits after the exact health handshake while dedicated live QML scenarios exercise account, MFA, social and report, and two-authority game flows against the migrated server.",
       "evidence": [
         {
-          "resource": "repo://scripts/dev.sh#L51-L101",
-          "version": "repo-lines-v1:sha256:8870e2447dd9462f5a50eaaf9107d2c438c9053eac191af5ece82f3022d33a55:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkZTQzOTA5OWZjMjJmYzEwYjBjYTlkOGUwMWU1NzY5NGViZDBiZGQ5NThlMWQ0YjQxNGNkYWRlY2JjZmJmNDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM4ZDA2ZTEyOGM0MjcwNjFlYmJmZjUyYjhkOThiMzFmYjQ0ZjE3M2M0Mzc1OWQ2N2RhMmYxZDJlMmEwNjA5NjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM1YWJhMjAzOGEwZDQ2ODgxNWFiOTA4YzU0NzRkYjQ2NTQ2NTE5MGQzZDg3M2M2NjEyMDQ1NzkwOTY5ZDRkNGIifQ"
+          "resource": "repo://scripts/dev.sh",
+          "version": "repo-file-v1:sha256:b1e038cddaaee3c7b27e2daf7d769e69f32630ac4d185bd1f308bc4f2581613f"
         },
         {
-          "resource": "repo://scripts/dev.sh#L823-L837",
-          "version": "repo-lines-v1:sha256:3e8b59dd973f6c3dd8fae735bf8ec5545c798149f76a16f4dde26beed4bbee72:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiZWEyYzBmZDlmNzE3NWI2MmJmM2JlZWI5YjBlOTlhZjVjMWJjNzYzNDRmOGY2ZDEyNGNkMzY1MzY2OGUzM2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZmM5MGZmOGE0NDE0YzU0NDFkMGY2NzdjNWNiZmRhMzhiNDc0ZTUxYmZkNTU5YTU1NTlkZTBmODc3MDU1MjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBjZmNhMTBlZWUzNjVjZGVmZDJkMGJiNTZkYTA3OTZkMmU3MjEzNWI3OWU4MTVmYmQ0YTQ5MjhlM2Y5MTE3MjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4YmUxNjQxYjZkNjhjMTczNzQyMjdmYjdhMzMxMTYxMzM2YzY5ZjM2NWU4ZjExZjZhNDFiYWM5ZWM4ZTNmNjQifQ"
-        },
-        {
-          "resource": "repo://client/qml/tests/live/tst_live_onboarding.qml#L60-L124",
-          "version": "repo-lines-v1:sha256:6f3ad0bc2b8b0e0995c6ba1ed06ec90fde11e1819c049c0ed44426df1df8d020:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5Y2Y5OWUwY2RmNTk0ZGYyMGJlN2VkMTkzMjU3Mzg0Nzg1OTkzOGQ1MDE3NmMzOGFlMmYwMWRiM2IzNWVhYjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwOTVjZGE0ZWI1MWQ5NWIwMDllYjcyYmMwNDc3NzRmY2I4NDlmY2VkMWU0ZDZhNzUxZjE4Zjk2MTEyYTdhZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE2MDM0Nzc4ZjEyMjAyZDJiMGU1MDBhODMyNzU2YTQxZGI2ZWI3ZDMwMTE2NjcwMDk5NTVhNDI2YmQwNjEwZTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYxMTI4NDQxZGU0YmZhNDI5Y2JiMzFkZjZkNTEwMDRkMTgzNmEwOGI0ZDY5Y2JiYTczYmIyY2E5Yzg1ZjRkMDcifQ"
+          "resource": "repo://client/qml/tests/live/tst_live_onboarding.qml",
+          "version": "repo-file-v1:sha256:42b09023b66af9cfda9d75abec50485d3100454f6faf464c38913921e71d001f"
         }
       ]
     },
     {
       "id": "claim_171e3e64173941df995e2a10f63d4c51",
-      "statement": "The canonical diff gate runs 21 stages covering production static and documentation checks, cartridge contract, renderer, SDK and isolated proof, native client source admission and extracted-package smoke, sequential PostgreSQL tests, the live Rust/API/QML first-playable smoke, provider conformance, the Door Legends authority pilot, and the isolated platform recovery drill before writing a worktree receipt.",
+      "statement": "The canonical diff gate runs numbered stages 1 through 22 plus stages 15a and 15b, covering static/workflow checks, cartridge, renderer, SDK, client source/package, root trust, static publication, PostgreSQL/QML, provider, recovery, and private-alpha drills before writing a worktree receipt.",
       "evidence": [
         {
-          "resource": "repo://bin/gate.sh#L73-L109",
-          "version": "repo-lines-v1:sha256:d9559c6f3cd57fd3f47e274b61e0187ecb2a789ba8e1e57dce1f7549e0de87bc:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3YmY1ZmE0ZGMyMDc5YWUyNzRhMmVmMjBkODllMjUzMGEwZTg0NTZhMTM2ODA4NGZjNDViZjhhNjc4ZWRhYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1OGI4NzEwNzI3NGZiN2I2NmFkMzM1ODg4M2IyODQ2ODNiYWJjMzllNDcwM2JjY2JjM2Y0NDZmNzA5MTgxMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAwNWEyMjBkOWZlMjFkNDQ4MzNiMmUwNDFiNGQwZGVlZmIyNTBiYzEwM2NjOWQyYTRiYTlkODYzYTNiMWVmODYifQ"
-        },
-        {
-          "resource": "repo://scripts/test-client-package.sh#L20-L247",
-          "version": "repo-lines-v1:sha256:d666b792b163789dcdcc07bfcdb33e777d16000292a3a5271889be7588a9a676:eyJzZWxlY3RlZExpbmVDb3VudCI6MjI4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NTFlYTU4Yzc2YTNhMGZiYWI3YWFkOWJkMjNkMWFhNjk2YWUyMmNmNDVmZjkwODcxNjM3NTA1OGMyNzdlNDJlIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4NGE4MWMzOWY3ZTNlNmIwYjE4NWM4ZDgzMDBlZWYwM2JlYjhjYTljNWQ3NjJlMDM3MTIxNDUwMjQ0NWMwYzFlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyNDU5OTBjMDRkN2IxNDA0ZmMwNDZiMDM1ZTAwMjNhZTQ5YjYzNGRiZTZjNTdiZWVjNWRmOGJhYmEyMDIwODMzIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
-        },
-        {
-          "resource": "repo://scripts/test-database.sh#L13-L18",
-          "version": "repo-lines-v1:sha256:c94b2e32e3335cf3ea134f3e1d84dab888510f5e1fe5319c8168452aa40f84d9:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjZjNTFiYTk5MTU4ZWMzNjNkNDBiNzc4ZWYyNzExMjZkYTNmZDgzMTVlZTUyMzgyMjQyMDQ2OWI1MjlhMGI5NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOGI2OWZkMTdlM2NiNDU4MTYzOTMyMzJiOGM5OTk1Y2Q5ZDE4Y2UxOGFjOWI4ODRkODM2ZDBmMmZlMzBhOTdjZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGEwOTNiODE4OTkyNGM5MDAwNmVkZDViY2RjNjlhMDA3NThkNDhjM2UxNTY0Zjg2ZWVkZDQ5MWIxZWY2MmFlYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
-        },
-        {
-          "resource": "repo://scripts/dev.sh#L823-L837",
-          "version": "repo-lines-v1:sha256:3e8b59dd973f6c3dd8fae735bf8ec5545c798149f76a16f4dde26beed4bbee72:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiZWEyYzBmZDlmNzE3NWI2MmJmM2JlZWI5YjBlOTlhZjVjMWJjNzYzNDRmOGY2ZDEyNGNkMzY1MzY2OGUzM2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZmM5MGZmOGE0NDE0YzU0NDFkMGY2NzdjNWNiZmRhMzhiNDc0ZTUxYmZkNTU5YTU1NTlkZTBmODc3MDU1MjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBjZmNhMTBlZWUzNjVjZGVmZDJkMGJiNTZkYTA3OTZkMmU3MjEzNWI3OWU4MTVmYmQ0YTQ5MjhlM2Y5MTE3MjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4YmUxNjQxYjZkNjhjMTczNzQyMjdmYjdhMzMxMTYxMzM2YzY5ZjM2NWU4ZjExZjZhNDFiYWM5ZWM4ZTNmNjQifQ"
-        },
-        {
-          "resource": "repo://scripts/test-provider-conformance.sh#L1-L24",
-          "version": "repo-lines-v1:sha256:6300d6434a11db31207b465dca8ad6e27c8f75ac8b52de692914cda20b0425c5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1Yzk0MDBmZDAyYTcxMjI3Y2M4MzM5NTViODgyZTY1YjQ3ZDRjMTBmOWVjZGVlNGRmOTM4MmQzZDU2NTVlYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
-        },
-        {
-          "resource": "repo://scripts/test-provider-authority-pilot.sh",
-          "version": "repo-file-v1:sha256:93ecaa3b978bf6d9d0ce21d068b1e6346e36d4f4041271a749b3a06a849be98e"
-        },
-        {
-          "resource": "repo://scripts/test-operator-recovery.sh#L117-L359",
-          "version": "repo-lines-v1:sha256:f36dadf2e0ceb87783fb817afb76cc0c8d577dd289c02ef5bba2efbcbbac6212:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NmM1MWJhOTkxNThlYzM2M2Q0MGI3NzhlZjI3MTEyNmRhM2ZkODMxNWVlNTIzODIyNDIwNDY5YjUyOWEwYjk0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIxM2M5NmEyNGIyMWVlNmIyMzAwM2U1OTZhOTgwNGYxZWYzYWZiOTNiYjg2MzIxNTM3NjUwM2E5YjU3M2IwMjE2IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2ZDcyYmQ5MTQ0MDMwOGU4M2I4NWVhNDJkYjExMmIzZDU4ZGNiMmY4NTRmYWEwYzQyMDhmMmQ5MGVmOWI1ZmRlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://bin/gate.sh",
+          "version": "repo-file-v1:sha256:225e1bc2775b5a53af966fe7cff0554659a5acfb0dcedb5e7bf87e0426f7a20c"
         }
       ]
     },
@@ -84,15 +56,19 @@
     },
     {
       "id": "claim_4fd32c9a1f524cdc9a89f6db83ab95d9",
-      "statement": "Forty-seven database-backed server tests are ignored in the ordinary unit loop and run sequentially against SQLx-managed migrated PostgreSQL databases in non-fast gates.",
+      "statement": "The dedicated PostgreSQL gate stage runs 66 database-backed marketplace, server, administrator, and operator-CLI cases sequentially against migrated isolated databases after the ordinary unit loop leaves them ignored.",
       "evidence": [
         {
-          "resource": "repo://scripts/test-database.sh#L13-L18",
-          "version": "repo-lines-v1:sha256:c94b2e32e3335cf3ea134f3e1d84dab888510f5e1fe5319c8168452aa40f84d9:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjZjNTFiYTk5MTU4ZWMzNjNkNDBiNzc4ZWYyNzExMjZkYTNmZDgzMTVlZTUyMzgyMjQyMDQ2OWI1MjlhMGI5NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOGI2OWZkMTdlM2NiNDU4MTYzOTMyMzJiOGM5OTk1Y2Q5ZDE4Y2UxOGFjOWI4ODRkODM2ZDBmMmZlMzBhOTdjZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGEwOTNiODE4OTkyNGM5MDAwNmVkZDViY2RjNjlhMDA3NThkNDhjM2UxNTY0Zjg2ZWVkZDQ5MWIxZWY2MmFlYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+          "resource": "repo://scripts/test-database.sh",
+          "version": "repo-file-v1:sha256:d256e9cf4a48df01d7209c9bf23ac2ac9b0b27b1f16f331791bf11ba1916a115"
         },
         {
-          "resource": "repo://docs/planning/pipeline/active/operator-reporting-suspension-audit-and-recovery-drill.notes.md#L270-L287",
-          "version": "repo-lines-v1:sha256:e0f35ab2786f195b808e387a5f60b397b254d19a039a25444fa6316f2dee763f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4ZWZlZWUzYTZmNjQxNmQwZDMzZWJiYjU0ZWZlOWM1ZWJlYjVkZDAyMTI2NmJhODU0NGM2ZTExMDFiM2Q0YmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkMDNiOWYzM2UzZTgzMWQ4Nzc5MTRmYzE3NWE4OWM4YjAyZGM3MjcwMDM4ZGFhODVlZTJlOTNiMzVlMDRjYTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdlMGI1NzI2NDRkOWM2MTAwMjRiMDRjZmUxOWE2NWJiOTExMDIxMWE4ODUyZjk1MzM3MTY3YjA3YzBjY2ExYjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMxODE4Yjg5MTFmOWIwYWNiZWEwM2VmODJkZGQxY2MxYWVlMDY1NmY1NDRmNDcyZTM4NzZiN2ZlZGJkYzU1NmMifQ"
+          "resource": "repo://crates/server/src/marketplace_sync_tests.rs",
+          "version": "repo-file-v1:sha256:56b795cb80aaf2a066034be4cf5870d12461c9f434ca30d63548ce8c89a876be"
+        },
+        {
+          "resource": "repo://crates/server/src/operator_admin.rs",
+          "version": "repo-file-v1:sha256:03a577bdf6b5d1a5f2f9730262c9b51608525c9b0302c37aaeb54def308d2faa"
         }
       ]
     },
@@ -111,12 +87,8 @@
       "statement": "The development stack launches the omarchy-gaming-system-server package with OGS bind and log namespaces, binds readiness to that live child and its listening log, asserts the service health identity, and requires new smoke tokens to use ogs1_.",
       "evidence": [
         {
-          "resource": "repo://scripts/dev.sh#L57-L95",
-          "version": "repo-lines-v1:sha256:36694bca6fa6df817a540007f5e1848cc29841751de4431d6517b99341bfa02d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4MTdlNGFlNjNmZjcxM2JjMDNmMGJhNzk2NTcwOWQ1N2UyYWU0ZDg0YTcxZGY3YTlhMWY1ZmRiOTk4MGUyODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNmFkMmQ1NGM2ZWEyZjJjZGRkMDM4NTgyOGQ2NDJhYTdlODc3NDQzMWYxY2NkMmIzZjBhYTMwYzJhYTIwMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4NmUzNjk2YzZlOTcwOGYzY2Q0NjZiYzkwNmQwNjExZWE1NGUyZWYyMjkyZjVjZjRlODUzZTAyOWVjZTE2NGYifQ"
-        },
-        {
-          "resource": "repo://scripts/dev.sh#L158-L190",
-          "version": "repo-lines-v1:sha256:a88373f56bc0577ba3d4995e2a66e62dd6a1cae7f410dfb343f835db95166c9f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0MTE5MmE2NTI5ODZkMjZiNjBhYzQzNjU4MmRhYmRmNzU0OGI0YzAyNzkzZmQ0NmIxMTU1YTQ0MWI5N2MzYjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3YWVmOWY1ZmI0NjkwYTVmODllNWU0ZjVlZTIwM2M0MmMxZjdjYjEwNGVkMGYyMDQ3ZmEzMGI1Yzc5YzYxZTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjczZDA4MjNhNTE3ZjBlZDVlYTY5N2E3OTAyYzdmOGM3NmEyNTg0ZGJhMWRjNWVkZWY0ZTkxM2VhNTJjN2JhYTMifQ"
+          "resource": "repo://scripts/dev.sh",
+          "version": "repo-file-v1:sha256:b1e038cddaaee3c7b27e2daf7d769e69f32630ac4d185bd1f308bc4f2581613f"
         }
       ]
     },
@@ -206,7 +178,7 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/game_api_tests.rs",
-          "version": "repo-file-v1:sha256:52d285cf7488fc0d06b1e6bd5abd283781a1432fb130aaa3c13d47c6a8a4bcc0"
+          "version": "repo-file-v1:sha256:544b4be6a09b5619cc5a8a21ab442be7319bbab8da5bd0e46402f5248011eb3c"
         }
       ]
     },
@@ -283,12 +255,12 @@
       "statement": "The renderer harness uses offscreen software rendering and one-CPU affinity when available, measures 120 frames after 60 warm-up frames, enforces frame and RSS caps, validates keyboard and accessibility behavior, renders the largest accepted 2,048-pixel Rich-2D raster, and rejects a 4,096-pixel raster before any plan is published.",
       "evidence": [
         {
-          "resource": "repo://scripts/test-game-cartridge-renderer.sh#L201-L366",
-          "version": "repo-lines-v1:sha256:d7b4d952c13b0f672268a50dd348a1a8e86623da01ce639bd9365880c4e59c03:eyJzZWxlY3RlZExpbmVDb3VudCI6MTY2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhYTkyMTgxZTRlYzY4M2Q2MjhjNGQ4NTI3ODBlZDY3NjM1OWI0OWZhY2Q2YTEzOWI1ZjMwYmJmZjkyY2VhNWVkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI1Yzk2NTlkOWI4NGZjOTE0MDYyOTRmZDM2YTViZTdiMmIwYjdiZjEyZDkyMmYwMjc3ZTNiOTA2YjIxZDc3NWY0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3MTg4YzMwNmM0MzBjNzM0Y2EyMjQ0MWFhZTRjZDFkM2U0Zjg3MzYyNDFlNjg1MWU1NTgzYWE1MzQ1NDhlNDgxIn0"
+          "resource": "repo://scripts/test-game-cartridge-renderer.sh",
+          "version": "repo-file-v1:sha256:96381b6592b5414e690fb7618cce07a7b78bb590717fb1bf80dda9eb027e84b1"
         },
         {
-          "resource": "repo://client/qml/cartridge/nodes/TrustedImageNode.qml#L20-L29",
-          "version": "repo-lines-v1:sha256:cf6b229462fc0fafff822a3a5eb2a63bee63d9cd25d803290049bb7f32974973:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkODRkYTMyMmMyOWM3MjZmM2YyZGM3ZTM1MzQ2NzBmNWIyMzFjNDI2NTViZGQ3Y2IxY2RjNDM5ZTcxM2ZlOWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyNWZkNGI5ZmE3Y2M0NzJjOTg4MTkxN2ZkZWQ5ZTNlN2NmZjI5NzY4NmQzMTk5NGZiNjNmZmJjNmVmNjYzM2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxOTkzOTc5MDAxNzYwNzhiZDUxMDIyOGEyMGJmZGVlOTY1YjU0MjUwNzNlNDU0OTZiODI2MGYyNjhhMjc0YzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3OTRkMDJhODEyMTk0NGQxNzZkMjY1ZTliYjljYzU5ZjZhYjg5MGJjYWRmOGFlZmRlYmRiYmI0ZjJlYTg0NDQifQ"
+          "resource": "repo://client/qml/cartridge/nodes/TrustedImageNode.qml",
+          "version": "repo-file-v1:sha256:96c41b5c55e552a730cb2152bd4bf13244d63503753bc22f35eeca5e3a4d184f"
         }
       ]
     },
@@ -297,16 +269,16 @@
       "statement": "Gate 13 exports and verifies the deterministic SDK, builds one first-party repository twice from clean Git clones using copied public tools only, verifies byte-identical signed releases, applies signed lifecycle policy, imports through the secure store, and previews the imported cartridge without database, provider, or platform credentials.",
       "evidence": [
         {
-          "resource": "repo://bin/gate.sh#L82-L85",
-          "version": "repo-lines-v1:sha256:e8f8d2601820359a92a62ba9f183a1a905fa54e6d100c9c1f93cc3f475c0ec96:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2FmMGY5OTdjMmUzMjUxODk3MGY2ZDYzOWExYzUzNDBkOTI3YmY0ZDc0Mzk2NGU0NjFmYWI3MDBkOTBjYzA3YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDQ4OWNiODc1OGYwZDEzYjNjZTVlZDRjNWZjN2VkNzZkNzBjYWE4NzJmMzEyOGQ0ZjA5MGQ0NTA0Y2UyNjBlMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTc0NDdhODlhNzhiODc2MjRhMzRjYzBjZDE0YTYwMDU3YjhhMzZhNjc4ODhiZjhlYjFlNjU2MGVhYjg0NmNhNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDI5NjkzODEwY2FkNTk0ODRhNjE3ODg1MDMxNDRiMmY0MzE4MGEyMDk5OTk0YTJjOTMzZDA2MGQ5YzY3MWRjMSJ9"
+          "resource": "repo://bin/gate.sh",
+          "version": "repo-file-v1:sha256:225e1bc2775b5a53af966fe7cff0554659a5acfb0dcedb5e7bf87e0426f7a20c"
         },
         {
-          "resource": "repo://scripts/test-game-cartridge-sdk.sh#L19-L125",
-          "version": "repo-lines-v1:sha256:82fbdcd7a0b4ea4bdadc34930f151292e2b4ce4dd6f93b96dbb466580f715586:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NmM1MWJhOTkxNThlYzM2M2Q0MGI3NzhlZjI3MTEyNmRhM2ZkODMxNWVlNTIzODIyNDIwNDY5YjUyOWEwYjk0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5ODIyZTRjOGFlMGZmYTc5ZjlkZDE1OTA2OTM3YTcwNWMxY2E5NTEzYTQ2YWI5MTQ3NWM3MmVhNjIxODZkOTVlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzOWY3YmIxM2IyMjZmMGFjNGZhOGRlZmQ3ODg4YTIxZWM5NWIzM2U0NjZjNDY1NTEyNjhjNzg4MjBjMmNiNWU5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://scripts/test-game-cartridge-sdk.sh",
+          "version": "repo-file-v1:sha256:aa1d386e2a941e79e88b07b4aba343bcd7763302a7654b809537cb0900eaa761"
         },
         {
-          "resource": "repo://crates/game-cartridge/tests/sdk_release.rs#L1-L498",
-          "version": "repo-lines-v1:sha256:d9d13eef00e06c1832f91b4c989e0c99c988f9c86c7b4b44ec35a9abf6c1d4a0:eyJzZWxlY3RlZExpbmVDb3VudCI6NDk4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxMWE2ZjlkOTk2MDRhNjJhMGYxNWE3YzZlZTJiOTg4OTBjNzliYWM0NGU3YzZkMWQ3ZmJmY2FjMmMzNTQxOTdkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3OWFkMmRjNzY0ODJiODA1OGViNjY2ZmRmN2ZhZmY2ZTBlZjgxNWI2ZDY4NzQ1NjY1ZjRhODU5NTM0MDBiOTA5In0"
+          "resource": "repo://crates/game-cartridge/tests/sdk_release.rs",
+          "version": "repo-file-v1:sha256:7b46ed1b5699785d89fc679468d7087cfba0a9798172e94005240555543160dc"
         }
       ]
     },
@@ -315,16 +287,16 @@
       "statement": "Gate 13 exports and verifies the deterministic SDK, builds one first-party repository twice from clean Git clones using copied public tools only, verifies byte-identical signed releases, applies signed lifecycle policy, imports through the secure store, and previews the imported cartridge without database, provider, or platform credentials.",
       "evidence": [
         {
-          "resource": "repo://bin/gate.sh#L82-L85",
-          "version": "repo-lines-v1:sha256:e8f8d2601820359a92a62ba9f183a1a905fa54e6d100c9c1f93cc3f475c0ec96:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2FmMGY5OTdjMmUzMjUxODk3MGY2ZDYzOWExYzUzNDBkOTI3YmY0ZDc0Mzk2NGU0NjFmYWI3MDBkOTBjYzA3YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDQ4OWNiODc1OGYwZDEzYjNjZTVlZDRjNWZjN2VkNzZkNzBjYWE4NzJmMzEyOGQ0ZjA5MGQ0NTA0Y2UyNjBlMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTc0NDdhODlhNzhiODc2MjRhMzRjYzBjZDE0YTYwMDU3YjhhMzZhNjc4ODhiZjhlYjFlNjU2MGVhYjg0NmNhNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDI5NjkzODEwY2FkNTk0ODRhNjE3ODg1MDMxNDRiMmY0MzE4MGEyMDk5OTk0YTJjOTMzZDA2MGQ5YzY3MWRjMSJ9"
+          "resource": "repo://bin/gate.sh",
+          "version": "repo-file-v1:sha256:225e1bc2775b5a53af966fe7cff0554659a5acfb0dcedb5e7bf87e0426f7a20c"
         },
         {
-          "resource": "repo://scripts/test-game-cartridge-sdk.sh#L19-L125",
-          "version": "repo-lines-v1:sha256:82fbdcd7a0b4ea4bdadc34930f151292e2b4ce4dd6f93b96dbb466580f715586:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NmM1MWJhOTkxNThlYzM2M2Q0MGI3NzhlZjI3MTEyNmRhM2ZkODMxNWVlNTIzODIyNDIwNDY5YjUyOWEwYjk0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5ODIyZTRjOGFlMGZmYTc5ZjlkZDE1OTA2OTM3YTcwNWMxY2E5NTEzYTQ2YWI5MTQ3NWM3MmVhNjIxODZkOTVlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzOWY3YmIxM2IyMjZmMGFjNGZhOGRlZmQ3ODg4YTIxZWM5NWIzM2U0NjZjNDY1NTEyNjhjNzg4MjBjMmNiNWU5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://scripts/test-game-cartridge-sdk.sh",
+          "version": "repo-file-v1:sha256:aa1d386e2a941e79e88b07b4aba343bcd7763302a7654b809537cb0900eaa761"
         },
         {
-          "resource": "repo://crates/game-cartridge/tests/sdk_release.rs#L1-L498",
-          "version": "repo-lines-v1:sha256:d9d13eef00e06c1832f91b4c989e0c99c988f9c86c7b4b44ec35a9abf6c1d4a0:eyJzZWxlY3RlZExpbmVDb3VudCI6NDk4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxMWE2ZjlkOTk2MDRhNjJhMGYxNWE3YzZlZTJiOTg4OTBjNzliYWM0NGU3YzZkMWQ3ZmJmY2FjMmMzNTQxOTdkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3OWFkMmRjNzY0ODJiODA1OGViNjY2ZmRmN2ZhZmY2ZTBlZjgxNWI2ZDY4NzQ1NjY1ZjRhODU5NTM0MDBiOTA5In0"
+          "resource": "repo://crates/game-cartridge/tests/sdk_release.rs",
+          "version": "repo-file-v1:sha256:7b46ed1b5699785d89fc679468d7087cfba0a9798172e94005240555543160dc"
         }
       ]
     },
@@ -334,7 +306,7 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/challenge_api_tests.rs",
-          "version": "repo-file-v1:sha256:e26189fc593dae0495455a3ed8768111de6e284c06667afe3f5e41df639d00ea"
+          "version": "repo-file-v1:sha256:1603642a77a715ca7321af31cb6c79304244cd0eba32491b368aa58e25d93e29"
         }
       ]
     },
@@ -348,11 +320,11 @@
         },
         {
           "resource": "repo://crates/server/src/signal_siege_api_tests.rs",
-          "version": "repo-file-v1:sha256:6a3674453c28fc94ec27aac27af4cb4775fa1394d92b3695f58ddf96a55809d1"
+          "version": "repo-file-v1:sha256:138efc4b07f9b3a56bfd6875a1a0900da479e0951071ed6ccafb3b004e98b535"
         },
         {
-          "resource": "repo://crates/server/src/challenge_api_tests.rs#L398-L509",
-          "version": "repo-lines-v1:sha256:442d5437597500e81d2ba6a1035eb4b4b788b312ef54f280315532129bb0ed1b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhZjVjZDg4NzhmYjMyY2MwOGRlODYwZTg1NjE2NTY5ZWRiYmJmYmM5ZmY0NDcxZjJkZjMzM2UwZWYxMGU2ODYyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIxODdjMGVhMDBhMTAyNTBhOTJkMWVkNGM3N2E0NzIwYjIwMWE0NTI3MjA3ZDg2ZGRiZGIwYjFjYjAzMTI5OTExIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwNmNhMDEzODVjMDRiOWM4OTIxMDhkODIzNjQzYTZhMjE4ZjZhNjYwMzEwMDlhODZjYThhNjg5Y2MwMWRjY2EwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjYjA5MjcxNWU3ZTIxM2M5ZGJkNDkyMmVlMzA4M2I3YmY5NDVmOTUwNDQ5NmFkZjdiMDhjMGIzZmIyNzE2ZDU5In0"
+          "resource": "repo://crates/server/src/challenge_api_tests.rs",
+          "version": "repo-file-v1:sha256:1603642a77a715ca7321af31cb6c79304244cd0eba32491b368aa58e25d93e29"
         }
       ]
     },
@@ -375,8 +347,8 @@
       "statement": "Gate 19 runs provider unit and public protocol tests plus ignored CLI, PostgreSQL registry, separate-process TLS, replay, race, quota, lifecycle, and audit conformance sequentially against migrated PostgreSQL.",
       "evidence": [
         {
-          "resource": "repo://bin/gate.sh#L89-L96",
-          "version": "repo-lines-v1:sha256:77d96624900fc1a495bff5cd2ee1f8f70a580aa6eab10900d3f8bb142c8c4612:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTM0N2E0ZGU3NDcxZGYxY2MxZWJhYTBlOTk2YjQ2OTk4YTlkYjA4MDNjNjExZTNiYTI1YWI5ZWIxYzA3Yjc0NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzc2OWQyMzdjZDQyMGI5ZDM4Yjk4MWEwYTRmNjc3MDE5MGE0YTgzZGNhMWZlNTZjNGY1YmExZTJjYmMwZWY3NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGY0NTllYTVkM2ZiYTUzYzExZTY2N2IwOTc2OTI1ZjdkMmU4NTM3ZTI0MjYzYWY5YzdhOTFlMmMzMGIwMzViMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjA3MzNlZjRkYzQ4NDI1Zjg1OTU0MjI4YTc5ZjFhMDg0Y2YxZGU2ZmU3YTQ0MjBiYzJkNmEzMzZjMjQ4Y2NmOSJ9"
+          "resource": "repo://bin/gate.sh",
+          "version": "repo-file-v1:sha256:225e1bc2775b5a53af966fe7cff0554659a5acfb0dcedb5e7bf87e0426f7a20c"
         },
         {
           "resource": "repo://scripts/test-provider-conformance.sh",
@@ -394,23 +366,31 @@
     },
     {
       "id": "claim_46dd32af132d418d934303b2ca56f4df",
-      "statement": "The keyboard-first QML fixture corpus runs 41 Qt cases covering production-root accessibility, report submission, social and inbox behavior, contrast, semantics, deterministic and deferred focus, reversible traversal, persistent exit, 640-pixel containment, Escape authority, hostile envelopes, exact retry identity, revision refetch, and active-seat enforcement.",
+      "statement": "The keyboard-first QML fixture corpus runs 52 Qt cases covering accessibility, marketplace trust/package staging, cartridge acquisition/navigation/actions, reports, social/inbox behavior, contrast, focus, traversal, persistent exit, compact containment, Escape authority, hostile envelopes, retry identity, revision refetch, and active-seat enforcement.",
       "evidence": [
         {
-          "resource": "repo://scripts/test-qml-onboarding.sh#L82-L125",
-          "version": "repo-lines-v1:sha256:d3a8fe059a8d8e03535177264335e8e63e254530908852065a0cecc5301293a6:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YzUxYmE5OTE1OGVjMzYzZDQwYjc3OGVmMjcxMTI2ZGEzZmQ4MzE1ZWU1MjM4MjI0MjA0NjliNTI5YTBiOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiNjRlOTgzZDk5Y2UxZGI2YmYzOWVkMjMwMjNiNjQxOTcyNDRiMTRjNTA4ODU1NDI3MjA3NTE0MTc3ZDgxMzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNlYmFhOGZiODg4M2I2YjBjOGM0ZThmZWQxNThiNmY1NzRlOTBlNWRhODk1ZDZhYmNlYWQ2ZmI0OTllMTVhMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml",
+          "version": "repo-file-v1:sha256:fc6b02e70b5e0f93260336d56f72b26991e5a1d073f61683b348ae64c2bcaa69"
         },
         {
-          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L108-L339",
-          "version": "repo-lines-v1:sha256:a78f0aab0b86c3811d3b71c2d5545bcd8349fbe83656287d6abdcba305b920d9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlNDhmMmJkNTBkNjMxMzFmZTA1ZTFkNzlkYjRlZGY5M2YxOWI3YTNkZDc4NDcwOTE4ZTMxZDFjZTA3OWU4YWMyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMjkzMTlkNDZkZjg5MDYyYjNhYTgwZTY3MjA5N2RhMGViY2E3NGIzNzAxNTBmZmIxMGE5MjNmODA1YTBjNWU0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIn0"
+          "resource": "repo://client/qml/tests/fixture/tst_games.qml",
+          "version": "repo-file-v1:sha256:5ccdcbd96e35c654a4c82071064010db38a5a74c80a2f97f863d751d7c831285"
         },
         {
-          "resource": "repo://client/qml/tests/fixture/tst_social.qml#L197-L267",
-          "version": "repo-lines-v1:sha256:bad74d46bbaff05b01c912bcb80bf83e8d1b198828b7c1d9bce292261a4e75ad:eyJzZWxlY3RlZExpbmVDb3VudCI6NzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNDllNzhhMzMzYTE4MDJmMjFmMGI2OGMwN2RjNzIxNmU5NDk0ZTkwNTU2NmFhMzNjY2JjOWNkNWI5MGUzMTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwNmRkMzVkNjY5Y2U1NzkwMjdiZTgyZjEwMGE2MjQ2OWM5YWEzMmQ5ZDQwYjc5ODhhYjIwMWRmZGQ5MDMxODMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEyOTMxOWQ0NmRmODkwNjJiM2FhODBlNjcyMDk3ZGEwZWJjYTc0YjM3MDE1MGZmYjEwYTkyM2Y4MDVhMGM1ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3OTRkMDJhODEyMTk0NGQxNzZkMjY1ZTliYjljYzU5ZjZhYjg5MGJjYWRmOGFlZmRlYmRiYmI0ZjJlYTg0NDQifQ"
+          "resource": "repo://client/qml/tests/fixture/tst_marketplace.qml",
+          "version": "repo-file-v1:sha256:13c8a6648ba8b1daf7b863e376012967ab1ffa858ef9fc00a03d3c18094ed374"
         },
         {
-          "resource": "repo://client/qml/tests/fixture/tst_games.qml#L101-L310",
-          "version": "repo-lines-v1:sha256:5612adaf4cc885d8727bdb08b3ac12725ef6903016ba08850c672b8838e34a95:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1ZDAzNzI0ODUzNWZkMWY5NTAwNDI1YWUzMjNiMzhjMWQ5MzE4NzBhYWE4ZTAzNjJjZTdkNjFlNmVjOWFjZGNkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI5ZTcxYmNiODVjYmZkYTVjZjUxZjNkZmU4YjFmOTYwYjExYjEwODllYWVhMzVhZDI2Yjk4ZmI5M2NmYzNmZGU2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://client/qml/tests/fixture/tst_onboarding.qml",
+          "version": "repo-file-v1:sha256:07fa97ae301983cf56bee548c88095498bc2ab532e42c95133739f975d1c073c"
+        },
+        {
+          "resource": "repo://client/qml/tests/fixture/tst_social.qml",
+          "version": "repo-file-v1:sha256:99c69317e6e285abd21f89feebeefe8780a24cb5b25b6f9497d713f57a94a91f"
+        },
+        {
+          "resource": "repo://client/qml/tests/fixture/tst_transport.qml",
+          "version": "repo-file-v1:sha256:2d2dd542715fea4adbac59c316dbac1d56a9ec72cdcf5ec641d2e0826962856c"
         }
       ]
     },
@@ -447,8 +427,8 @@
       "statement": "The native client source checker admits only a newline-terminated sorted unique manifest that exactly matches non-test production QML, rejects unsafe paths and symlink or non-regular inputs, binds the package version to the workspace, and validates the launcher and desktop entry before build work.",
       "evidence": [
         {
-          "resource": "repo://scripts/check-client-package-source.sh#L27-L118",
-          "version": "repo-lines-v1:sha256:d94988c7398581b6ff797bddfc7123f115bf5e2f1511b3e17b692faa54793c17:eyJzZWxlY3RlZExpbmVDb3VudCI6OTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzMDQ0NDMwYjY2ODRmZjIxZDhlNWFiYTY5NGMyNmMzYmVjNDYxYTJkZmY4ZjRhMjNmMDM5MDlhM2JjMmJkMjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlZTIyZGI5ZDM1Y2ViZjU3ZDM2MDkyNDc3NmZmNmM5Y2U5ZmJjZTU0MjA1ODM4MmZiZmUwOTFlOTdiODVlZWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0MDY5NzQ4YWU3MjI3MTI2ZDhkOTljYThiYjg1YzliYmM5YzUwMDI3ODE0ZTkyYjkyYWUxMjNmYmZjZDk3NmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/check-client-package-source.sh",
+          "version": "repo-file-v1:sha256:86a90987441d0349102a2890170b48dc8230feacb223b37781a7177eb679bea1"
         }
       ]
     },
@@ -457,8 +437,8 @@
       "statement": "The native client builder validates source first, computes source and revision provenance, serializes makepkg in a private owner-checked stable workspace, installs nothing, and atomically publishes exactly one package plus its SHA-256 sidecar.",
       "evidence": [
         {
-          "resource": "repo://scripts/build-client-package.sh#L36-L149",
-          "version": "repo-lines-v1:sha256:ec7deae7712a32b7b68054046f13ca7c3b97f1b70b95d657049156c23c671b67:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwZGRmNTRiZDQwZGU3ZDE2MTcwMDAwNjkzNDAwYTAyZTRiY2ZiYzM2ODliY2I3YzcyMTI4ZmY3YTE0YjE4YWVkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5OWVlM2M2OTJkZjQ4N2U0ODkyNWQ2M2RlODA3ZTA2NmU3MTE3MDI1ODMxM2RkOTY5NmUxY2JiZjgxOGUyNjU3IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhZDNkZjdmYzY3N2VhYTdkNWQ2ODE2YWM3ZDEyMzgwNGQzYTFlZTI4NzIyZTFkOGY1ODE1YjhiZGY0OWMyNDcyIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://scripts/build-client-package.sh",
+          "version": "repo-file-v1:sha256:4a3f511ea2033894a7867098c1be76095444ea741f889a9652e2bb8973e18331"
         }
       ]
     },
@@ -467,12 +447,8 @@
       "statement": "The native client package smoke rejects seven hostile source fixtures, proves two builds byte-identical without changing source status, checks exact metadata, payload, modes, provenance and desktop behavior, then launches the extracted production QML root against the bounded health fixture without pacman installation.",
       "evidence": [
         {
-          "resource": "repo://scripts/test-client-package.sh#L20-L138",
-          "version": "repo-lines-v1:sha256:a299ea2c45139f35acee319a6a0fd7fc3a1bba6958c44669335d318b2901d93d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NTFlYTU4Yzc2YTNhMGZiYWI3YWFkOWJkMjNkMWFhNjk2YWUyMmNmNDVmZjkwODcxNjM3NTA1OGMyNzdlNDJlIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4ZjQ1YjIyNGRhNTgyNzc2ODYyMTk5NGMzZDExZDgyMTY2NjEwODdkN2JiYTkwNTZkZGVhNjhjMWI0MTdjNDMwIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyNDU5OTBjMDRkN2IxNDA0ZmMwNDZiMDM1ZTAwMjNhZTQ5YjYzNGRiZTZjNTdiZWVjNWRmOGJhYmEyMDIwODMzIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhZGNkYWQzYzRhMzI1NTJjMzViNjFlZjdiMzQ1ZGYzZDFiOGE3NGE3OTJjOTUwMDgyOTA0OWM3N2ZlZWY0YjhkIn0"
-        },
-        {
-          "resource": "repo://scripts/test-client-package.sh#L140-L247",
-          "version": "repo-lines-v1:sha256:ab1f7a3dd05820f26d9a69b286707ba8d54bd0a70dc5265e90460d3446bd4d8e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyZjBhMTJjY2NlNmQ1M2JhNzEyNDlmNTc3NTcyNTViY2RlZWI0OTY0NGFhZjQ5ZDk4NmIzZDJjZTJlZWQyYzVhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4NGE4MWMzOWY3ZTNlNmIwYjE4NWM4ZDgzMDBlZWYwM2JlYjhjYTljNWQ3NjJlMDM3MTIxNDUwMjQ0NWMwYzFlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlOTBlZjhkNzRhMWQwMGVmNDJhMjk3MDhkNDJlMmQxZDdiYjRjMTBmMmExZjA1Y2YzOGQxMjgxNzQ1ZmZjNjYyIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://scripts/test-client-package.sh",
+          "version": "repo-file-v1:sha256:59862a2407efba9472531e3b9c0ea6098f513dc159abba83827ad01bf06d2a85"
         }
       ]
     },
@@ -481,22 +457,28 @@
       "statement": "The operator recovery drill owns two validated generated databases, migrates through the production server, applies real sysop commands, restores a custom PostgreSQL dump in isolation, compares every public application table, checks immutable report and audit state, and rejects a pre-suspension token through the restored server.",
       "evidence": [
         {
-          "resource": "repo://scripts/test-operator-recovery.sh#L4-L44",
-          "version": "repo-lines-v1:sha256:16ae305a5b0125953d59aa25a03a115ac1a9a1622f7ca41ddc5cc43aaae39d7e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2NDRiMTAxNjdmMGFiOGM0OTc4NDNkYzM1OGE4OGNmNjM2NWMxMTc2YjI2ODc5ZjUyNTI4NzY2ZjQ4N2ZhNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzMDY0NmUxNGNlZGFiMTM5NTY3MDViMzkxMmY3YzI5MzlkMzNjOTI4YTQ1NzMzYTNmZjUzOGMxNjdiZWI4NGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkzZDY2NmJkMWZmZTVjZDdkZjdiMWNkMzE1NWFlZGEyZWQ5YTcxZjFlZDUzMTI4ZWJiODcxNjk3OTdmYjI5ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJiNDkyNDg4M2ZhMTQ0YWVlMDE0M2RiMjFjNWQ3Y2M2Njg3NDA5YTI1ZGVlMzY5NDVkODFiN2Y1NGI5MGEyMmQifQ"
+          "resource": "repo://scripts/test-operator-recovery.sh",
+          "version": "repo-file-v1:sha256:1b0fd8c4943871a19bf8e8f31772c76ece557ee273b909fd6446dcd950abc1fb"
+        }
+      ]
+    },
+    {
+      "id": "claim_2b785cd2cb334ab4bac2e9ad1d8f6c09",
+      "statement": "Gate stage 15b runs the static marketplace publisher contract and integration suite, including deterministic double builds, a network-unshared offline signing ceremony, immutable activation, guarded TLS mirror comparison, and catalog-compromise rotation with rollback denial.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/test-marketplace-publication.sh",
+          "version": "repo-file-v1:sha256:9c70edb1755ded5cc81ec16d8bc334e328f63706d646894d2f773050f7313ebd"
         },
         {
-          "resource": "repo://scripts/test-operator-recovery.sh#L117-L131",
-          "version": "repo-lines-v1:sha256:29102ab5eba2dcdc54e3f6556a4761c302f2286e926584283e8c2c55e288e839:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YzUxYmE5OTE1OGVjMzYzZDQwYjc3OGVmMjcxMTI2ZGEzZmQ4MzE1ZWU1MjM4MjI0MjA0NjliNTI5YTBiOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkYzk0NTViMjVjMWUwZjI4OTNkNTA0N2IzYjkzNWU2OGYwZjliMTM0ZWRjZWFjOTcyY2ZiODIzMDBlYTZhYzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZkNzJiZDkxNDQwMzA4ZTgzYjg1ZWE0MmRiMTEyYjNkNThkY2IyZjg1NGZhYTBjNDIwOGYyZDkwZWY5YjVmZGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY3ZjNmYTgwNWExYzYyMjhmYTZhMDQzMGU1MTdlYWFkZDk2YmI3ZDkzYjNiNTg3YmQ5NGU1ZDU3Y2YyZGZmMzEifQ"
-        },
-        {
-          "resource": "repo://scripts/test-operator-recovery.sh#L282-L359",
-          "version": "repo-lines-v1:sha256:da28bbe03291523f91be9099b1ea7ab2e12e6ec6ac41620f9ffb3d8bd341ea28:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmYjczZWUwOTNjNzVmYTIzZDczMWFkZmFhMzc3Mzk1ZWJiYjdlM2Y3ZGNjZjFjMWQ3YjliOTRkZmU4MTY2ZmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzYzk2YTI0YjIxZWU2YjIzMDAzZTU5NmE5ODA0ZjFlZjNhZmI5M2JiODYzMjE1Mzc2NTAzYTliNTczYjAyMTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0YjRkOGQzYzk0OGEyZjI5MjMxMWYyMWNlMTMxMDM4M2EzNzYwYzdhNzllMzFhZjM5ZjE4ZjdiM2Q2Y2I0NDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://crates/marketplace-publisher/tests/publication.rs",
+          "version": "repo-file-v1:sha256:11742aa81528467ca2d88a1d61bee7f096ffb8b6c1cbd704924bcff3f5901e75"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T17:59:41.119Z"
+    "at": "2026-08-27T12:40:24.098Z"
   }
 }

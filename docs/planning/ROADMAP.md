@@ -64,9 +64,12 @@ server-authoritative game runtime below.
 - [x] Offline-root-authenticated public marketplace trust enrollment,
   active/retired/revoked key rotation, historical/current-policy evidence, and
   reviewed native package-channel staging for player clients
-- [ ] Hosted marketplace/package publication operations, offline-root custody
-  and rotation, release review/signing procedures, mirrors, monitoring, and
-  incident response
+- [x] Deterministic marketplace/package publication tooling, reviewed-release
+  assembly, public offline-root handoff, immutable activation, exact guarded
+  mirror probes, and catalog-compromise/rollback drills
+- [ ] Provision and operate official hosted origins/mirrors/monitoring, real
+  offline-root custody and root-replacement recovery, release-review staffing,
+  retention, and incident communications
 - [x] Bind exact admitted cartridges to authoritative sessions, compile matching
   mounted entry screens into trusted plans, and route declared actions through
   the session's existing compiled or registered-provider authority

@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:11f48fd692e4e1c71c8986dd4850548538a0dc27aed669696ab631e13126fc43",
+  "pageVersion": "sha256:128783c780f4b5ff62eb5aa5c35f2340d1aca0e9ff35a5b4a87f64a5728add0c",
   "claims": [
     {
       "id": "claim_d5e2f3a3ffed4330a12a21d8fb73de2d",
       "statement": "Server startup loads configuration, constructs the two-version Signal Siege production registry, connects PostgreSQL, applies migrations, optionally constructs the provider runtime, starts persona synchronization, serves Axum with graceful shutdown, and aborts the listener task when serving ends.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/main.rs#L36-L99",
-          "version": "repo-lines-v1:sha256:cb208b37004918f9d504fa11dd0c0cf32132b01dec516ce496e5e7bcc9404234:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1M2Q5YTYwOTI4NDZmNmU2OWJiNDJmMzNiZWU2M2ExNDQ1ZDAwNGQ1ZDI0OGM2Y2M3NzcxYmMyZTBiY2JjYWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlM2FmOTlmNjQ5ZjNhYjg4NTM3ZDlhYWRiYmM3ZGZkNjFjNzI4NmNjNjQ0YTQzYTQxNmNhY2E0OGQ1OGU3ZTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA4NTQxNWZkOTZiYzIzYmI2ZmNhYTkzNjE4NDIyNDlkOGUxYTdkMmNkOTFhMTBjMGJkMGY1Y2Q3MjBkNTBlZDYifQ"
+          "resource": "repo://crates/server/src/main.rs",
+          "version": "repo-file-v1:sha256:acd64c8668edb5a0719b93bd57b9d5cf371143b1faa4ffb550544f6c76d006a0"
         }
       ]
     },
@@ -47,16 +47,16 @@
       "statement": "Account registration uses a thin Axum POST /v1/accounts handler with a 1 KiB body limit, delegates validation and insertion to the account module, and delegates Argon2id work to shared credentials.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/app.rs#L650-L655",
-          "version": "repo-lines-v1:sha256:44683c80a9536d2b71392fc627e6aa9105abf43a7be06650e68fe27613cfefdc:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDI4Y2E0NzY2MGIwYjM0M2FiYmRhZTIyMDQ1NmU4YzhjY2ZhNGVlMTQ5YjYyZjdkNGZmNTJjNzAxZTY2OTI5OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTkwOWE1M2E2MThkMDI4ZTFkMzAwMGMwYTdhYmNlZWNiZTVmYjM3ZjRlNTExZWZlNDY2NDNmYWQ2ZTY2ODcyZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzk2OWYxYTVhODQxYjU1OTNlMzEzYmZlNmM5NmFiYzZlOGY1NjcxZTA5ZGYwZGZmYjFmODNmNjNjOGIwZTI1MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGM0MjlmNDI1NzI1YmIyOWE3MDEyNGM1Y2FkMTM3ZDliZDQ3M2VhODQzZjJmNjViNmFjY2E5YzhmNTQxY2QwNCJ9"
+          "resource": "repo://crates/server/src/app.rs",
+          "version": "repo-file-v1:sha256:b86a712bd6161c8a901b008c06e28b1505c41e42c1f26e2300d7ce96bddcb6f5"
         },
         {
-          "resource": "repo://crates/server/src/accounts.rs#L30-L63",
-          "version": "repo-lines-v1:sha256:a37a4a7b1e3786afe371bf6053313cdab10b99f9176ad16d0496d6004b7cb30f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmZTY1YjI1ZjJlYjM0MmUyMzI5ODA3N2FjZTdjZGYzODk3YTY1NTMxMzgxZDg2ZDIyY2RhMGE4NTBhMjg2MTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRmMmIwMWM5ZTE0ZGJkNDUwNzQyZWU3YmYzMTA1MDYzMGQxMWNlZTMzMDQ5NGMyMzFhZTA5M2U5OWIxMGI5MWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxMDM2ODYzMjkwZTVjZTkzMzVjMGI2NTZhYWNlZWVhY2U2ZDczYTE1Y2YxZmZhYjg2ZjNlOGYyOTljMGVhNTgifQ"
+          "resource": "repo://crates/server/src/accounts.rs",
+          "version": "repo-file-v1:sha256:a3eb3903cdc97e299428736ceacf8a0b66d45099da8833615fa1f9fc96a29535"
         },
         {
-          "resource": "repo://crates/server/src/credentials.rs#L21-L80",
-          "version": "repo-lines-v1:sha256:078b47500cce079bcad17b1e612a5b6d955e02821b65acb076e6c390f69231f0:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyMTgzZmU2MTgwYzAzMWEyYjVkMzUwZGVjMzY5NWQxYTM4Nzc4ZjdiNWFiYzFmZDAwOTdiOTk1OTg1OTkyOTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkYjEzM2I4MTIyYzEwNzZjMjM1ZGMxMzk0OWMxZTkxMTAxMmVhNWVmMzM3MjYzNWYxZTZkZWVlZTI0ZGVkM2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRmMmIwMWM5ZTE0ZGJkNDUwNzQyZWU3YmYzMTA1MDYzMGQxMWNlZTMzMDQ5NGMyMzFhZTA5M2U5OWIxMGI5MWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVmNWVlMGYyYmJjMDAzODBmYjRiNmZjZTZkYjUxZjliNGNjZDdmMmIwNzVhM2NjODhlNjMxYWRhYzFlMmMyZTYifQ"
+          "resource": "repo://crates/server/src/credentials.rs",
+          "version": "repo-file-v1:sha256:529705827744d27017ab24f31913a728be27422e86ef4cf6064905359a91685b"
         }
       ]
     },
@@ -79,12 +79,12 @@
       "statement": "Shared credential code hashes passwords off the async executor with OS-random salts and Argon2id v19 parameters m=19456 KiB, t=2, and p=1 before registration persistence.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/accounts.rs#L30-L50",
-          "version": "repo-lines-v1:sha256:1ee7f08529ae5368a697dd7f8df0cd402a5e2da9b6d87f4a0b816e2030955db4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmZTY1YjI1ZjJlYjM0MmUyMzI5ODA3N2FjZTdjZGYzODk3YTY1NTMxMzgxZDg2ZDIyY2RhMGE4NTBhMjg2MTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczYzA1N2ZiMjg2MDQyMzY3N2M5ZjY2MjdhODkzMGE2NTUwZjRmODBmMWIzZTM2YTQ4OTI0ZmFjYzJjZjcwM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRmMmIwMWM5ZTE0ZGJkNDUwNzQyZWU3YmYzMTA1MDYzMGQxMWNlZTMzMDQ5NGMyMzFhZTA5M2U5OWIxMGI5MWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhMDI4ZjczYTQyZTRhNzM2MTJmYzk2M2ZjYWE2OTIxODE1OWVlMmI0MWRmOTI4NzI0ZmVkYjhjZDY0MDZmODYifQ"
+          "resource": "repo://crates/server/src/accounts.rs",
+          "version": "repo-file-v1:sha256:a3eb3903cdc97e299428736ceacf8a0b66d45099da8833615fa1f9fc96a29535"
         },
         {
-          "resource": "repo://crates/server/src/credentials.rs#L9-L80",
-          "version": "repo-lines-v1:sha256:7fb93bcc6444339b6636acdaedf07ab4dad0a6d6767be396cb1fae539342d84d:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4NzI3MjU0ZTM1ZmE3NTVlMzc5OGY2OTJhZDk0OGNmZjVmMDVmNjYyMWExNjEwNzgzMDY4M2E1YjYyNWIzMmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkYjEzM2I4MTIyYzEwNzZjMjM1ZGMxMzk0OWMxZTkxMTAxMmVhNWVmMzM3MjYzNWYxZTZkZWVlZTI0ZGVkM2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA0NDI3ZGQyYWQyNDE4MWVjYzVjMzk4MGFiYTc4MjA2NDVjNTQ1YWU3ZjAxNTFhNmU2ZWQwOTUxYjFjZWU2NWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVmNWVlMGYyYmJjMDAzODBmYjRiNmZjZTZkYjUxZjliNGNjZDdmMmIwNzVhM2NjODhlNjMxYWRhYzFlMmMyZTYifQ"
+          "resource": "repo://crates/server/src/credentials.rs",
+          "version": "repo-file-v1:sha256:529705827744d27017ab24f31913a728be27422e86ef4cf6064905359a91685b"
         }
       ]
     },
@@ -93,16 +93,16 @@
       "statement": "The canonical username format is enforced by a forward migration while the named case-insensitive unique index remains the authority for duplicate registration conflicts.",
       "evidence": [
         {
-          "resource": "repo://migrations/0001_identity_foundation.sql#L1-L13",
-          "version": "repo-lines-v1:sha256:ad79eb221090475e53faf9798095cf5235c091f34c52b74ef95870c31db0b285:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0MDBjZWU4MmEyODYyNTEwNGQxNzBmODJjYjQyMTNlZWNmY2U1NGNhMDkzNmI4Nzk3YjZiNTlhNzUzZDZmYmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzYWM0NDI2YzNmMWNlNDY1MWE0NmY3MTVjM2E5Y2JlYmEwMTJmYzUwZDVkOThiOGNhM2NkN2NhY2E3NTllNmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyNTllZGU0Zjc3ZTYzZjY0MDY1ZWU2YjFlNTFiMzkyNWMzNzAzZTViNDg2N2YwMWU1ODU3ZTUxOTI3ZjBhN2EifQ"
+          "resource": "repo://migrations/0001_identity_foundation.sql",
+          "version": "repo-file-v1:sha256:e5fa1c19619acb40213a2b59172b314dcf7bc5f3c0e15cdaef1598f6274e8cc5"
         },
         {
-          "resource": "repo://migrations/0002_canonical_account_usernames.sql#L1-L3",
-          "version": "repo-lines-v1:sha256:6016b719b7a9db06cfcbdc7659424c228ca8782985b1c7f39614de0f55c4265b:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjAzM2Y5ZTdhZTlmNzgwYTAzZjAwNjk4MzAwYWViM2ZjMTdkZmMxZGY1Nzc4ZTg0ZjUyYTE1ZTc5MWVjY2E2MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGVjZTk5MTBiYTY4NDk3ZjgwYzZiYmI0ODFiYzA5NTI3MzAxMjYyNjM4OTA1M2Q3YWRhMjc0NjFkNmRlOWRhNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+          "resource": "repo://migrations/0002_canonical_account_usernames.sql",
+          "version": "repo-file-v1:sha256:6016b719b7a9db06cfcbdc7659424c228ca8782985b1c7f39614de0f55c4265b"
         },
         {
-          "resource": "repo://crates/server/src/accounts.rs#L53-L96",
-          "version": "repo-lines-v1:sha256:b81547114a38e3809d82a2bd3f08cd1b1848ec18d43bda343c901090e31c0ae5:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmNDQwODk4OGZkYzBlZTAwNzExZjliOGJmYjBhNzA4NGU0NzZhNDgwNGQ4OWFmY2RhNzI1Nzc2MWVkMmQ3ZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlMGIyNDVkYTIzZTA3NGZhYTNjNjYzMjA4ZTZhY2ExOGExMTkyMmYzMDk5ZjFlODEzZWMwZDc3M2MwOGQ1MzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdiYzk4ZDZiMGRjNDkyYzUwMTZkZjEwODA1YTNhNTRlYjljMTg0YTVhNjEzN2U3ZjRiZWNmYTBjMjIwNTUwZDAifQ"
+          "resource": "repo://crates/server/src/accounts.rs",
+          "version": "repo-file-v1:sha256:a3eb3903cdc97e299428736ceacf8a0b66d45099da8833615fa1f9fc96a29535"
         }
       ]
     },
@@ -264,7 +264,7 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/config.rs",
-          "version": "repo-file-v1:sha256:42dee44b4de1b7e36e8886ba82f2e006c83b1224b91de716a2c6e2519ddec787"
+          "version": "repo-file-v1:sha256:d3b2f89de2ba030385b4b782b09f6c7b228d28c943b56e638c37f34466b5e154"
         }
       ]
     },
@@ -288,11 +288,11 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/config.rs",
-          "version": "repo-file-v1:sha256:42dee44b4de1b7e36e8886ba82f2e006c83b1224b91de716a2c6e2519ddec787"
+          "version": "repo-file-v1:sha256:d3b2f89de2ba030385b4b782b09f6c7b228d28c943b56e638c37f34466b5e154"
         },
         {
-          "resource": "repo://crates/server/src/mfa.rs#L107-L171",
-          "version": "repo-lines-v1:sha256:510539f1ec21f53805d0b9e337337a42921c656fdbc18ce874527adbc0af7e29:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczYmQzZGEyMmJmNjA0NjJjNmRlYWRiZDdjNDExNGE5NmFmNmEzN2M2ODYzNTIxOWVjNTQ2ZDEyYjM4YjE2NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxZDU1NDlkZDgxZDQxZjgyYzE3OWFlMmFlNjY0ZWNhZDU5MmNlOTVmNDhjZjkzZjNlNmVhMDMyMDMyNWY0NzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMyZGJhODhhMGU4ZDAwOGE2MDFmZmZkZDA2NTNhZWM3ODcxNjVkYTRhN2QxOWU5ODUyMTA5NDdkYjgzOGFhMTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMGU2NzlhMzg3ODEzOWUxZTUzMmQ1YjdjMWIzMGU4YTM0MjA3MmMxOWZmZGY5MWE2NGNkNmFjNjk5ZDQ4NDEifQ"
+          "resource": "repo://crates/server/src/mfa.rs",
+          "version": "repo-file-v1:sha256:d3b1af445e95524622cf7b4032dbb5d4a9542ca5902da3a19abcdb824856ed9c"
         }
       ]
     },
@@ -592,11 +592,11 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/games.rs",
-          "version": "repo-file-v1:sha256:bd8a95de705d959a6a084a1499d69d3802fb759a021340ee96fc35f329c66dbd"
+          "version": "repo-file-v1:sha256:2e6b926665204c60d379796fbe298b3d63a27928682fbe64760e539e72cc6259"
         },
         {
-          "resource": "repo://crates/server/src/sync.rs#L31-L59",
-          "version": "repo-lines-v1:sha256:38027493070b92be41d2a53f71250fa6ba534fb834c69b23b25917204b237baa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MTZhZjcwOWZlZDM0OWNiNzdjYjRkYTYyZjk2ZjI3NTEyMmE4MzEzMTRlNGM1NmNkZjdlOGI4ZmZhNDFjZTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJjOTFiY2I1NGQ0NDdjMDgyOTQ2ZjJkNTMxYzMzNDU2MzRiYzM1YzJkMWVkODZmZTc5NDc3MDY0ODMyZDg1M2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUifQ"
+          "resource": "repo://crates/server/src/sync.rs",
+          "version": "repo-file-v1:sha256:337df8b2ea5e9e97790a969303c1779d7eff9a08cdc0b6bca9c6ec8ab514c663"
         }
       ]
     },
@@ -606,11 +606,11 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/games.rs",
-          "version": "repo-file-v1:sha256:bd8a95de705d959a6a084a1499d69d3802fb759a021340ee96fc35f329c66dbd"
+          "version": "repo-file-v1:sha256:2e6b926665204c60d379796fbe298b3d63a27928682fbe64760e539e72cc6259"
         },
         {
           "resource": "repo://crates/server/src/provider_games.rs",
-          "version": "repo-file-v1:sha256:afd0b6c7d2b1f2a795eb8b3a0280b1ce04771976ce85ca717343b40f6874f61b"
+          "version": "repo-file-v1:sha256:6bbe763ecbdd4c1ac9f923316be7e8ae10324b375f64e8c29723ba3cc3798025"
         }
       ]
     },
@@ -638,15 +638,15 @@
         },
         {
           "resource": "repo://crates/server/src/game_api_tests.rs",
-          "version": "repo-file-v1:sha256:52d285cf7488fc0d06b1e6bd5abd283781a1432fb130aaa3c13d47c6a8a4bcc0"
+          "version": "repo-file-v1:sha256:544b4be6a09b5619cc5a8a21ab442be7319bbab8da5bd0e46402f5248011eb3c"
         },
         {
           "resource": "repo://crates/server/src/signal_siege_api_tests.rs",
-          "version": "repo-file-v1:sha256:6a3674453c28fc94ec27aac27af4cb4775fa1394d92b3695f58ddf96a55809d1"
+          "version": "repo-file-v1:sha256:138efc4b07f9b3a56bfd6875a1a0900da479e0951071ed6ccafb3b004e98b535"
         },
         {
-          "resource": "repo://crates/server/src/challenge_api_tests.rs#L398-L509",
-          "version": "repo-lines-v1:sha256:442d5437597500e81d2ba6a1035eb4b4b788b312ef54f280315532129bb0ed1b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhZjVjZDg4NzhmYjMyY2MwOGRlODYwZTg1NjE2NTY5ZWRiYmJmYmM5ZmY0NDcxZjJkZjMzM2UwZWYxMGU2ODYyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIxODdjMGVhMDBhMTAyNTBhOTJkMWVkNGM3N2E0NzIwYjIwMWE0NTI3MjA3ZDg2ZGRiZGIwYjFjYjAzMTI5OTExIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIwNmNhMDEzODVjMDRiOWM4OTIxMDhkODIzNjQzYTZhMjE4ZjZhNjYwMzEwMDlhODZjYThhNjg5Y2MwMWRjY2EwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjYjA5MjcxNWU3ZTIxM2M5ZGJkNDkyMmVlMzA4M2I3YmY5NDVmOTUwNDQ5NmFkZjdiMDhjMGIzZmIyNzE2ZDU5In0"
+          "resource": "repo://crates/server/src/challenge_api_tests.rs",
+          "version": "repo-file-v1:sha256:1603642a77a715ca7321af31cb6c79304244cd0eba32491b368aa58e25d93e29"
         }
       ]
     },
@@ -656,7 +656,7 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/games.rs",
-          "version": "repo-file-v1:sha256:bd8a95de705d959a6a084a1499d69d3802fb759a021340ee96fc35f329c66dbd"
+          "version": "repo-file-v1:sha256:2e6b926665204c60d379796fbe298b3d63a27928682fbe64760e539e72cc6259"
         }
       ]
     },
@@ -666,11 +666,11 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/games.rs",
-          "version": "repo-file-v1:sha256:bd8a95de705d959a6a084a1499d69d3802fb759a021340ee96fc35f329c66dbd"
+          "version": "repo-file-v1:sha256:2e6b926665204c60d379796fbe298b3d63a27928682fbe64760e539e72cc6259"
         },
         {
           "resource": "repo://crates/server/src/signal_siege_api_tests.rs",
-          "version": "repo-file-v1:sha256:6a3674453c28fc94ec27aac27af4cb4775fa1394d92b3695f58ddf96a55809d1"
+          "version": "repo-file-v1:sha256:138efc4b07f9b3a56bfd6875a1a0900da479e0951071ed6ccafb3b004e98b535"
         }
       ]
     },
@@ -738,11 +738,11 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/challenges.rs",
-          "version": "repo-file-v1:sha256:615a96de8caf4cf6d8a0bcc6e41affe2c38db69447d93930e084bcf012f4ba67"
+          "version": "repo-file-v1:sha256:b306630c1f644e636f00c60e376a49de6197be5f65f3946fc7e8a9ef8f01bfaf"
         },
         {
           "resource": "repo://crates/server/src/games.rs",
-          "version": "repo-file-v1:sha256:bd8a95de705d959a6a084a1499d69d3802fb759a021340ee96fc35f329c66dbd"
+          "version": "repo-file-v1:sha256:2e6b926665204c60d379796fbe298b3d63a27928682fbe64760e539e72cc6259"
         }
       ]
     },
@@ -762,11 +762,11 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/games.rs",
-          "version": "repo-file-v1:sha256:bd8a95de705d959a6a084a1499d69d3802fb759a021340ee96fc35f329c66dbd"
+          "version": "repo-file-v1:sha256:2e6b926665204c60d379796fbe298b3d63a27928682fbe64760e539e72cc6259"
         },
         {
           "resource": "repo://crates/server/src/signal_siege_api_tests.rs",
-          "version": "repo-file-v1:sha256:6a3674453c28fc94ec27aac27af4cb4775fa1394d92b3695f58ddf96a55809d1"
+          "version": "repo-file-v1:sha256:138efc4b07f9b3a56bfd6875a1a0900da479e0951071ed6ccafb3b004e98b535"
         }
       ]
     },
@@ -813,16 +813,12 @@
       "statement": "The QML game controller uses the bearer-owning onboarding controller only as a selected-persona request gateway, loads catalog and session or challenge inventories in serial bounded steps, and manually refetches durable REST state after commands and revision conflicts.",
       "evidence": [
         {
-          "resource": "repo://client/qml/OnboardingController.qml#L182-L213",
-          "version": "repo-lines-v1:sha256:8f0bbe23d5a3038147ef903e414a604e3cef4418bd3d8d7b89210cfec4a8fd68:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3ODUzZTU3ZGRhMTZjOGU4NzgyZjc0OTg3NTE2MjZiM2NhYWQ1YzMyY2NmYTA4NTJmNmNmNTc5NDZmZjZhYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM4MDU1NTIyN2IxNGM1ZmEwYTQ0NTA1NjhmM2U0N2RmNzAxMDg1NjFlZDU4NjM3ZTZiODlkZDc5ZmVhOGE3NzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY2YWIxZWFmMGRmZDllMjY1NzQ0NGRjMTYxYjNhNjQxYTg1MzNiODMzMTgzYWFiMzhmMzVhNTNjMmMyZWU0MTEifQ"
+          "resource": "repo://client/qml/OnboardingController.qml",
+          "version": "repo-file-v1:sha256:c12e17d0a4fd635444bdf097b54cb477a8b8c306f511e00752ae39cab2a37931"
         },
         {
-          "resource": "repo://client/qml/GameController.qml#L70-L218",
-          "version": "repo-lines-v1:sha256:23885df852765d21bcfbbd3f38f3b5f8833d5f18fe1244c74a14f675de56f44c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIzODBkOGQ3OTViMzZkYWY0MDhjMDdkZDBkMDEyMDQ4YmFmMGI4ZDIwMTUzMDBlNDY5OWQwZGU5NDRlYmNjZjY4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyNDdkMzdhZjAwYTFiYzZlNjE2M2Y2MDUwM2EyNjRjYWJmYTliZTIyYjRkMDQyN2IxMmI5YTM2NDQ0Yzk3ZGFhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmMjk5ZjE0MzgwNmMwOTZkOTZkNTE2MDhlOTU3MmU2MjM2YTAxNjc3OTVjODI4YmI3YmY2OTVkMDAxZGI4ZTBkIn0"
-        },
-        {
-          "resource": "repo://client/qml/GameController.qml#L272-L403",
-          "version": "repo-lines-v1:sha256:d8668ebc2b9d2ce8d2184269afe409a86c191a90e18249ec5809fb3e0247f415:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJjZTI4YmI4YjIwODNiOWQ2YzA0ZWM4ZmI0YjVmNzZlNWVhNGUxNTg1OGNhNmFiZGU5MGEwZTI0YzY1N2Q4NjRhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI1ZTdiY2QzNmVmNTNiNDQ1MjNlNjVlOThkMTk0NDk5M2UwZmYxNzQ2ZjU1MzZjMWE1MTE3NDZmM2UwMWU3NTZmIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJjODA1NTUyMjdiMTRjNWZhMGE0NDUwNTY4ZjNlNDdkZjcwMTA4NTYxZWQ1ODYzN2U2Yjg5ZGQ3OWZlYThhNzc4IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwYWNmN2QwMjZmNWRjM2E3NzdlNTM3NjhiYzQxMzA0Y2M4MDVhMmQ3Y2VkMzljOWVlNTJjMDQyMzAzYmRkNzQ5In0"
+          "resource": "repo://client/qml/GameController.qml",
+          "version": "repo-file-v1:sha256:f4688131de52fd784590baaeca31c0954db10c56cc87db5ca497c9b07bec3752"
         }
       ]
     },
@@ -831,16 +827,8 @@
       "statement": "The QML game boundary validates exact manifest, challenge, participant, session, command, and Signal Siege v1/v2 cross-field envelopes before publishing a platform-owned presentation; invalid-session authority clears the bearer and all persona/game state.",
       "evidence": [
         {
-          "resource": "repo://client/qml/GameController.qml#L429-L509",
-          "version": "repo-lines-v1:sha256:3dd46bc970464e6dbff4af27e8803ccb13718673522d8824cc45927c4f85cd19:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlMDBlOTJjN2U4Yzg3NjBkZmJkN2FjNGM0YTM2N2ZhNjBiYWU3MDc3MGRmYWJhMmVkY2Q1MjAwMTFkMWVlYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmOWQxZGVhMzk3MTg2NWJjZjc1ZGU5NWI1M2ZiNDBlZjAyY2I1MmU4NzE1Y2NlYjE5OWY3YzdmMDhmOTQyM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIxODMwNmEzN2FkZjczN2Y1NTY5NDEzNGEwYTA2M2FkNjRjMzQ0NmMzY2ZmMmZmYWUxYzE2OGNiNGU1MWYxZDMifQ"
-        },
-        {
-          "resource": "repo://client/qml/GameController.qml#L550-L808",
-          "version": "repo-lines-v1:sha256:3d95edc276bfd06ea6fb57b8026481ae3b46fbe80bae646bf89545e86650c7f6:eyJzZWxlY3RlZExpbmVDb3VudCI6MjU5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkMzhjYjg0MDhlODNmZDgzMGExNjYyMjg5M2VhOWM5MTY5MzQ3OGM1MzQ3YzEzMjM4NzA0ZGU1ZjllNGJlZWMwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI5OTliZGVmZWVhY2E2MzQwZTAyOTBkYzg2ZTg4OWM4OWQ1ZTE4OWFhNWJhNDRiNTg1YjNiNzA3MzRmNGE2MmQ4IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmODFiNzBiMTVhNWE2MzZhZTExNTNmMWQ5ZDAwMzczNGY2ODIxYjk0ODlhMjgyMWQ3NzU4NTYxMGVhODhlMDNhIn0"
-        },
-        {
-          "resource": "repo://client/qml/GameController.qml#L899-L901",
-          "version": "repo-lines-v1:sha256:a05222da17a34a834625c92c76e3ae51f4c4ca840e79334af20bb7ad95ccd40d:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzM1NWYxYmU5MzkwNWZiYmI1NzAzYmUyNzk1YTU4NDIyNDI4NzVhMDEzMWViZjIwMDE0NjQ5Y2RmNzk0ZjAyYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg5M2Y0MGUzNzgxZWI4OTZjODJkMDQ2YTA4MDY3YTExZTM1Y2RmMmYxZGZhZjI2ZmVhOTBiOGRiNjY3NjQxMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzMxNWRhN2ZmMjc5NjNmMTM3NWVjYTU2ZTYxY2IwODk3ZTMxZDQyMjM0ODUyNmRlNDUxNDc4Yzg2MmQ1ZTM5YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTkxNDJmYWUwMzNkZjc3MGE4OWJmMmE5OWM0YzAxYzFlMWMxMmE3NTc2MzYzNzQ0NDE4NjA2MDljMWJlNGRiZiJ9"
+          "resource": "repo://client/qml/GameController.qml",
+          "version": "repo-file-v1:sha256:f4688131de52fd784590baaeca31c0954db10c56cc87db5ca497c9b07bec3752"
         }
       ]
     },
@@ -875,12 +863,8 @@
       "statement": "The focused accessibility fixture proves every routed screen has a heading, status, keyboard hint, deterministic initial focus, bounded compact layout, reversible Tab traversal, and a persistent exit control, and proves Escape and close preserve or clear authority according to their distinct lifecycle contracts.",
       "evidence": [
         {
-          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L108-L170",
-          "version": "repo-lines-v1:sha256:aa92795abff4c032f4a88c68bc9e6597747a486cc131080294323a5e5a1b3d17:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0OGYyYmQ1MGQ2MzEzMWZlMDVlMWQ3OWRiNGVkZjkzZjE5YjdhM2RkNzg0NzA5MThlMzFkMWNlMDc5ZThhYzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlZWQ0ZjAzZjdkMTM4ZDk3YzU1Yjg0MDAwNDRhZjM4ZTgxZjM1NTljMDZmZDMwYTgzOGUyMzhkZGZlZjMyM2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEyOTMxOWQ0NmRmODkwNjJiM2FhODBlNjcyMDk3ZGEwZWJjYTc0YjM3MDE1MGZmYjEwYTkyM2Y4MDVhMGM1ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNmMTYwZjEyNjQzZjk4NDM4MTU0ZGZlYmU2Njg2OGVlMjhmYTQ4MGZlMWM2NDJjN2Y2YzQ3Mjc4NTEwMGY5MGIifQ"
-        },
-        {
-          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml#L216-L339",
-          "version": "repo-lines-v1:sha256:d052d1d102503f8cc0d8edd7c1efa1c33d6e0aeb9f1f74c5b6b107f6faf06e91:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1Y2ExODYyYjg3M2U0ODdlY2RlMWQ3YzI3YThjZTk5NDcwNTQ5M2IwNWQ0ZTE2MDdiY2Q1MmIwYTVmZmI1ZmRmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0OGQzZmRhYzIxNTgyYzU2Yzc2Y2YxMGI3NDk5N2MxY2U5ZTFiMjA5N2U0YWM0ZmM2NDAxYmY0Yzc0NTk3NzY1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIn0"
+          "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml",
+          "version": "repo-file-v1:sha256:fc6b02e70b5e0f93260336d56f72b26991e5a1d073f61683b348ae64c2bcaa69"
         }
       ]
     },
@@ -945,8 +929,8 @@
       "statement": "The local sysop executable reads PostgreSQL authority only from DATABASE_URL, accepts bounded report queries or one bounded non-symlink regular JSON command file, emits machine-readable success, and exposes only stable error codes on failure.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/bin/omarchygs-admin.rs#L20-L115",
-          "version": "repo-lines-v1:sha256:2b9b74c5e9157998149a161594340d530e55bf34044886c46d48f9fe6dd6a22f:eyJzZWxlY3RlZExpbmVDb3VudCI6OTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExZDA2ZTA0OGNkMjcyNzM4ZDgzN2IwYzBlYzZhYWIwYjAzMTQ1N2U0NzVmZDQ5YWJiY2JhZmM1ZjczYzAyMGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkxZjYyYWQ2ZjBkODBmYTQ3MjU3ZThiNmZlYzk3MmM2ODY0MzkxZjM5MjdiOGJhZTEzNjU0ZjAyMmVhMzU0ZDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://crates/server/src/bin/omarchygs-admin.rs",
+          "version": "repo-file-v1:sha256:568e70c77963cd7df39e6af998f70e087ac66214a6e1c7776f2f950e097dec1b"
         }
       ]
     },
@@ -971,6 +955,6 @@
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T17:59:41.119Z"
+    "at": "2026-08-27T12:40:24.098Z"
   }
 }

@@ -86,6 +86,7 @@ run_gate 13 "Game Cartridge SDK release" ./scripts/test-game-cartridge-sdk.sh
 run_gate 14 "Game Cartridge architecture proof" ./scripts/test-game-cartridge-spike.sh
 run_gate 15 "native Omarchy client package source" ./scripts/check-client-package-source.sh
 run_gate 15a "root-signed marketplace trust channel" ./scripts/test-marketplace-trust-channel.sh
+run_gate 15b "static marketplace publication and offline-root drill" ./scripts/test-marketplace-publication.sh
 
 if [[ "$ogs_mode" != "fast" ]]; then
   run_gate 16 "native Omarchy client package" ./scripts/test-client-package.sh

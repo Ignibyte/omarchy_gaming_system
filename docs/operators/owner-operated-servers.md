@@ -168,9 +168,12 @@ one public offline root, canonical channel, and minimum bundle/snapshot floors;
 players explicitly enroll or synchronize the signed active/retired/revoked
 keyring from that fixed channel. A selected server must never provide or
 replace the client root, channel location, or manual key through discovery,
-catalog, or acquisition. Root custody, root rotation, and hosted channel
-operations remain release-operator responsibilities beyond this server
-runbook.
+catalog, or acquisition. The deterministic release workflow for those public
+bytes is documented in [Marketplace publication and offline-root
+operations](marketplace-publication.md). It does not make a community server a
+mirror, root custodian, or publication authority. Official hosting, real root
+custody/root-replacement recovery, and continuous monitoring remain
+release-operator responsibilities beyond this server runbook.
 
 The same root-signed channel may advertise an exact newer native client
 package. The companion can verify and stage that artifact only for its packaged

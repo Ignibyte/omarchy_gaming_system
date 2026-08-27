@@ -52,6 +52,17 @@ Adopt a server-curated marketplace model:
    The trusted client renders the cartridge locally, while actions travel only
    through the selected OmarchyGS server.
 
+The marketplace side is an immutable static publication protocol rather than
+a new mutable application server. Separate online tooling verifies reviewed
+publisher releases, signs catalog policy/snapshots, and prepares a public
+request. A network-less offline-root step authorizes the keyring and native
+package channel. Finalization builds identical channel/marketplace manifests,
+exact artifacts, and a content-addressed version before one atomic local
+pointer changes. Operator probes may compare exact authenticated bytes across
+mirrors, but clients retain one canonical channel/marketplace authority and do
+not gain mirror fallback. See the
+[publication runbook](../operators/marketplace-publication.md).
+
 A cartridge is frontend presentation and integration data only. It contains a
 manifest, declarative screens, schemas, localization, bounded assets, and
 declared actions. It contains no raw QML/JavaScript, native code, server rules,

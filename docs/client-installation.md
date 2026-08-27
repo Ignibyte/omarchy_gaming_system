@@ -2,8 +2,11 @@
 
 Status: native Arch packaging and an optional offline-root-authenticated public
 trust/package channel are available for private-alpha testing. A hosted package
-repository, marketplace-root rotation operation, and automatic or privileged
-installation are not implemented.
+repository is not provisioned, although the deterministic publication and
+network-less offline-root handoff are implemented in the
+[release-operator runbook](operators/marketplace-publication.md). In-band
+marketplace-root replacement and automatic or privileged installation are not
+implemented.
 
 ## What the package installs
 

@@ -1,0 +1,31 @@
+[package]
+name = "omarchygs-marketplace-publisher"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "omarchygs-marketplace-publisher"
+path = "src/bin/omarchygs-marketplace-publisher.rs"
+
+[dependencies]
+omarchygs-game-cartridge = { path = "../game-cartridge" }
+omarchygs-marketplace-trust = { path = "../marketplace-trust" }
+rand_core.workspace = true
+rustix.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["io-util"] }
+
+[dev-dependencies]
+axum.workspace = true
+axum-server.workspace = true
+rcgen.workspace = true
+rustls.workspace = true
+tempfile = "3.23"

@@ -6,6 +6,7 @@ members = [
     "crates/game-provider",
     "crates/game-runtime",
     "crates/game-signal-siege",
+    "crates/marketplace-publisher",
     "crates/marketplace-trust",
     "crates/server",
 ]

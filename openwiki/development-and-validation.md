@@ -9,8 +9,16 @@ sources:
     resource: repo://client/qml/cartridge/nodes/TrustedImageNode.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
+  - id: openwiki-source-152956378e80408d69d9dfb7
+    resource: repo://client/qml/tests/fixture/tst_games.qml
   - id: openwiki-source-f03bc5208aed9dab57ccb120
     resource: repo://client/qml/tests/fixture/tst_marketplace.qml
+  - id: openwiki-source-93421eb71ebe4d41b6a9af26
+    resource: repo://client/qml/tests/fixture/tst_onboarding.qml
+  - id: openwiki-source-4f6d9bd2b8e769f9585e0296
+    resource: repo://client/qml/tests/fixture/tst_social.qml
+  - id: openwiki-source-77962cc0ed2673a227f6eaee
+    resource: repo://client/qml/tests/fixture/tst_transport.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
@@ -29,6 +37,8 @@ sources:
     resource: repo://crates/game-provider/tests/registry.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
+  - id: openwiki-source-ba452807898e03f1e2e27204
+    resource: repo://crates/marketplace-publisher/tests/publication.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
     resource: repo://crates/server/src/challenge_api_tests.rs
   - id: openwiki-source-9ba5739252220892895a7a47
@@ -37,14 +47,16 @@ sources:
     resource: repo://crates/server/src/game_api_tests.rs
   - id: openwiki-source-b2c7af59f511c4ed8a004fb0
     resource: repo://crates/server/src/inbox_api_tests.rs
+  - id: openwiki-source-d65cbc07fe905285d60110ae
+    resource: repo://crates/server/src/marketplace_sync_tests.rs
+  - id: openwiki-source-94ddb58f2dc1a71ed1959533
+    resource: repo://crates/server/src/operator_admin.rs
   - id: openwiki-source-22753602a862c32d10560204
     resource: repo://crates/server/src/persona_api_tests.rs
   - id: openwiki-source-76060b846b9222af2c790243
     resource: repo://crates/server/src/signal_siege_api_tests.rs
   - id: openwiki-source-46fb4135d6a71efad1062c0d
     resource: repo://crates/server/src/sync_api_tests.rs
-  - id: openwiki-source-005a34a3eca7415b5fdce574
-    resource: repo://docs/planning/pipeline/active/operator-reporting-suspension-audit-and-recovery-drill.notes.md
   - id: openwiki-source-6ef5cb9ff978eb09c62cd313
     resource: repo://scripts/build-client-package.sh
   - id: openwiki-source-1951c64828cbf175c78556c4
@@ -71,17 +83,18 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-  - id: openwiki-source-90d72b449bfcd3fd8271063b
-    resource: repo://scripts/test-marketplace-trust-channel.sh
-  - id: openwiki-source-35eb2e46608670f6b3b620a4
-    resource: repo://scripts/test-marketplace-trust-migration.sh
+  - id: openwiki-source-e8e6f7d2dadb4ddb710ef9c6
+    resource: repo://scripts/test-marketplace-publication.sh
   - id: openwiki-source-e08dc6155c081d7928029e27
     resource: repo://scripts/test-operator-recovery.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
-generated: {by: "codex", at: "2026-08-27T10:39:16.768Z"}
+generated: {by: "codex", at: "2026-08-27T12:40:24.098Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-27T12:40:24.098Z
 ---
 
 # Development and validation
@@ -266,7 +279,8 @@ human `pacman -U` operation.
 
 `bin/gate.sh --fast` runs the static development loop without writing a receipt.
 It includes native client package source admission and the root-signed
-marketplace trust-channel proof at stage 15a. `bin/gate.sh --diff` adds
+marketplace trust-channel proof at stage 15a plus the deterministic static
+publication and offline-root drill at stage 15b. `bin/gate.sh --diff` adds
 the full native artifact and cartridge-acquisition conformance, isolated
 migrated PostgreSQL tests, and
 the live PostgreSQL → Rust game-catalog/health/account/session/persona/
@@ -329,6 +343,10 @@ The gate currently covers:
 13. the invite-only private-alpha boundary's issue, first-use registration,
     exact replay, changed-intent denial, sign-in, revocation, secret-free
     inventory, digest-only persistence, and log-secret hygiene.
+14. the static marketplace publisher's canonical plan and handoff contracts,
+    deterministic double builds, network-unshared offline signing, exact
+    immutable tree and atomic activation, guarded identical TLS mirrors,
+    rotation/revocation, and stale-publication rollback denial.
 
 ### Platform operator recovery
 

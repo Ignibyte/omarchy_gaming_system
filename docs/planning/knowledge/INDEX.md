@@ -102,6 +102,7 @@ and in this register.
 | `PR-omarchy-gaming-system-bind-profile-mounts-to-origin-and-server-001` | Bind a client profile mount to both the canonical selected origin and stable server UUID, and reject mixed-origin records inside one UUID profile. | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
 | `PR-omarchy-gaming-system-persist-action-admission-before-external-effects-001` | Linearize mutable lifecycle authorization into an immutable exact action admission before compiled execution or provider I/O, and resolve exact replay before current-policy denial. | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
 | `PR-omarchy-gaming-system-render-only-from-accepted-plan-state-001` | After validating a render envelope, every presenter, metric, assertion, and component loader must consume only retained accepted plan state, never the raw input property. | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
+| `PR-omarchy-gaming-system-bind-permissions-to-opened-file-descriptors-001` | After securely creating or opening a file or directory, apply security-sensitive ownership or mode changes through that already-bound descriptor; do not re-resolve an attacker-visible pathname. | `aar/AAR-037-static-marketplace-publication-offline-root-handoff-and-mirror-operations.md` |
 
 ## Register
 
@@ -370,3 +371,6 @@ and in this register.
 | `PR-omarchy-gaming-system-snapshot-mutable-build-inputs-before-verification-001` | rule | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
 | `PR-omarchy-gaming-system-bind-current-policy-to-signed-current-snapshot-001` | rule | `aar/AAR-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md` |
 | `AD-omarchy-gaming-system-offline-root-marketplace-trust-and-package-channel-001` | decision | `../../architecture/game-cartridges.md`; `../../architecture/system-overview.md`; `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md` |
+| `BF-omarchy-gaming-system-offline-response-path-chmod-race-001` | failure | `aar/AAR-037-static-marketplace-publication-offline-root-handoff-and-mirror-operations.md` |
+| `PR-omarchy-gaming-system-bind-permissions-to-opened-file-descriptors-001` | rule | `aar/AAR-037-static-marketplace-publication-offline-root-handoff-and-mirror-operations.md` |
+| `AD-omarchy-gaming-system-static-marketplace-publication-and-offline-root-handoff-001` | decision | `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md`; `../../architecture/system-overview.md`; `../../operators/marketplace-publication.md` |
