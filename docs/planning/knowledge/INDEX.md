@@ -381,3 +381,21 @@ and in this register.
 | `PR-omarchy-gaming-system-separate-process-startup-and-post-load-watchdogs-001` | rule | `aar/AAR-038-operator-custom-cartridge-trust-import-and-player-warnings.md` |
 | `PR-omarchy-gaming-system-observe-exact-request-contracts-outside-tested-interface-001` | rule | `aar/AAR-038-operator-custom-cartridge-trust-import-and-player-warnings.md` |
 | `AD-omarchy-gaming-system-operator-custom-cartridge-trust-boundary-001` | decision | `../../architecture/game-cartridges.md`; `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md` |
+| `BF-omarchy-gaming-system-component-record-export-shim-001` | failure | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `BF-omarchy-gaming-system-transient-scope-limit-nofile-001` | failure | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `BF-omarchy-gaming-system-supervisor-measured-launcher-rss-001` | failure | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `BF-omarchy-gaming-system-operator-provenance-server-binding-001` | failure | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `BF-omarchy-gaming-system-artifact-read-before-bound-001` | failure | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `BF-omarchy-gaming-system-dispatch-retained-empty-partitions-001` | failure | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `BF-omarchy-gaming-system-module-supervisor-untrusted-search-path-001` | failure | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `BF-omarchy-gaming-system-source-fixture-copied-nested-build-products-001` | failure | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `PR-omarchy-gaming-system-generate-component-shims-from-exact-wit-001` | rule | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `PR-omarchy-gaming-system-apply-host-limits-at-supported-layers-001` | rule | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `PR-omarchy-gaming-system-measure-inside-intended-trust-unit-001` | rule | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `PR-omarchy-gaming-system-pin-signed-document-authorities-out-of-band-001` | rule | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `PR-omarchy-gaming-system-bind-operator-provenance-to-admitted-server-001` | rule | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `PR-omarchy-gaming-system-enforce-artifact-bounds-during-file-read-001` | rule | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `PR-omarchy-gaming-system-prune-empty-bounded-state-001` | rule | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `PR-omarchy-gaming-system-use-absolute-containment-helper-paths-001` | rule | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `PR-omarchy-gaming-system-exclude-generated-trees-from-source-fixtures-001` | rule | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
+| `AD-omarchy-gaming-system-process-isolated-wasm-server-modules-001` | decision | `../../architecture/adr-0004-process-isolated-wasm-server-modules.md`; `../../architecture/server-modules.md` |

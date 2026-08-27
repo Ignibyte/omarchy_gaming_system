@@ -77,6 +77,8 @@ sources:
     resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
     resource: repo://docs/architecture/game-cartridges.md
+  - id: openwiki-source-e9c32af872bdfcc1f392d212
+    resource: repo://docs/architecture/server-modules.md
   - id: openwiki-source-872141f77f71851168245852
     resource: repo://docs/architecture/system-overview.md
   - id: openwiki-source-831ed1de42e0dff0edb87b3b
@@ -99,11 +101,10 @@ sources:
     resource: repo://packaging/arch/PKGBUILD
   - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
     resource: repo://scripts/check-qml-style.py
-  - id: openwiki-source-e8e6f7d2dadb4ddb710ef9c6
-    resource: repo://scripts/test-marketplace-publication.sh
-  - id: openwiki-source-90d72b449bfcd3fd8271063b
-    resource: repo://scripts/test-marketplace-trust-channel.sh
-generated: {by: "codex", at: "2026-08-27T17:23:12.264Z"}
+generated: {by: "codex", at: "2026-08-27T21:56:27.195Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-27T22:03:08.727Z
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -299,9 +300,11 @@ separates historical provenance from current selection, lets the player install
 the exact old pin explicitly, and keeps navigation inside the trusted client.
 The explicit operator-custom path may bypass marketplace review but cannot
 bypass the inert package, publisher signature, current lifecycle, selected
-server admission, or trusted-QML boundary. A public Provider SDK and a separate
-capability-scoped server module/hook system remain roadmap work; no general
-plugin runtime is authorized today.
+server admission, or trusted-QML boundary. Ticket 039 and ADR-0004 now select
+and prove a dedicated no-WASI process boundary for a separate capability-scoped
+server module/hook system. A public Provider SDK, external provider onboarding,
+and production module loading remain roadmap work; no production plugin runtime
+is authorized today.
 
 ## Task routing
 
@@ -314,7 +317,8 @@ plugin runtime is authorized today.
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
 | Change cartridge packaging, trusted rendering, SDK portability, provider integration, marketplace or operator-custom trust, synchronization, server admission, player acquisition, session pinning, historical recovery, signed-screen navigation, package staging, or trusted launch | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/client-cartridge-runtime`; `crates/marketplace-trust`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `operator_custom.rs`; `session_cartridges.rs`; `marketplace_sync.rs`; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `client/qml/MarketplaceController.qml`; `CartridgeController.qml`; `GameController.qml`; `client/qml/cartridge`; migrations `0014`–`0015` and `0019`–`0024`; ADR-0002; Tickets 015–019 and 032–038 | Cartridge/renderer/SDK/provider focused scripts; root-signed trust-channel test; marketplace/custom PostgreSQL lifecycle/admission/migration tests; hostile companion/QML contract tests; clean-clone Door Legends pilot; native package smoke; threat/authority review and constitutional authority check |
 | Change static marketplace preparation, offline-root signing, immutable activation, local verification, or mirror probes | [Game Cartridges](game-cartridges.md) and [Development and validation](development-and-validation.md) | `crates/marketplace-publisher`; `docs/operators/marketplace-publication.md`; Ticket 037 | `scripts/test-marketplace-publication.sh`; exact-tree, network-less ceremony, mirror, rotation, rollback, security, and canonical diff-gate evidence |
-| Change owner-operated server, Provider SDK, executable custom-content, or module/hook direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | Current-versus-future audit; provenance/authority review; official-client containment; extension isolation and lifecycle evidence before executable implementation |
+| Change owner-operated server, Provider SDK, or executable custom-content direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | Current-versus-future audit; provenance/authority review; official-client containment |
+| Change the server-module WIT, host, typed hooks/intents, state, lifecycle, containment, or production direction | [Server modules](server-modules.md) and [Product boundaries](product-boundaries.md) | ADR-0004; `docs/architecture/server-modules.md`; `crates/server-module-spike`; Tickets 039–041 | `scripts/test-server-module-spike.sh`; trust/authority review; process containment and failure evidence; production-loader absence unless separately authorized |
 | Build, inspect, install, upgrade, remove, or diagnose the native player package | [Development and validation](development-and-validation.md) and `docs/client-installation.md` | `packaging/arch/`; `scripts/check-client-package-source.sh`; `scripts/build-client-package.sh`; `scripts/test-client-package.sh` | Source-contract check; extracted-package conformance; `bin/gate.sh --diff` before delivery |
 | Run or diagnose the local stack and quality gate | [Development and validation](development-and-validation.md) | `scripts/dev.sh`; `bin/gate.sh`; `client/qml/Main.qml` | `bin/gate.sh --fast` or `--diff` |
 | Start or resume a non-trivial change | [Codex workflow](codex-workflow.md) | `AGENTS.md`; `$omarchy-workflow`; active pipeline | Phase receipts and canonical gate |

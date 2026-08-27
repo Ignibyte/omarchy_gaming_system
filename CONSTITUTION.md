@@ -24,7 +24,7 @@ The current gates are:
 4. Rust documentation with warnings denied
 5. Docker Compose validation
 6. Bash syntax validation for project and Codex hook scripts
-7. Pipeline-structure validation
+7. Pipeline-structure and local-only automation validation
 8. Changed-file secret scanning
 9. Codex hook self-tests
 10. Whitespace validation across tracked, staged, and untracked files
@@ -72,10 +72,20 @@ The current gates are:
     issuance, digest-only persistence, atomic registration, exact replay,
     one-use denial, revocation, metadata-only inventory, login, and audit
     (DIFF/FULL only)
+23. The process-isolated server-module architecture proof, including canonical
+    signed release/provenance/admission contracts, exact WIT components,
+    capability-scoped typed hooks/intents, state/lifecycle/replay bounds,
+    systemd/Bubblewrap containment, hostile runtime cases, deterministic
+    fixtures, and local-only automation enforcement
 
 Repository-local CodeGraph and OpenWiki are workflow instruments, not CI
 dependencies. `scripts/setup-pipeline-tools.sh` prepares their pinned generated
 state, while committed checks validate the wiring without network access.
+
+All build, test, documentation, packaging, security, and delivery checks run
+locally through the repository gate and its supporting scripts. Hosted CI/CD
+workflow definitions, including GitHub Actions, are prohibited. The local gate
+and its worktree-bound receipt remain the only quality evidence for delivery.
 
 Cargo commands run sequentially. Never weaken a gate, delete a test, or edit a
 receipt to manufacture green. Fix the source.
@@ -97,7 +107,7 @@ recall → plan → design → implement → inspect → validate → complete �
   names the evidence that will verify it.
 - Work that is not ready for commitment belongs in `docs/planning/intake/`.
 - Application code includes `crates/`, `client/`, `migrations/`, runtime and
-  validation scripts, Cargo manifests/lockfile, Compose, CI, and gate/hook
+  validation scripts, Cargo manifests/lockfile, Compose, automation policy, and gate/hook
   code. Codex project instructions and repository skills are also gated
   workflow code. Planning documents are not application code.
 

@@ -77,14 +77,14 @@ sources:
     resource: repo://crates/server/src/provider_games.rs
   - id: openwiki-source-408aa68caebee417a5a319b8
     resource: repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md
-  - id: openwiki-source-bfc109ee5d2c2f6c0f5c5f77
-    resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
+  - id: openwiki-source-0fa8a0670e40aca3d14c3478
+    resource: repo://docs/architecture/adr-0004-process-isolated-wasm-server-modules.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
     resource: repo://docs/architecture/game-cartridges.md
+  - id: openwiki-source-e9c32af872bdfcc1f392d212
+    resource: repo://docs/architecture/server-modules.md
   - id: openwiki-source-fa645fac0603cca986708fed
     resource: repo://docs/operators/marketplace-publication.md
-  - id: openwiki-source-36d583174a7a0018316f71c7
-    resource: repo://docs/operators/owner-operated-servers.md
   - id: openwiki-source-ff39fa8dfffbd1a097ab5e16
     resource: repo://docs/planning/pipeline/completed/separate-repository-sdk-and-first-party-cartridge.notes.md
   - id: openwiki-source-047cb62ee1741c598c0f11a5
@@ -101,7 +101,10 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-27T17:23:12.264Z"}
+generated: {by: "codex", at: "2026-08-27T21:56:27.195Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-27T22:03:08.727Z
 ---
 
 # Game Cartridges and portable provider direction
@@ -145,8 +148,10 @@ does not enter the Game Cartridge SDK.
 Ticket 038 adds the explicit server-scoped operator-custom trust path,
 including admin-only signing/import and lifecycle, source-aware server
 admission/session history, player-confirmed client key pins, source-specific
-mounts, and persistent unvetted warnings. A public Provider SDK,
-external-provider onboarding, and server modules/hooks remain unimplemented.
+mounts, and persistent unvetted warnings. Ticket 039 and ADR-0004 select and
+prove the separate process-isolated no-WASI server-module boundary. A public
+Provider SDK, external-provider onboarding, and production modules/hooks remain
+unimplemented.
 
 Ticket 014 contributes an isolated executable architecture proof. Its broker,
 provider, and QML surface are not a public SDK or deployed runtime. Ticket 018
@@ -354,10 +359,12 @@ Backend code is not part of the cartridge. Portable game rules use a separately
 deployed registered provider and will later gain a public Provider SDK with a
 starter service, version negotiation, signing/grant helpers, conformance/fault
 fixtures, and operations guidance. General server modules form a third
-extension family: a future module base requires versioned capability-scoped
-typed hooks, namespaced configuration/state, audit and lifecycle controls, and
-a proven process, Wasm, static, or other isolation model. No general module
-runtime or dynamic in-process Rust plugin ABI exists today.
+extension family. ADR-0004 selects one exact no-WASI Component Model release
+per dedicated contained host process, with typed hooks and intents,
+core-owned state/lifecycle, and core reauthorization of every protected effect.
+That architecture is proved but no production module runtime or dynamic
+in-process Rust plugin ABI exists today. A module cannot supply client QML or
+become a game's second rules authority. See [Server modules](server-modules.md).
 
 ## Package and presentation trust
 
@@ -856,4 +863,4 @@ decisions and monotonic policy versions.
 | Public trust enrollment, key rotation, and native package staging | `crates/marketplace-trust`; client runtime trust/package modules; server marketplace/catalog/distribution/session modules; `MarketplaceController.qml`; migration `0023`; packaging scripts; Ticket 036 | Root/channel canonical and transition corpus; fresh-enrollment and floor-advance replay denial; live client/server revocation; acquisition-v2 dual-key verification; historical migration upgrade; QML trust/package states; deterministic manual/channel packages; root-signed channel gate |
 | Static marketplace publication and offline-root operations | `crates/marketplace-publisher`; `docs/operators/marketplace-publication.md`; Ticket 037 | `scripts/test-marketplace-publication.sh`; canonical plan/handoff, release and package verification, network-unshared offline sign, exact immutable tree, concurrency, mirror, rotation, rollback, receipt, and security evidence |
 | Operator-custom trust, import, lifecycle, and warnings | `operator_custom.rs` in the cartridge/server domains; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `session_cartridges.rs`; client runtime cache/remote/service; QML cartridge/game controllers and Games screen; migration `0024`; Ticket 038 | Canonical attestation/acquisition hostile corpus; PostgreSQL import/policy/selection/action races and recovery; private exact client trust and source-specific mounts; warning/keyboard QML tests; security diff scan and writer-first linearization regression |
-| Remaining owner-operated extension direction | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; roadmap | Provider/module separation; extension isolation, lifecycle, audit, and operator-responsibility review |
+| Server-module architecture and production sequencing | ADR-0004; [Server modules](server-modules.md); `docs/architecture/server-modules.md`; `crates/server-module-spike`; Tickets 039–041 | `scripts/test-server-module-spike.sh`; exact WIT/trust/intents/state evidence; process containment, failure, recovery, and production-loader absence |

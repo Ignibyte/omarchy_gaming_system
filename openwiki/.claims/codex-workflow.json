@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:27d7f71c677620b743cbf3bfb0d6533ead9cc2c846bc85c22e818fe07e66c681",
+  "pageVersion": "sha256:c1ab18b69b94aa77b422b594a6c7ec81152dfaf8e77f499ac89d8a38f06ef107",
   "claims": [
     {
       "id": "claim_9a5f02855f2e4ecb9dd760a157b88b08",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://CONSTITUTION.md#L35-L56",
-          "version": "repo-lines-v1:sha256:6e0597701db77db2ec55779bd655fa760ad147d09589419b2bc0efd12c7b17fe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0M2UyMjcwODU4MzM0ZWFkNTZmYmQ2MGJmMDQ2OTE1NWY0MDA4ZjJiYTE0N2E5NWYxNmM0MmFjMzI2NDM0ZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhMjU0MWVjOWQ1NTViZDc5MjczMjg0NTczYTkwMzQ5ZmNjMWEzYWMxZDhhZjgwNzBiZjRlZGQ3M2JmMjVhYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU2Y2E0NjFkMTBkYTg3ZDY5ZGU1NWQ0ODZhNzZjMmJmZDAzYjFjZWI1OTFiMjYzYTVhMTFjMzVmOGUzMDM5YmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAzMjVhZmM3Nzc4ZWRhYWJmMDNiYzRlYmE1ZTM4MDA2ZGY4MzNjMDI0ZDAwNjU1M2UyN2FlNGE5NDZjZGU3YTgifQ"
+          "version": "repo-lines-v1:sha256:c710c4d2873147edf82742cce79f15243e784041b6aa09c251fb480eabe4de98:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2MTBjNGQ0ZTRjMTg3NWQzNGI3ZTlhM2M3MmU2ZTU0MzA4ZGYyYzkyZWQ1NmIzZWNhZDM0YjQzMGY1ZjMzMTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhMjU0MWVjOWQ1NTViZDc5MjczMjg0NTczYTkwMzQ5ZmNjMWEzYWMxZDhhZjgwNzBiZjRlZGQ3M2JmMjVhYTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU2Y2E0NjFkMTBkYTg3ZDY5ZGU1NWQ0ODZhNzZjMmJmZDAzYjFjZWI1OTFiMjYzYTVhMTFjMzVmOGUzMDM5YmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAzMjVhZmM3Nzc4ZWRhYWJmMDNiYzRlYmE1ZTM4MDA2ZGY4MzNjMDI0ZDAwNjU1M2UyN2FlNGE5NDZjZGU3YTgifQ"
         }
       ]
     },
@@ -50,19 +50,19 @@
     },
     {
       "id": "claim_f24f5a67a19e41b199a83d20af246bc9",
-      "statement": "Codex hooks bind CodeGraph, OpenWiki, and delivery evidence to the current gated worktree, while the canonical gate remains the load-bearing delivery proof.",
+      "statement": "Codex hooks bind CodeGraph, OpenWiki, and delivery evidence to the current gated worktree; hosted CI/CD definitions are rejected and the local canonical diff gate is the sole load-bearing delivery proof.",
       "evidence": [
         {
-          "resource": "repo://AGENTS.md#L65-L73",
-          "version": "repo-lines-v1:sha256:b9c84bddc569b165fd8089ef127d97dbe484b688ca0ab82cfb70bfd0b34e2ac8:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTUzZGMyYTQyY2Y2ZTJkMjI2Yjc1YWFiZDI3YmM1NGYyMWVjNGNhYjljNDg1Y2JkMTI5YTExMDQ0ZTEzOGUxYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjcxY2E2ZjdjNWJkYjc0NmMzZDczZWVhNTMxMmRlMDQ4ZmM3M2Y1MGFlN2QwMjYyYTJkMDZhOTRhMTI1MjU0MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjc2MTgzZDhlMTBlMDZjZGY1NjZhNWZlYWJhYmNiNmJkMGMyYWZjZGU2NzYxMDAxMjhjZThjZTc4YTgyYWI3OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWIxYmM1YmM0YTIzN2Y1NzhlNmFmNGE0MTVkMDY0N2Y5OTEwYjAzYjM2NGUxZTI3YzFmMWRiYWE3NDNkMDNiYSJ9"
+          "resource": "repo://AGENTS.md",
+          "version": "repo-file-v1:sha256:896d542c85f63de77ae1de0590d008ab42e32e9fb4a85e2705e0b9088346e909"
         },
         {
-          "resource": "repo://CONSTITUTION.md#L100-L114",
-          "version": "repo-lines-v1:sha256:bbfc0c5e9e69555343b0ab4a12f3e2f2e3d0734c28e5586e03e0c8a362e58caa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1YmU1MTA0YWVkMWE2NGE3MzU0MGYyNGU5NWZjMzlhZDNmODUwNmRmODE5OGU3OTdiMGVmM2RmMDU0NTBmZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5YWE2MDgwOGYxMzEyYmNlMGQ0OTEzNTY4MmQ2MThiMzlhYmNiNWRmYjNjYmUxZjg1YWIyNzYxNmE3ZTAwNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIxYjM3YmMwZmM1MGZkNDBjYTVlMjI3ZTZjZGZkNzY3NjZmOTg0MTlhMDVmMjNhYzMwN2IxOTFmMDNlOTllNjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ2Zjc0ZjUyZjFlZTc3NmVkNmI1ZWRkY2Y2MmNjNDlhNDM1NmI0ZWVjNTY5OGEyNGNiMGUzNWQ0ZTg1YzI0ZTkifQ"
+          "resource": "repo://CONSTITUTION.md",
+          "version": "repo-file-v1:sha256:37d5a392fa53ab88fffdd6b4166b68001a222e1756148dfdc06b33f95600aec6"
         },
         {
-          "resource": "repo://.codex/hooks.json#L26-L50",
-          "version": "repo-lines-v1:sha256:31f4b39d3b18813408c7791ef41100e0b30487a72c81028e8abd31b255e8484b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmMTY2MmU0YjY2MWZlZGVjMGExOGIxNWFmZDM2MzA4OGYyY2Y5NzAxNjlhMjk4MzM0NDVhZjUxZTM5MTcwMDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4MDA1ZDU3MTA2YTM2MmViMDAwZGFmM2RhNDY3NGM4MmI1MThmZjVhMmUyZjY3ZWU4ZTc1N2EzMzNjMmFmNjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0N2ZlZTRhY2NhMzA5MDIxNzMwMTE1YzhhZmQwZDk4ZDBjNDEyOWQwNjc5Mzk4Zjk3ODVmYTNkN2MyZmM4NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4OGFiYWY1YTUwNDBhYTNlNmJlMWFhZWZhZmIzMTliYTcxMjk5MWViNzQ3YmFjNjNjMDIwZDM4MGJkMDgzNWIifQ"
+          "resource": "repo://scripts/check-local-only-automation.sh",
+          "version": "repo-file-v1:sha256:fed5d62f40902c4b23c21737501573b0a4d372d7cccd073da9234d03a2c6327c"
         }
       ]
     },
@@ -221,6 +221,6 @@
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-26T17:59:41.119Z"
+    "at": "2026-08-27T22:03:08.727Z"
   }
 }

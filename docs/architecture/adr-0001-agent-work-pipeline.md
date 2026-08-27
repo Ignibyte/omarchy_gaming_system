@@ -50,7 +50,9 @@ tests as the corresponding code surfaces arrive.
 - Cross-layer integration failures are caught before delivery.
 - The gate can ratchet upward without redesigning the workflow.
 - Codex project hooks and MCP tools assist discipline, while `bin/gate.sh`
-  remains usable by humans and CI.
+  remains usable locally by Codex and humans.
+- Hosted CI/CD workflow definitions are prohibited. The local gate and its
+  worktree-bound receipt are the sole delivery-quality evidence.
 - A fresh clone needs one local tool bootstrap and a Codex restart before the
   first non-trivial pipeline can complete.
 - The pinned OpenWiki revision needs a narrow generated-state patch until its

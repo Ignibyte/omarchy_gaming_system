@@ -41,9 +41,13 @@ PostgreSQL
   reconnect and remains the synchronization source of truth.
 - Portable frontend, game-backend, and general server-extension contracts are
   distinct. Cartridges are inert data rendered by trusted QML; portable game
-  rules use the brokered provider protocol; future server modules use a
-  separately versioned capability/hook system and cannot serve as a shortcut
-  around domain authorization.
+  rules use the brokered provider protocol; future server modules use the
+  ADR-0004 process-isolated no-WASI Component Model host, exact WIT contracts,
+  and capability-scoped typed hooks/intents. Core reauthorizes every proposal;
+  modules cannot shortcut domain authorization or become gameplay authority.
+- Production server-module discovery, installation, persistence, routes, and
+  startup remain disabled. The nested Ticket 039 host is architecture proof
+  only and is not linked into the production workspace.
 - A server operator may eventually admit marketplace-vetted or explicitly
   operator-custom content. Provenance and support expectations differ, but the
   official client never accepts raw server-supplied QML, JavaScript, native

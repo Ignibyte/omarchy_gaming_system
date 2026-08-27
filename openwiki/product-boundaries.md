@@ -63,12 +63,14 @@ sources:
     resource: repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md
   - id: openwiki-source-bfc109ee5d2c2f6c0f5c5f77
     resource: repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md
+  - id: openwiki-source-0fa8a0670e40aca3d14c3478
+    resource: repo://docs/architecture/adr-0004-process-isolated-wasm-server-modules.md
   - id: openwiki-source-c22435ddb0c3a9abfe95d9af
     resource: repo://docs/architecture/game-cartridges.md
+  - id: openwiki-source-e9c32af872bdfcc1f392d212
+    resource: repo://docs/architecture/server-modules.md
   - id: openwiki-source-872141f77f71851168245852
     resource: repo://docs/architecture/system-overview.md
-  - id: openwiki-source-fa645fac0603cca986708fed
-    resource: repo://docs/operators/marketplace-publication.md
   - id: openwiki-source-36d583174a7a0018316f71c7
     resource: repo://docs/operators/owner-operated-servers.md
   - id: openwiki-source-c3d1d450d3a3561b368e5307
@@ -79,7 +81,10 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-generated: {by: "codex", at: "2026-08-27T17:23:12.264Z"}
+generated: {by: "codex", at: "2026-08-27T21:56:27.195Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-27T22:03:08.727Z
 ---
 
 # Product and architecture boundaries
@@ -379,14 +384,15 @@ to become gameplay authority. Its local ceremony and mirror drills do not
 prove real production root custody, hosting, monitoring, or staff separation.
 
 Executable extension families stay separate. Portable game rules use the
-authenticated provider boundary and a future public Provider SDK; general
-server behavior uses a separately versioned module base. Future module hooks
-must be capability-scoped and typed, route protected mutations through core
-authorization, and define isolation, resource, failure, audit, compatibility,
-disable, upgrade, rollback, and recovery behavior. No general module runtime,
-dynamic Rust plugin ABI, mutable hosted marketplace application service,
-operator-custom executable/plugin loader, or
-external-provider onboarding is implemented or authorized by this direction.
+authenticated provider boundary and a future public Provider SDK. ADR-0004 now
+selects dedicated no-WASI Component Model host processes for future general
+server behavior. Modules receive typed bounded hooks, propose only typed
+intents, and rely on core reauthorization, lifecycle, state, audit, resource,
+failure, upgrade, rollback, and recovery controls. The isolated Ticket 039 proof
+supports that decision; no production module loader, dynamic Rust plugin ABI,
+mutable hosted marketplace application service, operator-custom executable
+installation, or external-provider onboarding is implemented or authorized.
+See [Server modules](server-modules.md) for the exact boundary and next slices.
 
 The implemented public channel authenticates bounded trust and native package
 metadata, not gameplay or privileged installation. Its package bootstrap pins

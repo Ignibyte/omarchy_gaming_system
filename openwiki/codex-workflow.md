@@ -25,6 +25,8 @@ sources:
     resource: repo://bin/lib-gate.sh
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
+  - id: openwiki-source-b4c3a622bb0ce5add91c5513
+    resource: repo://scripts/check-local-only-automation.sh
   - id: openwiki-source-d35448de763d92d5820dbaad
     resource: repo://scripts/check-pipeline-tools.sh
   - id: openwiki-source-ff3f60a113327d3006289ed7
@@ -33,10 +35,10 @@ sources:
     resource: repo://scripts/selftest-hooks.sh
   - id: openwiki-source-037d6d04880b10f227f0ac17
     resource: repo://scripts/setup-pipeline-tools.sh
-generated: {by: "codex", at: "2026-08-25T01:37:12.518Z"}
+generated: {by: "codex", at: "2026-08-27T21:56:27.195Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-26T17:59:41.119Z
+    at: 2026-08-27T22:03:08.727Z
 ---
 
 # Codex work pipeline
@@ -108,6 +110,11 @@ and exact hook definitions. Treat that grant as local code trust: repository
 hooks are useful lifecycle guardrails, not a standalone security or delivery
 boundary. The independently executed, worktree-bound diff gate remains the
 canonical proof.
+
+Repository quality and delivery automation is intentionally local-only.
+`scripts/check-local-only-automation.sh` rejects hosted CI/CD definitions, and
+the pipeline check and module proof both enforce that policy. The local
+`bin/gate.sh --diff` receipt is the sole canonical delivery evidence.
 
 ## Validation and delivery
 

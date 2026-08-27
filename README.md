@@ -446,7 +446,8 @@ architecture decisions, bulletins, and after-action lessons under
 work, while `$omarchy-brainstorm` explores ideas without opening a ticket.
 Trusted project hooks enforce design readiness, completion claims, secret
 scanning, and a matching delivery receipt before code commits. The canonical
-gate remains usable by Codex, humans, and CI.
+gate is run locally by Codex or a human; hosted CI/CD workflows are disabled
+and rejected by the pipeline-structure check.
 
 CodeGraph supplies indexed source topology during design and inspection.
 OpenWiki maintains claims-backed engineering documentation during completion.

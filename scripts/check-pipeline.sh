@@ -18,6 +18,8 @@ required_files=(
   scripts/mcp-openwiki.sh
   scripts/setup-pipeline-tools.sh
   scripts/check-pipeline-tools.sh
+  scripts/check-local-only-automation.sh
+  scripts/test-server-module-spike.sh
   docs/planning/tickets/INDEX.md
   docs/planning/knowledge/INDEX.md
   docs/planning/knowledge/aar/TEMPLATE.md
@@ -61,12 +63,16 @@ for ogs_script in \
   scripts/mcp-codegraph.sh \
   scripts/mcp-openwiki.sh \
   scripts/setup-pipeline-tools.sh \
-  scripts/check-pipeline-tools.sh; do
+  scripts/check-pipeline-tools.sh \
+  scripts/check-local-only-automation.sh \
+  scripts/test-server-module-spike.sh; do
   [[ -x "$ogs_script" ]] || {
     echo "Pipeline check failed: script is missing or not executable: $ogs_script" >&2
     exit 1
   }
 done
+
+./scripts/check-local-only-automation.sh
 
 grep -Fq '[mcp_servers.codegraph]' .codex/config.toml \
   && grep -Fq 'scripts/mcp-codegraph.sh' .codex/config.toml \

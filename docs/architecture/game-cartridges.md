@@ -38,6 +38,9 @@ staging without installation authority.
 [`ADR-0003`](adr-0003-owner-operated-server-and-extension-boundary.md) now
 accepts the owner-operated server, server-curated marketplace, operator-custom
 trust, future Provider SDK, and separately gated server module/hook direction.
+[`ADR-0004`](adr-0004-process-isolated-wasm-server-modules.md) selects one
+no-WASI Component Model release per OS-contained module-host process with typed
+hooks/intents and core reauthorization; it leaves production loading disabled.
 
 ## Product model
 
@@ -388,11 +391,12 @@ custom mount provenance separate. The server may not turn those bytes into raw Q
 JavaScript, native client code, WebEngine content, or a direct provider URL.
 
 Custom executable server code is not a cartridge. Game rules use the registered
-provider boundary. General behavior uses a future module base with versioned,
-capability-scoped typed hooks, configuration/state namespaces, audit, and
-lifecycle controls. The extension-runtime spike must choose and prove its
-process/Wasm/static isolation and compatibility model before modules are
-authorized; a dynamic in-process Rust ABI is not implied.
+provider boundary. General behavior uses the separately versioned server module
+base described in [`server-modules.md`](server-modules.md): one exact no-WASI
+component per OS-contained host, capability-scoped typed hooks/intents,
+core-owned configuration/state namespaces, audit, and lifecycle controls. The
+architecture proof does not authorize production loading, and dynamic
+in-process Rust modules remain rejected.
 
 ## Trusted presentation contract
 

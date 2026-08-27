@@ -40,13 +40,14 @@ fail() {
 copy_source() {
   local ogs_destination="$1"
   mkdir -p -- "$ogs_destination"
-  cp -a -- \
-    "$ogs_test_root/Cargo.lock" \
-    "$ogs_test_root/Cargo.toml" \
-    "$ogs_test_root/client" \
-    "$ogs_test_root/crates" \
-    "$ogs_test_root/packaging" \
-    "$ogs_destination/"
+  (
+    cd -- "$ogs_test_root"
+    bsdtar \
+      --exclude '*/target' \
+      --exclude '*/target/*' \
+      -cf - \
+      Cargo.lock Cargo.toml client crates packaging
+  ) | bsdtar -xpf - -C "$ogs_destination"
 }
 
 expect_source_rejection() {

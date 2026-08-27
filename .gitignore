@@ -1,5 +1,6 @@
 /target/
 /crates/game-cartridge-spike/target/
+/crates/server-module-spike/target/
 /.dev/
 /.codegraph/
 /.env

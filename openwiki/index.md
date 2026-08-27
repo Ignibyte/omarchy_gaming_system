@@ -10,3 +10,4 @@ okf_version: "0.2"
 - [Product and architecture boundaries](product-boundaries.md)
 - [Omarchy Gaming System engineering quickstart](quickstart.md)
 - [Runtime foundation](runtime-foundation.md)
+- [Server modules and typed hook boundary](server-modules.md)

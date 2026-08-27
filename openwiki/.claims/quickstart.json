@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7595212abf53d7271d71e853213f1b7d0f05b3c15e8502b7a244a52a83bcefcb",
+  "pageVersion": "sha256:b4faa48f47af0567269f7f429e0d31c6740d9a470eaaa3d1e213a893442e0732",
   "claims": [
     {
       "id": "claim_cfd815337fbb4c508371651403a7fecb",
@@ -18,7 +18,7 @@
       "evidence": [
         {
           "resource": "repo://docs/architecture/system-overview.md",
-          "version": "repo-file-v1:sha256:76b1022cba20ab3bfdd8f4f0b2108d94a096e6889d171868f1aa45dc140fed14"
+          "version": "repo-file-v1:sha256:0f2c1818c0bd1af2c3f635eb81b9c6c910f6d4ebb4c5e80e5952d793e7d097bb"
         },
         {
           "resource": "repo://crates/marketplace-publisher/src/lib.rs",
@@ -46,7 +46,7 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/app.rs",
-          "version": "repo-file-v1:sha256:b86a712bd6161c8a901b008c06e28b1505c41e42c1f26e2300d7ce96bddcb6f5"
+          "version": "repo-file-v1:sha256:ca4ef2a1a02b4b955ae042a92fde6d18ce864b22c4144806a97c2c6be655cf61"
         }
       ]
     },
@@ -184,7 +184,7 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/main.rs",
-          "version": "repo-file-v1:sha256:acd64c8668edb5a0719b93bd57b9d5cf371143b1faa4ffb550544f6c76d006a0"
+          "version": "repo-file-v1:sha256:fd0d7ab170dda53d93a161c103b7156a5fc0aef3a11c548aa567e3d626a9fa50"
         },
         {
           "resource": "repo://crates/game-signal-siege/src/lib.rs",
@@ -198,7 +198,7 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/games.rs",
-          "version": "repo-file-v1:sha256:2e6b926665204c60d379796fbe298b3d63a27928682fbe64760e539e72cc6259"
+          "version": "repo-file-v1:sha256:05b615b2d3002a003c89184f2e7cb6c95988579236cc9aa7676ceae6d8fba5ca"
         },
         {
           "resource": "repo://crates/server/src/provider_games.rs",
@@ -212,11 +212,11 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/games.rs",
-          "version": "repo-file-v1:sha256:2e6b926665204c60d379796fbe298b3d63a27928682fbe64760e539e72cc6259"
+          "version": "repo-file-v1:sha256:05b615b2d3002a003c89184f2e7cb6c95988579236cc9aa7676ceae6d8fba5ca"
         },
         {
           "resource": "repo://client/qml/GameController.qml",
-          "version": "repo-file-v1:sha256:f4688131de52fd784590baaeca31c0954db10c56cc87db5ca497c9b07bec3752"
+          "version": "repo-file-v1:sha256:d06523f6e357df5fa8429d7d742d66834981a533fd935510a17d2513324a4dc8"
         }
       ]
     },
@@ -236,33 +236,25 @@
       "evidence": [
         {
           "resource": "repo://docs/architecture/game-cartridges.md",
-          "version": "repo-file-v1:sha256:71e4f11909b35099a069c5d6df135e4e387540611a587c1fed92f8be86ac68a3"
+          "version": "repo-file-v1:sha256:9978118418c8a448e5ad4692d96b06990e207742ed1560869ef3ea50489c355e"
         },
         {
           "resource": "repo://crates/client-cartridge-runtime/src/service.rs",
-          "version": "repo-file-v1:sha256:87bb068fd0a4f246ac0ff24a5784b77e1936059c8c34dadb213840878ece8796"
+          "version": "repo-file-v1:sha256:88ce159b76d93dac0d31449b053b1d1feec850161663070098bb4a0e287d1f2e"
         },
         {
           "resource": "repo://client/qml/CartridgeController.qml",
-          "version": "repo-file-v1:sha256:649f8eeba52d397a50dfca2a91d414ad5065383331ce49174ff09246f93424ee"
+          "version": "repo-file-v1:sha256:27b2b4e255d250b171a30f5fbbb8854353d76cd4e35692a2ed21f60c7f21efc0"
         }
       ]
     },
     {
       "id": "claim_a299284d5eee440ba1c3190fa1c3affa",
-      "statement": "Developers validate cartridge packaging, trusted rendering, deterministic SDK and release import, provider security, root-signed trust enrollment, and static marketplace publication through focused scripts ratcheted into the canonical gate.",
+      "statement": "Developers validate cartridges, providers, marketplace trust/publication, client packaging, and the isolated server-module architecture through focused local scripts ratcheted into the canonical gate.",
       "evidence": [
         {
-          "resource": "repo://bin/gate.sh",
-          "version": "repo-file-v1:sha256:225e1bc2775b5a53af966fe7cff0554659a5acfb0dcedb5e7bf87e0426f7a20c"
-        },
-        {
-          "resource": "repo://scripts/test-marketplace-trust-channel.sh",
-          "version": "repo-file-v1:sha256:03954013963570f7ee7a73fafa54301536d6bb34b7227860d9a74e28115e1529"
-        },
-        {
-          "resource": "repo://scripts/test-marketplace-publication.sh",
-          "version": "repo-file-v1:sha256:9c70edb1755ded5cc81ec16d8bc334e328f63706d646894d2f773050f7313ebd"
+          "resource": "repo://bin/gate.sh#L73-L101",
+          "version": "repo-lines-v1:sha256:1646ee965573a87fec09882b71c0d3789c3f3a08d9ad3c7a3e47b7f5d7f4d19b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3YmY1ZmE0ZGMyMDc5YWUyNzRhMmVmMjBkODllMjUzMGEwZTg0NTZhMTM2ODA4NGZjNDViZjhhNjc4ZWRhYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0MDlmODVjYjI0OWE5ZDIxNTM4MDZmMGZmZGJiNjUxOThmZjljNzFiZTQ0MzM0NTczMjM3MzQ4NjQzNDQ4M2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1OGI4NzEwNzI3NGZiN2I2NmFkMzM1ODg4M2IyODQ2ODNiYWJjMzllNDcwM2JjY2JjM2Y0NDZmNzA5MTgxMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwNzMzZWY0ZGM0ODQyNWY4NTk1NDIyOGE3OWYxYTA4NGNmMWRlNmZlN2E0NDIwYmMyZDZhMzM2YzI0OGNjZjkifQ"
         }
       ]
     },
@@ -300,7 +292,7 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/games.rs",
-          "version": "repo-file-v1:sha256:2e6b926665204c60d379796fbe298b3d63a27928682fbe64760e539e72cc6259"
+          "version": "repo-file-v1:sha256:05b615b2d3002a003c89184f2e7cb6c95988579236cc9aa7676ceae6d8fba5ca"
         },
         {
           "resource": "repo://crates/server/src/signal_siege_api_tests.rs",
@@ -332,11 +324,11 @@
       "evidence": [
         {
           "resource": "repo://client/qml/Main.qml",
-          "version": "repo-file-v1:sha256:83e5a6e49c3e0a7904aeea241fca3509aa2c56d89eaee3e5e0d15c5e309253bd"
+          "version": "repo-file-v1:sha256:8df0c3df84929fcf5227d8f2e82585445ea140a134b8445b0136490a8cb472d1"
         },
         {
           "resource": "repo://client/qml/GameController.qml",
-          "version": "repo-file-v1:sha256:f4688131de52fd784590baaeca31c0954db10c56cc87db5ca497c9b07bec3752"
+          "version": "repo-file-v1:sha256:d06523f6e357df5fa8429d7d742d66834981a533fd935510a17d2513324a4dc8"
         },
         {
           "resource": "repo://client/qml/tests/live/tst_live_onboarding.qml",
@@ -350,11 +342,11 @@
       "evidence": [
         {
           "resource": "repo://client/qml/OnboardingController.qml",
-          "version": "repo-file-v1:sha256:c12e17d0a4fd635444bdf097b54cb477a8b8c306f511e00752ae39cab2a37931"
+          "version": "repo-file-v1:sha256:4d1e3677cdd65dece2e84262e6cb8670a78e37696a76b1e200066813c7887fae"
         },
         {
           "resource": "repo://client/qml/GameController.qml",
-          "version": "repo-file-v1:sha256:f4688131de52fd784590baaeca31c0954db10c56cc87db5ca497c9b07bec3752"
+          "version": "repo-file-v1:sha256:d06523f6e357df5fa8429d7d742d66834981a533fd935510a17d2513324a4dc8"
         }
       ]
     },
@@ -396,23 +388,15 @@
     },
     {
       "id": "claim_106fb9ebf1e6452ba4f55125a9a33338",
-      "statement": "Ticket 032 implements one vetted marketplace's server-side synchronization, reviewed inventory, local admission, and authenticated metadata catalog; player acquisition, operator-custom trust, a public Provider SDK, and a general module runtime remain later work.",
+      "statement": "The owner-operated cartridge path now includes vetted marketplace synchronization, exact client acquisition, operator-custom trust, and an accepted process-isolated server-module architecture proof; a public Provider SDK, external onboarding, and production module loading remain later work.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/marketplace_sync.rs",
-          "version": "repo-file-v1:sha256:33222b9503997fc89acfc9e6b190ce9800b1868eda16ae9faaa657b27147c780"
-        },
-        {
-          "resource": "repo://crates/server/src/cartridge_catalog.rs",
-          "version": "repo-file-v1:sha256:b52cda9ed5a1c87eb5580964358517bbcbfdfde95c4c3449278ae082f6ee23b4"
-        },
-        {
           "resource": "repo://docs/planning/ROADMAP.md",
-          "version": "repo-file-v1:sha256:ab200d2169937924163905a502a45fb496428a31cd3aafc058a19d5ed65485eb"
+          "version": "repo-file-v1:sha256:1f55d2c9f40bcc255a36a6708e39510849808b9f0b0bb612c4b6d999ccc14841"
         },
         {
-          "resource": "repo://docs/architecture/adr-0003-owner-operated-server-and-extension-boundary.md",
-          "version": "repo-file-v1:sha256:1bb17cfd864e143339deb66fb7e219aebce865b5807e182d486f2923984606ee"
+          "resource": "repo://docs/architecture/server-modules.md#L1-L22",
+          "version": "repo-lines-v1:sha256:4450a29a0616342c16d75af0fcddd64a8cbc951fd106a7e2cd3386e9c2c743f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4MjJjMTM0MDU5ODFiNDdiMTE4ZWI0ZmRlODcyYTQxY2I0ZWFjZDUzODFiZTkxZTE1N2U0MTkzZTQzZGY4NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0MjZmOTJmMzFlMTQ0OThiMzkxZWNiNzlkZjc0ZTUwZjcwY2EzN2ZjMjQ4MzFjZWNkZDhkMDkxNGUzNDJmZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0MGJiMTVhZGIyNWQzYWMxMzEyY2MxNGY0MjkzODk0NzM0ZjAzMjhmYTdiZGMwZWJlNTU4MjY1ZjRiOWQ3NjEifQ"
         }
       ]
     },
@@ -448,7 +432,7 @@
         },
         {
           "resource": "repo://docs/planning/ROADMAP.md",
-          "version": "repo-file-v1:sha256:ab200d2169937924163905a502a45fb496428a31cd3aafc058a19d5ed65485eb"
+          "version": "repo-file-v1:sha256:1f55d2c9f40bcc255a36a6708e39510849808b9f0b0bb612c4b6d999ccc14841"
         }
       ]
     },
@@ -490,7 +474,7 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/bin/omarchygs-admin.rs",
-          "version": "repo-file-v1:sha256:568e70c77963cd7df39e6af998f70e087ac66214a6e1c7776f2f950e097dec1b"
+          "version": "repo-file-v1:sha256:4ec7f64669b5b6ee2bf84bb54da664502079470be42c385a23c5f5528d42192e"
         },
         {
           "resource": "repo://crates/server/src/operator_admin.rs",
@@ -498,7 +482,7 @@
         },
         {
           "resource": "repo://crates/server/src/marketplace_sync.rs",
-          "version": "repo-file-v1:sha256:33222b9503997fc89acfc9e6b190ce9800b1868eda16ae9faaa657b27147c780"
+          "version": "repo-file-v1:sha256:d940a3e88eadb4361006415dcda0b2d2e3ecdb8baa7c821c2d623f3c99fa0884"
         }
       ]
     },
@@ -508,15 +492,15 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/server_discovery.rs",
-          "version": "repo-file-v1:sha256:0f553fbc01811c9657e14ab3e5eca5a24b783a7f7cc6b0188a58f83b81bf8515"
+          "version": "repo-file-v1:sha256:e46cbe88a17d412129abdd359bc5858fc460360ca8adecc753ee5fbb96066550"
         },
         {
           "resource": "repo://crates/server/src/app.rs",
-          "version": "repo-file-v1:sha256:b86a712bd6161c8a901b008c06e28b1505c41e42c1f26e2300d7ce96bddcb6f5"
+          "version": "repo-file-v1:sha256:ca4ef2a1a02b4b955ae042a92fde6d18ce864b22c4144806a97c2c6be655cf61"
         },
         {
           "resource": "repo://crates/server/src/cartridge_catalog.rs",
-          "version": "repo-file-v1:sha256:b52cda9ed5a1c87eb5580964358517bbcbfdfde95c4c3449278ae082f6ee23b4"
+          "version": "repo-file-v1:sha256:7e30fdded715dae44b30a8693672b610a208ee329809c40594aabd81393915ff"
         }
       ]
     },
@@ -530,11 +514,11 @@
         },
         {
           "resource": "repo://crates/server/src/marketplace_sync.rs",
-          "version": "repo-file-v1:sha256:33222b9503997fc89acfc9e6b190ce9800b1868eda16ae9faaa657b27147c780"
+          "version": "repo-file-v1:sha256:d940a3e88eadb4361006415dcda0b2d2e3ecdb8baa7c821c2d623f3c99fa0884"
         },
         {
           "resource": "repo://crates/server/src/cartridge_catalog.rs",
-          "version": "repo-file-v1:sha256:b52cda9ed5a1c87eb5580964358517bbcbfdfde95c4c3449278ae082f6ee23b4"
+          "version": "repo-file-v1:sha256:7e30fdded715dae44b30a8693672b610a208ee329809c40594aabd81393915ff"
         },
         {
           "resource": "repo://migrations/0019_marketplace_catalog.sql",
@@ -559,6 +543,6 @@
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-27T12:40:24.098Z"
+    "at": "2026-08-27T22:03:08.727Z"
   }
 }

@@ -61,6 +61,8 @@ sources:
     resource: repo://scripts/build-client-package.sh
   - id: openwiki-source-1951c64828cbf175c78556c4
     resource: repo://scripts/check-client-package-source.sh
+  - id: openwiki-source-b4c3a622bb0ce5add91c5513
+    resource: repo://scripts/check-local-only-automation.sh
   - id: openwiki-source-d35448de763d92d5820dbaad
     resource: repo://scripts/check-pipeline-tools.sh
   - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
@@ -91,7 +93,12 @@ sources:
     resource: repo://scripts/test-provider-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
-generated: {by: "codex", at: "2026-08-27T12:40:24.098Z"}
+  - id: openwiki-source-8128bd5b86e858053bc20c68
+    resource: repo://scripts/test-server-module-spike.sh
+generated: {by: "codex", at: "2026-08-27T21:56:27.195Z"}
+verified:
+  - by: openwiki/0.3.3
+    at: 2026-08-27T22:03:08.727Z
 ---
 
 # Development and validation
@@ -277,14 +284,19 @@ human `pacman -U` operation.
 `bin/gate.sh --fast` runs the static development loop without writing a receipt.
 It includes native client package source admission and the root-signed
 marketplace trust-channel proof at stage 15a plus the deterministic static
-publication and offline-root drill at stage 15b. `bin/gate.sh --diff` adds
-the full native artifact and cartridge-acquisition conformance, isolated
+publication and offline-root drill at stage 15b. Stage 23 runs the isolated
+server-module architecture proof in both fast and diff modes.
+`bin/gate.sh --diff` adds the full native artifact and cartridge-acquisition conformance, isolated
 migrated PostgreSQL tests, and
 the live PostgreSQL → Rust game-catalog/health/account/session/persona/
 social/report/inbox/challenge/sync/MFA API → QML smoke, provider security
 conformance, the Door Legends authority pilot, and the isolated platform
 operator recovery and private-alpha admission drills, then writes a receipt for the exact gated worktree at
 `.git/omarchy-gaming-system-gate-receipt`.
+
+Quality and delivery automation is local-only. Pipeline validation rejects
+hosted CI/CD definitions, including GitHub Actions workflows. The canonical
+local diff gate and its matching worktree receipt are the delivery proof.
 
 The gate currently covers:
 
@@ -329,7 +341,7 @@ The gate currently covers:
 10. the production provider boundary's operator registry, lifecycle,
    grants, fixed signed messages, public-only pinned HTTPS egress, replay and
    callback deduplication, quotas, concurrency leases, audit, and fail-closed
-   behavior against migrated PostgreSQL and a separate TLS provider process.
+   behavior against migrated PostgreSQL and a separate TLS provider process;
 11. the first-party Door Legends authority pilot built from a clean clone,
     running through the real player-server bridge against an independent
     provider database, with replay, revision races, callbacks, projection,
@@ -344,6 +356,10 @@ The gate currently covers:
     deterministic double builds, network-unshared offline signing, exact
     immutable tree and atomic activation, guarded identical TLS mirrors,
     rotation/revocation, and stale-publication rollback denial.
+15. the isolated server-module nested workspace's format, lint, 21-test corpus,
+    deterministic exact-WIT component fixtures, 13 contained process scenarios,
+    typed-intent/state/lifecycle checks, local-only automation enforcement, and
+    explicit production-loader absence.
 
 ### Platform operator recovery
 
@@ -547,6 +563,11 @@ the last code, migration, client, script, Codex configuration, skill, or
 generated wiki edit. Cargo commands run sequentially; do not terminate another
 Cargo process to make the gate proceed.
 
+The native package smoke copies only declared source trees and excludes nested
+generated `target/` directories before extracting fixtures. This keeps a nested
+workspace build from recursively entering later package fixtures while still
+preserving the exact source-contract checks.
+
 ## Pipeline-tool provenance
 
 `scripts/setup-pipeline-tools.sh` installs CodeGraph and a Codex-only OpenWiki
@@ -572,6 +593,11 @@ server, so absent or stale provenance fails closed.
 ## Failure routing
 
 - Startup failure: inspect `.dev/server.log` and PostgreSQL health.
+- Server-module proof failure: run `scripts/test-server-module-spike.sh`, then
+  separate contract/runtime/state failures from supervisor process outcomes.
+  A missing Bubblewrap or unsupported user-scope containment is an environment
+  failure; a trap, resource abuse, crash, or timeout must still produce its
+  bounded stable outcome and permit a clean restart.
 - Cartridge preview rejection: read the machine-readable preview error code;
   verify signature/compatibility, pinned view schema, exact action shape,
   private empty output directory, and selected Core/Rich-2D budget. Run

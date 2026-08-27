@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e2226e913103ed24c2fa023a47566e2efd1b81e8c9e11df25ca0abc2e4512898",
+  "pageVersion": "sha256:36bef74911f0996b1ae1aa90727c02472e4de37b1d64ec6e63515c4d0f8d52f9",
   "claims": [
     {
       "id": "claim_e75f82f846ca444594c51ed0f48b894b",
@@ -32,11 +32,11 @@
     },
     {
       "id": "claim_171e3e64173941df995e2a10f63d4c51",
-      "statement": "The canonical diff gate runs numbered stages 1 through 22 plus stages 15a and 15b, covering static/workflow checks, cartridge, renderer, SDK, client source/package, root trust, static publication, PostgreSQL/QML, provider, recovery, and private-alpha drills before writing a worktree receipt.",
+      "statement": "The canonical diff gate runs numbered stages 1 through 23 plus 15a and 15b, ending with the isolated server-module architecture proof before writing a worktree-bound receipt.",
       "evidence": [
         {
-          "resource": "repo://bin/gate.sh",
-          "version": "repo-file-v1:sha256:225e1bc2775b5a53af966fe7cff0554659a5acfb0dcedb5e7bf87e0426f7a20c"
+          "resource": "repo://bin/gate.sh#L73-L116",
+          "version": "repo-lines-v1:sha256:b43c6e7625f2cea13970d8f44ec5ac7138fb5e3426ee267ceab45b1bfc907ab1:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3YmY1ZmE0ZGMyMDc5YWUyNzRhMmVmMjBkODllMjUzMGEwZTg0NTZhMTM2ODA4NGZjNDViZjhhNjc4ZWRhYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1MjA1NzJmMGVmNWMyMzZhMWE5N2NmZDdkMWJjZmEzZTNkNzU2OGExODc1OGMxNjljMWU0N2Q5NDAzZWI0NjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1OGI4NzEwNzI3NGZiN2I2NmFkMzM1ODg4M2IyODQ2ODNiYWJjMzllNDcwM2JjY2JjM2Y0NDZmNzA5MTgxMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -270,7 +270,7 @@
       "evidence": [
         {
           "resource": "repo://bin/gate.sh",
-          "version": "repo-file-v1:sha256:225e1bc2775b5a53af966fe7cff0554659a5acfb0dcedb5e7bf87e0426f7a20c"
+          "version": "repo-file-v1:sha256:f04513779aee88e37d6ef150dad538ff490af55483a9b07183f0a0fba90964c1"
         },
         {
           "resource": "repo://scripts/test-game-cartridge-sdk.sh",
@@ -288,7 +288,7 @@
       "evidence": [
         {
           "resource": "repo://bin/gate.sh",
-          "version": "repo-file-v1:sha256:225e1bc2775b5a53af966fe7cff0554659a5acfb0dcedb5e7bf87e0426f7a20c"
+          "version": "repo-file-v1:sha256:f04513779aee88e37d6ef150dad538ff490af55483a9b07183f0a0fba90964c1"
         },
         {
           "resource": "repo://scripts/test-game-cartridge-sdk.sh",
@@ -348,7 +348,7 @@
       "evidence": [
         {
           "resource": "repo://bin/gate.sh",
-          "version": "repo-file-v1:sha256:225e1bc2775b5a53af966fe7cff0554659a5acfb0dcedb5e7bf87e0426f7a20c"
+          "version": "repo-file-v1:sha256:f04513779aee88e37d6ef150dad538ff490af55483a9b07183f0a0fba90964c1"
         },
         {
           "resource": "repo://scripts/test-provider-conformance.sh",
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://client/qml/tests/fixture/tst_games.qml",
-          "version": "repo-file-v1:sha256:5ccdcbd96e35c654a4c82071064010db38a5a74c80a2f97f863d751d7c831285"
+          "version": "repo-file-v1:sha256:8381751d7668f94e2cd84c4e874c9d719b75d461ddc5c2c3886df60e0a777b62"
         },
         {
           "resource": "repo://client/qml/tests/fixture/tst_marketplace.qml",
@@ -444,11 +444,15 @@
     },
     {
       "id": "claim_726f38b2d1574758bc4d315732b5fe48",
-      "statement": "The native client package smoke rejects seven hostile source fixtures, proves two builds byte-identical without changing source status, checks exact metadata, payload, modes, provenance and desktop behavior, then launches the extracted production QML root against the bounded health fixture without pacman installation.",
+      "statement": "The native client package smoke copies only declared source trees while excluding nested generated target directories, rejects seven hostile fixtures, proves two byte-identical builds, checks package metadata and payload, and launches the extracted QML root without installation.",
       "evidence": [
         {
+          "resource": "repo://scripts/test-client-package.sh#L40-L51",
+          "version": "repo-lines-v1:sha256:741be71c53c596f01b037d724da33ce5afd2cb3c916f5afb9dd0b3b922af11ff:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhNGJiMmI2MDhhYTRhMThjMDA0ZjEyNDg4ZWIxOGM2Njg0YmI0MDAwNDNiYTkxNTdmODk1MTQwNTlkY2UyOGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0MDY5NzQ4YWU3MjI3MTI2ZDhkOTljYThiYjg1YzliYmM5YzUwMDI3ODE0ZTkyYjkyYWUxMjNmYmZjZDk3NmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNmZjFmYjI3NjRiZWRjMTAyMGRmZDljYzhjNjg4MGMwNWUzMDk1NDljMWUyMTBkMjI1ZDIzMzEwNWU0NTVhMzUifQ"
+        },
+        {
           "resource": "repo://scripts/test-client-package.sh",
-          "version": "repo-file-v1:sha256:59862a2407efba9472531e3b9c0ea6098f513dc159abba83827ad01bf06d2a85"
+          "version": "repo-file-v1:sha256:ef475e85899cbd6efd9ff1a8d260e991045dc2bc8625f147e9f279506e81f7f1"
         }
       ]
     },
@@ -458,7 +462,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/test-operator-recovery.sh",
-          "version": "repo-file-v1:sha256:1b0fd8c4943871a19bf8e8f31772c76ece557ee273b909fd6446dcd950abc1fb"
+          "version": "repo-file-v1:sha256:9e007f7e8db433f86763d069f2d4e0d0bb571ab773e62730972ff85fdc915478"
         }
       ]
     },
@@ -475,10 +479,58 @@
           "version": "repo-file-v1:sha256:11742aa81528467ca2d88a1d61bee7f096ffb8b6c1cbd704924bcff3f5901e75"
         }
       ]
+    },
+    {
+      "id": "claim_bb54324e01564d768f2634526bdf5642",
+      "statement": "Repository quality and delivery automation is local-only: pipeline validation rejects hosted CI/CD definitions, and the module proof tests both the real tree and a hostile hosted-workflow fixture.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/check-local-only-automation.sh#L1-L30",
+          "version": "repo-lines-v1:sha256:fed5d62f40902c4b23c21737501573b0a4d372d7cccd073da9234d03a2c6327c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjYTc5YTEwOGVmY2M4NTIwZDllMzcyOWI5MjFiNzgwNGQ1NDdiNWU4MzMxNjgzNWRiNmFkNDcwYjI3NTZkMmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://scripts/test-server-module-spike.sh#L71-L80",
+          "version": "repo-lines-v1:sha256:3b0be12d51c413876d04222c9c134aade0a758ecf8d1855327f362ce2cf2fd61:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkOTU2NDFjYWNlZjUxMGRmMWI1NzY0NWFhOWI2N2QwNjE2NzgzMjMyYTFkYmZlOTEzNTExZGRmYWJlOTRlYzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4MTg1OTA5ZDkwNGRlMTYwYTE1YjdkOTNmMjU2ZjNkZmE3ZGYxOTY2MDY4NDRkNWViMzdkZTQ2NzY1YjJjMWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwMTljNjMzZGVlODAzYTgwOWM3ZGNmZmMzMzdiMGI3ZjYyZGQ3NjJhODk0OGQ3Yzk0MjBiNjdmZTc3ZGMxM2IifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_18b2613b127d4ca88023b62c62c88f1b",
+      "statement": "The module proof runs Rust formatting, linting, tests, docs, deterministic component generation, 13 isolated process scenarios, containment assertions, local-only automation checks, and a production-loader absence check.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/test-server-module-spike.sh#L13-L90",
+          "version": "repo-lines-v1:sha256:ae0075953c86a20869efc86b2890645e75af4e8a84c08ba86003cf3ecbd6b898:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1M2E4YmJiODYzMTI5NTA5ZjFjZjExODVmOGQxNTc5N2Y1NzhiMGJmMTQ2ODQwZmRiMGExZWFkMTBhOTU3ODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlOTdmNGVhOThkZDViNjE3Y2I3ZTU1NzhiZTdiNWE5NDQ2OWUwN2Y4MDY4MmI5MzZmNGNkNjhiMWExYWJhODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ5OTU0NjRiMWJhZmZjYmU2OTkwMzgyNjA1MjcxMjkxNWE4OWRlMzRlZjM2ZGViMTNlZDlkNTgzZDE4NzMzMjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cac46c143e054e1faec01f70764744e2",
+      "statement": "Repository quality and delivery automation is local-only: pipeline validation rejects hosted CI/CD definitions, and the module proof tests both the real tree and a hostile hosted-workflow fixture.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/check-local-only-automation.sh#L1-L30",
+          "version": "repo-lines-v1:sha256:fed5d62f40902c4b23c21737501573b0a4d372d7cccd073da9234d03a2c6327c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjYTc5YTEwOGVmY2M4NTIwZDllMzcyOWI5MjFiNzgwNGQ1NDdiNWU4MzMxNjgzNWRiNmFkNDcwYjI3NTZkMmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://scripts/test-server-module-spike.sh#L71-L80",
+          "version": "repo-lines-v1:sha256:3b0be12d51c413876d04222c9c134aade0a758ecf8d1855327f362ce2cf2fd61:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkOTU2NDFjYWNlZjUxMGRmMWI1NzY0NWFhOWI2N2QwNjE2NzgzMjMyYTFkYmZlOTEzNTExZGRmYWJlOTRlYzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4MTg1OTA5ZDkwNGRlMTYwYTE1YjdkOTNmMjU2ZjNkZmE3ZGYxOTY2MDY4NDRkNWViMzdkZTQ2NzY1YjJjMWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwMTljNjMzZGVlODAzYTgwOWM3ZGNmZmMzMzdiMGI3ZjYyZGQ3NjJhODk0OGQ3Yzk0MjBiNjdmZTc3ZGMxM2IifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d777f6f90e0446c8a0820c2d2a012d6b",
+      "statement": "The module proof runs Rust formatting, linting, tests, docs, deterministic component generation, 13 isolated process scenarios, containment assertions, local-only automation checks, and a production-loader absence check.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/test-server-module-spike.sh#L13-L90",
+          "version": "repo-lines-v1:sha256:ae0075953c86a20869efc86b2890645e75af4e8a84c08ba86003cf3ecbd6b898:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1M2E4YmJiODYzMTI5NTA5ZjFjZjExODVmOGQxNTc5N2Y1NzhiMGJmMTQ2ODQwZmRiMGExZWFkMTBhOTU3ODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlOTdmNGVhOThkZDViNjE3Y2I3ZTU1NzhiZTdiNWE5NDQ2OWUwN2Y4MDY4MmI5MzZmNGNkNjhiMWExYWJhODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ5OTU0NjRiMWJhZmZjYmU2OTkwMzgyNjA1MjcxMjkxNWE4OWRlMzRlZjM2ZGViMTNlZDlkNTgzZDE4NzMzMjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-27T12:40:24.098Z"
+    "at": "2026-08-27T22:03:08.727Z"
   }
 }

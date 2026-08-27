@@ -75,9 +75,9 @@ server-authoritative game runtime below.
   the session's existing compiled or registered-provider authority
 - [x] Add historical-release acquisition and multi-screen cartridge navigation
   without silently substituting the server's current catalog selection
-- [ ] Operator-local signing/import for inert custom cartridges that bypass the
+- [x] Operator-local signing/import for inert custom cartridges that bypass the
   marketplace while remaining visibly distinct from vetted releases
-- [ ] Server extension architecture spike comparing external-process RPC,
+- [x] Server extension architecture spike comparing external-process RPC,
   Wasm, statically compiled modules, and other isolation/upgrade models
 - [ ] Versioned server module base and capability-scoped typed hooks with
   configuration/state namespaces, compatibility negotiation, audit,

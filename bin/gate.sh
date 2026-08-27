@@ -98,6 +98,8 @@ if [[ "$ogs_mode" != "fast" ]]; then
   run_gate 22 "invite-only private-alpha admission drill" ./scripts/test-private-alpha.sh
 fi
 
+run_gate 23 "server module isolation architecture proof" ./scripts/test-server-module-spike.sh
+
 if ((ogs_failures > 0)); then
   printf '\nGATE RED [%s] — %d check(s) failed\n' "$ogs_mode" "$ogs_failures" >&2
   exit 1

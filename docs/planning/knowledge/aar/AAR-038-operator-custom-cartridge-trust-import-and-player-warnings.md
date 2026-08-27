@@ -2,7 +2,7 @@
 aar: AAR-038-operator-custom-cartridge-trust-import-and-player-warnings
 ticket: TICKET-038
 pipeline: operator-custom-cartridge-trust-import-and-player-warnings
-status: complete
+status: submitted
 opened: 2026-08-27
 submitted: 2026-08-27
 effectiveness: effective

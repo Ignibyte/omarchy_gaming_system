@@ -4,14 +4,16 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `039`**
+- **Next ticket number: `042`**
 
 ## Open queue
 
-_No open tickets._
+- [`TICKET-040` — Production server module base and observation hooks](open/TICKET-040-production-server-module-base-and-observation-hooks.md)
+- [`TICKET-041` — Administrator custom server-module installation and provenance](open/TICKET-041-administrator-custom-server-module-installation-and-provenance.md)
 
 ## Closed
 
+- [`TICKET-039` — Server extension isolation and typed-hook architecture spike](closed/TICKET-039-server-extension-isolation-and-typed-hook-architecture-spike.md)
 - [`TICKET-038` — Operator-custom cartridge trust, import, and player warnings](closed/TICKET-038-operator-custom-cartridge-trust-import-and-player-warnings.md)
 - [`TICKET-037` — Static marketplace publication, offline-root handoff, and mirror operations](closed/TICKET-037-static-marketplace-publication-offline-root-handoff-and-mirror-operations.md)
 - [`TICKET-036` — Public marketplace trust enrollment, rotation, and client package channel](closed/TICKET-036-public-marketplace-trust-enrollment-rotation-and-client-package-channel.md)
