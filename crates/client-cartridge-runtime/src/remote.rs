@@ -431,7 +431,7 @@ mod tests {
     async fn exact_remote_acquisition_mounts_and_catalog_change_fails_closed() {
         let fixture = RemoteFixture::new();
         let (origin, server) = fixture.spawn(false).await;
-        let acquired = acquire(fixture.request(origin), &fixture.marketplace_public)
+        let acquired = acquire(fixture.request(origin.clone()), &fixture.marketplace_public)
             .await
             .expect("exact acquisition");
         let cache_temp = tempfile::tempdir().expect("cache temp should create");
@@ -441,6 +441,47 @@ mod tests {
             .install(&acquired.verified, acquired.mount)
             .expect("verified acquisition should mount");
         assert_eq!(mounted.archive_sha256, fixture.admission.archive_sha256);
+        let mut render_request: crate::RenderRequest = serde_json::from_value(json!({
+            "server_origin": origin,
+            "server_id": SERVER_ID,
+            "game_key": mounted.game_key,
+            "archive_sha256": mounted.archive_sha256,
+            "admission_revision": mounted.admission_revision,
+            "lifecycle_status": "active",
+            "active_session_policy": "continue",
+            "view": {
+                "welcome": "Welcome to Door Legends. One choice opens the way.",
+                "status": "A weathered brass door waits in the dark.",
+                "enter_label": "Enter the brass door"
+            },
+            "preferences": {
+                "scale": 1.0,
+                "high_contrast": false,
+                "reduced_motion": false,
+                "muted_audio": false
+            }
+        }))
+        .expect("render request should parse");
+        let prepared = crate::compile_mounted_render_plan(
+            &cache,
+            &render_request,
+            &fixture.marketplace_public,
+        )
+        .expect("mounted Door Legends cartridge should compile");
+        let plan = serde_json::to_value(&prepared.plan).expect("plan should serialize");
+        assert_eq!(plan["origin"]["archive_sha256"], mounted.archive_sha256);
+        assert_eq!(plan["nodes"][2]["kind"], "button");
+        assert_eq!(plan["nodes"][2]["action"], "enter");
+        assert!(prepared.assets.is_empty());
+        render_request.server_origin = "https://other.example.test".to_owned();
+        assert!(matches!(
+            crate::compile_mounted_render_plan(
+                &cache,
+                &render_request,
+                &fixture.marketplace_public,
+            ),
+            Err(CompanionError::AdmissionChanged)
+        ));
         assert_eq!(
             cache
                 .mounts(

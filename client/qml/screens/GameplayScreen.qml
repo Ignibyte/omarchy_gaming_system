@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../components" as Components
 import "../game" as Game
+import "../cartridge" as Cartridge
 
 Item {
     id: root
@@ -13,8 +14,10 @@ Item {
     Components.OgsTheme { id: theme }
 
     function focusInitial() {
-        if (surface.visible)
-            surface.focusInitial()
+        if (cartridgeSurface.visible)
+            cartridgeSurface.focusInitial()
+        else if (signalSurface.visible)
+            signalSurface.focusInitial()
         else
             refreshButton.forceActiveFocus()
     }
@@ -88,15 +91,37 @@ Item {
             Components.OgsStatusBanner {
                 Layout.fillWidth: true
                 visible: controller.selectedSession !== null && !controller.presentation.supported
+                         && controller.cartridgeRenderPlan === null
                 message: "This cartridge is listed safely, but this client has no trusted presenter for it."
                 tone: "warning"
             }
 
+            Cartridge.TrustedCartridgeSurface {
+                id: cartridgeSurface
+                objectName: "trustedCartridgeGameplaySurface"
+                Layout.fillWidth: true
+                Layout.preferredHeight: 360
+                visible: controller.selectedSession !== null
+                         && controller.cartridgeRenderPlan !== null
+                assetRoot: controller.cartridgeAssetRoot
+                renderPlan: controller.cartridgeRenderPlan
+                actionsEnabled: !controller.busy
+                                && controller.selectedSession !== null
+                                && controller.selectedSession.status === "active"
+                                && controller.selectedSession.presentation !== null
+                                && controller.selectedSession.presentation.active_session_policy === "continue"
+                opacity: actionsEnabled ? 1 : 0.65
+                onActionRequested: function(action, payload) {
+                    controller.submitCartridgeAction(action, payload)
+                }
+            }
+
             Game.SignalSiegeSurface {
-                id: surface
+                id: signalSurface
                 objectName: "signalSiegeSurface"
                 Layout.fillWidth: true
                 visible: controller.selectedSession !== null && controller.presentation.supported
+                         && controller.cartridgeRenderPlan === null
                 presentation: controller.presentation
                 enabled: !controller.busy
                 opacity: enabled ? 1 : 0.65

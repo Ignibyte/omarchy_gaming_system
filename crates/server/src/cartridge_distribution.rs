@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use omarchygs_game_cartridge::{
     AcquisitionServerAdmission, CartridgeAcquisition, CatalogPublicKey, LifecycleUse,
-    PublisherPublicKey, SecureCartridgeStore, SignedCatalogPolicy, rich_2d_host_profile,
-    supported_sdk_identity, verify_acquisition_bytes,
+    PublisherPublicKey, SecureCartridgeStore, SecureResolution, SignedCatalogPolicy,
+    rich_2d_host_profile, supported_sdk_identity, verify_acquisition_bytes,
 };
 use sqlx::{FromRow, PgPool, types::Json};
 use uuid::Uuid;
@@ -56,6 +56,35 @@ impl CartridgeDistributionRuntime {
             marketplace_key,
         }
     }
+
+    /// Return the exact marketplace trust root configured for this server
+    /// runtime. Database evidence must equal this key before it is used.
+    pub fn marketplace_key(&self) -> &CatalogPublicKey {
+        &self.marketplace_key
+    }
+
+    /// Re-resolve one exact retained release through the production secure
+    /// store under the supplied signed lifecycle policy.
+    pub fn resolve_exact_release(
+        &self,
+        game_key: &str,
+        archive_sha256: &str,
+        publisher_key: &PublisherPublicKey,
+        signed_policy_bytes: &[u8],
+        use_kind: LifecycleUse,
+    ) -> Result<SecureResolution, DistributionError> {
+        self.store
+            .resolve_exact(
+                game_key,
+                archive_sha256,
+                publisher_key,
+                &rich_2d_host_profile(),
+                signed_policy_bytes,
+                &self.marketplace_key,
+                use_kind,
+            )
+            .map_err(|_| DistributionError::Denied)
+    }
 }
 
 /// Build and self-verify one exact acquisition document from the currently
@@ -104,18 +133,13 @@ pub async fn acquire_exact(
     }
     let policy_bytes =
         serde_json::to_vec(&row.signed_policy.0).map_err(|_| DistributionError::Internal)?;
-    let resolution = runtime
-        .store
-        .resolve_exact(
-            &row.game_key,
-            &row.archive_sha256,
-            &row.publisher_key.0,
-            &rich_2d_host_profile(),
-            &policy_bytes,
-            &runtime.marketplace_key,
-            LifecycleUse::NewLaunch,
-        )
-        .map_err(|_| DistributionError::Denied)?;
+    let resolution = runtime.resolve_exact_release(
+        &row.game_key,
+        &row.archive_sha256,
+        &row.publisher_key.0,
+        &policy_bytes,
+        LifecycleUse::NewLaunch,
+    )?;
     let admission = AcquisitionServerAdmission {
         server_id: row.server_id.to_string(),
         game_key: row.game_key,

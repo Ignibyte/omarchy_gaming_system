@@ -85,6 +85,10 @@ ApplicationWindow {
         id: games
         sessionController: onboarding
         actor: onboarding.selectedPersona
+        helperEndpoint: root.argumentValue("--companion-endpoint=", "")
+        helperCredential: root.argumentValue("--companion-credential=", "")
+        marketplaceTrusted: root.argumentValue(
+                                "--companion-marketplace-trusted=", "false") === "true"
     }
 
     CartridgeController {

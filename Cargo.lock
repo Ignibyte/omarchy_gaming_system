@@ -1500,6 +1500,7 @@ dependencies = [
  "base64 0.23.1",
  "futures-util",
  "omarchygs-game-cartridge",
+ "omarchygs-game-cartridge-renderer",
  "rand_core 0.6.4",
  "reqwest",
  "rustix",

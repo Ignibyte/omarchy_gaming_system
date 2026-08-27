@@ -22,7 +22,9 @@ Item {
     MediaPlayer {
         id: player
         source: root.assetRoot !== "" && root.nodeData.asset_token !== ""
-            ? "file://" + encodeURI(root.assetRoot + "/" + root.nodeData.asset_token) : ""
+            ? (root.assetRoot.startsWith("http://") || root.assetRoot.startsWith("https://")
+               ? root.assetRoot + "/" + root.nodeData.asset_token
+               : "file://" + encodeURI(root.assetRoot + "/" + root.nodeData.asset_token)) : ""
         loops: root.nodeData.looped ? MediaPlayer.Infinite : 1
         audioOutput: AudioOutput {
             muted: root.mutedAudio || root.nodeData.muted

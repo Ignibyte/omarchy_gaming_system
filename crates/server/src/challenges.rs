@@ -1,6 +1,7 @@
 //! Durable two-person game challenges and exact-session acceptance.
 
 use omarchy_game_runtime::GameRegistry;
+use omarchy_gaming_system_server::cartridge_distribution::CartridgeDistributionRuntime;
 use sqlx::{PgPool, Postgres, Transaction};
 use tracing::{error, info};
 use uuid::Uuid;
@@ -414,6 +415,7 @@ async fn load_owned_challenge(
 pub async fn accept_challenge(
     pool: &PgPool,
     registry: &GameRegistry,
+    cartridge_distribution: Option<&CartridgeDistributionRuntime>,
     token: &str,
     actor_id: &str,
     challenge_id: &str,
@@ -421,6 +423,7 @@ pub async fn accept_challenge(
     transition_challenge(
         pool,
         registry,
+        cartridge_distribution,
         token,
         actor_id,
         challenge_id,
@@ -439,6 +442,7 @@ pub async fn decline_challenge(
     transition_challenge(
         pool,
         registry,
+        None,
         token,
         actor_id,
         challenge_id,
@@ -457,6 +461,7 @@ pub async fn cancel_challenge(
     transition_challenge(
         pool,
         registry,
+        None,
         token,
         actor_id,
         challenge_id,
@@ -468,6 +473,7 @@ pub async fn cancel_challenge(
 async fn transition_challenge(
     pool: &PgPool,
     registry: &GameRegistry,
+    cartridge_distribution: Option<&CartridgeDistributionRuntime>,
     token: &str,
     actor_id: &str,
     challenge_id: &str,
@@ -538,9 +544,10 @@ async fn transition_challenge(
                 .map_err(map_connected_pair_error)?;
             let game_version =
                 u32::try_from(row.game_version).map_err(|_| ChallengeError::Internal)?;
-            let game_session_id = games::create_session(
+            let game_session_id = games::create_session_with_distribution(
                 &mut transaction,
                 registry,
+                cartridge_distribution,
                 &row.game_key,
                 game_version,
                 &[row.challenger_persona_id, row.challenged_persona_id],

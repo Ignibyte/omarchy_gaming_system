@@ -10,6 +10,7 @@ Rectangle {
     property bool highContrast: false
     property bool reducedMotion: false
     property bool mutedAudio: false
+    property bool actionsEnabled: true
     signal actionRequested(string action, var payload)
 
     Components.OgsTheme { id: theme }
@@ -23,6 +24,7 @@ Rectangle {
     border.color: highContrast ? theme.highContrastForeground : theme.warning
     border.width: activeFocus ? theme.focusWidth : theme.borderWidth
     activeFocusOnTab: true
+    opacity: actionsEnabled ? 1 : 0.6
     Accessible.role: Accessible.Button
     Accessible.name: nodeData.accessible_label
     Accessible.focused: activeFocus
@@ -32,7 +34,8 @@ Rectangle {
     Keys.onSpacePressed: root.trigger()
 
     function trigger() {
-        actionRequested(nodeData.action, {})
+        if (actionsEnabled)
+            actionRequested(nodeData.action, {})
     }
 
     Text {
@@ -53,6 +56,7 @@ Rectangle {
         id: pointer
         anchors.fill: parent
         hoverEnabled: true
+        enabled: root.actionsEnabled
         onClicked: {
             root.forceActiveFocus()
             root.trigger()

@@ -15,6 +15,7 @@ axum.workspace = true
 base64.workspace = true
 futures-util.workspace = true
 omarchygs-game-cartridge = { path = "../game-cartridge" }
+omarchygs-game-cartridge-renderer = { path = "../game-cartridge-renderer" }
 rand_core.workspace = true
 reqwest.workspace = true
 rustix.workspace = true

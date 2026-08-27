@@ -5,6 +5,9 @@ QtObject {
 
     required property var sessionController
     property var actor: null
+    property string helperEndpoint: ""
+    property string helperCredential: ""
+    property bool marketplaceTrusted: false
     property string statusText: ""
     property string errorText: ""
     property string loadState: "idle"
@@ -14,6 +17,9 @@ QtObject {
     property var nextChallengeBefore: null
     property var sessions: []
     property var selectedSession: null
+    property var cartridgeRenderPlan: null
+    property string cartridgeAssetRoot: ""
+    property string cartridgeRenderState: "idle"
     property var presentation: ({
         "supported": false,
         "title": "",
@@ -32,13 +38,22 @@ QtObject {
         "can_charge": false,
         "status": ""
     })
-    readonly property bool busy: _expectedGeneration !== 0
+    readonly property bool busy: _expectedGeneration !== 0 || _helperGeneration !== 0
     readonly property bool hasRetryableMutation: _pendingMutation !== null
 
     property int _expectedGeneration: 0
     property string _expectedOperation: ""
     property bool _appendChallenges: false
     property var _pendingMutation: null
+    property int _helperGeneration: 0
+
+    property ApiClient _helperApi: ApiClient {
+        id: helperApi
+        maximumResponseBytes: 2 * 1024 * 1024
+        onFinished: function(generation, operation, status, body, transportError) {
+            root._handleHelperFinished(generation, operation, status, body, transportError)
+        }
+    }
 
     property Connections _requestConnection: Connections {
         target: root.sessionController
@@ -48,14 +63,19 @@ QtObject {
     }
 
     onActorChanged: reset()
+    onHelperEndpointChanged: reset()
+    onHelperCredentialChanged: reset()
+    onMarketplaceTrustedChanged: reset()
 
     function reset() {
         if (_expectedGeneration !== 0)
             sessionController.cancelPlayerRequest()
+        helperApi.cancel()
         _expectedGeneration = 0
         _expectedOperation = ""
         _appendChallenges = false
         _pendingMutation = null
+        _helperGeneration = 0
         statusText = ""
         errorText = ""
         loadState = "idle"
@@ -97,7 +117,7 @@ QtObject {
     }
 
     function startSolo(game) {
-        if (!_ready() || !_validManifest(game) || game.authority !== "platform_compiled"
+        if (!_ready() || !_validManifest(game)
                 || game.min_human_players !== 1 || game.max_human_players !== 1)
             return false
         return _startMutation("player_games_start", "POST", _actorPath() + "/game-sessions", {
@@ -166,10 +186,13 @@ QtObject {
     }
 
     function closeSession() {
-        if (busy)
+        if (_expectedGeneration !== 0)
             sessionController.cancelPlayerRequest()
+        if (_helperGeneration !== 0)
+            helperApi.cancel()
         _expectedGeneration = 0
         _expectedOperation = ""
+        _helperGeneration = 0
         _pendingMutation = null
         _clearSelectedSession()
         errorText = ""
@@ -194,6 +217,30 @@ QtObject {
         }, "Sending " + selectedAction.toUpperCase() + " command...")
     }
 
+    function submitCartridgeAction(action, payload) {
+        const selectedAction = String(action)
+        const session = selectedSession
+        const binding = session === null ? null : session.presentation
+        if (!_ready() || !_validSession(session) || !_validSessionPresentation(binding, session)
+                || cartridgeRenderPlan === null || cartridgeRenderState !== "ready"
+                || session.status !== "active" || binding.active_session_policy !== "continue"
+                || !/^[a-z][a-z0-9._-]{0,95}$/.test(selectedAction)
+                || !payload || typeof payload !== "object" || Array.isArray(payload))
+            return false
+        const document = {
+            "idempotency_key": _newUuid(),
+            "expected_revision": session.revision,
+            "archive_sha256": binding.archive_sha256,
+            "action": selectedAction,
+            "payload": payload
+        }
+        if (JSON.stringify(document).length > 32768)
+            return false
+        return _startMutation("player_cartridge_action", "POST", _actorPath()
+                              + "/game-sessions/" + session.id + "/cartridge-actions",
+                              document, "Sending signed cartridge action...")
+    }
+
     function retryPendingMutation() {
         if (!_ready() || _pendingMutation === null)
             return false
@@ -212,8 +259,7 @@ QtObject {
 
     function soloGames() {
         return catalog.filter(function(game) {
-            return game.authority === "platform_compiled"
-                    && game.min_human_players === 1 && game.max_human_players === 1
+            return game.min_human_players === 1 && game.max_human_players === 1
         })
     }
 
@@ -352,12 +398,17 @@ QtObject {
             statusText = challenges.length === 0 ? "No game challenges yet." : "Game challenges are current."
             errorText = ""
         } else if (operation === "player_games_start") {
-            if ((status !== 200 && status !== 201) || !_validSession(document)) { _protocolFailure(); return }
+            if ((status !== 200 && status !== 201 && status !== 202)
+                    || !_validSession(document)) { _protocolFailure(); return }
             selectedSession = document
             _derivePresentation()
             sessionController.showPlayerScreen("gameplay")
-            loadState = "ready"
-            statusText = status === 201 ? "Game cartridge started." : "Existing start recovered."
+            if (!_requestCartridgeRender()) {
+                loadState = "ready"
+                statusText = status === 201 ? "Game cartridge started."
+                           : status === 202 ? "Game provider is provisioning the session."
+                           : "Existing start recovered."
+            }
         } else if (operation.startsWith("player_challenges_")
                    && ["player_challenges_create", "player_challenges_accept",
                        "player_challenges_decline", "player_challenges_cancel"].indexOf(operation) !== -1) {
@@ -373,12 +424,21 @@ QtObject {
             if (!_validSession(document)) { _protocolFailure(); return }
             selectedSession = document
             _derivePresentation()
-            loadState = "ready"
-            statusText = document.status === "completed"
-                    ? "Final authoritative result loaded." : "Authoritative turn state loaded."
-            errorText = ""
-        } else if (operation === "player_game_command") {
-            if (!_validCommandResponse(document, selectedSession)) { _protocolFailure(); return }
+            if (!_requestCartridgeRender()) {
+                loadState = "ready"
+                statusText = document.status === "completed"
+                        ? "Final authoritative result loaded." : "Authoritative turn state loaded."
+                errorText = ""
+            }
+        } else if (operation === "player_game_command"
+                   || operation === "player_cartridge_action") {
+            if (operation === "player_cartridge_action") {
+                if (!_validCartridgeActionResponse(document, selectedSession)) {
+                    _protocolFailure(); return
+                }
+            } else if (!_validCommandResponse(document, selectedSession)) {
+                _protocolFailure(); return
+            }
             selectedSession = Object.assign({}, selectedSession, {
                 "revision": document.revision,
                 "status": document.status,
@@ -393,19 +453,123 @@ QtObject {
         }
     }
 
+    function _requestCartridgeRender() {
+        cartridgeRenderPlan = null
+        cartridgeAssetRoot = ""
+        cartridgeRenderState = "idle"
+        const session = selectedSession
+        if (!_validSession(session) || session.presentation === null)
+            return false
+        const binding = session.presentation
+        if (binding.active_session_policy !== "continue") {
+            cartridgeRenderState = binding.active_session_policy
+            return false
+        }
+        const authority = sessionController.trustedCartridgeAuthority()
+        if (authority === null || helperEndpoint === "" || helperCredential === ""
+                || !marketplaceTrusted || session.state === null) {
+            cartridgeRenderState = "unavailable"
+            return false
+        }
+        const configured = helperApi.configure(helperEndpoint)
+        if (!configured.ok) {
+            cartridgeRenderState = "error"
+            return false
+        }
+        helperApi.installBearer(helperCredential)
+        statusText = "Compiling trusted cartridge presentation..."
+        loadState = "loading"
+        cartridgeRenderState = "loading"
+        _helperGeneration = helperApi.request("cartridge_render", "POST", "/v1/render-plans", {
+            "server_origin": authority.origin,
+            "server_id": authority.server_id,
+            "game_key": binding.game_key,
+            "archive_sha256": binding.archive_sha256,
+            "admission_revision": binding.admission_revision,
+            "lifecycle_status": binding.lifecycle_status,
+            "active_session_policy": binding.active_session_policy,
+            "view": session.state,
+            "preferences": {
+                "scale": 1.0,
+                "high_contrast": false,
+                "reduced_motion": false,
+                "muted_audio": false
+            }
+        }, true)
+        if (_helperGeneration === 0) {
+            cartridgeRenderState = "error"
+            return false
+        }
+        return true
+    }
+
+    function _handleHelperFinished(generation, operation, status, body, transportError) {
+        if (generation !== _helperGeneration || operation !== "cartridge_render")
+            return
+        _helperGeneration = 0
+        if (transportError !== "") {
+            cartridgeRenderState = "error"
+            loadState = "ready"
+            statusText = "Authoritative state loaded; trusted cartridge rendering is unavailable."
+            return
+        }
+        const parsed = _parseDocument(body)
+        if (status !== 200 || !parsed.ok || !_validRenderResponse(parsed.document)) {
+            cartridgeRenderState = "error"
+            loadState = "ready"
+            statusText = "Authoritative state loaded; the cartridge render plan was rejected."
+            return
+        }
+        cartridgeRenderPlan = parsed.document.plan
+        cartridgeAssetRoot = parsed.document.asset_base_url
+        cartridgeRenderState = "ready"
+        loadState = "ready"
+        statusText = "Trusted cartridge presentation ready."
+        errorText = ""
+    }
+
+    function _validRenderResponse(document) {
+        if (!_exactKeys(document, ["plan", "asset_base_url"])
+                || !document.plan || typeof document.plan !== "object"
+                || typeof document.asset_base_url !== "string")
+            return false
+        const binding = selectedSession.presentation
+        const origin = document.plan.origin
+        if (!origin || typeof origin !== "object"
+                || document.plan.format !== "omarchygs.render-plan/v1"
+                || document.plan.state !== "ready"
+                || origin.publisher_id !== binding.publisher_id
+                || origin.game_key !== binding.game_key
+                || origin.cartridge_version !== binding.cartridge_version
+                || origin.archive_sha256 !== binding.archive_sha256)
+            return false
+        const configured = helperApi.baseUrl + "/v1/render-assets/"
+        const capability = document.asset_base_url.startsWith(configured)
+                ? document.asset_base_url.slice(configured.length) : ""
+        return /^[A-Za-z0-9_-]{43}$/.test(capability)
+    }
+
     function _actionFailure(operation, document) {
         const code = _errorCode(document)
         if (code === "") { _protocolFailure(); return }
-        if (operation === "player_game_command" && code === "game_revision_conflict"
+        if ((operation === "player_game_command" || operation === "player_cartridge_action")
+                && code === "game_revision_conflict"
                 && selectedSession !== null) {
             statusText = "Turn changed; refreshing authoritative state..."
             openSessionById(selectedSession.id)
             return
         }
+        if (operation === "player_cartridge_action"
+                && code === "session_cartridge_unavailable") {
+            cartridgeRenderPlan = null
+            cartridgeAssetRoot = ""
+            cartridgeRenderState = "denied"
+        }
         const messages = {
             "persona_not_found": "The selected persona is unavailable.",
             "game_session_not_found": "That game session is unavailable.",
             "game_unavailable": "That exact game cartridge is unavailable.",
+            "session_cartridge_unavailable": "That signed session cartridge is unavailable or no longer allowed.",
             "invalid_game_participants": "That game does not support this player count.",
             "too_many_active_game_sessions": "Finish an active solo game before starting another.",
             "challenge_target_unavailable": "That connection cannot receive this challenge.",
@@ -527,6 +691,9 @@ QtObject {
 
     function _clearSelectedSession() {
         selectedSession = null
+        cartridgeRenderPlan = null
+        cartridgeAssetRoot = ""
+        cartridgeRenderState = "idle"
         presentation = {
             "supported": false,
             "title": "",
@@ -618,7 +785,7 @@ QtObject {
     function _validSession(value) {
         if (!_exactKeys(value, ["id", "game_key", "game_version", "revision", "status", "state",
                                 "authority", "provider_release_id", "availability", "result",
-                                "participants", "completed_at", "created_at", "updated_at"])
+                                "presentation", "participants", "completed_at", "created_at", "updated_at"])
                 || !_validUuid(value.id) || !_boundedString(value.game_key, 64, 1)
                 || !Number.isSafeInteger(value.game_version) || value.game_version < 1
                 || !Number.isSafeInteger(value.revision) || value.revision < 0
@@ -644,6 +811,9 @@ QtObject {
         }
         if (!actorFound)
             return false
+        if (!(value.presentation === null
+                || _validSessionPresentation(value.presentation, value)))
+            return false
         if (value.authority === "platform_compiled") {
             if (value.game_key === "signal_siege"
                     && ((value.game_version === 1 && value.participants.length !== 1)
@@ -662,6 +832,35 @@ QtObject {
                 && (value.result === null || _validProviderResult(value.result))
     }
 
+    function _validSessionPresentation(binding, session) {
+        if (!binding || typeof binding !== "object")
+            return false
+        const keys = ["format", "publisher_id", "game_key", "rules_version",
+                      "cartridge_version", "archive_sha256", "signed_identity_sha256",
+                      "admission_revision", "lifecycle_status", "active_session_policy"]
+        if (binding.warning !== undefined)
+            keys.push("warning")
+        const policies = {
+            "active": "continue", "deprecated": "continue", "suspended": "suspend",
+            "revoked": "terminate", "retired": "continue"
+        }
+        return _exactKeys(binding, keys)
+                && binding.format === "omarchygs.session-cartridge/v1"
+                && /^[a-z][a-z0-9._-]{0,95}$/.test(binding.publisher_id)
+                && binding.game_key === session.game_key
+                && binding.rules_version === session.game_version
+                && Number.isSafeInteger(binding.cartridge_version)
+                && binding.cartridge_version > 0
+                && /^[0-9a-f]{64}$/.test(binding.archive_sha256)
+                && /^[0-9a-f]{64}$/.test(binding.signed_identity_sha256)
+                && Number.isSafeInteger(binding.admission_revision)
+                && binding.admission_revision > 0
+                && policies[binding.lifecycle_status] === binding.active_session_policy
+                && (binding.lifecycle_status === "deprecated"
+                    ? _boundedString(binding.warning, 512, 1)
+                    : binding.warning === undefined)
+    }
+
     function _validCommandResponse(value, session) {
         return _exactKeys(value, ["game_session_id", "revision", "status", "state", "authority",
                                   "provider_release_id", "availability"])
@@ -671,6 +870,29 @@ QtObject {
                 && value.authority === "platform_compiled" && value.provider_release_id === null
                 && value.availability === null
                 && _validCompiledState(session.game_key, session.game_version, value.state, value.status)
+    }
+
+    function _validCartridgeActionResponse(value, session) {
+        if (!_exactKeys(value, ["game_session_id", "revision", "status", "state", "authority",
+                                "provider_release_id", "availability", "archive_sha256"])
+                || !_validSession(session) || session.presentation === null
+                || value.game_session_id !== session.id
+                || value.archive_sha256 !== session.presentation.archive_sha256
+                || !Number.isSafeInteger(value.revision)
+                || value.revision !== session.revision + 1
+                || (value.status !== "active" && value.status !== "completed")
+                || value.authority !== session.authority
+                || !value.state || typeof value.state !== "object" || Array.isArray(value.state))
+            return false
+        if (value.authority === "platform_compiled")
+            return value.provider_release_id === null && value.availability === null
+                    && _validCompiledState(session.game_key, session.game_version,
+                                           value.state, value.status)
+        return _validUuid(value.provider_release_id)
+                && (value.availability === "provisioning" || value.availability === "ready"
+                    || value.availability === "reconciling" || value.availability === "unavailable"
+                    || value.availability === "suspended" || value.availability === "completed"
+                    || value.availability === "retired")
     }
 
     function _validCompiledState(gameKey, gameVersion, state, status) {

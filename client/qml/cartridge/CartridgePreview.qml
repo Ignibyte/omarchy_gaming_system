@@ -58,7 +58,7 @@ Window {
                         Qt.exit(2)
                     return
                 }
-                if (smokeTest && surface.renderPlan.state !== "ready"
+                if (smokeTest && surface.acceptedPlan.state !== "ready"
                         && surface.instantiatedNodeCount !== 0)
                     Qt.exit(3)
             } catch (error) {
@@ -86,7 +86,7 @@ Window {
 
     Timer {
         interval: 200
-        running: root.smokeTest && surface.planAccepted && surface.renderPlan.state === "ready"
+        running: root.smokeTest && surface.planAccepted && surface.acceptedPlan.state === "ready"
         repeat: false
         onTriggered: {
             const result = surface.smokeExercise()
@@ -110,13 +110,13 @@ Window {
             root.totalFrameMs += milliseconds
             root.maximumFrameMs = Math.max(root.maximumFrameMs, milliseconds)
             if (root.frames >= 120) {
-                if (surface.renderPlan.state === "ready"
-                        && surface.instantiatedNodeCount !== surface.renderPlan.nodes.length)
+                if (surface.acceptedPlan.state === "ready"
+                        && surface.instantiatedNodeCount !== surface.acceptedPlan.nodes.length)
                     Qt.exit(3)
-                if (surface.renderPlan.state === "ready"
+                if (surface.acceptedPlan.state === "ready"
                         && (!root.smokeExerciseComplete || root.actionRequests < 2))
                     Qt.exit(5)
-                console.log("OGS_CARTRIDGE_RENDER_METRICS state=" + surface.renderPlan.state
+                console.log("OGS_CARTRIDGE_RENDER_METRICS state=" + surface.acceptedPlan.state
                     + " nodes=" + surface.instantiatedNodeCount
                     + " frames=" + root.frames
                     + " average_ms=" + (root.totalFrameMs / root.frames).toFixed(3)

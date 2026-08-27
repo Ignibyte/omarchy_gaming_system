@@ -32,7 +32,7 @@ pub(crate) async fn document(
     pool: &PgPool,
     server_name: &str,
     provider_enabled: bool,
-    cartridge_acquisition_enabled: bool,
+    cartridge_runtime_enabled: bool,
 ) -> Result<DiscoveryDocument, sqlx::Error> {
     let server_id =
         sqlx::query_scalar::<_, Uuid>("SELECT id FROM server_identity WHERE singleton = TRUE")
@@ -43,7 +43,7 @@ pub(crate) async fn document(
         server_id,
         server_name,
         provider_enabled,
-        cartridge_acquisition_enabled,
+        cartridge_runtime_enabled,
     ))
 }
 
@@ -51,15 +51,16 @@ fn document_for(
     server_id: Uuid,
     server_name: &str,
     provider_enabled: bool,
-    cartridge_acquisition_enabled: bool,
+    cartridge_runtime_enabled: bool,
 ) -> DiscoveryDocument {
     let mut capabilities = BASE_CAPABILITIES.to_vec();
     if provider_enabled {
         capabilities.push("games.registered-provider.v1");
         capabilities.sort_unstable();
     }
-    if cartridge_acquisition_enabled {
+    if cartridge_runtime_enabled {
         capabilities.push("games.cartridge-acquisition.v1");
+        capabilities.push("games.session-cartridge.v1");
         capabilities.sort_unstable();
     }
 
@@ -110,6 +111,11 @@ mod tests {
             document
                 .capabilities
                 .contains(&"games.cartridge-acquisition.v1")
+        );
+        assert!(
+            document
+                .capabilities
+                .contains(&"games.session-cartridge.v1")
         );
         assert!(
             document

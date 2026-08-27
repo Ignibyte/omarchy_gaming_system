@@ -12,6 +12,7 @@ Rectangle {
     property bool highContrast: false
     property bool reducedMotion: false
     property bool mutedAudio: false
+    property bool actionsEnabled: true
     property int selectedIndex: 0
     signal actionRequested(string action, var payload)
 
@@ -23,6 +24,7 @@ Rectangle {
     border.color: highContrast ? theme.highContrastForeground : theme.borderMuted
     border.width: activeFocus ? theme.focusWidth : theme.borderWidth
     activeFocusOnTab: true
+    opacity: actionsEnabled ? 1 : 0.6
     Accessible.role: Accessible.List
     Accessible.name: nodeData.accessible_label
     Accessible.focused: activeFocus
@@ -37,6 +39,8 @@ Rectangle {
     }
 
     function triggerSelected() {
+        if (!actionsEnabled)
+            return
         actionRequested(nodeData.action, {
             "row": Math.floor(selectedIndex / nodeData.columns),
             "column": selectedIndex % nodeData.columns
@@ -84,6 +88,7 @@ Rectangle {
 
                 MouseArea {
                     anchors.fill: parent
+                    enabled: root.actionsEnabled
                     onClicked: {
                         root.selectedIndex = parent.index
                         root.forceActiveFocus()

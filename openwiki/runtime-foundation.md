@@ -3,8 +3,6 @@ type: "Reference"
 title: "Runtime foundation"
 openwiki_generated: true
 sources:
-  - id: openwiki-source-0196de8872a3fef5b0b350d3
-    resource: repo://client/qml/CartridgeController.qml
   - id: openwiki-source-490417654c55d88090cb369e
     resource: repo://client/qml/components/OgsScreenHeader.qml
   - id: openwiki-source-f4ccc0eff8d8cee134cf3ed5
@@ -17,14 +15,10 @@ sources:
     resource: repo://client/qml/Main.qml
   - id: openwiki-source-f73ad44f40942d16dc369861
     resource: repo://client/qml/OnboardingController.qml
-  - id: openwiki-source-4ed0cbd1dd42080eafc4058b
-    resource: repo://client/qml/screens/GamesScreen.qml
   - id: openwiki-source-4f5334e859a4d83e2a196fcf
     resource: repo://client/qml/SocialController.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
-  - id: openwiki-source-a9681bd734a0aaee2540757d
-    resource: repo://crates/client-cartridge-runtime/src/main.rs
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
@@ -95,11 +89,9 @@ sources:
     resource: repo://migrations/0013_signal_siege_and_solo_sessions.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-  - id: openwiki-source-d85e6ea816d7c91e9828f7b2
-    resource: repo://packaging/arch/omarchygs
   - id: openwiki-source-a5928e7ee39885995efdc170
     resource: repo://scripts/dev.sh
-generated: {by: "codex", at: "2026-08-27T01:49:04.244Z"}
+generated: {by: "codex", at: "2026-08-27T04:04:27.382Z"}
 ---
 
 # Runtime foundation
@@ -389,7 +381,10 @@ for local acquisition and mount operations. Catalog-only servers remain fully
 browsable; install and update controls require the separately advertised
 acquisition capability, an available companion, and a marketplace public key
 trusted by the client. A mounted record is presentation inventory only and does
-not create a game session or execute cartridge-supplied code.
+not create a game session or execute cartridge-supplied code. Once a separately
+created session carries the exact immutable presentation binding, the game
+controller may ask that companion to compile the mounted signed entry screen;
+mount presence alone remains insufficient.
 
 The native package launcher owns the companion lifecycle. It resolves an
 absolute regular non-symlink marketplace-key file from explicit environment,
@@ -432,14 +427,19 @@ exact idempotency identity for explicit retry, and refetches the session after
 a committed command or revision conflict. Catalog, challenge, session, command,
 and exact Signal Siege v1/v2 state documents must pass closed schemas,
 participant uniqueness/cardinality, actor-direction, lifecycle, and cross-field
-checks before presentation.
+checks before presentation. A bound cartridge response additionally must match
+the selected canonical server origin/UUID, exact session presentation digest
+and admission revision, independently trusted local mount, and accepted render
+origin before it reaches the trusted surface.
 
 The Games and Challenges screens expose keyboard-first catalog, history,
-connection, and lifecycle controls. Gameplay maps only a validated compiled
-Signal Siege view model into platform-owned plain-text, meter, status, and
-button components. That surface is trusted application UI: it does not wrap
-the state in `omarchygs.render-plan/v1`, claim an authenticated cartridge
-origin, or make provider-owned sessions executable.
+connection, and lifecycle controls. Gameplay maps a validated compiled Signal
+Siege view model into its platform-owned surface or an eligible mounted session
+into the separately validated trusted cartridge surface. Signal Siege does not
+wrap state in `omarchygs.render-plan/v1` or claim cartridge provenance. The
+cartridge surface accepts only a companion-compiled inert plan, uses host-owned
+components, and returns every unconfirmed declared action through the selected
+OmarchyGS server.
 
 ## Persona connection and block flow
 
@@ -659,9 +659,11 @@ returned game session. Inventory defaults to 50, caps at 100, and orders newest
 first. Responses expose the durable key, version, revision, active/completed
 status, authority, optional provider release and availability, state or
 authenticated provider view, optional allowlisted provider result, completion
-time, timestamps, seats, and the existing public persona shape; they contain no
-account ownership, provider endpoint, credential, grant, or private provider
-rules state.
+time, timestamps, seats, the existing public persona shape, and either no
+presentation or one exact non-secret cartridge binding with current signed
+active-session policy; they contain no account ownership, marketplace key,
+local path, provider endpoint, credential, grant, or private provider rules
+state.
 Foreign, malformed, and absent session IDs share the same not-found result.
 Reads come directly from PostgreSQL, so a process registry that has gained,
 lost, or replaced versions cannot silently reinterpret an old session.
@@ -689,6 +691,18 @@ minimal invalidation per canonically ordered participant. Rules rejection,
 malformed input, unavailable rules, completed lifecycle, revision conflict,
 and later transaction failure leave state, receipt, and invalidations
 unchanged.
+
+The sibling
+`POST /v1/personas/{persona_id}/game-sessions/{game_session_id}/cartridge-actions`
+route accepts only an idempotency UUID, expected revision, pinned archive
+digest, declared action, and object payload. Before either existing command path
+runs, `session_cartridges` participant-authorizes the session, share-locks the
+marketplace lifecycle snapshot, verifies the exact cached signed release and
+entry-screen action/payload, translates the command in host code, and inserts
+one immutable action admission. An exact replay recovers the stored translated
+command even after a later lifecycle change; a changed identity conflicts and
+a fresh action after suspension or revocation is denied. The admission
+transaction ends before compiled execution or provider network I/O.
 
 ## Registered-provider game flow
 
@@ -835,6 +849,11 @@ and single-terminal-state constraints and extends the immutable operator audit
 target/action contract to invitation issue and revocation. Migration `0018`
 adds one randomly generated singleton server UUID and immutable row/table
 triggers so ordinary database backup and restore preserve community continuity.
+Migration `0019` adds signed marketplace inventory and server admission;
+`0020` adds bounded exact player acquisition receipts. Migration `0021` adds
+immutable one-per-session presentation pins, insertion-time exact
+catalog/session validation, immutable cartridge-action admissions, and bound
+session authority-identity protection.
 Add later
 capabilities through domain modules and thin handlers rather than placing policy
 directly in SQL or transport code.

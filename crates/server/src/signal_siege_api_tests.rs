@@ -169,6 +169,7 @@ async fn solo_start_is_owner_scoped_atomic_idempotent_and_registry_independent(p
     assert_eq!(document["authority"], "platform_compiled");
     assert!(document["provider_release_id"].is_null());
     assert!(document["availability"].is_null());
+    assert!(document["presentation"].is_null());
     assert!(document["result"].is_null());
     assert!(document["completed_at"].is_null());
     assert_eq!(document["participants"].as_array().map(Vec::len), Some(1));
@@ -188,6 +189,7 @@ async fn solo_start_is_owner_scoped_atomic_idempotent_and_registry_independent(p
             "game_version",
             "id",
             "participants",
+            "presentation",
             "provider_release_id",
             "result",
             "revision",

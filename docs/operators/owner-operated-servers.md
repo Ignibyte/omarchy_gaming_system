@@ -2,10 +2,10 @@
 
 Status: stable identity/discovery, isolated flagship-client profiles,
 marketplace-vetted catalog administration, and exact player cartridge
-acquisition/cache/mounting are implemented. The direction is accepted by
+acquisition/cache/mounting plus live-session trusted cartridge rendering are
+implemented. The direction is accepted by
 [`ADR-0003`](../architecture/adr-0003-owner-operated-server-and-extension-boundary.md);
-operator-custom content, live-session cartridge rendering, and module
-administration remain follow-up work.
+operator-custom content and module administration remain follow-up work.
 
 ## Operating model
 
@@ -131,10 +131,17 @@ or a reviewed client-package channel. Players must not bootstrap marketplace
 trust from discovery, the catalog, or the acquisition response. Public
 enrollment and authenticated key rotation remain roadmap work.
 
-This lifecycle makes a selected cartridge visible and mounted, but it does not
-yet bind a render plan to a live server-authoritative game session. The current
-compiled game screens remain the playable surface until that separately
-reviewed launch/runtime slice is implemented.
+An eligible newly created session now pins at most one exact current release
+and admission revision. The pin is immutable and does not follow later catalog
+changes. A player can render it only when the selected canonical origin, server
+UUID, client-controlled marketplace key, exact profile mount, digest, revision,
+cached publisher identity, and signed active-session policy agree. The native
+companion compiles the signed entry screen and exposes only a bounded inert plan
+plus ephemeral digest assets to trusted QML. Every declared action returns to
+this OmarchyGS server, which participant-authorizes and durably admits the exact
+signed action before invoking the session's existing compiled or provider
+authority. A missing historical mount is not downloaded automatically, and v1
+does not yet provide multi-screen cartridge navigation.
 
 ## Custom cartridges and code
 

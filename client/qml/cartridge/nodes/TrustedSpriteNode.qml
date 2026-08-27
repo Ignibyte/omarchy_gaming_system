@@ -29,7 +29,9 @@ Rectangle {
         width: Math.min(parent.width - 16, root.nodeData.frame_width * root.scaleFactor * 4)
         height: Math.min(parent.height - 16, root.nodeData.frame_height * root.scaleFactor * 4)
         source: root.assetRoot !== "" && root.nodeData.asset_token !== ""
-            ? "file://" + encodeURI(root.assetRoot + "/" + root.nodeData.asset_token) : ""
+            ? (root.assetRoot.startsWith("http://") || root.assetRoot.startsWith("https://")
+               ? root.assetRoot + "/" + root.nodeData.asset_token
+               : "file://" + encodeURI(root.assetRoot + "/" + root.nodeData.asset_token)) : ""
         frameWidth: root.nodeData.frame_width
         frameHeight: root.nodeData.frame_height
         frameCount: root.nodeData.frame_count

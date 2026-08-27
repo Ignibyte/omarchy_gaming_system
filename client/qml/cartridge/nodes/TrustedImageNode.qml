@@ -24,7 +24,9 @@ Rectangle {
         anchors.fill: parent
         anchors.margins: 8
         source: root.assetRoot !== "" && root.nodeData.asset_token !== ""
-            ? "file://" + encodeURI(root.assetRoot + "/" + root.nodeData.asset_token) : ""
+            ? (root.assetRoot.startsWith("http://") || root.assetRoot.startsWith("https://")
+               ? root.assetRoot + "/" + root.nodeData.asset_token
+               : "file://" + encodeURI(root.assetRoot + "/" + root.nodeData.asset_token)) : ""
         sourceSize.width: Math.min(2048, Math.max(1, Math.ceil(width * 2)))
         sourceSize.height: Math.min(2048, Math.max(1, Math.ceil(height * 2)))
         fillMode: Image.PreserveAspectFit

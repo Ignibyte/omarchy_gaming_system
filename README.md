@@ -285,8 +285,15 @@ server; a response-supplied replacement key is rejected. Verified bytes enter a
 shared content-addressed cache, while read-only mount records remain isolated
 by server UUID. Installation and update are explicit, failures retain the old
 mount, and removal deletes only the selected profile mount—not remote state or
-shared immutable bytes. Binding a mounted render plan to a live game session
-and replacing the current platform-owned game screens remain a later slice.
+shared immutable bytes. Eligible new sessions pin one exact admitted release;
+the companion resolves only the matching origin/UUID profile mount, compiles
+the signed entry screen into a bounded render plan, and serves digest assets
+through an ephemeral loopback capability. Trusted QML presents that plan and
+sends declared actions back to the selected server, which reauthorizes the
+participant and signed action contract before using the session's existing
+compiled or registered-provider authority. Door Legends is the first complete
+portable playable; absent historical-mount acquisition and multi-screen
+cartridge navigation remain later work.
 
 See [owner-operated servers](docs/operators/owner-operated-servers.md) and
 [operator safety and platform recovery](docs/operators/operator-safety-and-recovery.md)

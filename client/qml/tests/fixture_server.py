@@ -743,6 +743,7 @@ class Handler(BaseHTTPRequestHandler):
             "authority": "platform_compiled",
             "provider_release_id": None,
             "availability": None,
+            "presentation": None,
             "result": None,
             "participants": [{
                 "seat": 0,
@@ -766,6 +767,7 @@ class Handler(BaseHTTPRequestHandler):
             "authority": "platform_compiled",
             "provider_release_id": None,
             "availability": None,
+            "presentation": None,
             "result": None,
             "participants": [
                 {

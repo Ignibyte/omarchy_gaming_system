@@ -12,7 +12,7 @@ implemented yet.
   `/usr/share/omarchy-gaming-system/qml`;
 - `/usr/bin/omarchygs` as the command launcher;
 - `/usr/bin/omarchygs-cartridge-companion` as the loopback acquisition,
-  verification, cache, and mount service;
+  verification, cache, mount, and trusted render-plan service;
 - an Omarchy application-menu entry; and
 - non-secret build revision and source-digest provenance.
 
@@ -151,9 +151,16 @@ destination, executable code, raw QML, credential, or network endpoint.
 
 Removal from the Games screen removes only that exact server-profile mount. It
 does not delete shared immutable bytes, remote account/game state, achievements,
-or the server operator's catalog admission. Mount-to-live-session rendering is
-not implemented yet; the current compiled game screens remain the playable
-surface.
+or the server operator's catalog admission. A mount still does not create or
+authorize a game session. When a separately created eligible session pins that
+exact release and admission revision, the companion compiles its signed entry
+screen from the authoritative REST view. The gameplay screen accepts only the
+matching bounded plan and uses platform-owned QML components; declared actions
+return to the selected OmarchyGS server. Signal Siege keeps its platform-owned
+presenter, while Door Legends proves the mounted portable path. Missing or
+mismatched mounts, origins, trust keys, revisions, or lifecycle policy fail
+closed. Historical auto-acquisition and multi-screen navigation are not yet
+implemented.
 
 ## Update and remove
 

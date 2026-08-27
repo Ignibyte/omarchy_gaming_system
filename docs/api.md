@@ -1005,7 +1005,7 @@ exactly one human returns 422 `invalid_game_participants`. Every response is
 private and carries `Cache-Control: no-store`.
 
 Every session now reports `authority`, `provider_release_id`, `availability`,
-and `result`. A compiled session uses `platform_compiled`, a null release and
+`presentation`, and `result`. A compiled session uses `platform_compiled`, a null release and
 availability, and its existing authoritative `state`. A provider session uses
 `registered_provider`, pins an exact release, and exposes a provider-reported
 view through `state`; that view is presentation data, not platform-owned game
@@ -1023,6 +1023,32 @@ terminal callback adds only this public result projection:
   }
 }
 ```
+
+`presentation` is null for legacy, unconfigured, unmatched, or otherwise
+unbound sessions. An eligible newly created session instead pins one exact
+currently admitted release and returns this bounded participant-visible shape:
+
+```json
+{
+  "format": "omarchygs.session-cartridge/v1",
+  "publisher_id": "thoughtless-labs",
+  "game_key": "door-legends",
+  "rules_version": 1,
+  "cartridge_version": 1,
+  "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "signed_identity_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "admission_revision": 3,
+  "lifecycle_status": "active",
+  "active_session_policy": "continue"
+}
+```
+
+Deprecated bindings also include the signed bounded `warning`. Lifecycle can be
+`active`, `deprecated`, `suspended`, `revoked`, or `retired`; the corresponding
+active-session policy is `continue`, `suspend`, or `terminate`. The immutable
+pin never follows a later catalog selection. Marketplace keys, operator reasons,
+local paths, provider endpoints, grants, credentials, and internal release IDs
+are not exposed.
 
 ## Reconcile a provider game session
 
@@ -1156,8 +1182,13 @@ and extractor failures carry `Cache-Control: no-store`.
   "game_version": 1,
   "revision": 0,
   "status": "active",
+  "authority": "platform_compiled",
+  "provider_release_id": null,
+  "availability": null,
   "completed_at": null,
   "state": {},
+  "presentation": null,
+  "result": null,
   "participants": [
     {
       "seat": 0,
@@ -1242,6 +1273,59 @@ receipt even if the compiled rules are unavailable. Any new command on that
 completed session returns 409 `game_completed`. Conflicts, replays, rejections,
 and rollbacks append no event. All command responses carry
 `Cache-Control: no-store`.
+
+## Apply a signed Game Cartridge action
+
+`POST /v1/personas/{persona_id}/game-sessions/{game_session_id}/cartridge-actions`
+
+This 32 KiB participant-private route is the only gameplay path for an action
+emitted by a trusted cartridge plan. It rejects unknown fields and accepts only
+the selected session's current revision, exact pinned archive digest, declared
+action, object payload, and a session-wide idempotency UUID:
+
+```json
+{
+  "idempotency_key": "8f5d8f1d-48df-4f5a-b6e7-ad26eb30ae88",
+  "expected_revision": 0,
+  "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "action": "enter",
+  "payload": {}
+}
+```
+
+The server owner-scopes the acting persona, requires participation in the exact
+bound session, verifies current revision and digest, re-resolves the signed
+release under active-session policy, and validates the action against the
+signed entry screen. Button actions accept exactly `{}`; Grid actions accept
+only bounded integer `column` and `row` from the signed grid. The host—not QML
+or the cartridge—translates that intent into the session's existing
+`platform_compiled` or `registered_provider` command.
+
+Authorization is durably recorded before compiled execution or provider I/O.
+An exact retry reuses the admitted host command even if the release is later
+suspended or revoked; a changed actor, revision, digest, action, or payload is
+an idempotency conflict, and a fresh post-transition action is denied. Success
+returns the existing command receipt plus the confirmed pinned digest:
+
+```json
+{
+  "game_session_id": "...",
+  "revision": 1,
+  "status": "completed",
+  "state": {},
+  "authority": "registered_provider",
+  "provider_release_id": "...",
+  "availability": "completed",
+  "archive_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}
+```
+
+Malformed input returns 422 `invalid_game_command`; absent or non-participant
+sessions return 404 `game_session_not_found`; stale revisions return 409
+`game_revision_conflict`; changed replays return 409
+`game_idempotency_conflict`; completed sessions return 409 `game_completed`;
+and any pin, evidence, signed action, or lifecycle denial returns 409
+`session_cartridge_unavailable`. All responses are `Cache-Control: no-store`.
 
 ## Read durable persona changes
 

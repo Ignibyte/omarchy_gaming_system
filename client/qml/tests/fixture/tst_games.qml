@@ -375,4 +375,90 @@ TestCase {
         verify(!applicationWindow.gameController.presentation.can_act)
         verify(!applicationWindow.gameController.submitAction("charge"))
     }
+
+    function test_session_cartridge_plan_and_action_are_exactly_bound() {
+        const controller = applicationWindow.gameController
+        controller.helperEndpoint = "http://127.0.0.1:32123"
+        controller.helperCredential = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        controller.marketplaceTrusted = true
+        activate(object("homeGamesButton"))
+        tryCompare(controller, "loadState", "ready", 5000)
+        const session = clone(controller.sessions[0])
+        session.game_key = "door-legends"
+        session.authority = "registered_provider"
+        session.provider_release_id = "55555555-5555-4555-8555-555555555555"
+        session.availability = "ready"
+        session.state = {
+            "welcome": "Welcome to Door Legends. One choice opens the way.",
+            "status": "A weathered brass door waits in the dark.",
+            "enter_label": "Enter the brass door"
+        }
+        session.presentation = {
+            "format": "omarchygs.session-cartridge/v1",
+            "publisher_id": "ignibyte",
+            "game_key": "door-legends",
+            "rules_version": 1,
+            "cartridge_version": 1,
+            "archive_sha256": "a".repeat(64),
+            "signed_identity_sha256": "b".repeat(64),
+            "admission_revision": 1,
+            "lifecycle_status": "active",
+            "active_session_policy": "continue"
+        }
+        verify(controller._validSession(session))
+        controller.selectedSession = session
+        verify(controller._helperApi.configure(controller.helperEndpoint).ok)
+        controller._helperGeneration = 77
+        const plan = {
+            "format": "omarchygs.render-plan/v1",
+            "profile": "rich2d",
+            "state": "ready",
+            "state_message": "Ready",
+            "origin": {
+                "publisher_id": "ignibyte",
+                "game_key": "door-legends",
+                "cartridge_version": 1,
+                "archive_sha256": "a".repeat(64)
+            },
+            "title": "Door Legends",
+            "preferences": {
+                "scale": 1.0,
+                "high_contrast": false,
+                "reduced_motion": false,
+                "muted_audio": false
+            },
+            "nodes": [{
+                "kind": "button",
+                "id": "enter",
+                "label": "Enter the brass door",
+                "action": "enter",
+                "accessible_label": "Enter Door Legends"
+            }],
+            "requested_actions_are_unconfirmed": true
+        }
+        controller._handleHelperFinished(77, "cartridge_render", 200, JSON.stringify({
+            "plan": plan,
+            "asset_base_url": "http://127.0.0.1:32123/v1/render-assets/"
+                              + "C".repeat(43)
+        }), "")
+        compare(controller.cartridgeRenderState, "ready")
+        compare(controller.cartridgeRenderPlan.origin.archive_sha256,
+                session.presentation.archive_sha256)
+
+        verify(controller.submitCartridgeAction("enter", {}))
+        compare(controller._pendingMutation.operation, "player_cartridge_action")
+        compare(controller._pendingMutation.path, "/v1/personas/" + controller.actor.id
+                + "/game-sessions/" + session.id + "/cartridge-actions")
+        compare(JSON.stringify(controller._pendingMutation.document), JSON.stringify({
+            "idempotency_key": controller._pendingMutation.document.idempotency_key,
+            "expected_revision": session.revision,
+            "archive_sha256": session.presentation.archive_sha256,
+            "action": "enter",
+            "payload": {}
+        }))
+        controller.sessionController.cancelPlayerRequest()
+        controller._expectedGeneration = 0
+        controller._expectedOperation = ""
+        controller._pendingMutation = null
+    }
 }

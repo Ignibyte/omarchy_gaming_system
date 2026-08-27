@@ -99,6 +99,9 @@ and in this register.
 | `PR-omarchy-gaming-system-treat-discovery-capabilities-as-exact-contract-001` | When an implemented capability is added or removed, update every exact discovery-document fixture and capability consumer in the same change, then run the real migrated discovery test. | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
 | `PR-omarchy-gaming-system-test-reserved-prefix-interiors-at-shared-egress-boundary-001` | Deny complete special-purpose address prefixes in the shared production egress classifier and keep representative interior addresses in its direct regression corpus. | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
 | `PR-omarchy-gaming-system-preflight-isolated-build-storage-001` | Before a gate compiles an independent clean-clone source tree, verify that the filesystem backing its temporary target has enough headroom and remove only scoped rebuildable caches when it does not. | `aar/AAR-032-marketplace-sync-and-server-catalog-control.md` |
+| `PR-omarchy-gaming-system-bind-profile-mounts-to-origin-and-server-001` | Bind a client profile mount to both the canonical selected origin and stable server UUID, and reject mixed-origin records inside one UUID profile. | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
+| `PR-omarchy-gaming-system-persist-action-admission-before-external-effects-001` | Linearize mutable lifecycle authorization into an immutable exact action admission before compiled execution or provider I/O, and resolve exact replay before current-policy denial. | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
+| `PR-omarchy-gaming-system-render-only-from-accepted-plan-state-001` | After validating a render envelope, every presenter, metric, assertion, and component loader must consume only retained accepted plan state, never the raw input property. | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
 
 ## Register
 
@@ -336,3 +339,11 @@ and in this register.
 | `AD-omarchy-gaming-system-client-controlled-marketplace-trust-and-profile-mounts-001` | decision | `../../architecture/game-cartridges.md`; `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md` |
 | `BF-omarchy-gaming-system-completed-spec-status-enum-drift-001` | failure | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
 | `PR-omarchy-gaming-system-use-exact-pipeline-status-enum-001` | rule | `aar/AAR-033-player-cartridge-acquisition-cache-and-mount-lifecycle.md` |
+| `BF-omarchy-gaming-system-render-mount-origin-substitution-001` | failure | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
+| `BF-omarchy-gaming-system-compiled-cartridge-action-lifecycle-race-001` | failure | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
+| `BF-omarchy-gaming-system-provider-cartridge-retry-lifecycle-race-001` | failure | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
+| `BF-omarchy-gaming-system-trusted-preview-raw-plan-authority-drift-001` | failure | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
+| `PR-omarchy-gaming-system-bind-profile-mounts-to-origin-and-server-001` | rule | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
+| `PR-omarchy-gaming-system-persist-action-admission-before-external-effects-001` | rule | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
+| `PR-omarchy-gaming-system-render-only-from-accepted-plan-state-001` | rule | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
+| `AD-omarchy-gaming-system-session-pinned-cartridge-gameplay-boundary-001` | decision | `../../architecture/game-cartridges.md`; `../../architecture/system-overview.md` |

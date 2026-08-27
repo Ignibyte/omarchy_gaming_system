@@ -10,11 +10,87 @@ use crate::{
         MAX_GRID_SIDE, MAX_JSON_BYTES, MAX_LOCALE_BYTES, MAX_LOCALIZATION_ENTRIES,
         MAX_LOCALIZED_VALUE_CHARS, MAX_PRESENTATION_NODES, MAX_RASTER_DIMENSION, MAX_RASTER_PIXELS,
         MAX_SCHEMA_BYTES, MAX_SCHEMA_DEPTH, MAX_SCHEMA_NODES, MAX_SCREENS, OptionalCapability,
-        PRESENTATION_VERSION, Presentation, PresentationNode,
+        PRESENTATION_VERSION, Presentation, PresentationNode, VerifiedCartridge,
     },
     error::{CartridgeError, Result},
     keys::valid_identifier,
 };
+
+/// Validate an untrusted action request against the exact signed entry-screen
+/// emitter contract. Cartridges remain inert data: callers receive no general
+/// expression, script, filesystem, credential, or network execution path.
+pub fn validate_entry_screen_action(
+    cartridge: &VerifiedCartridge,
+    action: &str,
+    payload: &serde_json::Value,
+) -> Result<()> {
+    validate_action_contract(
+        cartridge.presentation(),
+        &cartridge.manifest().entry_screen,
+        action,
+        payload,
+    )
+}
+
+fn validate_action_contract(
+    presentation: &Presentation,
+    entry_screen_id: &str,
+    action: &str,
+    payload: &serde_json::Value,
+) -> Result<()> {
+    let entry_screen = presentation
+        .screens
+        .iter()
+        .find(|screen| screen.id == entry_screen_id)
+        .ok_or(CartridgeError::InvalidPresentation)?;
+    let definition = presentation
+        .actions
+        .iter()
+        .find(|definition| definition.id == action)
+        .ok_or(CartridgeError::InvalidPresentation)?;
+    let object = payload
+        .as_object()
+        .ok_or(CartridgeError::InvalidPresentation)?;
+
+    let mut matching_emitter = false;
+    for node in &entry_screen.nodes {
+        match node {
+            PresentationNode::Button {
+                action: node_action,
+                ..
+            } if node_action == action => {
+                matching_emitter = definition.payload_fields.is_empty() && object.is_empty();
+            }
+            PresentationNode::Grid {
+                action: node_action,
+                rows,
+                columns,
+                ..
+            } if node_action == action => {
+                let exact_fields = definition
+                    .payload_fields
+                    .iter()
+                    .map(String::as_str)
+                    .eq(["column", "row"])
+                    && object.len() == 2
+                    && object.contains_key("column")
+                    && object.contains_key("row");
+                let in_bounds = object
+                    .get("column")
+                    .and_then(serde_json::Value::as_u64)
+                    .zip(object.get("row").and_then(serde_json::Value::as_u64))
+                    .is_some_and(|(column, row)| {
+                        column < u64::from(*columns) && row < u64::from(*rows)
+                    });
+                matching_emitter |= exact_fields && in_bounds;
+            }
+            _ => {}
+        }
+    }
+    matching_emitter
+        .then_some(())
+        .ok_or(CartridgeError::InvalidPresentation)
+}
 
 pub(crate) fn parse_json<T: DeserializeOwned>(bytes: &[u8], limit: usize) -> Result<T> {
     if bytes.len() > limit {
@@ -970,4 +1046,92 @@ pub(crate) fn descriptors_by_path(
         .iter()
         .map(|descriptor| (descriptor.path.as_str(), descriptor))
         .collect()
+}
+
+#[cfg(test)]
+mod action_tests {
+    use serde_json::json;
+
+    use super::*;
+
+    fn presentation() -> Presentation {
+        Presentation {
+            format_version: 1,
+            screens: vec![
+                crate::Screen {
+                    id: "entry".to_owned(),
+                    title: "Entry".to_owned(),
+                    view_schema: "schemas/entry.json".to_owned(),
+                    nodes: vec![
+                        PresentationNode::Button {
+                            id: "enter-button".to_owned(),
+                            label_binding: "enter_label".to_owned(),
+                            action: "enter".to_owned(),
+                            accessible_label: "Enter".to_owned(),
+                        },
+                        PresentationNode::Grid {
+                            id: "board".to_owned(),
+                            rows: 2,
+                            columns: 3,
+                            cells_binding: "cells".to_owned(),
+                            action: "move".to_owned(),
+                            accessible_label: "Board".to_owned(),
+                        },
+                    ],
+                },
+                crate::Screen {
+                    id: "later".to_owned(),
+                    title: "Later".to_owned(),
+                    view_schema: "schemas/later.json".to_owned(),
+                    nodes: vec![PresentationNode::Button {
+                        id: "later-button".to_owned(),
+                        label_binding: "label".to_owned(),
+                        action: "later".to_owned(),
+                        accessible_label: "Later".to_owned(),
+                    }],
+                },
+            ],
+            actions: vec![
+                ActionDefinition {
+                    id: "enter".to_owned(),
+                    payload_fields: vec![],
+                },
+                ActionDefinition {
+                    id: "move".to_owned(),
+                    payload_fields: vec!["column".to_owned(), "row".to_owned()],
+                },
+                ActionDefinition {
+                    id: "later".to_owned(),
+                    payload_fields: vec![],
+                },
+            ],
+        }
+    }
+
+    #[test]
+    fn entry_action_validation_is_exact_and_grid_bounded() {
+        let presentation = presentation();
+        assert!(validate_action_contract(&presentation, "entry", "enter", &json!({})).is_ok());
+        assert!(
+            validate_action_contract(
+                &presentation,
+                "entry",
+                "move",
+                &json!({"column": 2, "row": 1})
+            )
+            .is_ok()
+        );
+        for rejected in [
+            ("enter", json!({"extra": true})),
+            ("move", json!({"column": 3, "row": 1})),
+            ("move", json!({"column": 1, "row": -1})),
+            ("move", json!({"column": 1, "row": 0, "extra": 1})),
+            ("later", json!({})),
+            ("unknown", json!({})),
+        ] {
+            assert!(
+                validate_action_contract(&presentation, "entry", rejected.0, &rejected.1).is_err()
+            );
+        }
+    }
 }

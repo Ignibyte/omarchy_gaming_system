@@ -34,3 +34,4 @@ pub use release::*;
 pub use sdk::*;
 pub use secure_store::*;
 pub use store::{install_cartridge, resolve_active_cartridge, revoke_cartridge};
+pub use validate::validate_entry_screen_action;

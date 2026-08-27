@@ -15,6 +15,9 @@ use omarchy_game_provider::{
     },
     registry::ProviderRegistry,
 };
+use omarchy_gaming_system_server::{
+    cartridge_distribution::CartridgeDistributionRuntime, session_cartridges,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 use sqlx::{FromRow, PgPool, Postgres, Transaction, types::Json};
@@ -76,6 +79,7 @@ pub(crate) struct ProviderGameManifest {
     pub min_human_players: u8,
     pub max_human_players: u8,
     pub release_id: Uuid,
+    pub cartridge_digest: String,
 }
 
 #[derive(Debug, Serialize, PartialEq)]
@@ -106,6 +110,7 @@ struct PilotManifestRow {
     min_human_players: i16,
     max_human_players: i16,
     release_id: Uuid,
+    cartridge_digest: String,
 }
 
 #[derive(FromRow)]
@@ -161,7 +166,8 @@ pub(crate) async fn active_catalog(pool: &PgPool) -> Result<Vec<ProviderGameMani
             pilot.display_name,
             pilot.min_human_players,
             pilot.max_human_players,
-            release.release_id
+            release.release_id,
+            release.cartridge_digest
         FROM provider_game_pilots AS pilot
         JOIN provider_releases AS release ON release.release_id = pilot.release_id
         JOIN provider_registrations AS provider ON provider.provider_id = release.provider_id
@@ -194,6 +200,7 @@ pub(crate) async fn is_provider_session(
 pub(crate) async fn start_solo_session(
     pool: &PgPool,
     runtime: &ProviderRuntime,
+    cartridge_distribution: Option<&CartridgeDistributionRuntime>,
     token: &str,
     actor_id: &str,
     input: StartGameSessionInput,
@@ -304,6 +311,18 @@ pub(crate) async fn start_solo_session(
         .execute(&mut *transaction)
         .await
         .map_err(|error| database_error(error, "insert provider session participant"))?;
+        if let Some(distribution) = cartridge_distribution {
+            session_cartridges::pin_new_session(
+                &mut transaction,
+                distribution,
+                session_id,
+                &pilot.key,
+                pilot.version,
+                Some(&pilot.cartridge_digest),
+            )
+            .await
+            .map_err(|_| GameError::CartridgeUnavailable)?;
+        }
         sqlx::query(
             r#"
             INSERT INTO game_session_starts (
@@ -1030,7 +1049,8 @@ async fn load_active_manifest(
             pilot.display_name,
             pilot.min_human_players,
             pilot.max_human_players,
-            release.release_id
+            release.release_id,
+            release.cartridge_digest
         FROM provider_game_pilots AS pilot
         JOIN provider_releases AS release ON release.release_id = pilot.release_id
         JOIN provider_registrations AS provider ON provider.provider_id = release.provider_id
@@ -1058,6 +1078,7 @@ fn convert_manifest(row: PilotManifestRow) -> Result<ProviderGameManifest, GameE
         min_human_players: u8::try_from(row.min_human_players).map_err(|_| GameError::Internal)?,
         max_human_players: u8::try_from(row.max_human_players).map_err(|_| GameError::Internal)?,
         release_id: row.release_id,
+        cartridge_digest: row.cartridge_digest,
     })
 }
 

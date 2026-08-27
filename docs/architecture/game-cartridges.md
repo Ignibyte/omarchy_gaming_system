@@ -22,8 +22,12 @@ authenticated metadata-only cartridge catalog. Ticket 033 retains the exact
 signed snapshot evidence, adds authenticated exact server distribution, and
 ships a loopback Rust client companion for independent acquisition verification,
 content-addressed cache staging, server-profile mounts, explicit update, and
-local removal. Binding a mounted render plan to an authoritative live session
-remains a gated follow-up.
+local removal. Ticket 034 adds immutable exact session-presentation pins,
+same-user companion compilation from the matching mount, trusted QML gameplay,
+bounded ephemeral asset authority, and durable server-authorized cartridge
+actions for both existing rules-authority paths. Door Legends is the first
+complete portable playable. Historical-mount auto-acquisition and multi-screen
+navigation remain gated follow-ups.
 [`ADR-0003`](adr-0003-owner-operated-server-and-extension-boundary.md) now
 accepts the owner-operated server, server-curated marketplace, operator-custom
 trust, future Provider SDK, and separately gated server module/hook direction.
@@ -217,6 +221,10 @@ new cartridge without silently changing an active session.
    Publisher, provider, release, or signing-key revocation can prevent new
    launches independently. Existing sessions follow an explicit suspend,
    migrate, or finish policy rather than silently changing versions.
+10. An eligible new session atomically pins one exact current release and
+    admission revision. That presentation identity is immutable, remains null
+    for legacy or ineligible sessions, and never follows a later catalog
+    selection.
 
 The Ticket 015 filesystem store is a same-user local-development boundary, not
 a privileged or multi-user installer. It rejects direct links and unexpected
@@ -273,6 +281,15 @@ sync, no-follow opens, and atomic rename. A failed install/update never replaces
 the prior mount; removal deletes only the exact local mount and deliberately
 retains shared content. QML receives only bounded catalog/mount facts and
 explicit operations; cartridge-supplied QML or networking remains impossible.
+For live gameplay, the companion additionally requires the selected canonical
+server origin and UUID, the session's exact digest and admission revision, the
+profile's client-trusted marketplace-key fingerprint, the privately retained
+publisher key, and current signed active-session policy. It compiles only the
+signed entry screen against the authoritative REST view. Digest-named PNG/WAV
+assets remain in a bounded in-memory cache behind a random per-plan loopback
+capability, exact Host validation, allowlisted media types, and no-store
+responses. QML receives no cache path, publisher code, marketplace selector,
+provider endpoint, or gameplay credential.
 The root and every fixed child must be owned by the opening process's effective
 user and cannot be writable by group or other. Each policy transition acquires
 an exclusive lock through a fresh descriptor-relative open of the retained
@@ -405,31 +422,47 @@ isolation.
 
 ## Launch and command flow
 
-1. The client reads the platform catalog and selects an approved exact
-   cartridge release.
+1. The player explicitly acquires and mounts one exact server-admitted release
+   under an independently provisioned marketplace trust key.
 2. OmarchyGS authenticates the device session, derives the owned acting
-   persona, enforces social/challenge policy, and creates or resumes the
-   platform session envelope.
-3. The OmarchyGS server contacts only the endpoint stored in the provider
-   registry. A cartridge cannot choose the destination.
-4. OmarchyGS issues a short-lived, audience-restricted grant containing a
-   pairwise provider/game persona subject, platform game-session ID, pinned
-   provider/rules/cartridge identities, minimal scopes, issued/expiry times,
-   and a unique replay identifier. The reusable device-session token and
-   private account ID never cross the boundary.
-5. The provider creates or resumes its durable gameplay session and returns a
-   provider revision plus a schema-validated view model.
-6. The trusted renderer displays that view model through the pinned cartridge.
-7. A player action travels client → OmarchyGS → provider with one idempotency
-   key and expected provider revision. The provider commits or rejects it and
-   returns the resulting revision/view data.
-8. Provider-initiated result, turn, or achievement events return through an
-   authenticated, replay-protected callback. OmarchyGS records the platform
-   envelope/event once and wakes affected personas through the existing cursor
+   persona, enforces launch/challenge policy, creates the platform session
+   envelope, and atomically pins the current exact presentation release and
+   admission revision when one is eligible.
+3. For registered-provider authority, OmarchyGS contacts only the endpoint
+   stored in the provider registry and issues a short-lived grant bound to the
+   audience, pairwise persona subject, session, release, scope, and replay
+   identity. The cartridge cannot choose the destination, and reusable device
+   credentials never cross the boundary.
+4. The participant reads the authoritative session projection. The QML client
+   sends its public server origin/UUID, exact presentation binding, current
+   object view, and trusted preferences to the same-user companion.
+5. The companion resolves only the exact matching mount under current signed
+   active-session policy and compiles the signed entry screen. QML independently
+   validates the returned inert plan and host-created asset capability before
+   instantiating repository-owned components.
+6. A player gesture emits only the signed declarative action and exact shaped
+   payload. The client sends that intent, the pinned archive digest, expected
+   session revision, and idempotency key to OmarchyGS—not to a provider.
+7. OmarchyGS reauthorizes the participant, linearizes against lifecycle change,
+   verifies the exact signed release and entry-screen action, translates the
+   command itself, and stores one immutable admission before dispatching to the
+   session's sole compiled or registered-provider authority.
+8. Existing command idempotency and revision semantics remain authoritative.
+   Exact replay recovers the admitted operation after lifecycle change, while a
+   fresh post-suspension/revocation action is denied. The client refetches REST
+   truth rather than inventing state.
+9. Provider-initiated result, turn, or achievement events still return through
+   the authenticated replay-protected callback. OmarchyGS records their bounded
+   platform effect once and wakes affected personas through the existing cursor
    sync boundary.
 
 ### Failure, retry, and reconciliation contract
 
+- Cartridge action admission is a short database transaction that ends before
+  compiled execution or provider network I/O. It records actor, exact session
+  revision, release and policy identity, signed action/payload, translated
+  command, and authority under the marketplace lifecycle lock. This is the
+  durable authorization point for an exact uncertain retry.
 - A platform command receives one durable idempotency key and expected
   provider revision before the outbound request. A timeout is **unknown**, not
   failure; OmarchyGS retries the same command and idempotency key with a fresh
@@ -546,6 +579,8 @@ publisher rendering code.
 |---|---|---|
 | Ticket 015 local contract | Carry signed `terminal`, `grid`, and `status` screens, schemas, localization, strict 8-bit PNG assets, and PCM WAV assets; prove host compatibility and install as inert bytes | No rendering in the Ticket 015 slice; no provider network |
 | Ticket 016 trusted renderer | Compile schema-valid views into Core `terminal/grid/status/button/image/meter` or Rich-2D `sprite/particle_field/audio_cue` plans; render through platform-owned QML with measured bounds, keyboard/accessibility states, fallbacks, and an isolated production previewer | No publisher QML/JS, expression language, Canvas, shader code, WebEngine, video, 3D, provider network, or confirmed game mutation |
+| Ticket 033 player mount | Acquire and independently verify one exact admitted release, retain immutable content privately, and mount it under an exact server origin/UUID profile | A mount alone creates no session, presentation authority, or game mutation |
+| Ticket 034 trusted gameplay | Pin one exact admitted release to an eligible session, compile its mounted signed entry screen, render through trusted QML, and route declared actions through durable OmarchyGS authorization | No historical auto-download, multi-screen navigation, publisher executable code, direct provider networking, or arbitrary URL |
 | Later reviewed profiles | Add Advanced 2D/2.5D host primitives and possibly constrained 3D assets/scenes when separate hardware, decoder, dependency, and threat reviews pass | No promise of a general engine or arbitrary third-party execution |
 
 This staging makes graphics additive. A new renderer primitive becomes a
@@ -769,12 +804,15 @@ authority and policy decisions remain Ticket 019 work.
    start/command/reconcile APIs, atomic result/achievement callbacks, explicit
    availability/lifecycle states, and a separately built Door Legends TLS
    process with its own PostgreSQL database and callback outbox.
-4. **Owner-operated catalog — server half implemented:** Ticket 032 lets an
+4. **Owner-operated catalog and player launch — implemented:** Tickets 032–034
+   let an
    administrator synchronize one pinned vetted marketplace, stage exact
    releases, independently activate/deactivate/upgrade/rollback them with
-   audit, and expose server-scoped authenticated metadata. Player
-   download/cache/mount/launch of those inert packages remains the acquisition
-   half of this stage.
+   audit, expose server-scoped authenticated metadata, distribute the exact
+   selected release, and let the independently trusting client cache/mount it.
+   Eligible sessions then pin that exact release, compile the signed entry
+   screen, and route declared actions back through OmarchyGS. Historical-mount
+   auto-acquisition and multi-screen navigation remain separate follow-ups.
 5. **Public backend SDK:** package the provider protocol as a supported starter
    server, versioned SDK, conformance suite, and operations contract.
 6. **Operator-custom trust:** add local cartridge signing/import, explicit

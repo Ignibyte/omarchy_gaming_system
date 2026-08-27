@@ -63,8 +63,11 @@ server-authoritative game runtime below.
   mounting, update, and removal of the selected server's signed cartridges
 - [ ] Public marketplace trust-key enrollment, authenticated rotation, and
   reviewed package-channel distribution for player clients
-- [ ] Bind an exact mounted cartridge/render plan to an authoritative game
-  session and replace first-party platform-owned screens where appropriate
+- [x] Bind exact admitted cartridges to authoritative sessions, compile matching
+  mounted entry screens into trusted plans, and route declared actions through
+  the session's existing compiled or registered-provider authority
+- [ ] Add historical-release acquisition and multi-screen cartridge navigation
+  without silently substituting the server's current catalog selection
 - [ ] Operator-local signing/import for inert custom cartridges that bypass the
   marketplace while remaining visibly distinct from vetted releases
 - [ ] Server extension architecture spike comparing external-process RPC,

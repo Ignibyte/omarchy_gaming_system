@@ -209,6 +209,32 @@ async fn command_route_rejects_oversized_bodies_before_database_work() {
 
     assert_eq!(oversized.status, StatusCode::PAYLOAD_TOO_LARGE);
     assert_no_store(&oversized);
+
+    let cartridge_path = format!(
+        "/v1/personas/{}/game-sessions/{}/cartridge-actions",
+        Uuid::nil(),
+        Uuid::nil()
+    );
+    let oversized_cartridge = request_json(
+        router(
+            PgPoolOptions::new()
+                .connect_lazy("postgres://test:test@127.0.0.1:5432/test")
+                .expect("test database URL should parse without connecting"),
+            MfaCipher::test_cipher(),
+        ),
+        &cartridge_path,
+        "not-consulted-before-the-body-limit",
+        json!({
+            "idempotency_key": command_key(2),
+            "expected_revision": 0,
+            "archive_sha256": "a".repeat(64),
+            "action": "enter",
+            "payload": {"padding": "x".repeat(33 * 1024)}
+        }),
+    )
+    .await;
+    assert_eq!(oversized_cartridge.status, StatusCode::PAYLOAD_TOO_LARGE);
+    assert_no_store(&oversized_cartridge);
 }
 
 #[sqlx::test(migrations = "../../migrations")]

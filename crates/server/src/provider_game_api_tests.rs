@@ -45,7 +45,8 @@ use uuid::Uuid;
 
 use crate::{
     accounts::{self, RegistrationInput},
-    app::router_with_provider_runtime,
+    app::router_with_runtimes,
+    cartridge_catalog_api_tests::acquisition_fixture,
     mfa::MfaCipher,
     personas::{self, CreatePersonaInput},
     provider_games::ProviderRuntime,
@@ -57,8 +58,6 @@ const PROVIDER_ID: &str = "ignibyte";
 const PROVIDER_HOST: &str = "provider.example.test";
 const CALLBACK_HOST: &str = "callbacks.example.test";
 const RELEASE_ID: Uuid = Uuid::from_u128(0x19191919191919191919191919191919);
-const CARTRIDGE_DIGEST: &str = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
-
 struct TestPersona {
     id: Uuid,
     token: String,
@@ -106,6 +105,8 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         return;
     };
     let _ = rustls::crypto::ring::default_provider().install_default();
+    let cartridge_fixture = acquisition_fixture(&pool).await;
+    let cartridge_digest = cartridge_fixture.admission.archive_sha256.clone();
     let temp = TempDir::new().expect("test temp directory should create");
     let provider_address = unused_address();
     let callback_address = unused_address();
@@ -139,6 +140,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         provider_address,
         provider_certificate.der(),
         provider_message_key.as_bytes(),
+        &cartridge_digest,
     )
     .await;
     let broker = ProviderBroker::conformance_loopback(
@@ -148,12 +150,13 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         provider_address,
     );
     let runtime = ProviderRuntime::for_broker(broker, &callback_authority);
-    let app = router_with_provider_runtime(
+    let app = router_with_runtimes(
         pool.clone(),
         MfaCipher::test_cipher(),
         SyncHub::new(),
         GameRegistry::empty(),
         Some(runtime),
+        Some(cartridge_fixture.runtime.clone()),
         std::sync::Arc::from(crate::config::DEFAULT_SERVER_NAME),
     );
     let callback_server = spawn_callback_server(
@@ -176,6 +179,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         provider_message_seed,
         [31_u8; 32],
         [33_u8; 32],
+        &cartridge_digest,
         None,
     )
     .await;
@@ -217,6 +221,21 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
     assert_eq!(start.json()["authority"], "registered_provider");
     assert_eq!(start.json()["availability"], "ready");
     assert_eq!(start.json()["state"]["enter_label"], "Enter the brass door");
+    assert_eq!(
+        start.json()["presentation"],
+        json!({
+            "format": "omarchygs.session-cartridge/v1",
+            "publisher_id": "ignibyte",
+            "game_key": "door-legends",
+            "rules_version": 1,
+            "cartridge_version": 1,
+            "archive_sha256": cartridge_digest,
+            "signed_identity_sha256": cartridge_fixture.admission.signed_identity_sha256,
+            "admission_revision": cartridge_fixture.admission.admission_revision,
+            "lifecycle_status": "active",
+            "active_session_policy": "continue"
+        })
+    );
     assert_private(&start.body);
     let replay = request_json(
         app.clone(),
@@ -231,6 +250,30 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
     .await;
     assert_eq!(replay.status, StatusCode::OK);
     assert_eq!(replay.json()["id"], session_id.to_string());
+    let pinned: (String, i64, i64) = sqlx::query_as(
+        r#"
+        SELECT release.archive_sha256,
+               presentation.admission_revision,
+               count(*) OVER ()
+        FROM game_session_cartridge_presentations AS presentation
+        JOIN marketplace_releases AS release
+          ON release.id = presentation.marketplace_release_id
+        WHERE presentation.game_session_id = $1
+        "#,
+    )
+    .bind(session_id)
+    .fetch_one(&pool)
+    .await
+    .expect("exact session cartridge should remain pinned");
+    assert_eq!(pinned.0, cartridge_digest);
+    assert_eq!(
+        u64::try_from(pinned.1).expect("revision should fit"),
+        cartridge_fixture.admission.admission_revision
+    );
+    assert_eq!(
+        pinned.2, 1,
+        "start replay must not create or repin a cartridge"
+    );
 
     let platform_authority: (String, Option<Value>, Uuid) = sqlx::query_as(
         "SELECT authority, state, provider_release_id FROM game_sessions WHERE id = $1",
@@ -245,6 +288,32 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         "platform must not store rules state"
     );
     assert_eq!(platform_authority.2, RELEASE_ID);
+    assert!(
+        sqlx::query("UPDATE game_sessions SET game_key = 'signal_siege' WHERE id = $1")
+            .bind(session_id)
+            .execute(&pool)
+            .await
+            .is_err(),
+        "a cartridge-bound session identity must be immutable"
+    );
+    assert!(
+        sqlx::query(
+            "UPDATE game_session_cartridge_presentations SET admission_revision = admission_revision + 1 WHERE game_session_id = $1",
+        )
+        .bind(session_id)
+        .execute(&pool)
+        .await
+        .is_err(),
+        "the exact session cartridge pin must be immutable"
+    );
+    assert!(
+        sqlx::query("DELETE FROM game_session_cartridge_presentations WHERE game_session_id = $1",)
+            .bind(session_id)
+            .execute(&pool)
+            .await
+            .is_err(),
+        "a session cartridge pin must not be removable"
+    );
 
     let foreign = request(
         app.clone(),
@@ -257,9 +326,58 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
 
     let command_key = Uuid::new_v4();
     let command_path = format!(
-        "/v1/personas/{}/game-sessions/{session_id}/commands",
+        "/v1/personas/{}/game-sessions/{session_id}/cartridge-actions",
         alice.id
     );
+    let wrong_digest = request_json(
+        app.clone(),
+        &command_path,
+        &alice.token,
+        json!({
+            "idempotency_key": Uuid::new_v4(),
+            "expected_revision": 0,
+            "archive_sha256": "f".repeat(64),
+            "action": "enter",
+            "payload": {}
+        }),
+    )
+    .await;
+    assert_eq!(wrong_digest.status, StatusCode::CONFLICT);
+    assert_eq!(
+        wrong_digest.json()["error"]["code"],
+        "session_cartridge_unavailable"
+    );
+    let undeclared_payload = request_json(
+        app.clone(),
+        &command_path,
+        &alice.token,
+        json!({
+            "idempotency_key": Uuid::new_v4(),
+            "expected_revision": 0,
+            "archive_sha256": cartridge_digest,
+            "action": "enter",
+            "payload": {"credential": "not-forwarded"}
+        }),
+    )
+    .await;
+    assert_eq!(undeclared_payload.status, StatusCode::CONFLICT);
+    let foreign_action = request_json(
+        app.clone(),
+        &format!(
+            "/v1/personas/{}/game-sessions/{session_id}/cartridge-actions",
+            stranger.id
+        ),
+        &stranger.token,
+        json!({
+            "idempotency_key": Uuid::new_v4(),
+            "expected_revision": 0,
+            "archive_sha256": cartridge_digest,
+            "action": "enter",
+            "payload": {}
+        }),
+    )
+    .await;
+    assert_eq!(foreign_action.status, StatusCode::NOT_FOUND);
     let command = request_json(
         app.clone(),
         &command_path,
@@ -267,7 +385,9 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         json!({
             "idempotency_key": command_key,
             "expected_revision": 0,
-            "command": {"action": "enter"}
+            "archive_sha256": cartridge_digest,
+            "action": "enter",
+            "payload": {}
         }),
     )
     .await;
@@ -275,6 +395,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
     assert_eq!(command.json()["revision"], 1);
     assert_eq!(command.json()["status"], "completed");
     assert_eq!(command.json()["authority"], "registered_provider");
+    assert_eq!(command.json()["archive_sha256"], cartridge_digest);
     assert_private(&command.body);
     let command_replay = request_json(
         app.clone(),
@@ -283,12 +404,71 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         json!({
             "idempotency_key": command_key,
             "expected_revision": 0,
-            "command": {"action": "enter"}
+            "archive_sha256": cartridge_digest,
+            "action": "enter",
+            "payload": {}
         }),
     )
     .await;
     assert_eq!(command_replay.status, StatusCode::OK);
     assert_eq!(command_replay.json()["revision"], 1);
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_session_cartridge_action_admissions WHERE game_session_id = $1",
+        )
+        .bind(session_id)
+        .fetch_one(&pool)
+        .await
+        .expect("provider cartridge admission count should read"),
+        1,
+        "provider replay must reuse one durable cartridge admission"
+    );
+    let mut lifecycle_writer = pool.begin().await.expect("lifecycle writer should begin");
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(omarchy_gaming_system_server::cartridge_catalog::SNAPSHOT_ADVISORY_LOCK)
+        .execute(&mut *lifecycle_writer)
+        .await
+        .expect("lifecycle writer should lock");
+    sqlx::query(
+        r#"
+        UPDATE marketplace_releases
+        SET signed_policy = $1,
+            policy_version = 2,
+            policy_status = 'suspended',
+            policy_reason = 'Review paused.',
+            updated_at = clock_timestamp()
+        WHERE archive_sha256 = $2
+        "#,
+    )
+    .bind(sqlx::types::Json(&cartridge_fixture.suspended_policy))
+    .bind(&cartridge_digest)
+    .execute(&mut *lifecycle_writer)
+    .await
+    .expect("valid suspended lifecycle should stage");
+    lifecycle_writer
+        .commit()
+        .await
+        .expect("valid suspended lifecycle should commit");
+    let post_suspension_replay = request_json(
+        app.clone(),
+        &command_path,
+        &alice.token,
+        json!({
+            "idempotency_key": command_key,
+            "expected_revision": 0,
+            "archive_sha256": cartridge_digest,
+            "action": "enter",
+            "payload": {}
+        }),
+    )
+    .await;
+    assert_eq!(
+        post_suspension_replay.status,
+        StatusCode::OK,
+        "{}",
+        post_suspension_replay.body
+    );
+    assert_eq!(post_suspension_replay.json()["revision"], 1);
 
     let provider_pool = PgPoolOptions::new()
         .max_connections(2)
@@ -332,7 +512,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         RELEASE_ID,
         "door-legends".to_owned(),
         1,
-        CARTRIDGE_DIGEST.to_owned(),
+        cartridge_digest.clone(),
         session_id,
         pairwise_subject(&[32_u8; 32], PROVIDER_ID, "door-legends", alice.id)
             .expect("pairwise callback subject should derive"),
@@ -470,6 +650,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         provider_message_seed,
         [31_u8; 32],
         [33_u8; 32],
+        &cartridge_digest,
         None,
     )
     .await;
@@ -501,6 +682,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         provider_message_seed,
         [31_u8; 32],
         [33_u8; 32],
+        &cartridge_digest,
         Some(3_500),
     )
     .await;
@@ -547,6 +729,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         provider_message_seed,
         [31_u8; 32],
         [33_u8; 32],
+        &cartridge_digest,
         None,
     )
     .await;
@@ -714,7 +897,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         RELEASE_ID,
         "door-legends".to_owned(),
         1,
-        CARTRIDGE_DIGEST.to_owned(),
+        cartridge_digest.clone(),
         lifecycle_session_id,
         pairwise_subject(&[32_u8; 32], PROVIDER_ID, "door-legends", alice.id)
             .expect("pairwise callback subject should derive"),
@@ -827,6 +1010,7 @@ async fn register_pilot(
     address: SocketAddr,
     certificate_der: &[u8],
     provider_message_key: &[u8; 32],
+    cartridge_digest: &str,
 ) -> ProviderRegistry {
     let now: i64 = sqlx::query_scalar("SELECT EXTRACT(EPOCH FROM clock_timestamp())::BIGINT")
         .fetch_one(pool)
@@ -843,7 +1027,7 @@ async fn register_pilot(
                 release_id: RELEASE_ID,
                 game_key: "door-legends".to_owned(),
                 rules_version: 1,
-                cartridge_digest: CARTRIDGE_DIGEST.to_owned(),
+                cartridge_digest: cartridge_digest.to_owned(),
                 endpoint: ProviderEndpoint {
                     host: PROVIDER_HOST.to_owned(),
                     port: address.port(),
@@ -917,6 +1101,7 @@ async fn spawn_provider(
     provider_seed: [u8; 32],
     grant_seed: [u8; 32],
     message_seed: [u8; 32],
+    cartridge_digest: &str,
     reconcile_response_delay_ms: Option<u64>,
 ) -> ProviderProcess {
     let grant_key = SigningKey::from_bytes(&grant_seed).verifying_key();
@@ -929,7 +1114,7 @@ async fn spawn_provider(
         .env("DOOR_LEGENDS_TLS_CERTIFICATE", certificate_path)
         .env("DOOR_LEGENDS_TLS_PRIVATE_KEY", private_key_path)
         .env("DOOR_LEGENDS_RELEASE_ID", RELEASE_ID.to_string())
-        .env("DOOR_LEGENDS_CARTRIDGE_DIGEST", CARTRIDGE_DIGEST)
+        .env("DOOR_LEGENDS_CARTRIDGE_DIGEST", cartridge_digest)
         .env("DOOR_LEGENDS_AUTHORITY", authority)
         .env(
             "OGS_PROVIDER_GRANT_PUBLIC_KEY",

@@ -9,7 +9,7 @@ use sha2::{Digest as _, Sha256};
 use sqlx::{FromRow, PgPool, Postgres, Transaction, types::Json};
 use uuid::Uuid;
 
-const SNAPSHOT_ADVISORY_LOCK: i64 = 0x4f47_534d_4152_4b54;
+pub const SNAPSHOT_ADVISORY_LOCK: i64 = 0x4f47_534d_4152_4b54;
 const MAX_INVENTORY_RELEASES: i64 = 512;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

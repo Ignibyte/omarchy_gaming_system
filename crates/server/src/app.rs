@@ -46,6 +46,9 @@ use omarchy_gaming_system_server::cartridge_catalog::{self, CatalogError, Player
 use omarchy_gaming_system_server::cartridge_distribution::{
     self, CartridgeDistributionRuntime, DistributionError,
 };
+use omarchy_gaming_system_server::session_cartridges::{
+    self, SessionCartridgeError, SessionCartridgePresentation,
+};
 
 const SYNC_SOCKET_MAX_CLIENT_BYTES: usize = 1024;
 
@@ -432,6 +435,7 @@ struct GameSessionResponse {
     authority: String,
     provider_release_id: Option<String>,
     availability: Option<String>,
+    presentation: Option<SessionCartridgePresentation>,
     result: Option<GameResultResponse>,
     participants: Vec<GameParticipantResponse>,
     completed_at: Option<String>,
@@ -470,6 +474,28 @@ struct GameCommandResponse {
     authority: String,
     provider_release_id: Option<String>,
     availability: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CartridgeActionRequest {
+    idempotency_key: String,
+    expected_revision: i64,
+    archive_sha256: String,
+    action: String,
+    payload: serde_json::Value,
+}
+
+#[derive(Serialize)]
+struct CartridgeActionResponse {
+    game_session_id: String,
+    revision: i64,
+    status: String,
+    state: serde_json::Value,
+    authority: String,
+    provider_release_id: Option<String>,
+    availability: Option<String>,
+    archive_sha256: String,
 }
 
 #[derive(Deserialize)]
@@ -691,6 +717,10 @@ pub(crate) fn router_with_runtimes(
         .route(
             "/v1/personas/{persona_id}/game-sessions/{game_session_id}/commands",
             post(apply_game_command).layer(DefaultBodyLimit::max(32 * 1024)),
+        )
+        .route(
+            "/v1/personas/{persona_id}/game-sessions/{game_session_id}/cartridge-actions",
+            post(apply_cartridge_action).layer(DefaultBodyLimit::max(32 * 1024)),
         )
         .route(
             "/v1/personas/{persona_id}/game-sessions/{game_session_id}/reconcile",
@@ -1471,9 +1501,16 @@ async fn start_game_session(
         game_version: request.game_version,
     };
     let outcome = if let Some(runtime) = &state.provider_runtime {
-        match provider_games::start_solo_session(&state.pool, runtime, token, &persona_id, input)
-            .await
-            .map_err(ApiError::Game)?
+        match provider_games::start_solo_session(
+            &state.pool,
+            runtime,
+            state.cartridge_distribution.as_ref(),
+            token,
+            &persona_id,
+            input,
+        )
+        .await
+        .map_err(ApiError::Game)?
         {
             Some(outcome) => outcome,
             None => {
@@ -1484,6 +1521,7 @@ async fn start_game_session(
         games::start_solo_session(
             &state.pool,
             &state.game_registry,
+            state.cartridge_distribution.as_ref(),
             token,
             &persona_id,
             StartGameSessionInput {
@@ -1514,6 +1552,7 @@ async fn start_compiled_game_session(
     let outcome = games::start_solo_session(
         &state.pool,
         &state.game_registry,
+        state.cartridge_distribution.as_ref(),
         token,
         &persona_id,
         StartGameSessionInput {
@@ -1594,6 +1633,75 @@ async fn apply_game_command(
 
     Ok(no_store(
         Json(game_command_response(result)).into_response(),
+    ))
+}
+
+async fn apply_cartridge_action(
+    State(state): State<AppState>,
+    Path((persona_id, game_session_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(request): Json<CartridgeActionRequest>,
+) -> Result<Response, ApiError> {
+    let token = bearer_token(&headers)?;
+    let actor_id = games::authenticate_owned_persona(&state.pool, token, &persona_id)
+        .await
+        .map_err(ApiError::Game)?;
+    let session_id = Uuid::try_parse(&game_session_id)
+        .map_err(|_| ApiError::Game(GameError::GameSessionNotFound))?;
+    let runtime = state
+        .cartridge_distribution
+        .as_ref()
+        .ok_or(ApiError::Game(GameError::CartridgeUnavailable))?;
+    let idempotency_key = Uuid::try_parse(&request.idempotency_key)
+        .map_err(|_| ApiError::Game(GameError::InvalidCommand))?;
+    let validated = session_cartridges::admit_session_action(
+        &state.pool,
+        runtime,
+        actor_id,
+        session_id,
+        idempotency_key,
+        request.expected_revision,
+        &request.archive_sha256,
+        &request.action,
+        &request.payload,
+    )
+    .await
+    .map_err(|error| ApiError::Game(map_session_cartridge_error(error)))?;
+    let input = GameCommandInput {
+        idempotency_key: idempotency_key.to_string(),
+        expected_revision: request.expected_revision,
+        command: validated.command,
+    };
+    let result = if validated.authority == "registered_provider" {
+        let provider_runtime = state
+            .provider_runtime
+            .as_ref()
+            .ok_or(ApiError::Game(GameError::GameUnavailable))?;
+        provider_games::apply_command(
+            &state.pool,
+            provider_runtime,
+            token,
+            &persona_id,
+            &game_session_id,
+            input,
+        )
+        .await
+        .map_err(ApiError::Game)?
+    } else {
+        games::apply_command(
+            &state.pool,
+            &state.game_registry,
+            token,
+            &persona_id,
+            &game_session_id,
+            input,
+        )
+        .await
+        .map_err(ApiError::Game)?
+    };
+
+    Ok(no_store(
+        Json(cartridge_action_response(result, validated.archive_sha256)).into_response(),
     ))
 }
 
@@ -1772,6 +1880,7 @@ async fn accept_game_challenge(
     let challenge = challenges::accept_challenge(
         &state.pool,
         &state.game_registry,
+        state.cartridge_distribution.as_ref(),
         token,
         &persona_id,
         &challenge_id,
@@ -2034,6 +2143,7 @@ fn game_session_response(session: GameSession) -> GameSessionResponse {
             .provider_release_id
             .map(|release_id| release_id.to_string()),
         availability: session.availability,
+        presentation: session.presentation,
         result: session.result.map(|result| GameResultResponse {
             outcome: result.outcome,
             public_summary: result.public_summary,
@@ -2069,6 +2179,36 @@ fn game_command_response(result: GameCommandResult) -> GameCommandResponse {
             .provider_release_id
             .map(|release_id| release_id.to_string()),
         availability: result.availability,
+    }
+}
+
+fn cartridge_action_response(
+    result: GameCommandResult,
+    archive_sha256: String,
+) -> CartridgeActionResponse {
+    CartridgeActionResponse {
+        game_session_id: result.game_session_id.to_string(),
+        revision: result.revision,
+        status: result.status,
+        state: result.state,
+        authority: result.authority,
+        provider_release_id: result
+            .provider_release_id
+            .map(|release_id| release_id.to_string()),
+        availability: result.availability,
+        archive_sha256,
+    }
+}
+
+fn map_session_cartridge_error(error: SessionCartridgeError) -> GameError {
+    match error {
+        SessionCartridgeError::InvalidInput => GameError::InvalidCommand,
+        SessionCartridgeError::NotFound => GameError::GameSessionNotFound,
+        SessionCartridgeError::Denied => GameError::CartridgeUnavailable,
+        SessionCartridgeError::RevisionConflict => GameError::RevisionConflict,
+        SessionCartridgeError::IdempotencyConflict => GameError::IdempotencyConflict,
+        SessionCartridgeError::Completed => GameError::GameCompleted,
+        SessionCartridgeError::Internal => GameError::Internal,
     }
 }
 
@@ -2519,6 +2659,11 @@ impl IntoResponse for ApiError {
                 StatusCode::CONFLICT,
                 "game_unavailable",
                 "the requested game version is unavailable",
+            ),
+            ApiError::Game(GameError::CartridgeUnavailable) => (
+                StatusCode::CONFLICT,
+                "session_cartridge_unavailable",
+                "the exact session cartridge is unavailable or denied",
             ),
             ApiError::Game(GameError::InvalidParticipants) => (
                 StatusCode::UNPROCESSABLE_ENTITY,

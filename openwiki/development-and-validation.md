@@ -7,10 +7,12 @@ sources:
     resource: repo://bin/gate.sh
   - id: openwiki-source-cfb5585994628fc6aaff1dd4
     resource: repo://client/qml/cartridge/nodes/TrustedImageNode.qml
-  - id: openwiki-source-2c2b2efa6ac2e9a064e0f838
-    resource: repo://client/qml/tests/fixture_server.py
+  - id: openwiki-source-fc035ef77d2451c6e8138211
+    resource: repo://client/qml/tests/fixture/tst_accessibility.qml
   - id: openwiki-source-152956378e80408d69d9dfb7
     resource: repo://client/qml/tests/fixture/tst_games.qml
+  - id: openwiki-source-4f6d9bd2b8e769f9585e0296
+    resource: repo://client/qml/tests/fixture/tst_social.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
     resource: repo://client/qml/tests/live/tst_live_onboarding.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
@@ -29,8 +31,6 @@ sources:
     resource: repo://crates/game-provider/tests/registry.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
-  - id: openwiki-source-6e9cbe5bfa9c94fd24523bd3
-    resource: repo://crates/server/src/cartridge_catalog_api_tests.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
     resource: repo://crates/server/src/challenge_api_tests.rs
   - id: openwiki-source-9ba5739252220892895a7a47
@@ -45,8 +45,8 @@ sources:
     resource: repo://crates/server/src/signal_siege_api_tests.rs
   - id: openwiki-source-46fb4135d6a71efad1062c0d
     resource: repo://crates/server/src/sync_api_tests.rs
-  - id: openwiki-source-c909643e4ac6a14f500d178e
-    resource: repo://packaging/arch/PKGBUILD
+  - id: openwiki-source-005a34a3eca7415b5fdce574
+    resource: repo://docs/planning/pipeline/active/operator-reporting-suspension-audit-and-recovery-drill.notes.md
   - id: openwiki-source-6ef5cb9ff978eb09c62cd313
     resource: repo://scripts/build-client-package.sh
   - id: openwiki-source-1951c64828cbf175c78556c4
@@ -75,8 +75,8 @@ sources:
     resource: repo://scripts/test-game-cartridge.sh
   - id: openwiki-source-e08dc6155c081d7928029e27
     resource: repo://scripts/test-operator-recovery.sh
-  - id: openwiki-source-a0a026a4d434d1b48884aa8e
-    resource: repo://scripts/test-private-alpha.sh
+  - id: openwiki-source-31a4e9d026860da100c233f9
+    resource: repo://scripts/test-provider-authority-pilot.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc

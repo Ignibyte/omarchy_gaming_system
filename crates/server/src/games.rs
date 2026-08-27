@@ -3,6 +3,10 @@ use std::collections::{HashMap, HashSet};
 use omarchy_game_runtime::{
     ApplyGameCommandError, GameRegistry, GameSessionStatus, InitializeGameError,
 };
+use omarchy_gaming_system_server::{
+    cartridge_distribution::CartridgeDistributionRuntime,
+    session_cartridges::{self, SessionCartridgePresentation},
+};
 use serde_json::Value;
 use sqlx::{PgPool, Postgres, Transaction, types::Json};
 use tracing::{error, info};
@@ -31,6 +35,7 @@ pub struct GameSession {
     pub authority: String,
     pub provider_release_id: Option<Uuid>,
     pub availability: Option<String>,
+    pub presentation: Option<SessionCartridgePresentation>,
     pub result: Option<GameResult>,
     pub participants: Vec<GameParticipant>,
     pub completed_at: Option<String>,
@@ -91,6 +96,7 @@ pub enum GameError {
     InvalidPagination,
     InvalidStart,
     GameUnavailable,
+    CartridgeUnavailable,
     InvalidParticipants,
     ActiveSessionLimit,
     InitializationFailed,
@@ -115,6 +121,15 @@ struct GameSessionRow {
     provider_release_id: Option<Uuid>,
     provider_availability: Option<String>,
     provider_view: Option<Json<Value>>,
+    presentation_publisher_id: Option<String>,
+    presentation_game_key: Option<String>,
+    presentation_rules_version: Option<i64>,
+    presentation_cartridge_version: Option<i64>,
+    presentation_archive_sha256: Option<String>,
+    presentation_signed_identity_sha256: Option<String>,
+    presentation_admission_revision: Option<i64>,
+    presentation_lifecycle_status: Option<String>,
+    presentation_lifecycle_reason: Option<String>,
     result_outcome: Option<String>,
     result_summary: Option<Json<Value>>,
     result_revision: Option<i64>,
@@ -177,6 +192,25 @@ pub(crate) async fn create_session(
     game_version: u32,
     participant_ids: &[Uuid],
 ) -> Result<Uuid, GameError> {
+    create_session_with_distribution(
+        transaction,
+        registry,
+        None,
+        game_key,
+        game_version,
+        participant_ids,
+    )
+    .await
+}
+
+pub(crate) async fn create_session_with_distribution(
+    transaction: &mut Transaction<'_, Postgres>,
+    registry: &GameRegistry,
+    cartridge_distribution: Option<&CartridgeDistributionRuntime>,
+    game_key: &str,
+    game_version: u32,
+    participant_ids: &[Uuid],
+) -> Result<Uuid, GameError> {
     if participant_ids.is_empty() || participant_ids.len() > MAX_SESSION_PARTICIPANTS {
         return Err(GameError::InvalidParticipants);
     }
@@ -235,6 +269,19 @@ pub(crate) async fn create_session(
         })?;
     }
 
+    if let Some(runtime) = cartridge_distribution {
+        session_cartridges::pin_new_session(
+            transaction,
+            runtime,
+            session_id,
+            &initialized.manifest.key,
+            initialized.manifest.version,
+            None,
+        )
+        .await
+        .map_err(|_| GameError::CartridgeUnavailable)?;
+    }
+
     for persona_id in locked_ids {
         sync::append_event(
             transaction,
@@ -255,6 +302,7 @@ pub(crate) async fn create_session(
 pub async fn start_solo_session(
     pool: &PgPool,
     registry: &GameRegistry,
+    cartridge_distribution: Option<&CartridgeDistributionRuntime>,
     token: &str,
     actor_id: &str,
     input: StartGameSessionInput,
@@ -329,9 +377,10 @@ pub async fn start_solo_session(
         return Err(GameError::ActiveSessionLimit);
     }
 
-    let game_session_id = create_session(
+    let game_session_id = create_session_with_distribution(
         &mut transaction,
         registry,
+        cartridge_distribution,
         &manifest.key,
         manifest.version,
         &[actor_id],
@@ -388,6 +437,15 @@ pub async fn list_sessions(
             session.provider_release_id,
             session.provider_availability,
             view.view AS provider_view,
+            release.publisher_id AS presentation_publisher_id,
+            release.game_key AS presentation_game_key,
+            release.rules_version AS presentation_rules_version,
+            release.cartridge_version AS presentation_cartridge_version,
+            release.archive_sha256 AS presentation_archive_sha256,
+            release.signed_identity_sha256 AS presentation_signed_identity_sha256,
+            presentation.admission_revision AS presentation_admission_revision,
+            release.policy_status AS presentation_lifecycle_status,
+            release.policy_reason AS presentation_lifecycle_reason,
             result.outcome AS result_outcome,
             result.public_summary AS result_summary,
             result.provider_revision AS result_revision,
@@ -404,6 +462,10 @@ pub async fn list_sessions(
           ON actor.game_session_id = session.id AND actor.persona_id = $1
         LEFT JOIN provider_game_session_views AS view ON view.game_session_id = session.id
         LEFT JOIN provider_game_results AS result ON result.game_session_id = session.id
+        LEFT JOIN game_session_cartridge_presentations AS presentation
+          ON presentation.game_session_id = session.id
+        LEFT JOIN marketplace_releases AS release
+          ON release.id = presentation.marketplace_release_id
         ORDER BY session.created_at DESC, session.id DESC
         LIMIT $2
         "#,
@@ -445,6 +507,15 @@ pub(crate) async fn load_session_for_participant(
             session.provider_release_id,
             session.provider_availability,
             view.view AS provider_view,
+            release.publisher_id AS presentation_publisher_id,
+            release.game_key AS presentation_game_key,
+            release.rules_version AS presentation_rules_version,
+            release.cartridge_version AS presentation_cartridge_version,
+            release.archive_sha256 AS presentation_archive_sha256,
+            release.signed_identity_sha256 AS presentation_signed_identity_sha256,
+            presentation.admission_revision AS presentation_admission_revision,
+            release.policy_status AS presentation_lifecycle_status,
+            release.policy_reason AS presentation_lifecycle_reason,
             result.outcome AS result_outcome,
             result.public_summary AS result_summary,
             result.provider_revision AS result_revision,
@@ -461,6 +532,10 @@ pub(crate) async fn load_session_for_participant(
           ON actor.game_session_id = session.id AND actor.persona_id = $1
         LEFT JOIN provider_game_session_views AS view ON view.game_session_id = session.id
         LEFT JOIN provider_game_results AS result ON result.game_session_id = session.id
+        LEFT JOIN game_session_cartridge_presentations AS presentation
+          ON presentation.game_session_id = session.id
+        LEFT JOIN marketplace_releases AS release
+          ON release.id = presentation.marketplace_release_id
         WHERE session.id = $2
         "#,
     )
@@ -757,6 +832,44 @@ async fn load_session_participants(
                 authority: row.authority,
                 provider_release_id: row.provider_release_id,
                 availability: row.provider_availability,
+                presentation: match (
+                    row.presentation_publisher_id,
+                    row.presentation_game_key,
+                    row.presentation_rules_version,
+                    row.presentation_cartridge_version,
+                    row.presentation_archive_sha256,
+                    row.presentation_signed_identity_sha256,
+                    row.presentation_admission_revision,
+                    row.presentation_lifecycle_status,
+                    row.presentation_lifecycle_reason,
+                ) {
+                    (
+                        Some(publisher_id),
+                        Some(game_key),
+                        Some(rules_version),
+                        Some(cartridge_version),
+                        Some(archive_sha256),
+                        Some(signed_identity_sha256),
+                        Some(admission_revision),
+                        Some(lifecycle_status),
+                        Some(lifecycle_reason),
+                    ) => Some(
+                        session_cartridges::project_presentation(
+                            publisher_id,
+                            game_key,
+                            rules_version,
+                            cartridge_version,
+                            archive_sha256,
+                            signed_identity_sha256,
+                            admission_revision,
+                            lifecycle_status,
+                            lifecycle_reason,
+                        )
+                        .map_err(|_| GameError::Internal)?,
+                    ),
+                    (None, None, None, None, None, None, None, None, None) => None,
+                    _ => return Err(GameError::Internal),
+                },
                 result: match (
                     row.result_outcome,
                     row.result_summary,

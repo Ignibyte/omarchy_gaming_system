@@ -3,10 +3,12 @@
 
 mod cache;
 mod remote;
+mod render;
 mod service;
 
 pub use cache::{ClientCartridgeCache, MountRecord};
 pub use remote::{AcquireRequest, acquire};
+pub use render::{RenderRequest, compile_mounted_render_plan};
 pub use service::{CompanionState, router};
 
 use thiserror::Error;
@@ -27,6 +29,8 @@ pub enum CompanionError {
     AdmissionChanged,
     #[error("local cartridge cache operation failed")]
     Cache,
+    #[error("trusted cartridge render-plan compilation failed")]
+    Render,
 }
 
 impl CompanionError {
@@ -39,6 +43,7 @@ impl CompanionError {
             Self::MarketplaceUntrusted => "companion_marketplace_untrusted",
             Self::AdmissionChanged => "companion_admission_changed",
             Self::Cache => "companion_cache_failure",
+            Self::Render => "companion_render_failure",
         }
     }
 }

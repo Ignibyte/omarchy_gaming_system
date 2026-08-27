@@ -7,16 +7,20 @@ Rectangle {
 
     required property string assetRoot
     property var renderPlan: null
+    property var acceptedPlan: null
+    property bool actionsEnabled: true
     property bool planAccepted: false
     property string validationError: "No render plan loaded"
     property int instantiatedNodeCount: nodeRepeater.count
     signal actionRequested(string action, var payload)
 
+    onRenderPlanChanged: acceptPlan(renderPlan)
+
     Components.OgsTheme { id: theme }
 
-    color: renderPlan && renderPlan.preferences.high_contrast
+    color: acceptedPlan && acceptedPlan.preferences.high_contrast
            ? theme.highContrastBackground : theme.background
-    border.color: renderPlan && renderPlan.preferences.high_contrast
+    border.color: acceptedPlan && acceptedPlan.preferences.high_contrast
                   ? theme.highContrastForeground : theme.borderMuted
     border.width: theme.borderWidth
 
@@ -171,12 +175,12 @@ Rectangle {
     function acceptPlan(plan) {
         const error = validatePlan(plan)
         if (error !== "") {
-            renderPlan = null
+            acceptedPlan = null
             planAccepted = false
             validationError = error
             return false
         }
-        renderPlan = plan
+        acceptedPlan = plan
         planAccepted = true
         validationError = ""
         return true
@@ -224,6 +228,19 @@ Rectangle {
         return {"expected": expected, "exercised": exercised, "focus_observed": focusObserved}
     }
 
+    function focusInitial() {
+        for (let index = 0; index < nodeRepeater.count; index++) {
+            const loader = nodeRepeater.itemAt(index)
+            if (loader && loader.item
+                    && (loader.modelData.kind === "button" || loader.modelData.kind === "grid")) {
+                loader.item.forceActiveFocus()
+                return true
+            }
+        }
+        root.forceActiveFocus()
+        return true
+    }
+
     Component { id: terminalComponent; Nodes.TrustedTerminalNode {} }
     Component { id: gridComponent; Nodes.TrustedGridNode {} }
     Component { id: statusComponent; Nodes.TrustedStatusNode {} }
@@ -242,30 +259,30 @@ Rectangle {
 
         Text {
             width: parent.width
-            text: root.renderPlan
-                ? "OMARCHYGS // " + root.renderPlan.origin.publisher_id + "/" + root.renderPlan.origin.game_key
-                    + " v" + root.renderPlan.origin.cartridge_version
-                    + " // " + root.renderPlan.origin.archive_sha256.slice(0, 12)
+            text: root.acceptedPlan
+                ? "OMARCHYGS // " + root.acceptedPlan.origin.publisher_id + "/" + root.acceptedPlan.origin.game_key
+                    + " v" + root.acceptedPlan.origin.cartridge_version
+                    + " // " + root.acceptedPlan.origin.archive_sha256.slice(0, 12)
                 : "OMARCHYGS // UNTRUSTED PLAN REJECTED"
             textFormat: Text.PlainText
-            color: root.renderPlan && root.renderPlan.preferences.high_contrast
+            color: root.acceptedPlan && root.acceptedPlan.preferences.high_contrast
                    ? theme.highContrastForeground : theme.textMuted
             font.family: theme.fontFamily
             font.pixelSize: theme.captionSize
-                            * (root.renderPlan ? root.renderPlan.preferences.scale : 1)
+                            * (root.acceptedPlan ? root.acceptedPlan.preferences.scale : 1)
             elide: Text.ElideRight
         }
 
         Text {
             width: parent.width
-            text: root.renderPlan ? root.renderPlan.state_message : root.validationError
+            text: root.acceptedPlan ? root.acceptedPlan.state_message : root.validationError
             textFormat: Text.PlainText
-            color: root.renderPlan && root.renderPlan.state === "ready"
+            color: root.acceptedPlan && root.acceptedPlan.state === "ready"
                    ? theme.accent : theme.warning
             font.family: theme.fontFamily
             font.bold: true
             font.pixelSize: theme.sectionSize
-                            * (root.renderPlan ? root.renderPlan.preferences.scale : 1)
+                            * (root.acceptedPlan ? root.acceptedPlan.preferences.scale : 1)
             wrapMode: Text.Wrap
         }
 
@@ -283,8 +300,8 @@ Rectangle {
 
                 Repeater {
                     id: nodeRepeater
-                    model: root.planAccepted && root.renderPlan.state === "ready"
-                        ? root.renderPlan.nodes : []
+                    model: root.planAccepted && root.acceptedPlan.state === "ready"
+                        ? root.acceptedPlan.nodes : []
 
                     delegate: Loader {
                         id: nodeLoader
@@ -293,18 +310,21 @@ Rectangle {
                         sourceComponent: root.componentForKind(modelData.kind)
                         onLoaded: {
                             item.assetRoot = root.assetRoot
-                            item.scaleFactor = root.renderPlan.preferences.scale
-                            item.highContrast = root.renderPlan.preferences.high_contrast
-                            item.reducedMotion = root.renderPlan.preferences.reduced_motion
-                            item.mutedAudio = root.renderPlan.preferences.muted_audio
+                            item.scaleFactor = root.acceptedPlan.preferences.scale
+                            item.highContrast = root.acceptedPlan.preferences.high_contrast
+                            item.reducedMotion = root.acceptedPlan.preferences.reduced_motion
+                            item.mutedAudio = root.acceptedPlan.preferences.muted_audio
                             item.nodeData = modelData
+                            if (item.actionsEnabled !== undefined)
+                                item.actionsEnabled = root.actionsEnabled
                         }
 
                         Connections {
                             target: nodeLoader.item
                             ignoreUnknownSignals: true
                             function onActionRequested(action, payload) {
-                                root.actionRequested(action, payload)
+                                if (root.actionsEnabled)
+                                    root.actionRequested(action, payload)
                             }
                         }
                     }

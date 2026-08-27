@@ -224,8 +224,15 @@ the first identity HTTP surfaces:
   plus every marketplace, publisher, lifecycle, SDK, and byte claim before
   atomically staging shared content and a server-UUID-scoped read-only mount.
   Each mount retains the trusted-key fingerprint. The QML Games screen exposes
-  explicit install, update, and local removal; binding the mount to live
-  gameplay remains deferred.
+  explicit install, update, and local removal. Eligible new compiled or
+  registered-provider sessions pin one exact current release and admission
+  revision in an immutable presentation row. The native companion resolves only
+  the matching canonical origin/UUID mount under client-controlled trust,
+  compiles the signed entry screen into an inert plan, and exposes bounded
+  digest assets through an ephemeral loopback capability. Trusted QML
+  independently validates the plan; declared actions return to the server for
+  participant authorization, signed-contract validation, durable admission,
+  and dispatch through the session's existing sole gameplay authority.
 - durable two-person challenges pin one exact game key/version between a
   connected, unblocked, different-account persona pair. A challenger-scoped
   UUID makes creation retry-safe, a partial uniqueness constraint prevents an
@@ -329,19 +336,21 @@ independently versioned games ship a signed declarative presentation package
 rendered by trusted OmarchyGS QML components. The v1 verifier, conformance SDK,
 descriptor-relative store, render-plan compiler, first-party separate-repository
 proof, guarded marketplace sync, reviewed server inventory, local catalog
-control, and metadata-only player catalog exist; client acquisition/mount
-remains future work. Signal Siege rules remain compiled into the trusted server
-for the private alpha. The registered Door Legends pilot owns server-side
-gameplay only through the separately authenticated broker boundary. Raw
+control, metadata-only player catalog, independently trusted client
+acquisition/mounting, immutable session presentation pins, and trusted launch
+exist. Signal Siege rules remain compiled into the trusted server for the
+private alpha. The registered Door Legends pilot is the first portable
+playable and owns server-side gameplay only through the separately authenticated
+broker boundary. Raw
 third-party QML, JavaScript, native plugins, device tokens, account identity,
 and direct database access remain outside the boundary.
 
 [ADR-0003](adr-0003-owner-operated-server-and-extension-boundary.md) extends
 that direction to owner-operated communities. A vetted marketplace can publish
 exact signed releases, and each server operator now chooses what to synchronize
-and independently admit. Players will later acquire/cache the selected
-server's inert cartridges for trusted local rendering. A future Provider SDK packages the
-brokered backend contract; a separate future module base supplies typed,
+and independently admit. Players can acquire/cache the selected server's inert
+cartridges for exact mounted rendering when a session pins the same release. A
+future Provider SDK packages the brokered backend contract; a separate future module base supplies typed,
 capability-scoped server hooks only after an isolation spike. Operator-custom
 server content must be visibly distinct from vetted content and remains
 subject to every official-client cartridge bound.

@@ -7,8 +7,6 @@ sources:
     resource: repo://client/qml/cartridge/CartridgePreview.qml
   - id: openwiki-source-c566a55d52a9744f7b26b7c4
     resource: repo://client/qml/cartridge/TrustedCartridgeSurface.qml
-  - id: openwiki-source-0196de8872a3fef5b0b350d3
-    resource: repo://client/qml/CartridgeController.qml
   - id: openwiki-source-a046e08cc1ba7740db940ad2
     resource: repo://client/qml/game/SignalSiegeSurface.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
@@ -17,20 +15,12 @@ sources:
     resource: repo://client/qml/OnboardingController.qml
   - id: openwiki-source-937883bc0b4873d5f0200c46
     resource: repo://CONSTITUTION.md
-  - id: openwiki-source-2bc62522bf486443de88f261
-    resource: repo://crates/client-cartridge-runtime/src/cache.rs
-  - id: openwiki-source-939b835e7d6c679aae8394e7
-    resource: repo://crates/client-cartridge-runtime/src/remote.rs
-  - id: openwiki-source-bc8915a33f270bc28a270170
-    resource: repo://crates/client-cartridge-runtime/src/service.rs
   - id: openwiki-source-37af4c6b51c86b62db25f85f
     resource: repo://crates/game-cartridge-renderer/Cargo.toml
   - id: openwiki-source-fdf115002c4aabad0babec70
     resource: repo://crates/game-cartridge-renderer/src/lib.rs
   - id: openwiki-source-877fd8b6ed8717d54fa8c17a
     resource: repo://crates/game-cartridge/Cargo.toml
-  - id: openwiki-source-30abbd4fc5d09b185331836c
-    resource: repo://crates/game-cartridge/src/acquisition.rs
   - id: openwiki-source-b4a2591d7d7f80d847ef95ed
     resource: repo://crates/game-cartridge/src/contract.rs
   - id: openwiki-source-71f8ccb7a1e293121205a368
@@ -85,11 +75,11 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-  - id: openwiki-source-d85e6ea816d7c91e9828f7b2
-    resource: repo://packaging/arch/omarchygs
   - id: openwiki-source-8df9ad1a3495f8360740ff03
     resource: repo://scripts/test-game-cartridge-sdk.sh
-generated: {by: "codex", at: "2026-08-27T01:49:04.244Z"}
+  - id: openwiki-source-e08dc6155c081d7928029e27
+    resource: repo://scripts/test-operator-recovery.sh
+generated: {by: "codex", at: "2026-08-27T04:04:27.382Z"}
 ---
 
 # Product and architecture boundaries
@@ -243,9 +233,11 @@ software path for private-alpha admission, but it does not substitute for the
 first human event's documented issue, trusted delivery, onboarding, gameplay,
 safety, and evidence sequence. Marketplace synchronization, server admission,
 and independently trusted player acquisition, caching, and server-profile
-mounting are implemented. Federation, server identity fork/rotation, remote
-administration, mounted-cartridge gameplay launch, and external-provider
-onboarding remain later slices.
+mounting are implemented. Eligible session-to-cartridge binding, trusted
+entry-screen rendering, and server-authorized declared actions are also
+implemented. Federation, server identity fork/rotation, remote administration,
+external-provider onboarding, multi-screen cartridge navigation, and general
+plugins remain later slices.
 
 The current server is a local development slice. Bearer tokens require
 production TLS in transit, and public login requires distributed attempt
@@ -292,6 +284,13 @@ seat turns, and completes on core destruction or a fixed turn bound. Completed
 history, exact replay, and QML gameplay are implemented; result-derived
 platform effects remain a later boundary.
 
+An eligible new compiled or provider session may additionally pin one exact
+currently admitted marketplace release and admission revision. That immutable
+row is presentation identity, not another rules owner: it is absent for legacy
+or ineligible sessions and never follows later catalog selection. Participant
+reads project only bounded non-secret presentation facts and the current signed
+active-session decision.
+
 The QML authority boundary keeps the bearer in `OnboardingController` and gives
 `GameController` only the selected-persona request gateway. The game controller
 validates exact catalog, challenge, session, participant, authority, and v1/v2
@@ -300,6 +299,15 @@ the exact mutation identity for explicit retry; a revision conflict triggers an
 authoritative refetch rather than silently rebasing the player's action. The
 client currently refreshes on entry and action and opens no game polling or
 WebSocket lifetime.
+
+For a bound session, the game controller gives the same-user companion only the
+selected public server origin/UUID, exact presentation binding, authoritative
+view, and trusted preferences. The companion requires the independently trusted
+marketplace key and exact local mount before compiling the signed entry screen.
+QML accepts only the host's bounded inert plan and capability-scoped digest
+assets. Every emitted action returns through the selected-persona gateway;
+OmarchyGS reauthorizes the participant and signed action contract before
+adapting it to the session's sole compiled or provider command authority.
 
 For registered-provider sessions, migration 0015 prohibits a writable local
 gameplay snapshot: the platform envelope pins one exact release and keeps local
@@ -382,9 +390,10 @@ per-raster and decoded-scene ceilings before publishing a node or asset, caches
 each authenticated asset digest, and requires exact Grid/Button action payload
 shapes. The QML boundary recounts aggregate profile totals and maps only fixed
 tags to platform-owned Components. OmarchyGS retains origin and failure chrome,
-accessibility/focus behavior, trusted display preferences, and all future action
-dispatch authority. The current preview emits only unconfirmed action requests
-and has no server/provider path.
+accessibility/focus behavior, trusted display preferences, and action dispatch
+authority. The preview remains isolated, while the gameplay surface treats
+every emitted action as unconfirmed until the selected OmarchyGS server admits
+it against the exact pinned signed contract.
 
 The Ticket 015 store and prepared preview directory remain same-user developer
 boundaries. Ticket 017's Linux secure store is descriptor-relative, rejects
@@ -396,9 +405,11 @@ external monotonic authority. The main client now browses platform catalog
 records, plays compiled Signal Siege, and separately acquires, privately caches,
 updates, removes, and mounts exact admitted signed cartridges when independent
 marketplace trust and server acquisition are available. A mount is only a
-verified profile pointer into inert content: it does not create a game session,
-prepare a trusted render plan, or grant executable frontend authority. The
-server still does not ingest cartridge files into its public game catalog.
+verified profile pointer into inert content: it does not create a game session
+or grant executable frontend authority. A separately created eligible session
+must pin the same exact admitted release before the companion can prepare its
+trusted entry-screen render plan. The server still does not ingest publisher
+frontend code into its public game catalog.
 Signal Siege's platform-owned presenter reuses inert
 repository components without claiming a signed origin, content digest, or
 `omarchygs.render-plan/v1` provenance. The optional provider runtime instead

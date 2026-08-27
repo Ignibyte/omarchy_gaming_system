@@ -116,7 +116,7 @@ QtObject {
         const request = new XMLHttpRequest()
         _request = request
         request.onreadystatechange = function() {
-            if (generation !== root._activeGeneration)
+            if (!root || generation !== root._activeGeneration)
                 return
 
             if (request.readyState >= XMLHttpRequest.HEADERS_RECEIVED) {

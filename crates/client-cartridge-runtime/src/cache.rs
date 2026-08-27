@@ -9,12 +9,15 @@ use std::{
     sync::Mutex,
 };
 
-use omarchygs_game_cartridge::{CatalogPublicKey, SecureCartridgeStore, VerifiedAcquisition};
+use omarchygs_game_cartridge::{
+    CatalogPublicKey, LifecycleUse, PublisherPublicKey, SecureCartridgeStore, SecureResolution,
+    VerifiedAcquisition, rich_2d_host_profile,
+};
 use rand_core::{OsRng, RngCore as _};
 use rustix::{
     fs::{
-        AtFlags, FileType, FlockOperation, Mode, OFlags, fchmod, flock, fstat, fsync, mkdirat,
-        open, openat, renameat, unlinkat,
+        AtFlags, FileType, FlockOperation, Mode, OFlags, RenameFlags, fchmod, flock, fstat, fsync,
+        mkdirat, open, openat, renameat, renameat_with, unlinkat,
     },
     process::{Uid, geteuid},
 };
@@ -30,11 +33,13 @@ use crate::{
 const PROFILE_FORMAT: &str = "omarchygs.client-profile-mounts/v1";
 const MOUNT_FORMAT: &str = "omarchygs.client-cartridge-mount/v1";
 const MAX_PROFILE_BYTES: u64 = 256 * 1024;
+const MAX_PUBLISHER_KEY_BYTES: u64 = 64 * 1024;
 const MAX_MOUNTS: usize = 128;
 
 pub struct ClientCartridgeCache {
     _root: OwnedFd,
     profiles: OwnedFd,
+    publisher_keys: OwnedFd,
     lock_file: OwnedFd,
     process_lock: Mutex<()>,
     content: SecureCartridgeStore,
@@ -52,6 +57,7 @@ impl ClientCartridgeCache {
         .map_err(|_| CompanionError::Cache)?;
         validate_directory(&root_fd, owner)?;
         let profiles = open_or_create_directory(&root_fd, "profiles", owner)?;
+        let publisher_keys = open_or_create_directory(&root_fd, "publisher-keys", owner)?;
         open_or_create_directory(&root_fd, "content", owner)?;
         let lock_file = openat(
             &root_fd,
@@ -67,6 +73,7 @@ impl ClientCartridgeCache {
         Ok(Self {
             _root: root_fd,
             profiles,
+            publisher_keys,
             lock_file,
             process_lock: Mutex::new(()),
             content,
@@ -106,6 +113,14 @@ impl ClientCartridgeCache {
         let server_id = exact_uuid(&mount.server_id)?;
         self.with_mount_lock(|| {
             let mut profile = self.read_profile(server_id, &trusted_key_sha256)?;
+            if profile
+                .mounts
+                .iter()
+                .any(|existing| existing.server_origin != mount.server_origin)
+            {
+                return Err(CompanionError::Rejected);
+            }
+            self.write_publisher_key(&mount.archive_sha256, &verified.entry().publisher_key)?;
             profile
                 .mounts
                 .retain(|existing| existing.game_key != mount.game_key);
@@ -144,6 +159,61 @@ impl ClientCartridgeCache {
             self.write_profile(server_id, &profile, &trusted_key_sha256)?;
             Ok(true)
         })
+    }
+
+    pub(crate) fn resolve_mounted(
+        &self,
+        server_origin: &str,
+        server_id: Uuid,
+        game_key: &str,
+        archive_sha256: &str,
+        admission_revision: u64,
+        trusted_marketplace_key: &CatalogPublicKey,
+    ) -> Result<SecureResolution> {
+        let server_origin = canonical_origin(server_origin)?;
+        if !valid_identifier(game_key) || !valid_sha256(archive_sha256) || admission_revision == 0 {
+            return Err(CompanionError::InvalidInput);
+        }
+        let trusted_key_sha256 = marketplace_key_sha256(trusted_marketplace_key)?;
+        let (mount, publisher_key) = self.with_mount_lock(|| {
+            let mount = self
+                .read_profile(server_id, &trusted_key_sha256)?
+                .mounts
+                .into_iter()
+                .find(|mount| {
+                    mount.server_origin == server_origin
+                        && mount.game_key == game_key
+                        && mount.archive_sha256 == archive_sha256
+                        && mount.admission_revision == admission_revision
+                })
+                .ok_or(CompanionError::AdmissionChanged)?;
+            let publisher_key = self.read_publisher_key(archive_sha256)?;
+            if publisher_key.publisher_id != mount.publisher_id {
+                return Err(CompanionError::Cache);
+            }
+            Ok((mount, publisher_key))
+        })?;
+        let resolution = self
+            .content
+            .resolve_cached_exact(
+                game_key,
+                archive_sha256,
+                &publisher_key,
+                &rich_2d_host_profile(),
+                trusted_marketplace_key,
+                LifecycleUse::ActiveSession,
+            )
+            .map_err(|_| CompanionError::AdmissionChanged)?;
+        let activation = resolution.activation();
+        if activation.publisher_id != mount.publisher_id
+            || activation.cartridge_version != mount.cartridge_version
+            || activation.archive_sha256 != mount.archive_sha256
+            || activation.signed_identity_sha256 != mount.signed_identity_sha256
+            || resolution.cartridge().manifest().rules_version != mount.rules_version
+        {
+            return Err(CompanionError::Cache);
+        }
+        Ok(resolution)
     }
 
     fn with_mount_lock<T>(&self, operation: impl FnOnce() -> Result<T>) -> Result<T> {
@@ -186,7 +256,7 @@ impl ClientCartridgeCache {
         }
         let profile: ProfileDocument =
             serde_json::from_slice(&bytes).map_err(|_| CompanionError::Cache)?;
-        profile.validate(trusted_key_sha256)?;
+        profile.validate(server_id, trusted_key_sha256)?;
         Ok(profile)
     }
 
@@ -196,7 +266,7 @@ impl ClientCartridgeCache {
         profile: &ProfileDocument,
         trusted_key_sha256: &str,
     ) -> Result<()> {
-        profile.validate(trusted_key_sha256)?;
+        profile.validate(server_id, trusted_key_sha256)?;
         let bytes = serde_json::to_vec(profile).map_err(|_| CompanionError::Cache)?;
         if bytes.is_empty() || bytes.len() as u64 > MAX_PROFILE_BYTES {
             return Err(CompanionError::Cache);
@@ -228,6 +298,83 @@ impl ClientCartridgeCache {
         })();
         if result.is_err() {
             let _ = unlinkat(&self.profiles, temporary.as_str(), AtFlags::empty());
+        }
+        result
+    }
+
+    fn read_publisher_key(&self, archive_sha256: &str) -> Result<PublisherPublicKey> {
+        if !valid_sha256(archive_sha256) {
+            return Err(CompanionError::InvalidInput);
+        }
+        let bytes = read_regular_file(
+            &self.publisher_keys,
+            &format!("{archive_sha256}.json"),
+            MAX_PUBLISHER_KEY_BYTES,
+        )?;
+        let key: PublisherPublicKey =
+            serde_json::from_slice(&bytes).map_err(|_| CompanionError::Cache)?;
+        if serde_json::to_vec(&key).map_err(|_| CompanionError::Cache)? != bytes {
+            return Err(CompanionError::Cache);
+        }
+        Ok(key)
+    }
+
+    fn write_publisher_key(&self, archive_sha256: &str, key: &PublisherPublicKey) -> Result<()> {
+        if !valid_sha256(archive_sha256) {
+            return Err(CompanionError::InvalidInput);
+        }
+        let bytes = serde_json::to_vec(key).map_err(|_| CompanionError::Cache)?;
+        if bytes.is_empty() || bytes.len() as u64 > MAX_PUBLISHER_KEY_BYTES {
+            return Err(CompanionError::Cache);
+        }
+        let target = format!("{archive_sha256}.json");
+        if let Some(existing) =
+            read_optional_regular_file(&self.publisher_keys, &target, MAX_PUBLISHER_KEY_BYTES)?
+        {
+            return if existing == bytes {
+                Ok(())
+            } else {
+                Err(CompanionError::Cache)
+            };
+        }
+        let temporary = temporary_name();
+        let fd = openat(
+            &self.publisher_keys,
+            temporary.as_str(),
+            OFlags::WRONLY | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::from_bits_truncate(0o600),
+        )
+        .map_err(|_| CompanionError::Cache)?;
+        let result = (|| {
+            validate_regular_file(&fd, geteuid())?;
+            let mut file = File::from(fd);
+            file.write_all(&bytes).map_err(|_| CompanionError::Cache)?;
+            file.sync_all().map_err(|_| CompanionError::Cache)?;
+            fchmod(&file, Mode::from_bits_truncate(0o400)).map_err(|_| CompanionError::Cache)?;
+            drop(file);
+            match renameat_with(
+                &self.publisher_keys,
+                temporary.as_str(),
+                &self.publisher_keys,
+                target.as_str(),
+                RenameFlags::NOREPLACE,
+            ) {
+                Ok(()) => {}
+                Err(rustix::io::Errno::EXIST) => {
+                    unlinkat(&self.publisher_keys, temporary.as_str(), AtFlags::empty())
+                        .map_err(|_| CompanionError::Cache)?;
+                    if read_regular_file(&self.publisher_keys, &target, MAX_PUBLISHER_KEY_BYTES)?
+                        != bytes
+                    {
+                        return Err(CompanionError::Cache);
+                    }
+                }
+                Err(_) => return Err(CompanionError::Cache),
+            }
+            fsync(&self.publisher_keys).map_err(|_| CompanionError::Cache)
+        })();
+        if result.is_err() {
+            let _ = unlinkat(&self.publisher_keys, temporary.as_str(), AtFlags::empty());
         }
         result
     }
@@ -308,7 +455,7 @@ impl MountRecord {
         if self.format != MOUNT_FORMAT
             || exact_uuid(&self.server_id).is_err()
             || self.server_origin.len() > 512
-            || selected_origin(&self.server_origin).is_err()
+            || canonical_origin(&self.server_origin).is_err()
             || !valid_identifier(&self.game_key)
             || !valid_identifier(&self.publisher_id)
             || self.rules_version == 0
@@ -352,12 +499,20 @@ impl ProfileDocument {
         }
     }
 
-    fn validate(&self, trusted_key_sha256: &str) -> Result<()> {
+    fn validate(&self, server_id: Uuid, trusted_key_sha256: &str) -> Result<()> {
+        let expected_server_id = server_id.to_string();
+        let expected_origin = self
+            .mounts
+            .first()
+            .map(|mount| mount.server_origin.as_str());
         if self.format != PROFILE_FORMAT
             || self.mounts.len() > MAX_MOUNTS
             || !valid_sha256(trusted_key_sha256)
             || !self.mounts.iter().all(|mount| {
-                mount.marketplace_key_sha256 == trusted_key_sha256 && mount.validate().is_ok()
+                mount.server_id == expected_server_id
+                    && Some(mount.server_origin.as_str()) == expected_origin
+                    && mount.marketplace_key_sha256 == trusted_key_sha256
+                    && mount.validate().is_ok()
             })
             || !self
                 .mounts
@@ -368,6 +523,15 @@ impl ProfileDocument {
         } else {
             Ok(())
         }
+    }
+}
+
+fn canonical_origin(value: &str) -> Result<String> {
+    let origin = selected_origin(value)?.origin().ascii_serialization();
+    if origin == value {
+        Ok(origin)
+    } else {
+        Err(CompanionError::InvalidInput)
     }
 }
 
@@ -431,6 +595,41 @@ fn validate_regular_file(fd: &impl std::os::fd::AsFd, owner: Uid) -> Result<()> 
     } else {
         Ok(())
     }
+}
+
+fn read_regular_file(parent: &OwnedFd, name: &str, maximum: u64) -> Result<Vec<u8>> {
+    read_optional_regular_file(parent, name, maximum)?.ok_or(CompanionError::Cache)
+}
+
+fn read_optional_regular_file(
+    parent: &OwnedFd,
+    name: &str,
+    maximum: u64,
+) -> Result<Option<Vec<u8>>> {
+    let fd = match openat(
+        parent,
+        name,
+        OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+        Mode::empty(),
+    ) {
+        Ok(fd) => fd,
+        Err(rustix::io::Errno::NOENT) => return Ok(None),
+        Err(_) => return Err(CompanionError::Cache),
+    };
+    validate_regular_file(&fd, geteuid())?;
+    let metadata = fstat(&fd).map_err(|_| CompanionError::Cache)?;
+    if metadata.st_size == 0 || metadata.st_size as u64 > maximum {
+        return Err(CompanionError::Cache);
+    }
+    let mut bytes = Vec::with_capacity(metadata.st_size as usize);
+    File::from(fd)
+        .take(maximum + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|_| CompanionError::Cache)?;
+    if bytes.len() as u64 > maximum {
+        return Err(CompanionError::Cache);
+    }
+    Ok(Some(bytes))
 }
 
 fn profile_name(server_id: Uuid) -> String {
@@ -527,6 +726,35 @@ mod tests {
 
         let first = mount(first_server, "game-one", 'a', &trusted_key_sha256);
         let second = mount(first_server, "game-two", 'b', &trusted_key_sha256);
+        let wrong_server = mount(second_server, "game-one", 'a', &trusted_key_sha256);
+        assert!(
+            cache
+                .write_profile(
+                    first_server,
+                    &ProfileDocument {
+                        format: PROFILE_FORMAT.to_owned(),
+                        mounts: vec![wrong_server],
+                    },
+                    &trusted_key_sha256,
+                )
+                .is_err(),
+            "a UUID-named profile must contain only mounts for that exact server"
+        );
+        let mut wrong_origin = second.clone();
+        wrong_origin.server_origin = "https://other.example.test".to_owned();
+        assert!(
+            cache
+                .write_profile(
+                    first_server,
+                    &ProfileDocument {
+                        format: PROFILE_FORMAT.to_owned(),
+                        mounts: vec![first.clone(), wrong_origin],
+                    },
+                    &trusted_key_sha256,
+                )
+                .is_err(),
+            "one server UUID profile cannot mix canonical origins"
+        );
         cache
             .write_profile(
                 first_server,
@@ -551,6 +779,17 @@ mod tests {
                 .expect("mounts should read"),
             vec![first.clone(), second]
         );
+        assert!(matches!(
+            cache.resolve_mounted(
+                "https://other.example.test",
+                first_server,
+                &first.game_key,
+                &first.archive_sha256,
+                first.admission_revision,
+                &trusted_marketplace_key,
+            ),
+            Err(CompanionError::AdmissionChanged)
+        ));
         assert!(
             cache
                 .mounts(second_server, &trusted_marketplace_key)

@@ -307,6 +307,40 @@ mod platform {
             )
         }
 
+        /// Resolve one exact immutable digest using the latest monotonic
+        /// marketplace policy already cached in this retained store. This is
+        /// the client-side counterpart to server catalog resolution: callers
+        /// still supply an independently trusted marketplace key.
+        #[allow(clippy::too_many_arguments)]
+        pub fn resolve_cached_exact(
+            &self,
+            game_key: &str,
+            archive_sha256: &str,
+            publisher_key: &PublisherPublicKey,
+            host: &HostProfile,
+            catalog_key: &CatalogPublicKey,
+            use_kind: LifecycleUse,
+        ) -> Result<SecureResolution> {
+            if !valid_identifier(game_key) || !valid_sha256(archive_sha256) {
+                return Err(CartridgeError::InvalidActivation);
+            }
+            let policy_bytes = read_at(
+                &self.policies,
+                &format!("{archive_sha256}.signed.json"),
+                MAX_POLICY_BYTES,
+            )?;
+            self.resolve_checked(
+                game_key,
+                archive_sha256,
+                publisher_key,
+                host,
+                &policy_bytes,
+                catalog_key,
+                use_kind,
+                None,
+            )
+        }
+
         #[allow(clippy::too_many_arguments)]
         fn resolve_checked(
             &self,
@@ -627,6 +661,18 @@ pub struct SecureCartridgeStore;
 #[cfg(not(target_os = "linux"))]
 impl SecureCartridgeStore {
     pub fn open_existing(_root: &std::path::Path) -> Result<Self> {
+        Err(CartridgeError::UnsupportedSecureStore)
+    }
+
+    pub fn resolve_cached_exact(
+        &self,
+        _game_key: &str,
+        _archive_sha256: &str,
+        _publisher_key: &PublisherPublicKey,
+        _host: &HostProfile,
+        _catalog_key: &CatalogPublicKey,
+        _use_kind: LifecycleUse,
+    ) -> Result<SecureResolution> {
         Err(CartridgeError::UnsupportedSecureStore)
     }
 }

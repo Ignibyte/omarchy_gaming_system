@@ -12,6 +12,7 @@ use crate::{
     accounts::{self, RegistrationInput},
     app::{router, router_with_runtimes},
     mfa::MfaCipher,
+    personas::{self, CreatePersonaInput},
     sessions::{self, CreateSessionInput, SessionCreation},
     sync::SyncHub,
 };
@@ -22,12 +23,14 @@ use omarchy_gaming_system_server::{
         publish_snapshot, snapshot_sha256,
     },
     cartridge_distribution::CartridgeDistributionRuntime,
+    session_cartridges,
 };
 use omarchygs_game_cartridge::{
     AcquisitionServerAdmission, CatalogStatus, MarketplaceReleaseEntry, MarketplaceSnapshotPayload,
-    SecureCartridgeStore, create_release, export_sdk, generate_catalog_keypair, generate_keypair,
-    rich_2d_host_profile, sign_catalog_policy, sign_marketplace_snapshot, supported_sdk_identity,
-    verify_acquisition_bytes, verify_catalog_policy, verify_release_directory,
+    SecureCartridgeStore, SignedCatalogPolicy, create_release, export_sdk,
+    generate_catalog_keypair, generate_keypair, rich_2d_host_profile, sign_catalog_policy,
+    sign_marketplace_snapshot, supported_sdk_identity, verify_acquisition_bytes,
+    verify_catalog_policy, verify_release_directory,
 };
 use std::{fs, os::unix::fs::PermissionsExt as _, path::Path, sync::Arc};
 
@@ -148,6 +151,47 @@ async fn authenticated_catalog_is_exact_no_store_and_lifecycle_filtered(pool: Pg
 #[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
 async fn exact_acquisition_is_authenticated_verified_and_current(pool: PgPool) {
     let fixture = acquisition_fixture(&pool).await;
+    let mut mismatch = pool
+        .begin()
+        .await
+        .expect("mismatch transaction should begin");
+    let mismatch_session: uuid::Uuid = sqlx::query_scalar(
+        r#"
+        INSERT INTO game_sessions (game_key, game_version, state, authority)
+        VALUES ('door-legends', 1, '{}'::jsonb, 'platform_compiled')
+        RETURNING id
+        "#,
+    )
+    .fetch_one(&mut *mismatch)
+    .await
+    .expect("mismatch session should insert");
+    let mismatched_digest = "f".repeat(64);
+    assert!(
+        !session_cartridges::pin_new_session(
+            &mut mismatch,
+            &fixture.runtime,
+            mismatch_session,
+            "door-legends",
+            1,
+            Some(&mismatched_digest),
+        )
+        .await
+        .expect("provider digest mismatch should be an honest unbound session")
+    );
+    mismatch
+        .commit()
+        .await
+        .expect("unbound mismatch session should commit");
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_session_cartridge_presentations WHERE game_session_id = $1",
+        )
+        .bind(mismatch_session)
+        .fetch_one(&pool)
+        .await
+        .expect("mismatch binding count should read"),
+        0
+    );
     let token = create_session(&pool).await;
     let route = format!(
         "/v1/cartridges/{}/{}/acquisition",
@@ -227,15 +271,203 @@ async fn exact_acquisition_is_authenticated_verified_and_current(pool: PgPool) {
     assert_no_store(&denied);
 }
 
-struct AcquisitionFixture {
-    _temp: tempfile::TempDir,
-    store_root: std::path::PathBuf,
-    runtime: CartridgeDistributionRuntime,
-    marketplace_public: omarchygs_game_cartridge::CatalogPublicKey,
-    admission: AcquisitionServerAdmission,
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+async fn cartridge_action_admission_is_exact_immutable_and_survives_later_revocation(pool: PgPool) {
+    let fixture = acquisition_fixture(&pool).await;
+    let token = create_session(&pool).await;
+    let persona = personas::create_persona(
+        &pool,
+        &token,
+        CreatePersonaInput {
+            handle: "catalog_action_player".to_owned(),
+            display_name: "Catalog Action Player".to_owned(),
+            bio: String::new(),
+            status_message: String::new(),
+        },
+    )
+    .await
+    .expect("test persona should create");
+    let session_id = seed_cartridge_action_session(&pool, &fixture, persona.id).await;
+    let idempotency_key = uuid::Uuid::new_v4();
+    let admitted = session_cartridges::admit_session_action(
+        &pool,
+        &fixture.runtime,
+        persona.id,
+        session_id,
+        idempotency_key,
+        0,
+        &fixture.admission.archive_sha256,
+        "enter",
+        &json!({}),
+    )
+    .await
+    .expect("active signed action should be admitted");
+    assert_eq!(admitted.authority, "platform_compiled");
+    assert_eq!(admitted.command, json!({"action": "enter"}));
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_session_cartridge_action_admissions WHERE game_session_id = $1",
+        )
+        .bind(session_id)
+        .fetch_one(&pool)
+        .await
+        .expect("admission count should read"),
+        1
+    );
+    assert!(
+        sqlx::query(
+            "UPDATE game_session_cartridge_action_admissions SET action = 'other' WHERE game_session_id = $1",
+        )
+        .bind(session_id)
+        .execute(&pool)
+        .await
+        .is_err(),
+        "durable action admissions must be immutable"
+    );
+
+    publish_fixture_policy(&pool, &fixture, CatalogStatus::Suspended).await;
+    let replay = session_cartridges::admit_session_action(
+        &pool,
+        &fixture.runtime,
+        persona.id,
+        session_id,
+        idempotency_key,
+        0,
+        &fixture.admission.archive_sha256,
+        "enter",
+        &json!({}),
+    )
+    .await
+    .expect("exact pre-transition admission should remain recoverable");
+    assert_eq!(replay, admitted);
+    assert_eq!(
+        session_cartridges::admit_session_action(
+            &pool,
+            &fixture.runtime,
+            persona.id,
+            session_id,
+            idempotency_key,
+            0,
+            &fixture.admission.archive_sha256,
+            "inspect",
+            &json!({}),
+        )
+        .await,
+        Err(session_cartridges::SessionCartridgeError::IdempotencyConflict)
+    );
+    assert_eq!(
+        session_cartridges::admit_session_action(
+            &pool,
+            &fixture.runtime,
+            persona.id,
+            session_id,
+            uuid::Uuid::new_v4(),
+            0,
+            &fixture.admission.archive_sha256,
+            "enter",
+            &json!({}),
+        )
+        .await,
+        Err(session_cartridges::SessionCartridgeError::Denied)
+    );
 }
 
-async fn acquisition_fixture(pool: &PgPool) -> AcquisitionFixture {
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+async fn snapshot_writer_wins_before_fresh_cartridge_action_admission(pool: PgPool) {
+    let fixture = acquisition_fixture(&pool).await;
+    let token = create_session(&pool).await;
+    let persona = personas::create_persona(
+        &pool,
+        &token,
+        CreatePersonaInput {
+            handle: "catalog_writer_first".to_owned(),
+            display_name: "Catalog Writer First".to_owned(),
+            bio: String::new(),
+            status_message: String::new(),
+        },
+    )
+    .await
+    .expect("test persona should create");
+    let session_id = seed_cartridge_action_session(&pool, &fixture, persona.id).await;
+
+    let mut writer = pool.begin().await.expect("writer transaction should begin");
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(omarchy_gaming_system_server::cartridge_catalog::SNAPSHOT_ADVISORY_LOCK)
+        .execute(&mut *writer)
+        .await
+        .expect("snapshot writer lock should be acquired");
+    sqlx::query(
+        r#"
+        UPDATE marketplace_releases
+        SET signed_policy = $1,
+            policy_version = 2,
+            policy_status = 'suspended',
+            policy_reason = 'Review paused.',
+            updated_at = clock_timestamp()
+        WHERE archive_sha256 = $2
+        "#,
+    )
+    .bind(sqlx::types::Json(&fixture.suspended_policy))
+    .bind(&fixture.admission.archive_sha256)
+    .execute(&mut *writer)
+    .await
+    .expect("writer should stage the suspended policy");
+
+    let action_pool = pool.clone();
+    let runtime = fixture.runtime.clone();
+    let digest = fixture.admission.archive_sha256.clone();
+    let actor_id = persona.id;
+    let (started_tx, started_rx) = tokio::sync::oneshot::channel();
+    let action = tokio::spawn(async move {
+        let _ = started_tx.send(());
+        session_cartridges::admit_session_action(
+            &action_pool,
+            &runtime,
+            actor_id,
+            session_id,
+            uuid::Uuid::new_v4(),
+            0,
+            &digest,
+            "enter",
+            &json!({}),
+        )
+        .await
+    });
+    started_rx.await.expect("action task should start");
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    assert!(
+        !action.is_finished(),
+        "fresh admission must wait behind the exclusive snapshot writer"
+    );
+    writer.commit().await.expect("writer should commit");
+    assert_eq!(
+        action.await.expect("action task should join"),
+        Err(session_cartridges::SessionCartridgeError::Denied)
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM game_session_cartridge_action_admissions WHERE game_session_id = $1",
+        )
+        .bind(session_id)
+        .fetch_one(&pool)
+        .await
+        .expect("admission count should read"),
+        0
+    );
+}
+
+pub(crate) struct AcquisitionFixture {
+    _temp: tempfile::TempDir,
+    store_root: std::path::PathBuf,
+    pub(crate) runtime: CartridgeDistributionRuntime,
+    pub(crate) marketplace_public: omarchygs_game_cartridge::CatalogPublicKey,
+    pub(crate) admission: AcquisitionServerAdmission,
+    pub(crate) suspended_policy: SignedCatalogPolicy,
+}
+
+pub(crate) async fn acquisition_fixture(pool: &PgPool) -> AcquisitionFixture {
     let temp = tempfile::tempdir().expect("fixture temp should create");
     let sdk_root = temp.path().join("sdk");
     let release_root = temp.path().join("release");
@@ -278,6 +510,14 @@ async fn acquisition_fixture(pool: &PgPool) -> AcquisitionFixture {
         "Reviewed exact release.",
     )
     .expect("policy should sign");
+    let suspended_policy = sign_catalog_policy(
+        &release,
+        &marketplace_private,
+        2,
+        CatalogStatus::Suspended,
+        "Review paused.",
+    )
+    .expect("suspended policy should sign");
     let policy = verify_catalog_policy(&signed_policy, &marketplace_public, &release)
         .expect("policy should verify");
     let entry = MarketplaceReleaseEntry {
@@ -375,7 +615,93 @@ async fn acquisition_fixture(pool: &PgPool) -> AcquisitionFixture {
         runtime,
         marketplace_public,
         admission,
+        suspended_policy,
     }
+}
+
+async fn seed_cartridge_action_session(
+    pool: &PgPool,
+    fixture: &AcquisitionFixture,
+    persona_id: uuid::Uuid,
+) -> uuid::Uuid {
+    let mut transaction = pool
+        .begin()
+        .await
+        .expect("session transaction should begin");
+    let session_id: uuid::Uuid = sqlx::query_scalar(
+        r#"
+        INSERT INTO game_sessions (
+            game_key, game_version, revision, status, state, authority
+        )
+        VALUES ('door-legends', 1, 0, 'active', '{}'::jsonb, 'platform_compiled')
+        RETURNING id
+        "#,
+    )
+    .fetch_one(&mut *transaction)
+    .await
+    .expect("action session should insert");
+    sqlx::query(
+        r#"
+        INSERT INTO game_session_participants (game_session_id, persona_id, seat)
+        VALUES ($1, $2, 0)
+        "#,
+    )
+    .bind(session_id)
+    .bind(persona_id)
+    .execute(&mut *transaction)
+    .await
+    .expect("action participant should insert");
+    assert!(
+        session_cartridges::pin_new_session(
+            &mut transaction,
+            &fixture.runtime,
+            session_id,
+            "door-legends",
+            1,
+            Some(&fixture.admission.archive_sha256),
+        )
+        .await
+        .expect("exact cartridge should pin")
+    );
+    transaction
+        .commit()
+        .await
+        .expect("action session should commit");
+    session_id
+}
+
+async fn publish_fixture_policy(
+    pool: &PgPool,
+    fixture: &AcquisitionFixture,
+    status: CatalogStatus,
+) {
+    assert_eq!(status, CatalogStatus::Suspended);
+    let mut transaction = pool.begin().await.expect("policy transaction should begin");
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(omarchy_gaming_system_server::cartridge_catalog::SNAPSHOT_ADVISORY_LOCK)
+        .execute(&mut *transaction)
+        .await
+        .expect("snapshot writer lock should be acquired");
+    sqlx::query(
+        r#"
+        UPDATE marketplace_releases
+        SET signed_policy = $1,
+            policy_version = 2,
+            policy_status = 'suspended',
+            policy_reason = 'Review paused.',
+            updated_at = clock_timestamp()
+        WHERE archive_sha256 = $2
+        "#,
+    )
+    .bind(sqlx::types::Json(&fixture.suspended_policy))
+    .bind(&fixture.admission.archive_sha256)
+    .execute(&mut *transaction)
+    .await
+    .expect("valid suspended policy should publish");
+    transaction
+        .commit()
+        .await
+        .expect("policy transition should commit");
 }
 
 async fn seed_deprecated_catalog(pool: &PgPool) {
