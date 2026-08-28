@@ -3,38 +3,45 @@ type: "Reference"
 title: "Server modules and typed hook boundary"
 openwiki_generated: true
 sources:
-  - id: openwiki-source-b8ce6b5ac0e4d708b3fff1af
-    resource: repo://crates/server-module-spike/tests/contracts.rs
-  - id: openwiki-source-1b0c20715f9f2a7a8217634f
-    resource: repo://crates/server-module-spike/tests/runtime.rs
-  - id: openwiki-source-f629e6aac25104e4390f424c
-    resource: repo://crates/server-module-spike/tests/state_lifecycle.rs
-  - id: openwiki-source-0fa8a0670e40aca3d14c3478
-    resource: repo://docs/architecture/adr-0004-process-isolated-wasm-server-modules.md
+  - id: openwiki-source-ba203ea2e600f294ab58ef02
+    resource: repo://crates/server/src/bin/omarchygs-admin.rs
+  - id: openwiki-source-a13fe4db1eee073d0a7e2c4d
+    resource: repo://crates/server/src/main.rs
+  - id: openwiki-source-2d8ea93c101c36a0e0974581
+    resource: repo://crates/server/src/server_modules.rs
   - id: openwiki-source-e9c32af872bdfcc1f392d212
     resource: repo://docs/architecture/server-modules.md
-  - id: openwiki-source-f866d4e4132782d86cee8049
-    resource: repo://docs/planning/tickets/open/TICKET-040-production-server-module-base-and-observation-hooks.md
-  - id: openwiki-source-7d17fced59b7740c185d58fc
-    resource: repo://docs/planning/tickets/open/TICKET-041-administrator-custom-server-module-installation-and-provenance.md
+  - id: openwiki-source-6d761b854f0836930f612db4
+    resource: repo://docs/operators/server-modules.md
+  - id: openwiki-source-dc62400b0039f0daf5073bd4
+    resource: repo://migrations/0026_server_module_observation_evidence.sql
+  - id: openwiki-source-e08dc6155c081d7928029e27
+    resource: repo://scripts/test-operator-recovery.sh
   - id: openwiki-source-8128bd5b86e858053bc20c68
     resource: repo://scripts/test-server-module-spike.sh
-generated: {by: "codex", at: "2026-08-27T21:56:27.195Z"}
+  - id: openwiki-source-5f564ae64057cbe621fc587a
+    resource: repo://scripts/test-server-modules.sh
+generated: {by: "codex", at: "2026-08-28T00:35:08.763Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-27T21:56:27.195Z
+    at: 2026-08-28T01:06:32.318Z
 ---
 
 # Server modules and typed hook boundary
 
 ## Current status
 
-ADR-0004 selects the architecture for future general server extensions: one
-exact WebAssembly Component Model release runs in one dedicated, OS-contained
-host process with no WASI or other guest imports. Ticket 039 proves that
-boundary in an isolated nested workspace. Production module discovery,
-installation, persistence, routes, configuration, administration, and startup
-are not implemented or authorized.
+ADR-0004 is now implemented for one disabled-by-default, reviewed first-party
+module. When the exact opt-in configuration is present, production registers
+the compiled-in `ignibyte.sentinel` release, proves a fresh packaged host under
+OS containment, creates a server-specific admission, and starts a durable
+dispatcher. Ticket 039 remains the independent architecture proof; Ticket 040
+owns the production observation slice.
+
+There is still no module discovery marketplace, operator-supplied executable
+path, arbitrary install/import, public administration route, admission hook,
+network egress, or gameplay authority. Ticket 041 separately gates custom
+server-module installation and provenance.
 
 The extension families stay deliberately separate:
 
@@ -75,47 +82,72 @@ intent. Core rechecks the exact release, admission, capability, lifecycle,
 target, policy, idempotency identity, and expected revision before any protected
 effect commits.
 
-Observation hooks are the first production class. They consume a future
-durable post-commit outbox, so timeout, trap, malformed output, crash, or retry
-cannot roll back the completed platform action. A later admission hook would
-have to run against an immutable snapshot outside a database transaction, then
-re-lock and revalidate authoritative state before commit.
+The first production observation is emitted by report creation. While Sentinel
+is active and below its 1,024-row outstanding ceiling, the authoritative report
+transaction appends one privacy-minimized `persona_reported` event. Exact report
+replay returns before emission, so it cannot enqueue a duplicate. The event
+contains the report UUID, bounded category, pairwise subject, and exact
+configuration/state snapshots; it excludes report detail, reporter/account
+identity, credentials, arbitrary paths or URLs, and provider authority.
+
+Observation is optional rather than admission. If the module is inactive or
+the queue is saturated, the report still commits and the same transaction
+increments a saturating aggregate gap count with `module_inactive` or
+`queue_saturated` plus its timestamp. After enqueue, timeout, trap, malformed
+output, crash, or retry cannot roll back the completed report. A later
+admission hook would have to run against an immutable snapshot outside a
+database transaction, then re-lock and revalidate authoritative state before
+commit.
 
 ## State, lifecycle, and operations
 
 Configuration and state remain in core-owned bounded namespaces with
 compare-and-set revisions. Upgrade uses an isolated candidate namespace,
 explicit forward migrations, quota/schema validation, and retained rollback
-snapshots. Backups include manifests, admissions, audit, outbox/receipts, and
-namespaced state; restore starts modules disabled until every artifact and
-pending receipt is reverified.
+snapshots. Backups include manifests, admissions, audit, outbox, namespaced
+state, aggregate gap evidence, and immutable delivery receipts. New receipts
+retain the bounded attempt-normalized canonical request, exact response, their
+digests, and target report even after delivered outbox pruning. Upgrade-era
+rows that predate migration 0026 remain explicitly identifiable as incomplete
+rather than receiving fabricated evidence.
 
-Install, enable, disable, upgrade, rollback, suspend, and remove remain future
-database-local administrator operations. Marketplace-vetted and operator-custom
-modules must use the same WIT, conformance, capability, and containment rules;
-their provenance and player disclosures differ, not their runtime power.
+The database-local `omarchygs-admin` process implements bounded inventory plus
+expected-revision disable, suspend, recover, terminal retire, and restore
+commands. Command files must be regular, owner-held, single-link, exact-mode
+0600 files; the shared reader uses no-follow open and verifies descriptor
+identity and metadata stability around the bounded read.
+
+PostgreSQL cannot infer that a raw archive has been restored. The operator must
+therefore run the audited `module-restore` command before any restored server
+startup. It disables every module, clears stale leases, blocks activation, and
+requires explicit review plus recovery before fresh readiness. A configured
+server still starts while the persisted module is inactive and records
+aggregate `module_inactive` gaps without starting its dispatcher. Install,
+upgrade, custom provenance, and removal remain future operations.
 
 ## Proof and next implementation slice
 
-`scripts/test-server-module-spike.sh` regenerates the exact-WIT component
-fixtures twice, runs 21 contract/runtime/state tests, and runs 13 contained
-process scenarios. The hostile matrix includes forbidden imports, wrong
-interfaces, excessive memory, infinite work, traps, tamper, forged context,
-unauthorized intent, host exit, outer timeout, and clean restart. The proof also
-checks deterministic artifacts, local-only quality automation, containment
-signals, and the absence of a production loader.
+`scripts/test-server-module-spike.sh` retains the independent exact-WIT hostile
+proof. `scripts/test-server-modules.sh` is the production entrypoint: it runs
+runtime tests and rustdoc, executes the packaged host under real systemd-user,
+Bubblewrap, prlimit, Wasmtime memory/fuel, and outer-time containment, and
+asserts the fixed sibling loader, absent custom artifact inputs, absent public
+module routes, and absent network/database client dependencies.
 
-The next production slice is Ticket 040: the versioned module base, durable
-observation outbox/dispatcher, one safe typed observation hook and intent,
-state/lifecycle base, and conformance tooling. Ticket 041 keeps administrator
-custom installation and provenance separate. Additional hook classes remain
+The migrated PostgreSQL corpus proves atomic private emission, ordering,
+receipt replay and retention, fail-open gap accounting, bounded failure and
+circuit behavior, readiness configuration/state races, lifecycle/state CAS,
+restore, and legacy receipt semantics. Gate 21 proves pre-start restore
+reconciliation with module configuration still present; gate 24 runs the
+production conformance script. Ticket 041 keeps administrator custom
+installation and provenance separate, and additional hook classes remain
 separately reviewed work.
 
 ## Change map
 
 | Intent | Read first | Narrow evidence |
 |---|---|---|
-| Change artifact, WIT, signatures, provenance, or admission | ADR-0004 and `docs/architecture/server-modules.md` | Contract tests plus deterministic fixture comparison |
-| Change host, supervisor, limits, or local framing | `crates/server-module-spike/src/bin/` | Runtime tests and all process scenarios |
-| Change intents, ordering, state, or lifecycle | `crates/server-module-spike/src/lib.rs` | Runtime and state/lifecycle suites |
-| Add production loading or hooks | Tickets 040–041 and Constitution extension boundaries | New ticketed threat/authority review, CodeGraph inspection, database/process evidence, and canonical local diff gate |
+| Change release, WIT, signatures, admission, framing, host, or limits | ADR-0004, `docs/architecture/server-modules.md`, and `crates/server-module-runtime` | `scripts/test-server-modules.sh` plus deterministic and contained-host conformance |
+| Change report observation, dispatch, receipts, gaps, intents, state, lifecycle, or restore | `crates/server/src/server_modules.rs`, `reports.rs`, migrations `0025`–`0026`, and `docs/operators/server-modules.md` | Focused ignored server-module and operator-CLI tests, gate 21 recovery drill, then gate 24 |
+| Change the independent architecture proof | `crates/server-module-spike` | `scripts/test-server-module-spike.sh` and gate 23 |
+| Add custom installation or another hook/intent | Ticket 041 and Constitution extension boundaries | New ticketed threat/authority review, CodeGraph inspection, database/process evidence, and canonical local diff gate |

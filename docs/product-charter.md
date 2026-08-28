@@ -79,12 +79,13 @@ result recorded.
 - Each owner-operated server controls its admitted catalog. The vetted
   marketplace supplies reviewed exact releases; an operator may instead
   establish an explicitly marked local trust domain for inert custom
-  cartridges without weakening official-client validation. Future executable
-  server extensions remain a separate gated system.
+  cartridges without weakening official-client validation. Executable server
+  extensions remain a separate gated system; the current production base
+  admits only one fixed reviewed observation module when explicitly enabled.
 - Portable game backends use the brokered provider protocol and a future public
   Provider SDK. General server modules and hooks are a separate, versioned,
-  capability-scoped extension family whose executable isolation must be
-  approved before implementation.
+  capability-scoped extension family whose process-isolated first-party base
+  cannot become game authority or client executable content.
 
 ## Definition of private-alpha done
 

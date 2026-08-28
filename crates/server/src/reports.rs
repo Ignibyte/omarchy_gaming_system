@@ -2,6 +2,7 @@ use sqlx::{PgPool, Postgres, Transaction};
 use tracing::{error, info};
 use uuid::Uuid;
 
+use crate::server_modules::{ModuleEmitter, ModuleError};
 use crate::sessions;
 
 const MAX_OPEN_REPORTS_PER_PERSONA: i64 = 25;
@@ -40,11 +41,22 @@ pub enum ReportError {
 
 type ReplayRow = (Uuid, Uuid, String, String, String);
 
+#[cfg(test)]
 pub async fn create_report(
     pool: &PgPool,
     token: &str,
     reporter_persona_id: &str,
     input: CreateReportInput,
+) -> Result<ReportOutcome, ReportError> {
+    create_report_with_emitter(pool, token, reporter_persona_id, input, None).await
+}
+
+pub async fn create_report_with_emitter(
+    pool: &PgPool,
+    token: &str,
+    reporter_persona_id: &str,
+    input: CreateReportInput,
+    module_emitter: Option<&ModuleEmitter>,
 ) -> Result<ReportOutcome, ReportError> {
     let authenticated = sessions::authenticate(pool, token)
         .await
@@ -135,6 +147,13 @@ pub async fn create_report(
     .await
     .map_err(|database_error| database_failure(database_error, "report insertion"))?;
 
+    if let Some(module_emitter) = module_emitter {
+        module_emitter
+            .append_persona_reported(&mut transaction, row.0, subject_id, &category)
+            .await
+            .map_err(map_module_error)?;
+    }
+
     transaction
         .commit()
         .await
@@ -146,6 +165,17 @@ pub async fn create_report(
         status: "open".to_owned(),
         created_at: row.1,
     }))
+}
+
+fn map_module_error(error: ModuleError) -> ReportError {
+    match error {
+        ModuleError::InvalidConfig
+        | ModuleError::InvalidInput
+        | ModuleError::Conflict
+        | ModuleError::Denied
+        | ModuleError::Unavailable
+        | ModuleError::Internal => ReportError::Internal,
+    }
 }
 
 async fn load_replay(

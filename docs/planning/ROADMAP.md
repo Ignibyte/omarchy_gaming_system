@@ -79,9 +79,11 @@ server-authoritative game runtime below.
   marketplace while remaining visibly distinct from vetted releases
 - [x] Server extension architecture spike comparing external-process RPC,
   Wasm, statically compiled modules, and other isolation/upgrade models
-- [ ] Versioned server module base and capability-scoped typed hooks with
-  configuration/state namespaces, compatibility negotiation, audit,
-  disable/upgrade/rollback behavior, and conformance fixtures
+- [x] Versioned production server-module base with one reviewed observation
+  hook/typed intent, exact admission, configuration/state namespaces,
+  lifecycle/restore recovery, process containment, receipts, and conformance
+- [ ] Add reviewed release upgrade/rollback compatibility operations beyond
+  the fixed first-party production fixture
 - [ ] Administrator-controlled custom server-module installation with explicit
   operator trust, player-facing provenance, and no client executable bridge
 - [ ] Reviewed self-hosting terms, privacy/telemetry disclosures, custom-content

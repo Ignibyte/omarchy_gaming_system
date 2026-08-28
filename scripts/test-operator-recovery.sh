@@ -10,6 +10,7 @@ ogs_source_url="postgres://omarchy_gaming_system:omarchy_gaming_system@127.0.0.1
 ogs_restore_url="postgres://omarchy_gaming_system:omarchy_gaming_system@127.0.0.1:5432/$ogs_restore_db"
 ogs_server_binary="$ogs_root/target/debug/omarchy-gaming-system-server"
 ogs_admin_binary="$ogs_root/target/debug/omarchygs-admin"
+ogs_module_host_binary="$ogs_root/target/debug/omarchygs-module-host"
 ogs_active_server_pid=""
 ogs_report_id="a0000000-0000-4000-8000-000000000001"
 ogs_subject_account_id="20000000-0000-4000-8000-000000000001"
@@ -58,16 +59,30 @@ start_server() {
   local ogs_database_url="$1"
   local ogs_port="$2"
   local ogs_log="$3"
+  local ogs_module_mode="${4:-disabled}"
+  local -a ogs_module_environment=()
+
+  if [[ "$ogs_module_mode" == enabled ]]; then
+    ogs_module_environment=(
+      OGS_FIRST_PARTY_REPORT_MODULE=enabled
+      OGS_MODULE_ADMISSION_SIGNING_SEED="$ogs_module_admission_seed"
+      OGS_MODULE_PAIRWISE_SECRET="$ogs_module_pairwise_secret"
+    )
+  elif [[ "$ogs_module_mode" != disabled ]]; then
+    echo "invalid operator recovery module mode: $ogs_module_mode" >&2
+    return 1
+  fi
 
   stop_server
   env \
     DATABASE_URL="$ogs_database_url" \
     OGS_BIND_ADDRESS="127.0.0.1:$ogs_port" \
     OGS_MFA_ENCRYPTION_KEY="$ogs_mfa_key" \
+    "${ogs_module_environment[@]}" \
     RUST_LOG=omarchy_gaming_system_server=warn \
     "$ogs_server_binary" >"$ogs_log" 2>&1 &
   ogs_active_server_pid=$!
-  # A cold 19-migration database can exceed ten seconds after the gate's
+  # A cold migration database can exceed ten seconds after the gate's
   # compile/provider load. Keep the wait bounded without making that load a
   # false recovery failure.
   for _ in {1..300}; do
@@ -121,20 +136,27 @@ assert_scalar() {
 cd "$ogs_root"
 docker compose up -d --wait db
 cargo build -p omarchy-gaming-system-server --bins
+cargo build -p omarchygs-server-module-runtime --bin omarchygs-module-host
 
 [[ -x "$ogs_server_binary" ]]
 [[ -x "$ogs_admin_binary" ]]
+[[ -x "$ogs_module_host_binary" ]]
 
 psql "$ogs_admin_url" -v ON_ERROR_STOP=1 \
   -c "CREATE DATABASE $ogs_source_db OWNER omarchy_gaming_system" \
   -c "CREATE DATABASE $ogs_restore_db OWNER omarchy_gaming_system" >/dev/null
 
 ogs_mfa_key=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n')
+ogs_module_admission_seed=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n')
+ogs_module_pairwise_secret=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n')
 ogs_source_port=$(reserve_port)
-start_server "$ogs_source_url" "$ogs_source_port" "$ogs_temp/source-server.log"
+start_server "$ogs_source_url" "$ogs_source_port" "$ogs_temp/source-server.log" enabled
 ogs_source_server_id=$(curl --fail --silent \
   "http://127.0.0.1:$ogs_source_port/.well-known/omarchygs" | jq -er '.server_id')
 stop_server
+assert_scalar "$ogs_source_url" \
+  "SELECT lifecycle || ':' || activation_allowed::text || ':' || restored_pending_review::text FROM server_module_instances" \
+  active:true:false "source server-module lifecycle"
 
 ogs_token_digest=$(printf '%s' "$ogs_raw_token" | sha256sum | cut -d ' ' -f 1)
 psql "$ogs_source_url" -v ON_ERROR_STOP=1 \
@@ -516,8 +538,32 @@ if psql "$ogs_restore_url" -v ON_ERROR_STOP=1 \
   exit 1
 fi
 
+jq -nc \
+  '{format: "omarchygs.server-module-restore-command/v1",
+    operation_id: "e0000000-0000-4000-8000-000000000001",
+    actor: "recovery-drill-sysop",
+    reason: "Reconcile modules before restored server startup"}' \
+  >"$ogs_temp/module-restore.json"
+chmod 600 "$ogs_temp/module-restore.json"
+DATABASE_URL="$ogs_restore_url" \
+  "$ogs_admin_binary" module-restore "$ogs_temp/module-restore.json" \
+  >"$ogs_temp/module-restore-receipt.json"
+jq -e \
+  'length == 1 and .[0].previous_state == "active" and
+   .[0].resulting_state == "disabled" and .[0].resulting_revision > 0' \
+  "$ogs_temp/module-restore-receipt.json" >/dev/null
+DATABASE_URL="$ogs_restore_url" "$ogs_admin_binary" modules \
+  >"$ogs_temp/restored-modules.json"
+jq -e \
+  '.modules | length == 1 and .[0].lifecycle == "disabled" and
+   .[0].restored_pending_review == true' \
+  "$ogs_temp/restored-modules.json" >/dev/null
+assert_scalar "$ogs_restore_url" \
+  "SELECT lifecycle || ':' || activation_allowed::text || ':' || restored_pending_review::text FROM server_module_instances" \
+  disabled:false:true "restored server-module safety gate"
+
 ogs_restore_port=$(reserve_port)
-start_server "$ogs_restore_url" "$ogs_restore_port" "$ogs_temp/restore-server.log"
+start_server "$ogs_restore_url" "$ogs_restore_port" "$ogs_temp/restore-server.log" enabled
 ogs_restore_server_id=$(curl --fail --silent \
   "http://127.0.0.1:$ogs_restore_port/.well-known/omarchygs" | jq -er '.server_id')
 if [[ "$ogs_restore_server_id" != "$ogs_source_server_id" ]]; then

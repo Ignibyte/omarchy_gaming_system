@@ -81,10 +81,10 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-generated: {by: "codex", at: "2026-08-27T21:56:27.195Z"}
+generated: {by: "codex", at: "2026-08-28T00:35:08.763Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-27T22:03:08.727Z
+    at: 2026-08-28T01:06:32.318Z
 ---
 
 # Product and architecture boundaries
@@ -191,8 +191,11 @@ persona ownership without exposing private account identity.
 Platform backup is a separate operator responsibility from cursor recovery.
 The implemented drill restores the PostgreSQL application schema and
 representative identity, social, inbox, game, report, suspension, and audit
-state into an isolated database, then starts the production server and proves a
-pre-suspension token remains invalid. It also requires the restored server's
+state into an isolated database. Before any restored startup it runs the
+database-local module restore reconciliation, proves the copied active module
+is disabled and review-blocked, then starts the production server with the
+module configuration still present and proves a pre-suspension token remains
+invalid. It also requires the restored server's
 public UUID to match the source, because that continuity identity belongs to
 the platform database. Copying or forking the database therefore copies the
 UUID too; intentional fork or rotation tooling remains future work.
@@ -244,7 +247,9 @@ implemented, as are signed host-local multi-screen navigation and the
 offline-root-authenticated public trust/package channel. Explicit
 operator-custom trust, source-aware server admission/history, and persistent
 unvetted player warnings are implemented without granting new executable or
-gameplay authority. Federation, server
+gameplay authority. The first production server-module slice is also
+implemented for one exact compiled-in reviewed observation component without
+opening custom installation. Federation, server
 identity fork/rotation, marketplace-root rotation, remote administration,
 external-provider onboarding, automatic privileged package installation,
 and general plugins remain later slices.
@@ -384,14 +389,15 @@ to become gameplay authority. Its local ceremony and mirror drills do not
 prove real production root custody, hosting, monitoring, or staff separation.
 
 Executable extension families stay separate. Portable game rules use the
-authenticated provider boundary and a future public Provider SDK. ADR-0004 now
-selects dedicated no-WASI Component Model host processes for future general
-server behavior. Modules receive typed bounded hooks, propose only typed
-intents, and rely on core reauthorization, lifecycle, state, audit, resource,
-failure, upgrade, rollback, and recovery controls. The isolated Ticket 039 proof
-supports that decision; no production module loader, dynamic Rust plugin ABI,
-mutable hosted marketplace application service, operator-custom executable
-installation, or external-provider onboarding is implemented or authorized.
+authenticated provider boundary and a future public Provider SDK. ADR-0004's
+dedicated no-WASI Component Model host is implemented for one opt-in,
+compiled-in Sentinel release. It receives only a privacy-minimized
+`persona_reported` observation and may propose only one typed moderation label;
+core reauthorizes current authority and commits the effect. The isolated Ticket
+039 proof remains independent. No dynamic Rust plugin ABI, discovery
+marketplace, arbitrary executable path, mutable hosted marketplace application
+service, operator-custom module installation, additional hook class, or
+external-provider onboarding is implemented or authorized.
 See [Server modules](server-modules.md) for the exact boundary and next slices.
 
 The implemented public channel authenticates bounded trust and native package

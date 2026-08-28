@@ -1,0 +1,17 @@
+package ignibyte:omarchygs-server-module@1.0.0;
+
+world module-production {
+    record hook-event {
+        kind: u32,
+        revision: u64,
+        granted-capabilities: u64,
+    }
+
+    record module-intent {
+        kind: u32,
+        expected-revision: u64,
+        value: u64,
+    }
+
+    export handle: func(event: hook-event) -> module-intent;
+}

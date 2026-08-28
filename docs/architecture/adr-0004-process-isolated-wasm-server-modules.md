@@ -1,6 +1,6 @@
 # ADR-0004: Process-isolated Wasm server modules
 
-- Status: accepted for future implementation; production loading remains disabled
+- Status: accepted; first production observation-only slice implemented as an explicit opt-in
 - Date: 2026-08-27
 - Knowledge ID: `AD-omarchy-gaming-system-process-isolated-wasm-server-modules-001`
 
@@ -109,9 +109,10 @@ reliable.
 - The portable author contract is language-neutral WIT, not a Rust ABI.
 - OmarchyGS must ship and patch the native host/runtime even though components
   release independently.
-- A future core dispatcher needs a durable bounded outbox, receipt ledger,
-  partition ordering, retry/dead-letter policy, circuit breaker, and explicit
-  fail-open/fail-closed hook classification.
+- The first core dispatcher uses a durable bounded outbox, self-contained
+  receipt ledger, partition ordering, retry/dead-letter policy, circuit breaker,
+  and explicit fail-open observation classification. Later hook classes must
+  make their availability policy equally explicit.
 - Configuration and state require core-owned module namespaces, quotas,
   compare-and-set revisions, staged forward migrations, retained rollback
   snapshots, and disabled-on-restore activation.
@@ -130,6 +131,9 @@ reliable.
 - `crates/server-module-spike/` and
   `scripts/test-server-module-spike.sh` implement the isolated proof without
   linking it to the production workspace.
+- `crates/server-module-runtime/`, migration `0025_server_modules.sql`, and
+  `scripts/test-server-modules.sh` implement and gate the fixed first-party
+  production observation base without authorizing custom artifact admission.
 - [WebAssembly Component Model](https://component-model.bytecodealliance.org/)
   defines the WIT and Canonical ABI foundation.
 - [Wasmtime security](https://docs.wasmtime.dev/security.html) describes its

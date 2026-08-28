@@ -53,10 +53,14 @@ sources:
     resource: repo://crates/server/src/operator_admin.rs
   - id: openwiki-source-22753602a862c32d10560204
     resource: repo://crates/server/src/persona_api_tests.rs
+  - id: openwiki-source-37dbfbe1f44680fae1be88b6
+    resource: repo://crates/server/src/server_module_tests.rs
   - id: openwiki-source-76060b846b9222af2c790243
     resource: repo://crates/server/src/signal_siege_api_tests.rs
   - id: openwiki-source-46fb4135d6a71efad1062c0d
     resource: repo://crates/server/src/sync_api_tests.rs
+  - id: openwiki-source-617c314455b6ad7778b62ccf
+    resource: repo://crates/server/tests/operator_cli.rs
   - id: openwiki-source-6ef5cb9ff978eb09c62cd313
     resource: repo://scripts/build-client-package.sh
   - id: openwiki-source-1951c64828cbf175c78556c4
@@ -89,16 +93,20 @@ sources:
     resource: repo://scripts/test-marketplace-publication.sh
   - id: openwiki-source-e08dc6155c081d7928029e27
     resource: repo://scripts/test-operator-recovery.sh
+  - id: openwiki-source-a0a026a4d434d1b48884aa8e
+    resource: repo://scripts/test-private-alpha.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
   - id: openwiki-source-8128bd5b86e858053bc20c68
     resource: repo://scripts/test-server-module-spike.sh
-generated: {by: "codex", at: "2026-08-27T21:56:27.195Z"}
+  - id: openwiki-source-5f564ae64057cbe621fc587a
+    resource: repo://scripts/test-server-modules.sh
+generated: {by: "codex", at: "2026-08-28T01:06:32.318Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-27T22:03:08.727Z
+    at: 2026-08-28T01:06:32.318Z
 ---
 
 # Development and validation
@@ -285,7 +293,8 @@ human `pacman -U` operation.
 It includes native client package source admission and the root-signed
 marketplace trust-channel proof at stage 15a plus the deterministic static
 publication and offline-root drill at stage 15b. Stage 23 runs the isolated
-server-module architecture proof in both fast and diff modes.
+server-module architecture proof and stage 24 runs production server-module
+conformance in both fast and diff modes.
 `bin/gate.sh --diff` adds the full native artifact and cartridge-acquisition conformance, isolated
 migrated PostgreSQL tests, and
 the live PostgreSQL → Rust game-catalog/health/account/session/persona/
@@ -358,8 +367,11 @@ The gate currently covers:
     rotation/revocation, and stale-publication rollback denial.
 15. the isolated server-module nested workspace's format, lint, 21-test corpus,
     deterministic exact-WIT component fixtures, 13 contained process scenarios,
-    typed-intent/state/lifecycle checks, local-only automation enforcement, and
-    explicit production-loader absence.
+    typed-intent/state/lifecycle checks, and local-only automation enforcement;
+16. the production server-module crate and packaged host's exact release/WIT/
+    framing contract, real OS containment, fixed sibling loader, absent custom
+    artifact inputs and public routes, plus migrated observation, gap, receipt,
+    readiness-race, state/lifecycle, and restore evidence.
 
 ### Platform operator recovery
 
@@ -373,9 +385,13 @@ PostgreSQL dump, restores into the isolated target with `--exit-on-error` and
 
 The restored database must retain the source server UUID, account suspension,
 session revocation, report disposition, linked immutable audit, and
-representative platform history. The drill starts the production server on
-loopback against that restore and requires the pre-suspension raw token to fail with
-`invalid_session`. Cleanup drops only the two exact validated database names;
+representative platform history. Before any restored startup, the drill runs a
+mode-0600 `module-restore` command through the real administrator, requires the
+copied active module to become disabled and restore-review-blocked, then starts
+the production server on loopback with module configuration still present. The
+core must become healthy without reactivating the module, preserve its source
+UUID, and reject the pre-suspension raw token with `invalid_session`. Cleanup
+drops only the two exact validated database names;
 the ordinary development database is untouched. See
 `docs/operators/operator-safety-and-recovery.md` for production key custody,
 backup protection, restore review, and current limitations.
@@ -384,7 +400,8 @@ backup protection, restore review, and current limitations.
 
 `scripts/test-private-alpha.sh` is gate 22. It creates a fresh isolated
 database, issues two invitations through the real local `omarchygs-admin`
-executable, and starts the production server after applying all 18 migrations.
+executable, and starts the production server after applying the complete
+embedded migration set.
 Its bounded startup wait allows up to 30 seconds for a cold migration path and
 fails immediately if the server process exits.
 
@@ -396,6 +413,26 @@ revoked inventory without raw codes or credential fields, 32-byte digest-only
 persistence, linked operator audit rows, and server logs free of both invitation
 codes and the submitted password. This is software-readiness evidence; the
 operator still must run the human event in `docs/operators/private-alpha.md`.
+
+### Production server-module conformance
+
+`scripts/test-server-modules.sh` is gate 24. It runs formatting, warning-denied
+lint, unit/integration conformance, and warning-denied rustdoc for the normal
+workspace module runtime, builds the packaged sibling host, and executes its
+ignored real-process case under the production systemd-user, Bubblewrap,
+prlimit, Wasmtime memory/fuel, and parent-deadline boundary. The script also
+asserts that production uses only the packaged sibling, accepts no component,
+release, WIT, URL, or host path, adds no public module route, gives the host no
+network/database client dependency, exposes no custom install/import entrypoint,
+and preserves local-only quality automation.
+
+`scripts/test-database.sh` owns the durable adapter evidence. Six serial
+server-module cases cover atomic private report emission, core reauthorization,
+receipt replay and retained request evidence after pruning, bounded failures
+and circuit degradation, fail-open inactive/saturated gap accounting,
+configuration/state readiness races, lifecycle/state CAS and rollback, restore,
+and honest legacy receipt upgrade semantics. The real administrator CLI suite
+adds safe inventory and private lifecycle/restore command-file coverage.
 
 ### Production Game Cartridge conformance
 
@@ -546,11 +583,14 @@ dual-proof disablement with cleanup. Together with two account-registration
 router cases, three invitation-registration cases, three session tests, three
 persona tests, five game tests, seven challenge tests, six synchronization
 tests, four Signal Siege cases, one Door Legends authority case, two report
-cases, and one server-discovery case, these make fifty-one PostgreSQL-backed
-server tests. Five additional operator-domain database tests cover the local
-queues, account containment, invitation lifecycle, report disposition,
-concurrency, replay, and append-only audit; two integration tests execute the
-real CLI adapters.
+cases, one server-discovery case, five cartridge-catalog cases, and six
+production server-module cases, these make sixty-two PostgreSQL-backed server
+tests. Three additional library integration tests cover marketplace
+synchronization/key rotation and operator-custom cartridge admission. Five
+operator-domain database tests cover the local queues, account containment,
+invitation lifecycle, report disposition, concurrency, replay, and append-only
+audit; five integration tests execute the real CLI adapters, including the
+module commands.
 The synchronization cases
 exercise durable baseline/incremental/reset behavior, mutation-coupled event
 delivery, owner privacy, and real-TCP WebSocket authentication, hinting, frame
@@ -598,6 +638,11 @@ server, so absent or stale provenance fails closed.
   A missing Bubblewrap or unsupported user-scope containment is an environment
   failure; a trap, resource abuse, crash, or timeout must still produce its
   bounded stable outcome and permit a clean restart.
+- Production module failure: run `scripts/test-server-modules.sh`, then separate
+  signed-contract/runtime failures from packaged-host containment and fixed-
+  loader assertions. For durable emission, gaps, receipts, readiness races,
+  lifecycle, state, or restore failures, run the ignored `server_module_tests`
+  serially through `scripts/test-database.sh`; do not bypass gates 21 or 24.
 - Cartridge preview rejection: read the machine-readable preview error code;
   verify signature/compatibility, pinned view schema, exact action shape,
   private empty output directory, and selected Core/Rich-2D budget. Run

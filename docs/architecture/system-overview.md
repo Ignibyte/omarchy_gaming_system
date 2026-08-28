@@ -41,13 +41,15 @@ PostgreSQL
   reconnect and remains the synchronization source of truth.
 - Portable frontend, game-backend, and general server-extension contracts are
   distinct. Cartridges are inert data rendered by trusted QML; portable game
-  rules use the brokered provider protocol; future server modules use the
+  rules use the brokered provider protocol; server modules use the
   ADR-0004 process-isolated no-WASI Component Model host, exact WIT contracts,
   and capability-scoped typed hooks/intents. Core reauthorizes every proposal;
   modules cannot shortcut domain authorization or become gameplay authority.
-- Production server-module discovery, installation, persistence, routes, and
-  startup remain disabled. The nested Ticket 039 host is architecture proof
-  only and is not linked into the production workspace.
+- The production module base is disabled unless the exact all-or-none
+  first-party configuration is present. It admits only the compiled-in reviewed
+  Sentinel release, durably observes new persona reports, and may propose only
+  a core-reauthorized `priority_review` label. It exposes no public module route,
+  custom artifact path, arbitrary egress, client code, or gameplay authority.
 - A server operator may eventually admit marketplace-vetted or explicitly
   operator-custom content. Provenance and support expectations differ, but the
   official client never accepts raw server-supplied QML, JavaScript, native
@@ -99,6 +101,14 @@ the first identity HTTP surfaces:
   reporter, accepts one bounded persona target/category/detail under a UUID,
   caps each reporter at 25 open reports, and returns only an exact private
   receipt. Reports do not generate sync hints or notify the subject.
+- when the exact first-party report module is explicitly enabled, the same
+  report transaction appends a privacy-minimized durable observation. A bounded
+  dispatcher executes one no-WASI component in a fresh OS-contained process,
+  then core independently reauthorizes and receipts its single typed label
+  proposal. Host faults retry and dead-letter without rolling back committed
+  reports. An inactive module or saturated queue never rejects a core report;
+  the same transaction records an aggregate reason, count, and timestamp
+  without growing the queue.
 - the separate `omarchygs-admin` process is a PostgreSQL-local operator
   adapter, not an HTTP route or reusable administrator credential. It lists a
   bounded report queue and invitation inventory, issues digest-only expiring

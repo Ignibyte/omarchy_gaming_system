@@ -1,12 +1,13 @@
 # OmarchyGS server modules
 
-Status: architecture and isolated proof accepted by ADR-0004. Production module
-loading, installation, persistence, routes, discovery, and administration are
-not implemented or authorized.
+Status: ADR-0004 and the production observation-only base are implemented.
+Production may opt into exactly one compiled-in, reviewed first-party module.
+Arbitrary installation, marketplace/custom admission, public administration,
+admission hooks, egress, and game authority remain unavailable.
 
 ## Purpose and extension families
 
-Server modules are future operator-admitted executable extensions for general
+Server modules are server-side executable extensions for general
 community behavior such as moderation annotations or bounded integrations.
 They do not provide a game's frontend or own a game's rules.
 
@@ -63,17 +64,17 @@ core validates current lifecycle/capability/target/revision/policy
   └─ authoritative effect + immutable receipt (one transaction)
 ```
 
-The spike uses a four-byte big-endian frame length followed by canonical JSON,
-with a 64 KiB ceiling rejected before payload allocation. Production may use a
-different local transport only if it preserves the same exact authenticated
-context, framing bounds, deadlines, and stable errors.
+Production uses a four-byte big-endian frame length followed by canonical JSON,
+with a 64 KiB ceiling rejected before payload allocation. The server resolves
+only its packaged sibling `omarchygs-module-host`; configuration cannot supply
+a component, host path, URL, WIT, release, or native command.
 
 Component files are opened once and read through a `MAX+1` bounded reader
 before compilation or signature work. A path metadata pre-check followed by an
 unbounded read is not an artifact ceiling because the backing file can change.
 
-The proof WIT is
-`ignibyte:omarchygs-server-module@1.0.0/module-proof`. OmarchyGS admits one
+The production WIT is
+`ignibyte:omarchygs-server-module@1.0.0/module-production`. OmarchyGS admits one
 supported major plus the exact checked-in WIT SHA-256. Compatible additions
 use new named hooks, intents, or capabilities; incompatible field/semantic
 changes require a new major. Current Component Model tooling remains an
@@ -81,7 +82,7 @@ explicitly pinned dependency rather than a permissive negotiation surface.
 
 ## Hook data and privacy
 
-A future `ModuleHookEventV1` binds:
+The v1 module hook event binds:
 
 - server, module, exact release, and admission identities;
 - core-owned event UUID, delivery attempt, hook kind/version, causal revision,
@@ -96,7 +97,7 @@ material, bearer/device token, database row/handle/credential, raw private
 message unless a separately designed content hook explicitly grants it,
 arbitrary URL/path, provider grant, or client executable content.
 
-The proof's `persona-reported` observation contains a report UUID, bounded
+The first `persona_reported` observation contains a report UUID, bounded
 category, and pairwise persona subject; it does not expose reporter account
 ownership or free-form report detail.
 
@@ -120,20 +121,32 @@ release/event/ordinal and rechecks:
 
 Only a core service commits protected state. Identical delivery returns the
 original receipt; the same event identity with a different body conflicts.
+Every new immutable delivery receipt retains the attempt-normalized canonical
+request and exact response beside their digests and target report. Receipts
+created before migration 0026 remain explicitly marked as legacy incomplete
+evidence rather than receiving fabricated history.
 
-## Ordering, failures, and backpressure
+## Ordering, failures, and bounded observation gaps
 
 Delivery is at least once. The dispatcher partitions by exact module release,
-hook, and subject and preserves event order within a partition. Independent
-partitions may execute concurrently. Memory queues and frame/payload sizes are
-bounded, and empty partition state is removed after delivery; saturation
-remains durable backpressure, not unbounded process memory.
+hook, and subject and preserves event order within a partition. The first
+production slice runs one bounded worker; the partition model permits later
+measured concurrency without weakening per-partition order. Memory queues and
+frame/payload sizes are bounded, and empty partition state is removed after
+delivery.
 
-Observation hooks are post-commit and fail-open with respect to the completed
-platform mutation. Timeout, trap, malformed response, unavailable host, or
-process exit records a stable failure and follows bounded retry/backoff and
-dead-letter policy. Repeated faults trip a core-owned circuit breaker to
-`degraded`; fresh deliveries pause while durable work remains.
+The outbox append shares the authoritative report transaction while the module
+is active and under its 1,024-row non-delivered budget. Because this hook is
+optional observation—not admission—an inactive module or full queue never
+rejects the core report. The same transaction increments a saturating aggregate
+gap counter with a stable reason and timestamp instead of adding an unbounded
+skipped-event row. Operators can therefore detect lost observations without
+letting extension availability control platform availability. After enqueue,
+timeout, trap, malformed response, unavailable host, or process exit cannot
+roll back the report. It records a stable failure and follows three bounded
+attempts with backoff and durable dead letter. Repeated faults trip a core-owned
+circuit breaker to `degraded`; fresh deliveries pause while durable work
+remains.
 
 Any future admission hook is a different class. It evaluates an immutable
 pre-commit snapshot outside database transactions, has an operator-selected
@@ -155,10 +168,14 @@ pre-upgrade namespace snapshot are retained for rollback. A failed migration
 does not mutate the live namespace. Uninstall retains audit/tombstone and
 requires an explicit state-disposition decision.
 
-Backups include manifests, provenance, admissions, audit, outbox/receipts, and
-namespaced state. They exclude process/JIT images and untrusted native caches.
-Restore starts every module disabled until exact artifacts, WIT/host
-compatibility, admission, state, and pending receipts have been reverified.
+Backups include manifests, provenance, admissions, audit, outbox/receipts,
+observation-gap evidence, and namespaced state. They exclude process/JIT images
+and untrusted native caches. PostgreSQL cannot distinguish an ordinary restart
+from a byte-for-byte raw restore. The canonical restore procedure therefore
+runs the audited database-local restore reconciliation before any restored
+server startup; that operation leaves every module disabled until exact
+artifacts, WIT/host compatibility, admission, state, and pending receipts have
+been reverified.
 
 ## Lifecycle and operations
 
@@ -171,12 +188,16 @@ staged → disabled → enabling → active → degraded/suspended
 disabled → retired (terminal)
 ```
 
-Install, enable, disable, upgrade, rollback, suspend, and remove are future
-database-local administrator operations with operation UUID, expected state
-and revision, actor, bounded reason, exact release/provenance/capability review,
-and an immutable same-transaction audit record. Disable/suspend stops new work
-before process termination. Recovery re-verifies bytes and reconciles receipts
-before returning active.
+Opt-in startup registers the exact compiled release, verifies immutable
+release/provenance/WIT/component bindings, probes a fresh contained host, and
+creates a server-signed admission before activation. Database-local
+`omarchygs-admin` inventory, disable, suspend, recover, retire, and restore
+commands use an operation UUID, expected revision, actor, bounded reason, and
+an immutable same-transaction audit record. Disable/suspend releases in-flight
+leases and stops new work. Recovery returns to disabled and clears the restore
+or circuit policy; the next configured startup must pass readiness before it
+returns active. Install, upgrade, custom provenance, and removal remain future
+operations.
 
 Marketplace-vetted and operator-custom modules execute under the same WIT,
 conformance, capability, and sandbox rules. Custom provenance requires explicit
@@ -186,7 +207,7 @@ owner's bypassed executable code merely because the host contains it.
 
 ## Host policy
 
-The production service profile must provide at least:
+The production service profile provides:
 
 - one exact release and service identity per process;
 - read-only component, system libraries, and host binary;
@@ -199,30 +220,35 @@ The production service profile must provide at least:
 - structured health, trap, timeout, retry, circuit-breaker, queue, and resource
   telemetry that never logs private payloads or credentials.
 
-The proof applies Bubblewrap `--unshare-all`, capability removal, cleared guest
+The production host applies Bubblewrap `--unshare-all`, capability removal, cleared guest
 environment, read-only exact binds, no home or `/etc/passwd`, a private network
 namespace, systemd user-scope memory/CPU/task ceilings, inherited `prlimit`
 file-descriptor ceilings, Wasmtime memory/fuel limits, and a parent-owned 500 ms
-execution deadline. These are measured proof ceilings, not final defaults.
+execution deadline. A fresh process and fresh limited Wasmtime Store/instance
+are created for every readiness probe and delivery.
 
 ## Conformance and implementation sequence
 
-`scripts/test-server-module-spike.sh` deterministically componentizes inert
-fixture modules from the exact WIT, builds them twice, and exercises:
+`scripts/test-server-module-spike.sh` retains the independent architecture
+proof. `scripts/test-server-modules.sh` and the PostgreSQL suite exercise the
+production crate, exact component digest, packaged host, and durable adapter:
 
 - strict signing/canonicalization, separate provenance classes, exact WIT and
   digest binding, unknown/duplicate/downgrade rejection, bounded framing, and
   sensitive-field absence;
 - valid typed event to core-authorized intent, no-op, exact/changed replay,
-  queue ordering/backpressure, state CAS/quota/backup/restore, atomic
+  queue ordering/gap accounting, state CAS/quota/backup/restore, atomic
   migration/rollback, and lifecycle idempotency/retirement;
 - undeclared capability, component/signature/context tamper, wrong interface,
   forbidden import, excessive memory, trap, infinite loop/fuel exhaustion,
   process exit, outer timeout, and clean restart; and
-- sandbox readiness, host RSS ceiling, deterministic artifacts, no production
-  loader/configuration, and local-only quality automation enforcement.
+- sandbox readiness, host RSS ceiling, deterministic artifacts, fixed
+  production loader/configuration, no public module routes/custom artifact
+  inputs, and local-only quality automation enforcement.
 
-The next production ticket may implement only the versioned module registry,
-observation outbox/dispatcher, one safe typed observation hook/intent, state and
-lifecycle base, and conformance tooling. Administrator custom installation and
-additional hooks remain separately reviewed follow-up work.
+Ticket 040 implements only the versioned registry, observation
+outbox/dispatcher, `persona_reported` hook, `moderation_add_label` proposal,
+namespaced state/lifecycle/recovery, and conformance tooling. The exact fixture
+maps numeric label `7` to the core-owned `priority_review` label after current
+authorization. Administrator custom installation and additional hooks remain
+separately reviewed follow-up work.

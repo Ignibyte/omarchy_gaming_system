@@ -1,14 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0c547afcf44cadc4160f4fd26a6f74818d804b9487ffa3467df2859986ba2def",
+  "pageVersion": "sha256:502dc079b9450b67aabe74acca8c8ecae9aa2ad60f4a2e9d7bd0f8f88f95fc1c",
   "claims": [
     {
       "id": "claim_4f65db80bf0a4fd8b7bb50530ec91649",
-      "statement": "ADR-0004 selects one exact no-WASI WebAssembly Component Model release per dedicated OS-contained host process, while production discovery, install, persistence, routes, and startup remain absent.",
+      "statement": "ADR-0004 is implemented for one opt-in compiled-in reviewed first-party module using an exact no-WASI Component Model release per dedicated OS-contained host process; custom installation and public module administration remain absent.",
       "evidence": [
         {
-          "resource": "repo://docs/architecture/adr-0004-process-isolated-wasm-server-modules.md#L28-L66",
-          "version": "repo-lines-v1:sha256:fceb10466474c1b4ebb15de7fe197263a4d33d4a3afae44e1848ae23f2f855fe:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkM2RiYzRlN2U3Y2JlNWRkYzg5MWIwODA3MTJmNjM1MWM5NGI3MjhlYzhiZDg1NTZmNDYxMmIwNzBkMjdiNDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhlNTk2NmI2YTI2YzBlZTllN2VhZWU0M2RlYTI0OWFkMTdkYTI4YzcyY2QwMTM2NDMwYzg2MGNiNzZlNTJhMWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhZjIxODYzMTRiNTUxNjUxODY1Y2E4ODg0NzdmNzQ2ZTljZWVhNTFkYTFhYjVhMzQ4ZTBiZjI0YzZhYTZlZTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ5MGZmNzA5ZWJkMzIzMDI2ZDQwNjhiNzFmZGMzZmRjZjBhMjc4ZWViZGI3NTgyYjAzNzQ2OTdjMzRiMTg1ZmEifQ"
+          "resource": "repo://docs/architecture/server-modules.md#L1-L23",
+          "version": "repo-lines-v1:sha256:b5d7256b54b1dcaa5017010ee5bbcfd844293f6e3be5e40ff7a1855e487cb15d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4MjJjMTM0MDU5ODFiNDdiMTE4ZWI0ZmRlODcyYTQxY2I0ZWFjZDUzODFiZTkxZTE1N2U0MTkzZTQzZGY4NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0MjZmOTJmMzFlMTQ0OThiMzkxZWNiNzlkZjc0ZTUwZjcwY2EzN2ZjMjQ4MzFjZWNkZDhkMDkxNGUzNDJmZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0MGJiMTVhZGIyNWQzYWMxMzEyY2MxNGY0MjkzODk0NzM0ZjAzMjhmYTdiZGMwZWJlNTU4MjY1ZjRiOWQ3NjEifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/server_modules.rs#L28-L180",
+          "version": "repo-lines-v1:sha256:a5e3e5b06df9afe018ca1aed5311273e6584a8ad737836eeb25b2e8be5089975:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmMGUwN2UzZmM0NGQ5YzVlNTBjOWVhNjdkMTdiYzQ5MTA0ZGRkNzA2NzE1OGI5ZDM1YjhjYTQ1MDNiMjYzNDEyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODkzZjQwZTM3ODFlYjg5NmM4MmQwNDZhMDgwNjdhMTFlMzVjZGYyZjFkZmFmMjZmZWE5MGI4ZGI2Njc2NDEzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhZGJlODQ4NzA3NzZmMmUwODhjMDA3NmVhN2IwNDg5YTNlMjYzNDhmYjY3ZDg3Y2ViODg3Zjc4NTIxOWZkZmU2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIxN2NjMDA3M2NkOWYxOTU5YWNiMTdkZmE2NDA4YjNiODgyZTNiMWU4OWYzMmNhMDMwZTZlMjExMWQ2M2I4NjZhIn0"
         }
       ]
     },
@@ -17,8 +21,8 @@
       "statement": "A server module receives only bounded typed hook data and can return only typed intents that core reauthorizes against current release, admission, capability, lifecycle, target, policy, and revision before committing.",
       "evidence": [
         {
-          "resource": "repo://docs/architecture/server-modules.md#L82-L122",
-          "version": "repo-lines-v1:sha256:b078a81beae94f40ad2fecfeb46a0fa6af982f4a68a6ceadd0b826a4f9b83d74:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2OWQ1OTM5YTk1NWVmNzMyNzA3YzBjMjhiYzQxNDQ1NjJlNTJhZDBkNDdiNmU2YjY2ZTA3N2Y4NTlmMDk3MzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1MzkwN2YxZjRlZDdhZDcyY2U2ZTU1N2E1MGM0M2NhM2Y5ZDIyMjljM2M3MDdjNGY4NGM3NGRlYjY2ZDA5YzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFkNWIwNTY1NGYxODExZDI2Yzc0MTRlMzEzZmM4M2YzMTEyMjdiYjkxNGRhNDIwNzk0OGE5M2ZmMzk2NGJlOWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0ZDNmNjA0ODBiNzMxZDBkNDcxNjkyYTQ1MTZiNjBiNjZkNzk1NmQ1MWViZjk1NzkyN2RmYWQ4M2JiYTZmMWYifQ"
+          "resource": "repo://docs/architecture/server-modules.md#L83-L127",
+          "version": "repo-lines-v1:sha256:d2e0b44a417350cc17fff9139693962093951e250c72e06d07ea001eacf7fe40:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2OWQ1OTM5YTk1NWVmNzMyNzA3YzBjMjhiYzQxNDQ1NjJlNTJhZDBkNDdiNmU2YjY2ZTA3N2Y4NTlmMDk3MzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3YmUwNDVjMDhiMzZiYjAyNGFhZmQ0MjBiZTY2MGVjZTZlMjQwY2QxMWZhNjM0ODAzMzcyOGIwNDVmMWEwNzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFkNWIwNTY1NGYxODExZDI2Yzc0MTRlMzEzZmM4M2YzMTEyMjdiYjkxNGRhNDIwNzk0OGE5M2ZmMzk2NGJlOWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRiMjEzZTk2ODU2MDhhNmUzZTBhYzcxMGMyMDI0MjRiZTAyMWE2NGE4YWYyMDU3MzVlYmM3NDlhZDJlZWJkODUifQ"
         }
       ]
     },
@@ -34,21 +38,29 @@
     },
     {
       "id": "claim_e43216f2ae6540f3bcda808dba5a74df",
-      "statement": "Observation hooks consume a future durable post-commit outbox and fail open for the completed platform mutation; any later admission hook must run outside the database transaction and revalidate authoritative state before commit.",
+      "statement": "The implemented persona-report observation appends to a durable same-transaction outbox while active, but inactive or saturated delivery commits the core report with bounded aggregate gap evidence; any later admission hook remains a separately reviewed pre-commit class.",
       "evidence": [
         {
-          "resource": "repo://docs/architecture/server-modules.md#L124-L142",
-          "version": "repo-lines-v1:sha256:6ad76ccf2899f01b6e89ef94a99d73fc0fa2e848821a0f7aba51c7ae6277cd0a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlNTIyZTcyZTdlZWU3YzY5N2Q2NGYyMzU4ODc4M2ZkZjQ3M2QyYzRhYzg0NTRkMjUwNmE1N2E4ZmZlMjg5NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzNzY1ZmIyNTkyMTlkYTMzOTc3MDIxMmYzNzY5MGQxMTM4NDg4NzM3YWIxMjViNDY1MDZlNTdkZjhlZTFkYzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI0N2EyMGM0MDNiZjZlNWY1NDE1ZmRhMGVhODQ1OTdiNjg3YjRiNWY2Mzg2NjFjMzJlYjJlMDcwNmE4NjEyOGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4OWUyMzFjOGYyY2Q4MmMwZmUyOWJkYWNhOGM5YmEyNzgzZjhhZjkzOThiNDUxZjI2OWUwN2Q2ZDI5N2U1MDcifQ"
+          "resource": "repo://crates/server/src/server_modules.rs#L644-L789",
+          "version": "repo-lines-v1:sha256:78484661c266553e17a6f93b986ece5aaabf777f7bfe89b9b43b2051b4b6869e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0NDZlM2ZjYWVkYjhiMGMwMTFhMTk4OGU3NTgxODRkNmFhYmEzMWYxMGI3ODBhNzExOTdmZDgzYzY2NjNjOTIxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJiNDk3OTUxZDZiOTdjZTU4NGFhOTA4MjE4Mjk1ZmQ1MTNlNGMxOTZmZjcxODlkNTIzNzExYWM5YWM1YWMwMDEwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhMjY3ZWYwMjk4NTQyYjM1YjJlNTAwNzJiZDc2OWMyOGVlZWE4ZWYxNzgwZmJlOTkwNDBmNTcwYjQyY2FmMTU1In0"
+        },
+        {
+          "resource": "repo://docs/architecture/server-modules.md#L129-L155",
+          "version": "repo-lines-v1:sha256:4563d32374b206d11610b2f54a2d933acf3d6f735a6ee9a051236e1187206a8b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3NTA5MmIxYjQyYWQ0MzZlNjVmZmI4YTk5MmU1MTFkMzUzNjYwOTJmYzc0Y2M3YTQ4ZDAwZDE0YjYxMTZkNDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzNzY1ZmIyNTkyMTlkYTMzOTc3MDIxMmYzNzY5MGQxMTM4NDg4NzM3YWIxMjViNDY1MDZlNTdkZjhlZTFkYzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ3MDg2MTU3M2E5MmU2MzA3YWYxNGZkMGZkZWRmMWM1MjM5ZjJhZWY0ZDcxYjcyMWM5OTk1NmE2ZjliNmNmNDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4OWUyMzFjOGYyY2Q4MmMwZmUyOWJkYWNhOGM5YmEyNzgzZjhhZjkzOThiNDUxZjI2OWUwN2Q2ZDI5N2U1MDcifQ"
         }
       ]
     },
     {
       "id": "claim_8955ea9d4cdb4a94ba81ca5fd6cd0565",
-      "statement": "Module configuration and state remain core-owned bounded namespaces with compare-and-set revisions, isolated forward migrations, rollback snapshots, backup coverage, and disabled-on-restore activation.",
+      "statement": "Module configuration and state use core-owned bounded compare-and-set namespaces with isolated migration and rollback evidence; backup includes durable module records, while an audited restore command must disable restored modules before any restored server startup.",
       "evidence": [
         {
-          "resource": "repo://docs/architecture/server-modules.md#L144-L161",
-          "version": "repo-lines-v1:sha256:958d3bf902a00b6bbc1724a12eeb68c5d15b42aa079ad1320f956a04501e7669:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmZDFlODJkZTUyY2RlZTgyNjM3YWI3YjdlMWRjNWU2YWNkNDk4YWUwN2NmYjVmNGU3ZWE2NmUwNGQwOTQyM2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiNzE2N2IxNmJkZDNkOTc5YzgwN2QzN2M3MTZiYTJhZjI2M2M0MDFmZWQxMTg2NDhkNmE4NTU5YTUxMjgxYWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZhOGNhYjM5NGE1NWQ4OGRhZWY2M2Y4MTg5MjZiNGE1NGU4NGE1ZjM1YTdiNDE2OGNmZjkwZmZiOWUyYzdiM2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI2MWMzYWM3YmY5N2I0MjRiZTZjMDE0ZDg3NzI1NjE0MzRmYjRlNDI1NTUwOGY2N2JmZjI4YzQyY2ZjNmI1YzIifQ"
+          "resource": "repo://docs/architecture/server-modules.md#L157-L178",
+          "version": "repo-lines-v1:sha256:b7942ab19a742dfc6639bc4171db2504cf6c83e5e81d5df341483a98e4e53f45:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmZDFlODJkZTUyY2RlZTgyNjM3YWI3YjdlMWRjNWU2YWNkNDk4YWUwN2NmYjVmNGU3ZWE2NmUwNGQwOTQyM2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzM2EyNjczODQ2YzU5NTc0MTUyZTYyMGRlZTUyMzY4Mjg0MTlkNmZlMWEzNTlmNDNmMmFiNjYxZjkzNGRlZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZhOGNhYjM5NGE1NWQ4OGRhZWY2M2Y4MTg5MjZiNGE1NGU4NGE1ZjM1YTdiNDE2OGNmZjkwZmZiOWUyYzdiM2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI2MWMzYWM3YmY5N2I0MjRiZTZjMDE0ZDg3NzI1NjE0MzRmYjRlNDI1NTUwOGY2N2JmZjI4YzQyY2ZjNmI1YzIifQ"
+        },
+        {
+          "resource": "repo://scripts/test-operator-recovery.sh#L541-L568",
+          "version": "repo-lines-v1:sha256:d346cfb84ff973a83c8af779571843f18b50059748b0322f7ce901d198e5a7f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM4NDAyYjY0N2Q1YTcwNzQ4ZjI0Mjg4YzlhNDUxNGRlM2RlM2MwZjYxMzEzODk4YzgxNjlhNDYxMTEwNjQxYTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4Y2I1NzZhMjhhZDk5MjQ3YTJhMzZiMGE4NWE0YmZlZTRkNjRlYWFmNDlmZGIzMGUzMjAxMjk2Zjg1ZGNkMWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMxY2UxYWExMTY5NWQ5YjUxNTcwZGExNWYyMzlkNzBkMmY1Y2FkNThhNzg1MGQyYThkYTljZWQ1ODYxZDQ4MzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVkMjEzMDcyOTFhZmU5YmJmYmE0NWMxN2Y0OThjOTg1MTRhM2U2NWRhZGQ4ZTcxYzMxYjZhMmNlMzgzNjcxZTUifQ"
         }
       ]
     },
@@ -57,54 +69,76 @@
       "statement": "Game Cartridges remain inert presentation data, registered providers remain the sole remote rules authority for their sessions, and server modules cannot become a second gameplay authority or client executable channel.",
       "evidence": [
         {
-          "resource": "repo://docs/architecture/adr-0004-process-isolated-wasm-server-modules.md#L107-L126",
-          "version": "repo-lines-v1:sha256:df53f6a143a2bfcc798837687259b290d9067c58f950f784e2462600a2c06deb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2MTA1YjQxN2YxOTU4OTRiZjUxOWJkZWQ3ZmNjNDc4MjhiZGQ2ZDdiMjczMTQyOTcyZDY0ZDAwMzI4NjQ0YjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmNGJhOWE0NDJiYjk4NjU2NGI2MTk4OWFjYmQyN2YwMWI0ZTE4Njk1YjhkODdhZGIxZGE1OWIxODIxZjgyYWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdjNDU0YzQwMzI0MTY2MGRkYWU5NWQ0ZmZkNmZiMTJlYTI3YzM5ZDExZDI0MGJlY2E0MWNiYjA0MzEwMTRlNWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4ZjYzNjc1ZTAxMDJlMDQyYzM0M2Q2NzgwNTlkZWRjNzMyNTg3M2IwMzEyNjkxZjE0NWY1MTIzNzFhMWVkNDYifQ"
+          "resource": "repo://docs/architecture/server-modules.md#L8-L23",
+          "version": "repo-lines-v1:sha256:54200ca46c97078f0506db3c707343824bca4da7ae3b0ee9f355c6b14cda1326:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0M2RlN2NhZWI4YzgzYWE2YTFlNmU4MjBmZDNiMDZlNTM4Y2Y4OWY2NmNjZTcxODAyOGQ3NTBiNzQ2N2ViYWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0MjZmOTJmMzFlMTQ0OThiMzkxZWNiNzlkZjc0ZTUwZjcwY2EzN2ZjMjQ4MzFjZWNkZDhkMDkxNGUzNDJmZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU4Mjk3ZTc1ZDVmY2UzMGE1YTFhMzlmMjIzMTY5YTQ4N2Y1ZGE0YTE4OGY2NDFlZTUyMmU2MDQzY2ZkMDE4MjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0MGJiMTVhZGIyNWQzYWMxMzEyY2MxNGY0MjkzODk0NzM0ZjAzMjhmYTdiZGMwZWJlNTU4MjY1ZjRiOWQ3NjEifQ"
         }
       ]
     },
     {
       "id": "claim_86eef4b8585c4cb292dddde5dbc4f293",
-      "statement": "The Ticket 039 proof generates exact-WIT component fixtures twice and exercises 21 contract/runtime/state tests plus 13 contained process scenarios, including hostile imports, resource abuse, tamper, crash, timeout, and restart.",
+      "statement": "The independent Ticket 039 proof retains its hostile architecture corpus, while the production conformance script validates the packaged sibling host, exact runtime contract, real OS containment, fixed loader/configuration, route and artifact-input prohibitions, and local-only automation.",
       "evidence": [
         {
-          "resource": "repo://scripts/test-server-module-spike.sh#L13-L90",
-          "version": "repo-lines-v1:sha256:ae0075953c86a20869efc86b2890645e75af4e8a84c08ba86003cf3ecbd6b898:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1M2E4YmJiODYzMTI5NTA5ZjFjZjExODVmOGQxNTc5N2Y1NzhiMGJmMTQ2ODQwZmRiMGExZWFkMTBhOTU3ODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlOTdmNGVhOThkZDViNjE3Y2I3ZTU1NzhiZTdiNWE5NDQ2OWUwN2Y4MDY4MmI5MzZmNGNkNjhiMWExYWJhODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ5OTU0NjRiMWJhZmZjYmU2OTkwMzgyNjA1MjcxMjkxNWE4OWRlMzRlZjM2ZGViMTNlZDlkNTgzZDE4NzMzMjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/test-server-module-spike.sh",
+          "version": "repo-file-v1:sha256:103038362abe42f374b01e0169c6c889372e046ecb87768fc49ac13c27208d42"
         },
         {
-          "resource": "repo://crates/server-module-spike/tests/contracts.rs",
-          "version": "repo-file-v1:sha256:91708afd743a82e09014721ead22113fb9e53cc2d0682673f144630a5578c728"
-        },
-        {
-          "resource": "repo://crates/server-module-spike/tests/runtime.rs",
-          "version": "repo-file-v1:sha256:c33f7ddf276d8757b422ab5ed6c3bc62a4b984bc0bcae0f64f7ad3c5eb1586d5"
-        },
-        {
-          "resource": "repo://crates/server-module-spike/tests/state_lifecycle.rs",
-          "version": "repo-file-v1:sha256:b508697fd2996f28e55447d7da799ba7aef9006be52aacf50f8adb493a416c04"
+          "resource": "repo://scripts/test-server-modules.sh#L1-L55",
+          "version": "repo-lines-v1:sha256:8924d9310d1023fe6cc5058bdf3006730d90d7da3a2d0fbd2c91070b2933bac8:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxZDRiYzYxZGY4MjZkM2Y3MTI1NTA5YjAxZTBiYjc0N2EzZDMxNzAxZmJkODM2NTFhODEwODEzYzI4Yzc2M2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_3c06b9684cad463ea389dcb826d55f64",
-      "statement": "The first production slice is limited to the module base and safe observation hooks; administrator custom installation and additional hook classes remain separately gated follow-up work.",
+      "statement": "Ticket 040 implements the exact first-party registry, persona-report observation outbox and dispatcher, one core-reauthorized label intent, state/lifecycle/recovery, and conformance; administrator custom installation and additional hook classes remain separately gated.",
       "evidence": [
         {
-          "resource": "repo://docs/architecture/server-modules.md#L208-L228",
-          "version": "repo-lines-v1:sha256:345ab1a6936e00ce9156b8c3c3fd7f8bcab8ee1f96aa0108be4b2f59e2f0d4fc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1ODMxYzMyZjk4YzFhYWNjMThkZGNjNDI5NzVmNmI1ZTAzNjkyYjdmZWNmMGM5ODcyNjNhYzdjMjA4ODQ2MzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllNGE5MzVjNzM1YzNmYzhjOGQ1NTUyYjY5Y2Y2M2I5YjY2NTg0MDMxMzQxYzY3ZTFjMGJkOGJkZjE4NTkxNTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxYjE4ZTQ0NjlkNjM4Y2Y3YjY5NGYxMGEyNWY1OGIxZWUzYzUwODY5ZGQxNTlmMWJkZTUzODk5Mjc5OTU3YjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://docs/architecture/server-modules.md#L230-L254",
+          "version": "repo-lines-v1:sha256:68ad7430e8f0ed853b33b5c4d349263e15a7d22e7ce39e41adce95a3c1027cd8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1ODMxYzMyZjk4YzFhYWNjMThkZGNjNDI5NzVmNmI1ZTAzNjkyYjdmZWNmMGM5ODcyNjNhYzdjMjA4ODQ2MzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiNDFiZWI1MGY5YWY2NDJkZmE0MGE3NzVkYWU4OTYxZWQ1NDgwZWIzZGJiZDcwNTg3NGMyMzMzNDIzNGRiZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0OTY2Y2Q3NmY1NGU5MTM1NzNhNmNlMjA1YjNmM2FiOWI3MDRhNzc1NGE4ZWM4NDRhZTI1YTJkZDM5NDk3NGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7e440b9844b341d8ae2711eb6f638a9a",
+      "statement": "New production delivery receipts retain bounded attempt-normalized request bytes, exact response bytes, digests, and target report after delivered outbox pruning, while pre-migration rows remain identifiable as legacy incomplete evidence.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0026_server_module_observation_evidence.sql#L21-L31",
+          "version": "repo-lines-v1:sha256:c61f40b1bed865927fceeffb594ef2cc8a689db6802cedb7aa86f24cbf3377ca:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5MTcyNTdkM2IwMGFkOTliZWE1NmY4NDk3ZTMzMWMzMTNmNWRhOThiN2ViMGVlNjNlYjFjNzAwZmUwMTRlNzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhYWQ2NzNmN2IyNjQyNDQyYWNhOWEwNzkxODczMzI0ZTRhMDFiYmRiNmZjNmUzYTk2ODA2YTNhZDM2ZGU4NGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhYjE1NDYwNWY1NjhmMjkwMzc2ZWRkZjI5YThlNTRiMGUwZmU2ZWNhZWQxMzZiZmVjODQxYzYzOTY1MjBmYzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://docs/planning/tickets/open/TICKET-040-production-server-module-base-and-observation-hooks.md",
-          "version": "repo-file-v1:sha256:31d58d59359525ef9863e923048469c98f3e8a3236d2fcba21fc103c76fb29d2"
+          "resource": "repo://docs/architecture/server-modules.md#L122-L127",
+          "version": "repo-lines-v1:sha256:3e3303994db5792fe5105131ee7c506bbfa02d52103ed91f8e56d9e054b820e0:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2JiMDM3YjlhNmYzYjk0NGEzYzAxMGIwMDZkZDE3NWM2YWJjNTg5NTE5ZjI4YmZjMDUwMjhmOTlmNjdkNzE4MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdiZTA0NWMwOGIzNmJiMDI0YWFmZDQyMGJlNjYwZWNlNmUyNDBjZDExZmE2MzQ4MDMzNzI4YjA0NWYxYTA3NyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmQ3NmE5YmZmMjVlYWRhMTgzNjVhMjhmYmRlNTg3ZTVkMzhhZWE5ZjAwNzM1NzMxMmU1ZWZlNDk0YjZjZDkzZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGIyMTNlOTY4NTYwOGE2ZTNlMGFjNzEwYzIwMjQyNGJlMDIxYTY0YThhZjIwNTczNWViYzc0OWFkMmVlYmQ4NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_f76652983531450bae41a0c6b49f655c",
+      "statement": "Module inventory and lifecycle/restore are database-local administrator commands whose shared bounded reader rejects symlinks, non-owner or non-0600 files, multiple links, and metadata changes around a no-follow open.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/bin/omarchygs-admin.rs#L299-L411",
+          "version": "repo-lines-v1:sha256:0c499e148e14a799f90034364a12b2673ab1be73bfdfd4213844a41e2b475d1d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4ZDQwNWEzMTVhZThiZjkwMmNlZGM3MjJlNjI0ZjIxNzExMzJhYTMyYTU0Zjg2YTVjMmEwNWQ4MWZlOTg0YTI5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJjZTEwNGUwMmY4MjFkOGI4YTc4ZjMxYzU2ODVmM2YxYjUyZmUzY2U5YjAwOGZlNTNmNzM5ZWM2ZWZmY2NiNmY4IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        }
+      ]
+    },
+    {
+      "id": "claim_58932307be3a472a96a8f04abde3426c",
+      "statement": "A configured core server starts when persisted module policy denies activation, retains a gap-counting emitter, and starts no dispatcher until operator recovery and fresh readiness succeed.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/main.rs#L91-L166",
+          "version": "repo-lines-v1:sha256:fd263acba8dd039bc148ce5aa5832c769e62cdb8b881c5db3988b35616e424fb:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDhiMWFkMmYzYWQ2YjIyODFlNDBhYTRkZmU4ZTEyMmRhN2MxY2RlOTNkNzIyYzA5YWZkOWMwNmZjZThmMGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdjYzc1ODY3YTJkMDU4Zjg4ZmNkMzljYWE3OWI5NjY5NDQyYjZkNjM0Y2M0MTIzYTYxZTIxZDFkZmRkMGMzNWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEzOTVmNGJmOTIzYmRhMjgyOWI5MzYyNTU0MDE4OTc2MGI2MDBiZTJjZmVlMzdhODFmMWEwNDViMzMwZjgxMjUifQ"
         },
         {
-          "resource": "repo://docs/planning/tickets/open/TICKET-041-administrator-custom-server-module-installation-and-provenance.md",
-          "version": "repo-file-v1:sha256:1e91bda31184df777fca24956cf72acc93907855d0ff4342653a1dd56be8c0ac"
+          "resource": "repo://docs/operators/server-modules.md#L71-L80",
+          "version": "repo-lines-v1:sha256:514936beb3e2af823171b90d34c0aa88df42b806916ed4fcb43ed284cf9b771b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmM2E2MzQ0Zjc5NTUxNTVkZWI3ZDVhYWFjNjY4MDQwY2IxOWFjZDcwOWVkYjE1YTllOGU5M2E5MTI2YjI0MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5N2U3MjhlMDgyZTMxMjJmYTE0NjU4MTQ0OTUyM2ZjNzA5MWJkZmMyODYxNTRiMGVmNDcyZjkxZWQxMjRmZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiYzk5MzdjMTg5MzU1M2JiYTYwNTVmYzllMGE1MGQyMGRiY2Y5NmZkYzRhMjRiZTFjOGJhMDFmMDFjNTZkNDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYxODQyNWZiYTlmNTA4MWZhMmU4MDQ5YzM2MGM3ODIwODVjODM5NWI2ZWNiNzJhOTE5OGY0ZTE3ZjJjYjMyM2YifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-27T21:56:27.195Z"
+    "at": "2026-08-28T01:06:32.318Z"
   }
 }

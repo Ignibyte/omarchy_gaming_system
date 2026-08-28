@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b4faa48f47af0567269f7f429e0d31c6740d9a470eaaa3d1e213a893442e0732",
+  "pageVersion": "sha256:bbee8b1175f71c2b9273e496d1841a60f6cd300bcb588c0d998e97af9d59fb1f",
   "claims": [
     {
       "id": "claim_cfd815337fbb4c508371651403a7fecb",
@@ -18,7 +18,7 @@
       "evidence": [
         {
           "resource": "repo://docs/architecture/system-overview.md",
-          "version": "repo-file-v1:sha256:0f2c1818c0bd1af2c3f635eb81b9c6c910f6d4ebb4c5e80e5952d793e7d097bb"
+          "version": "repo-file-v1:sha256:48650938516fb1eb7d5c18a86e52e9922b562d8e3f2b6fcb1304fdc62b10e3a6"
         },
         {
           "resource": "repo://crates/marketplace-publisher/src/lib.rs",
@@ -46,7 +46,7 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/app.rs",
-          "version": "repo-file-v1:sha256:ca4ef2a1a02b4b955ae042a92fde6d18ce864b22c4144806a97c2c6be655cf61"
+          "version": "repo-file-v1:sha256:e50c453717cba91b13fb2f37941628c64de96e92d097fc94ac53a38853373a80"
         }
       ]
     },
@@ -184,7 +184,7 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/main.rs",
-          "version": "repo-file-v1:sha256:fd0d7ab170dda53d93a161c103b7156a5fc0aef3a11c548aa567e3d626a9fa50"
+          "version": "repo-file-v1:sha256:ab002f5533767dece7c32b0ffd33f6e569876259f50663f028102adb412be3dc"
         },
         {
           "resource": "repo://crates/game-signal-siege/src/lib.rs",
@@ -236,7 +236,7 @@
       "evidence": [
         {
           "resource": "repo://docs/architecture/game-cartridges.md",
-          "version": "repo-file-v1:sha256:9978118418c8a448e5ad4692d96b06990e207742ed1560869ef3ea50489c355e"
+          "version": "repo-file-v1:sha256:75715c7b9b620938c20b5e59bb201576ea44ba6df82149127dd74161c6902e46"
         },
         {
           "resource": "repo://crates/client-cartridge-runtime/src/service.rs",
@@ -388,15 +388,15 @@
     },
     {
       "id": "claim_106fb9ebf1e6452ba4f55125a9a33338",
-      "statement": "The owner-operated cartridge path now includes vetted marketplace synchronization, exact client acquisition, operator-custom trust, and an accepted process-isolated server-module architecture proof; a public Provider SDK, external onboarding, and production module loading remain later work.",
+      "statement": "The owner-operated path includes vetted marketplace synchronization, exact client acquisition, operator-custom cartridge trust, and one opt-in compiled-in production server-module base; a public Provider SDK, external provider onboarding, custom module installation, and broader hook classes remain later work.",
       "evidence": [
         {
-          "resource": "repo://docs/planning/ROADMAP.md",
-          "version": "repo-file-v1:sha256:1f55d2c9f40bcc255a36a6708e39510849808b9f0b0bb612c4b6d999ccc14841"
+          "resource": "repo://docs/planning/ROADMAP.md#L56-L108",
+          "version": "repo-lines-v1:sha256:3d1efa4d409c9d83bb128fddb1a3859be37d649920188448aedc695482af0abf:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmODA1ZWMwYTgzMzliNzc5ZjQwYTYzOThlNGNiNmMwMWMyZDA2YWI0NWExZmY0ZDc0ZjJkZGIxZTJhODk1ODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4YmEwNGViMmRlMzE0ODVhYWIxYjNjYTA0NGNiODFlMzI3ODlmN2Q4NGVjOWYzZjg3ZTM4MTc1OWNkOTk3YTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY1YmU4OWNhZDM1NzczZjRlYWU3MDEyNzg3OTQ4ZDQwNzc1ODg4MmFmMTVhYjFkYzk4MjgxYTg5YzMwZDY0OTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://docs/architecture/server-modules.md#L1-L22",
-          "version": "repo-lines-v1:sha256:4450a29a0616342c16d75af0fcddd64a8cbc951fd106a7e2cd3386e9c2c743f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4MjJjMTM0MDU5ODFiNDdiMTE4ZWI0ZmRlODcyYTQxY2I0ZWFjZDUzODFiZTkxZTE1N2U0MTkzZTQzZGY4NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0MjZmOTJmMzFlMTQ0OThiMzkxZWNiNzlkZjc0ZTUwZjcwY2EzN2ZjMjQ4MzFjZWNkZDhkMDkxNGUzNDJmZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0MGJiMTVhZGIyNWQzYWMxMzEyY2MxNGY0MjkzODk0NzM0ZjAzMjhmYTdiZGMwZWJlNTU4MjY1ZjRiOWQ3NjEifQ"
+          "resource": "repo://docs/architecture/server-modules.md#L1-L23",
+          "version": "repo-lines-v1:sha256:b5d7256b54b1dcaa5017010ee5bbcfd844293f6e3be5e40ff7a1855e487cb15d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4MjJjMTM0MDU5ODFiNDdiMTE4ZWI0ZmRlODcyYTQxY2I0ZWFjZDUzODFiZTkxZTE1N2U0MTkzZTQzZGY4NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0MjZmOTJmMzFlMTQ0OThiMzkxZWNiNzlkZjc0ZTUwZjcwY2EzN2ZjMjQ4MzFjZWNkZDhkMDkxNGUzNDJmZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0MGJiMTVhZGIyNWQzYWMxMzEyY2MxNGY0MjkzODk0NzM0ZjAzMjhmYTdiZGMwZWJlNTU4MjY1ZjRiOWQ3NjEifQ"
         }
       ]
     },
@@ -432,7 +432,7 @@
         },
         {
           "resource": "repo://docs/planning/ROADMAP.md",
-          "version": "repo-file-v1:sha256:1f55d2c9f40bcc255a36a6708e39510849808b9f0b0bb612c4b6d999ccc14841"
+          "version": "repo-file-v1:sha256:3c59191e8f5432f4228b3abaf08721b639111c00d9669be1991f9f3c8b73bbd5"
         }
       ]
     },
@@ -442,11 +442,11 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/reports.rs#L43-L149",
-          "version": "repo-lines-v1:sha256:9d9e0c3bd786f0bce8b93db537f48085fb9da4010ea5c637ed497f140934ec44:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwZDA5OTVmMTM5NmY0ZDlmMTQxYzRkOTExN2U1ZDJhZWEzM2QxMzdiMDRjZjY4YTI0ZTk5NGI3NzIzNjY2NWFjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkNzNiNzdhMzdiYzFlOWM5MTliZTI4MjZkNGI0OTFkZjljMGFmNDNhMDQwYmUyYmRjNDIxYTU0MDk3OTk3NTA1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmNGE0OGQ0M2M5Zjk4YTgwZDIwZTViZWY1YmY1NGVlZjMzMGJhODU3NzJkMDY3YmRhZjUwMzliZjE0MjdhYWI4In0"
+          "version": "repo-lines-v1:sha256:1d0d55d14de70591a6d8a8601e0596e745bfa026586ba593db1d17ce62a68064:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyNWNmNWZjMjNmMmE2ZDIzYzNlYTUxZTcyZjVlODk2Yzc1NTVmYmFhMDVjZDViMWVhMTgyYmY5NjE4YThlODFiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkNzNiNzdhMzdiYzFlOWM5MTliZTI4MjZkNGI0OTFkZjljMGFmNDNhMDQwYmUyYmRjNDIxYTU0MDk3OTk3NTA1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmNGE0OGQ0M2M5Zjk4YTgwZDIwZTViZWY1YmY1NGVlZjMzMGJhODU3NzJkMDY3YmRhZjUwMzliZjE0MjdhYWI4In0"
         },
         {
           "resource": "repo://crates/server/src/app.rs#L1519-L1546",
-          "version": "repo-lines-v1:sha256:8716273ba48a08b909294ca9839b9c76489894e49821a5294bc62c28a7177a66:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExZWE0MmY3MDJhOWE0MDRjN2YyYjRmNDA5OWIzZDJjMTg4MmY4MWYxYmM2OTZiYjgyMTQ3ODlmZjllNWY0ODIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNjNjNGQxYWY4Y2Q4OWJiMGJkZDc2NTdmZmNiZjY4MDZhNjEwZDc5ZDZjOGQ0YzMwN2MyNDFkZjM5MDA1MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjMjI5ZDM2MDJlNmIzNmQyNzE5ZTQ3MTBhNjc0NzU1YmZkNGYwZDc4N2UzMThhYzhlNzI0ODg4ZDMwYWEwNzkifQ"
+          "version": "repo-lines-v1:sha256:0a749175fba6f66da7c83a92713f6ceb996bacdd7f4960b300ada2c347ec799c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExZWE0MmY3MDJhOWE0MDRjN2YyYjRmNDA5OWIzZDJjMTg4MmY4MWYxYmM2OTZiYjgyMTQ3ODlmZjllNWY0ODIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNjNjNGQxYWY4Y2Q4OWJiMGJkZDc2NTdmZmNiZjY4MDZhNjEwZDc5ZDZjOGQ0YzMwN2MyNDFkZjM5MDA1MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjMjI5ZDM2MDJlNmIzNmQyNzE5ZTQ3MTBhNjc0NzU1YmZkNGYwZDc4N2UzMThhYzhlNzI0ODg4ZDMwYWEwNzkifQ"
         }
       ]
     },
@@ -470,11 +470,11 @@
     },
     {
       "id": "claim_e0d9ec66104a4e68af7a94bc950cafc9",
-      "statement": "`omarchygs-admin` remains a locally invoked owner tool: database-authorized report, account, invitation, and catalog commands are distinct from guarded HTTPS marketplace synchronization, and no remote administration API is introduced.",
+      "statement": "`omarchygs-admin` remains a locally invoked owner tool: database-authorized report, account, invitation, catalog, and module inventory/lifecycle/restore commands are distinct from guarded HTTPS marketplace synchronization, and no remote administration API is introduced.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/bin/omarchygs-admin.rs",
-          "version": "repo-file-v1:sha256:4ec7f64669b5b6ee2bf84bb54da664502079470be42c385a23c5f5528d42192e"
+          "resource": "repo://crates/server/src/bin/omarchygs-admin.rs#L1-L411",
+          "version": "repo-lines-v1:sha256:f2e12238904df233c7046c9b055485bac0695b8a7a365150c23052ee09cc1935:eyJzZWxlY3RlZExpbmVDb3VudCI6NDExLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxMWE2ZjlkOTk2MDRhNjJhMGYxNWE3YzZlZTJiOTg4OTBjNzliYWM0NGU3YzZkMWQ3ZmJmY2FjMmMzNTQxOTdkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         },
         {
           "resource": "repo://crates/server/src/operator_admin.rs",
@@ -496,7 +496,7 @@
         },
         {
           "resource": "repo://crates/server/src/app.rs",
-          "version": "repo-file-v1:sha256:ca4ef2a1a02b4b955ae042a92fde6d18ce864b22c4144806a97c2c6be655cf61"
+          "version": "repo-file-v1:sha256:e50c453717cba91b13fb2f37941628c64de96e92d097fc94ac53a38853373a80"
         },
         {
           "resource": "repo://crates/server/src/cartridge_catalog.rs",
@@ -543,6 +543,6 @@
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-27T22:03:08.727Z"
+    "at": "2026-08-28T01:06:32.318Z"
   }
 }

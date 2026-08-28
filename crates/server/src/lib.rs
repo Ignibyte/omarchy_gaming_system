@@ -5,6 +5,7 @@ pub mod cartridge_distribution;
 pub mod marketplace_egress;
 pub mod marketplace_sync;
 pub mod operator_custom;
+pub mod server_modules;
 pub mod session_cartridges;
 
 #[cfg(test)]

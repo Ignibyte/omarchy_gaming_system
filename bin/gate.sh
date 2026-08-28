@@ -99,6 +99,7 @@ if [[ "$ogs_mode" != "fast" ]]; then
 fi
 
 run_gate 23 "server module isolation architecture proof" ./scripts/test-server-module-spike.sh
+run_gate 24 "production server module conformance" ./scripts/test-server-modules.sh
 
 if ((ogs_failures > 0)); then
   printf '\nGATE RED [%s] — %d check(s) failed\n' "$ogs_mode" "$ogs_failures" >&2

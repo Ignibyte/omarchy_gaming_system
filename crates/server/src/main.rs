@@ -16,6 +16,11 @@ mod sessions;
 mod sync;
 
 #[cfg(test)]
+mod server_modules;
+#[cfg(not(test))]
+pub(crate) use omarchy_gaming_system_server::server_modules;
+
+#[cfg(test)]
 mod cartridge_catalog_api_tests;
 #[cfg(test)]
 mod challenge_api_tests;
@@ -38,13 +43,15 @@ mod report_api_tests;
 #[cfg(test)]
 mod server_discovery_api_tests;
 #[cfg(test)]
+mod server_module_tests;
+#[cfg(test)]
 mod session_api_tests;
 #[cfg(test)]
 mod signal_siege_api_tests;
 #[cfg(test)]
 mod sync_api_tests;
 
-use std::sync::Arc;
+use std::{future::Future, sync::Arc};
 
 use anyhow::{Context, Result, anyhow};
 use config::Config;
@@ -53,7 +60,7 @@ use omarchy_game_signal_siege::{SignalSiege, SignalSiegeVersus};
 use omarchy_gaming_system_server::cartridge_distribution::CartridgeDistributionRuntime;
 use sqlx::{PgPool, migrate::Migrator, postgres::PgPoolOptions};
 use tokio::{net::TcpListener, signal};
-use tracing::info;
+use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
 static MIGRATOR: Migrator = sqlx::migrate!("../../migrations");
@@ -81,6 +88,19 @@ async fn main() -> Result<()> {
     )
     .await
     .map_err(|error| anyhow!("invalid cartridge distribution runtime: {}", error.code()))?;
+    let (module_service, module_emitter) = match config.module {
+        Some(module) => {
+            let emitter = server_modules::ModuleEmitter::configured(&module);
+            let service = optional_module_service(
+                server_modules::ServerModuleService::production(pool.clone(), module).await,
+            )?;
+            (service, Some(emitter))
+        }
+        None => (None, None),
+    };
+    let module_shutdown = module_service
+        .as_ref()
+        .map(server_modules::ServerModuleService::shutdown_trigger);
 
     let listener = TcpListener::bind(config.bind_address)
         .await
@@ -95,20 +115,54 @@ async fn main() -> Result<()> {
 
     let server_result = axum::serve(
         listener,
-        app::router_with_runtimes(
+        app::router_with_application_runtimes(
             pool,
             config.mfa_cipher,
             sync_hub,
             game_registry,
-            provider_runtime,
-            cartridge_distribution,
+            app::ApplicationRuntimes {
+                provider: provider_runtime,
+                cartridge_distribution,
+                module_emitter,
+            },
             Arc::from(config.server_name),
         ),
     )
-    .with_graceful_shutdown(shutdown_signal())
+    .with_graceful_shutdown(fan_out_shutdown(shutdown_signal(), move || {
+        if let Some(trigger) = module_shutdown {
+            trigger.request();
+        }
+    }))
     .await;
     sync_listener.abort();
+    if let Some(service) = module_service {
+        service.shutdown().await;
+    }
     server_result.context("HTTP server stopped unexpectedly")
+}
+
+fn optional_module_service<T>(
+    result: std::result::Result<T, server_modules::ModuleError>,
+) -> Result<Option<T>> {
+    match result {
+        Ok(service) => Ok(Some(service)),
+        Err(server_modules::ModuleError::Denied) => {
+            warn!(
+                "configured server module is inactive; core service will continue without module execution"
+            );
+            Ok(None)
+        }
+        Err(error) => Err(anyhow!("invalid server module runtime: {}", error.code())),
+    }
+}
+
+async fn fan_out_shutdown<F, G>(signal: F, stop_module: G)
+where
+    F: Future<Output = ()>,
+    G: FnOnce(),
+{
+    signal.await;
+    stop_module();
 }
 
 pub(crate) fn production_game_registry() -> Result<GameRegistry> {
@@ -158,4 +212,51 @@ async fn shutdown_signal() {
     }
 
     info!("shutdown signal received");
+}
+
+#[cfg(test)]
+mod shutdown_tests {
+    use std::time::Duration;
+
+    use tokio::sync::oneshot;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn module_shutdown_is_signalled_when_http_graceful_shutdown_begins() {
+        let (signal_sender, signal_receiver) = oneshot::channel();
+        let (module_sender, mut module_receiver) = oneshot::channel();
+        let fanout = tokio::spawn(fan_out_shutdown(
+            async move {
+                let _ = signal_receiver.await;
+            },
+            move || {
+                let _ = module_sender.send(());
+            },
+        ));
+
+        assert!(
+            tokio::time::timeout(Duration::from_millis(10), &mut module_receiver)
+                .await
+                .is_err()
+        );
+        signal_sender.send(()).expect("signal should be observed");
+        fanout.await.expect("fanout task should finish");
+        tokio::time::timeout(Duration::from_secs(1), module_receiver)
+            .await
+            .expect("module shutdown should be prompt")
+            .expect("module shutdown sender should fire");
+    }
+
+    #[test]
+    fn inactive_module_does_not_prevent_core_startup() {
+        assert!(
+            optional_module_service::<()>(Err(server_modules::ModuleError::Denied))
+                .expect("inactive module should be optional")
+                .is_none()
+        );
+        assert!(
+            optional_module_service::<()>(Err(server_modules::ModuleError::Unavailable)).is_err()
+        );
+    }
 }

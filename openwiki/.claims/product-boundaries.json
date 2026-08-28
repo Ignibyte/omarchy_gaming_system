@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7f6c8f48147120f8990e6746e20f0dff1501a310688a2ba6ab24f26b46d7d9de",
+  "pageVersion": "sha256:f2590ff10fc87530c749adf1e7830f2bc9bd168dcb4049a07ee7477eab9714cf",
   "claims": [
     {
       "id": "claim_6694314ff9ed40c7b402b20720f16d87",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://CONSTITUTION.md",
-          "version": "repo-file-v1:sha256:37d5a392fa53ab88fffdd6b4166b68001a222e1756148dfdc06b33f95600aec6"
+          "version": "repo-file-v1:sha256:6093cf5d268649c643fb7af19219da3a5596f3e5aa94d09aad6e02e4ed54e52c"
         }
       ]
     },
@@ -52,15 +52,15 @@
     },
     {
       "id": "claim_824ce67ba5814663b5f34951ede1c74e",
-      "statement": "The implemented platform includes identity/social/gameplay, owner-operated cartridge distribution and custom trust, recovery, and marketplace publication; remote administration, external provider onboarding, production hosting/custody rollout, and production server modules remain later work despite the accepted module proof.",
+      "statement": "The implemented platform includes identity/social/gameplay, owner-operated cartridge distribution and custom trust, recovery, marketplace publication, and one observation-only production server-module base; remote administration, external provider onboarding, production hosting/custody rollout, and custom module installation remain later work.",
       "evidence": [
         {
           "resource": "repo://docs/architecture/system-overview.md",
-          "version": "repo-file-v1:sha256:0f2c1818c0bd1af2c3f635eb81b9c6c910f6d4ebb4c5e80e5952d793e7d097bb"
+          "version": "repo-file-v1:sha256:48650938516fb1eb7d5c18a86e52e9922b562d8e3f2b6fcb1304fdc62b10e3a6"
         },
         {
-          "resource": "repo://docs/architecture/server-modules.md#L1-L22",
-          "version": "repo-lines-v1:sha256:4450a29a0616342c16d75af0fcddd64a8cbc951fd106a7e2cd3386e9c2c743f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4MjJjMTM0MDU5ODFiNDdiMTE4ZWI0ZmRlODcyYTQxY2I0ZWFjZDUzODFiZTkxZTE1N2U0MTkzZTQzZGY4NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0MjZmOTJmMzFlMTQ0OThiMzkxZWNiNzlkZjc0ZTUwZjcwY2EzN2ZjMjQ4MzFjZWNkZDhkMDkxNGUzNDJmZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0MGJiMTVhZGIyNWQzYWMxMzEyY2MxNGY0MjkzODk0NzM0ZjAzMjhmYTdiZGMwZWJlNTU4MjY1ZjRiOWQ3NjEifQ"
+          "resource": "repo://docs/architecture/server-modules.md#L1-L23",
+          "version": "repo-lines-v1:sha256:b5d7256b54b1dcaa5017010ee5bbcfd844293f6e3be5e40ff7a1855e487cb15d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4MjJjMTM0MDU5ODFiNDdiMTE4ZWI0ZmRlODcyYTQxY2I0ZWFjZDUzODFiZTkxZTE1N2U0MTkzZTQzZGY4NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0MjZmOTJmMzFlMTQ0OThiMzkxZWNiNzlkZjc0ZTUwZjcwY2EzN2ZjMjQ4MzFjZWNkZDhkMDkxNGUzNDJmZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0MGJiMTVhZGIyNWQzYWMxMzEyY2MxNGY0MjkzODk0NzM0ZjAzMjhmYTdiZGMwZWJlNTU4MjY1ZjRiOWQ3NjEifQ"
         }
       ]
     },
@@ -188,7 +188,7 @@
         },
         {
           "resource": "repo://crates/server/src/app.rs",
-          "version": "repo-file-v1:sha256:ca4ef2a1a02b4b955ae042a92fde6d18ce864b22c4144806a97c2c6be655cf61"
+          "version": "repo-file-v1:sha256:e50c453717cba91b13fb2f37941628c64de96e92d097fc94ac53a38853373a80"
         },
         {
           "resource": "repo://docs/api.md",
@@ -374,15 +374,15 @@
     },
     {
       "id": "claim_373cadcd27f5436cb8ad39c6231dabde",
-      "statement": "If remote providers are later enabled, OmarchyGS remains the authenticated broker and platform authority, discloses only a short-lived audience/game/version/session/scope-bound pairwise persona grant, and never sends account identity, reusable device tokens, credentials, or database access.",
+      "statement": "The operator-pinned Door Legends provider pilot keeps OmarchyGS as authenticated broker and platform authority, discloses only a short-lived audience/game/version/session/scope-bound pairwise persona grant, and never sends account identity, reusable device tokens, credentials, or database access.",
       "evidence": [
         {
           "resource": "repo://docs/architecture/adr-0002-game-cartridge-and-provider-boundary.md",
           "version": "repo-file-v1:sha256:3c4d7b11dfe89e62ea09caec9c4fc542a3115704f57da751c1fe223aa20e051c"
         },
         {
-          "resource": "repo://docs/architecture/game-cartridges.md",
-          "version": "repo-file-v1:sha256:9978118418c8a448e5ad4692d96b06990e207742ed1560869ef3ea50489c355e"
+          "resource": "repo://docs/architecture/game-cartridges.md#L104-L153",
+          "version": "repo-lines-v1:sha256:004ff1ee028e14a1871655de4d117cb0b2b3b0b1113e071dd186c4be707b72ec:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzM2M4MDc2YjFhOTg1MmM1ZDUwMWFhODljNTI5NDYxZDY3YWRmZGNkZmVkMzA1MDc3ZjI5ZTM5ODgyMTY4MjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1NDliNTI4MjczNDdiMmQ0MWMzNDU1MDIyOWU2MjMwNjc5NWRlNjRiM2Y3NDFiMTM0YjE0Y2I5Y2MxZDQ1M2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwMDhmZmZmNzk5ZDVmNDM5NTdmM2FjZTVlMWJkM2MwNTNhY2FkOTAxMWI3YWJmNTUxM2U4NTM2YzQ2MGNhNjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNlODA4OWZmMTQ1MzlmNWVmMjZmZDg0ZWEwMmY0NDJkMTdiNGY0ZjZhYzBhMzY3ZTljYTliOWI2MmVhN2EwZTcifQ"
         }
       ]
     },
@@ -528,7 +528,7 @@
         },
         {
           "resource": "repo://docs/operators/owner-operated-servers.md",
-          "version": "repo-file-v1:sha256:63bcab951f5349418c734051c1e6fc1addf23b56772a69c1d0764d10439ab542"
+          "version": "repo-file-v1:sha256:a80f3a5330f129242f454b9379994c2f7e94b3814210d27684a7b29c73d527cb"
         }
       ]
     },
@@ -562,7 +562,7 @@
       "evidence": [
         {
           "resource": "repo://crates/server/src/app.rs#L1519-L1546",
-          "version": "repo-lines-v1:sha256:8716273ba48a08b909294ca9839b9c76489894e49821a5294bc62c28a7177a66:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExZWE0MmY3MDJhOWE0MDRjN2YyYjRmNDA5OWIzZDJjMTg4MmY4MWYxYmM2OTZiYjgyMTQ3ODlmZjllNWY0ODIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNjNjNGQxYWY4Y2Q4OWJiMGJkZDc2NTdmZmNiZjY4MDZhNjEwZDc5ZDZjOGQ0YzMwN2MyNDFkZjM5MDA1MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjMjI5ZDM2MDJlNmIzNmQyNzE5ZTQ3MTBhNjc0NzU1YmZkNGYwZDc4N2UzMThhYzhlNzI0ODg4ZDMwYWEwNzkifQ"
+          "version": "repo-lines-v1:sha256:0a749175fba6f66da7c83a92713f6ceb996bacdd7f4960b300ada2c347ec799c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExZWE0MmY3MDJhOWE0MDRjN2YyYjRmNDA5OWIzZDJjMTg4MmY4MWYxYmM2OTZiYjgyMTQ3ODlmZjllNWY0ODIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNjNjNGQxYWY4Y2Q4OWJiMGJkZDc2NTdmZmNiZjY4MDZhNjEwZDc5ZDZjOGQ0YzMwN2MyNDFkZjM5MDA1MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjMjI5ZDM2MDJlNmIzNmQyNzE5ZTQ3MTBhNjc0NzU1YmZkNGYwZDc4N2UzMThhYzhlNzI0ODg4ZDMwYWEwNzkifQ"
         },
         {
           "resource": "repo://crates/server/src/operator_admin.rs#L220-L272",
@@ -609,6 +609,6 @@
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-27T22:03:08.727Z"
+    "at": "2026-08-28T01:06:32.318Z"
   }
 }

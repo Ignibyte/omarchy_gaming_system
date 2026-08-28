@@ -102,9 +102,6 @@ sources:
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
 generated: {by: "codex", at: "2026-08-27T21:56:27.195Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-27T22:03:08.727Z
 ---
 
 # Game Cartridges and portable provider direction

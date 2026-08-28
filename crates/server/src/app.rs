@@ -40,6 +40,7 @@ use crate::personas::{self, CreatePersonaInput, Persona, PersonaError, UpdatePer
 use crate::provider_games::{self, CallbackApplyOutcome, ProviderRuntime};
 use crate::reports::{self, CreateReportInput, PlayerReportReceipt, ReportError, ReportOutcome};
 use crate::server_discovery;
+use crate::server_modules::ModuleEmitter;
 use crate::sessions::{self, CreateSessionInput, DeviceSession, SessionCreation, SessionError};
 use crate::sync::{self, SyncError, SyncEvent, SyncEventKind, SyncHub};
 use omarchy_gaming_system_server::cartridge_catalog::{self, CatalogError, PlayerCartridgeRelease};
@@ -60,7 +61,14 @@ pub struct AppState {
     game_registry: GameRegistry,
     provider_runtime: Option<ProviderRuntime>,
     cartridge_distribution: Option<CartridgeDistributionRuntime>,
+    module_emitter: Option<ModuleEmitter>,
     server_name: Arc<str>,
+}
+
+pub(crate) struct ApplicationRuntimes {
+    pub provider: Option<ProviderRuntime>,
+    pub cartridge_distribution: Option<CartridgeDistributionRuntime>,
+    pub module_emitter: Option<ModuleEmitter>,
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -653,6 +661,7 @@ pub(crate) fn router_with_provider_runtime(
     )
 }
 
+#[cfg(test)]
 pub(crate) fn router_with_runtimes(
     pool: PgPool,
     mfa_cipher: MfaCipher,
@@ -662,6 +671,33 @@ pub(crate) fn router_with_runtimes(
     cartridge_distribution: Option<CartridgeDistributionRuntime>,
     server_name: Arc<str>,
 ) -> Router {
+    router_with_application_runtimes(
+        pool,
+        mfa_cipher,
+        sync_hub,
+        game_registry,
+        ApplicationRuntimes {
+            provider: provider_runtime,
+            cartridge_distribution,
+            module_emitter: None,
+        },
+        server_name,
+    )
+}
+
+pub(crate) fn router_with_application_runtimes(
+    pool: PgPool,
+    mfa_cipher: MfaCipher,
+    sync_hub: SyncHub,
+    game_registry: GameRegistry,
+    runtimes: ApplicationRuntimes,
+    server_name: Arc<str>,
+) -> Router {
+    let ApplicationRuntimes {
+        provider: provider_runtime,
+        cartridge_distribution,
+        module_emitter,
+    } = runtimes;
     let discovery_routes = Router::new()
         .route("/.well-known/omarchygs", get(discover_server))
         .layer(middleware::map_response(inbox_no_store));
@@ -839,6 +875,7 @@ pub(crate) fn router_with_runtimes(
             game_registry,
             provider_runtime,
             cartridge_distribution,
+            module_emitter,
             server_name,
         })
         .layer(TraceLayer::new_for_http())
@@ -1823,7 +1860,7 @@ async fn create_report(
     Json(request): Json<CreateReportRequest>,
 ) -> Result<Response, ApiError> {
     let token = bearer_token(&headers)?;
-    let outcome = reports::create_report(
+    let outcome = reports::create_report_with_emitter(
         &state.pool,
         token,
         &persona_id,
@@ -1833,6 +1870,7 @@ async fn create_report(
             category: request.category,
             detail: request.detail,
         },
+        state.module_emitter.as_ref(),
     )
     .await
     .map_err(ApiError::Report)?;

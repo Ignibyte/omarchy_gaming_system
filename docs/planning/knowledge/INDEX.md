@@ -103,6 +103,17 @@ and in this register.
 | `PR-omarchy-gaming-system-persist-action-admission-before-external-effects-001` | Linearize mutable lifecycle authorization into an immutable exact action admission before compiled execution or provider I/O, and resolve exact replay before current-policy denial. | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
 | `PR-omarchy-gaming-system-render-only-from-accepted-plan-state-001` | After validating a render envelope, every presenter, metric, assertion, and component loader must consume only retained accepted plan state, never the raw input property. | `aar/AAR-034-session-pinned-cartridge-render-plan-and-gameplay-launch.md` |
 | `PR-omarchy-gaming-system-bind-permissions-to-opened-file-descriptors-001` | After securely creating or opening a file or directory, apply security-sensitive ownership or mode changes through that already-bound descriptor; do not re-resolve an attacker-visible pathname. | `aar/AAR-037-static-marketplace-publication-offline-root-handoff-and-mirror-operations.md` |
+| `PR-omarchy-gaming-system-bind-receipt-identity-to-stable-semantics-001` | Bind an immutable receipt to stable semantic request facts and explicitly exclude mutable delivery-attempt metadata. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-persist-extension-stop-state-001` | Every circuit, suspension, or restore stop state must persist an explicit activation gate that startup cannot infer away. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-rederive-opaque-identities-at-effect-sink-001` | Re-derive pairwise or opaque identifiers from authoritative roots at the protected effect sink. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-own-child-cleanup-after-spawn-001` | Every error edge after spawning a child must explicitly terminate and reap that exact child before returning. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-scope-operation-uuid-to-whole-command-001` | Treat an operation UUID as the identity of the entire command and compare its action plus digest on replay. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-fail-open-optional-observation-hooks-001` | Optional post-commit observation modules must not decide core startup or authoritative transaction availability; retain bounded aggregate gap evidence when observation is unavailable. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-signal-extension-shutdown-before-http-drain-001` | Signal extension dispatchers synchronously at the HTTP graceful-drain edge, then await their bounded workers during service teardown. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-validate-private-command-files-by-descriptor-001` | Open local mutation documents once with no-follow semantics and verify regular type, effective ownership, exact private mode, single link, bounds, and stable descriptor metadata before and after reading. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-retain-module-request-preimages-before-pruning-001` | Persist bounded canonical request and response preimages plus the authorized target before pruning replayable transport rows. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-reauthorize-readiness-under-finalization-lock-001` | After out-of-transaction readiness work, lock the stable roots and compare every authority-bearing revision before finalizing. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-reconcile-restored-modules-before-server-start-001` | Run audited module restore reconciliation against a copied database before any restored server startup, leaving modules disabled pending explicit review and fresh readiness. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
 
 ## Register
 
@@ -399,3 +410,27 @@ and in this register.
 | `PR-omarchy-gaming-system-use-absolute-containment-helper-paths-001` | rule | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
 | `PR-omarchy-gaming-system-exclude-generated-trees-from-source-fixtures-001` | rule | `aar/AAR-039-server-extension-isolation-and-typed-hook-architecture-spike.md` |
 | `AD-omarchy-gaming-system-process-isolated-wasm-server-modules-001` | decision | `../../architecture/adr-0004-process-isolated-wasm-server-modules.md`; `../../architecture/server-modules.md` |
+| `BF-omarchy-gaming-system-module-receipt-attempt-identity-drift-001` | failure | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `BF-omarchy-gaming-system-module-degradation-reactivation-gap-001` | failure | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `BF-omarchy-gaming-system-module-pairwise-subject-sink-trust-001` | failure | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `BF-omarchy-gaming-system-module-readiness-child-leak-001` | failure | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `BF-omarchy-gaming-system-module-operation-id-action-alias-001` | failure | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `BF-omarchy-gaming-system-optional-observation-core-availability-coupling-001` | failure | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `BF-omarchy-gaming-system-module-shutdown-drain-race-001` | failure | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `BF-omarchy-gaming-system-module-admin-command-file-substitution-001` | failure | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `BF-omarchy-gaming-system-module-delivery-preimage-pruning-loss-001` | failure | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `BF-omarchy-gaming-system-module-readiness-finalization-race-001` | failure | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `BF-omarchy-gaming-system-inactive-module-core-startup-denial-001` | failure | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `BF-omarchy-gaming-system-module-saturation-documentation-drift-001` | failure | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-bind-receipt-identity-to-stable-semantics-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-persist-extension-stop-state-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-rederive-opaque-identities-at-effect-sink-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-own-child-cleanup-after-spawn-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-scope-operation-uuid-to-whole-command-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-fail-open-optional-observation-hooks-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-signal-extension-shutdown-before-http-drain-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-validate-private-command-files-by-descriptor-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-retain-module-request-preimages-before-pruning-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-reauthorize-readiness-under-finalization-lock-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-reconcile-restored-modules-before-server-start-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `AD-omarchy-gaming-system-observation-only-production-server-module-base-001` | decision | `../../architecture/adr-0004-process-isolated-wasm-server-modules.md`; `../../architecture/server-modules.md` |

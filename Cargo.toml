@@ -9,6 +9,7 @@ members = [
     "crates/marketplace-publisher",
     "crates/marketplace-trust",
     "crates/server",
+    "crates/server-module-runtime",
 ]
 resolver = "3"
 
@@ -50,6 +51,10 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 thiserror = "2.0"
 uuid = "1.24.1"
+wasmtime = { version = "48.0.1", default-features = false, features = ["component-model", "cranelift", "runtime", "std"] }
+wat = "1.258.0"
+wit-component = "0.254.0"
+wit-parser = "0.254.0"
 url = "2.5.7"
 zeroize = "1.9.0"
 zip = { version = "8.6.0", default-features = false }

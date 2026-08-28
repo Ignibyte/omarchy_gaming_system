@@ -119,7 +119,9 @@ social/inbox data, game history, reports, the last verified marketplace
 snapshot, reviewed release inventory, local cartridge selections, and immutable
 operator/catalog audit. Operator-custom authority, exact release attestations,
 signed lifecycle state, source-aware selections, and immutable custom audit are
-also included. Protect dumps as secrets, encrypt them at rest,
+also included. Server-module releases, admissions, instance lifecycle, outbox,
+delivery/intent receipts, labels, namespaced state/snapshots, and audit are
+included as well. Protect dumps as secrets, encrypt them at rest,
 restrict file permissions, retain off-host copies, and define a tested
 retention/deletion policy. The provider authority pilot uses a separate
 database and requires its own documented backup.
@@ -139,7 +141,10 @@ pg_restore --exit-on-error --no-owner \
 ```
 
 Before switching traffic, compare table counts and focused security/history
-state, start the production server against the isolated restore, prove revoked
+state. If server-module rows are present, run the audited `module-restore`
+reconciliation from the [server-module runbook](server-modules.md) before any
+server startup against the restored database and confirm every module is
+disabled pending review. Then start the production server, prove revoked
 and suspended sessions remain denied, compare the public `server_id` from
 `/.well-known/omarchygs`, compare marketplace/catalog rows and admission
 revisions, compare operator-custom authority/release/policy/audit rows when
@@ -160,13 +165,15 @@ drops only those validated names:
 ./scripts/test-operator-recovery.sh
 ```
 
-It applies the embedded migrations through the production server, seeds
+It applies the embedded migrations through a module-enabled production server, seeds
 representative identity/social/inbox/game/report state, drives the real sysop
 command, performs `pg_dump`/`pg_restore`, compares every public application
 table, checks linked audit and immutability, and rejects a pre-suspension token
 through the restored production server. It also proves the singleton server
 UUID, marketplace snapshot, reviewed releases, local selection, and catalog
-audit are exactly preserved before and after the dump/restore.
+audit are exactly preserved before and after the dump/restore. It then runs the
+real database-local module restore reconciliation before starting the restored
+server and proves the restored module remains disabled pending explicit review.
 
 ## External key custody
 
@@ -186,8 +193,8 @@ server configuration and protect the mode-0600 private signing key separately
 from the normal service; losing it prevents new imports or lifecycle changes,
 while substituting another key is intentionally rejected. Player trust pins
 live on each client and are not restored from the server. Provider grant/message
-secrets, TLS private keys, backup-encryption keys, and future
-module signing keys are also separate custody domains.
+secrets, TLS private keys, backup-encryption keys, and server-module admission
+signing/pairwise secrets are also separate custody domains.
 
 ## Current limitations
 

@@ -9,7 +9,9 @@ use sqlx::PgPool;
 use tempfile::TempDir;
 use uuid::Uuid;
 
+use omarchy_gaming_system_server::server_modules::BUILTIN_INSTANCE_ID;
 use omarchygs_game_cartridge::generate_catalog_keypair;
+use omarchygs_server_module_runtime::{BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID};
 
 const CATALOG_ARCHIVE: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const CATALOG_IDENTITY: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
@@ -613,6 +615,138 @@ async fn custom_cartridge_cli_requires_matching_owner_private_signing_key(pool: 
     assert_eq!(authority_count, 0);
 }
 
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+async fn module_cli_lists_safe_inventory_and_applies_lifecycle_restore_commands(pool: PgPool) {
+    let database_url = isolated_database_url(&pool).await;
+    seed_disabled_module(&pool).await;
+
+    let listed = run_admin(&database_url, &["modules"]);
+    assert!(
+        listed.status.success(),
+        "module inventory failed: {}",
+        String::from_utf8_lossy(&listed.stderr)
+    );
+    let inventory: Value =
+        serde_json::from_slice(&listed.stdout).expect("module inventory should be JSON");
+    exact_keys(&inventory, &["format", "modules"]);
+    assert_eq!(inventory["format"], "omarchygs.server-module-inventory/v1");
+    let module = &inventory["modules"][0];
+    exact_keys(
+        module,
+        &[
+            "component_sha256",
+            "config_revision",
+            "dead_letter_events",
+            "delivery_receipts",
+            "intent_receipts",
+            "last_observation_gap_at",
+            "last_observation_gap_reason",
+            "legacy_delivery_receipts",
+            "lifecycle",
+            "lifecycle_revision",
+            "module_id",
+            "observation_gap_count",
+            "outstanding_events",
+            "release_id",
+            "restored_pending_review",
+            "state_revision",
+        ],
+    );
+    assert_eq!(module["observation_gap_count"], 0);
+    assert!(module["last_observation_gap_reason"].is_null());
+    assert!(module["last_observation_gap_at"].is_null());
+    assert_eq!(module["legacy_delivery_receipts"], 0);
+    let inventory_text = String::from_utf8(listed.stdout).expect("inventory should be UTF-8");
+    for private in [
+        "signed_release",
+        "signed_provenance",
+        "test-private-release-body",
+        "test-private-provenance-body",
+        "DATABASE_URL",
+    ] {
+        assert!(!inventory_text.contains(private));
+    }
+
+    let temp = TempDir::new().expect("module command directory should create");
+    let suspend_path = temp.path().join("suspend-module.json");
+    let suspend_id = Uuid::new_v4();
+    write_private_json(
+        &suspend_path,
+        &json!({
+            "format": "omarchygs.server-module-lifecycle-command/v1",
+            "operation_id": suspend_id,
+            "module_id": BUILTIN_MODULE_ID,
+            "expected_revision": 1,
+            "action": "suspend",
+            "actor": "cli-module-sysop",
+            "reason": "Exercise the local emergency stop"
+        }),
+    );
+    std::fs::set_permissions(&suspend_path, std::fs::Permissions::from_mode(0o644))
+        .expect("public command mode should set");
+    let public_command = run_admin(
+        &database_url,
+        &["module-apply", suspend_path.to_str().expect("UTF-8 path")],
+    );
+    assert!(!public_command.status.success());
+    assert!(public_command.stdout.is_empty());
+    assert_eq!(public_command.stderr, b"server_module_invalid_input\n");
+    std::fs::set_permissions(&suspend_path, std::fs::Permissions::from_mode(0o600))
+        .expect("private command mode should restore");
+    let suspended = run_admin(
+        &database_url,
+        &["module-apply", suspend_path.to_str().expect("UTF-8 path")],
+    );
+    assert!(
+        suspended.status.success(),
+        "module suspend failed: {}",
+        String::from_utf8_lossy(&suspended.stderr)
+    );
+    let receipt: Value =
+        serde_json::from_slice(&suspended.stdout).expect("module receipt should be JSON");
+    assert_eq!(receipt["operation_id"], suspend_id.to_string());
+    assert_eq!(receipt["previous_state"], "disabled");
+    assert_eq!(receipt["resulting_state"], "suspended");
+    assert_eq!(receipt["resulting_revision"], 2);
+
+    let restore_path = temp.path().join("restore-modules.json");
+    let restore_id = Uuid::new_v4();
+    write_private_json(
+        &restore_path,
+        &json!({
+            "format": "omarchygs.server-module-restore-command/v1",
+            "operation_id": restore_id,
+            "actor": "cli-module-sysop",
+            "reason": "Reconcile the isolated backup restore"
+        }),
+    );
+    let restored = run_admin(
+        &database_url,
+        &["module-restore", restore_path.to_str().expect("UTF-8 path")],
+    );
+    assert!(
+        restored.status.success(),
+        "module restore failed: {}",
+        String::from_utf8_lossy(&restored.stderr)
+    );
+    let receipts: Value =
+        serde_json::from_slice(&restored.stdout).expect("restore receipts should be JSON");
+    assert_eq!(receipts[0]["operation_id"], restore_id.to_string());
+    assert_eq!(receipts[0]["previous_state"], "suspended");
+    assert_eq!(receipts[0]["resulting_state"], "disabled");
+    assert_eq!(receipts[0]["resulting_revision"], 3);
+
+    let restored_inventory = run_admin(&database_url, &["modules"]);
+    let restored_inventory: Value = serde_json::from_slice(&restored_inventory.stdout)
+        .expect("restored inventory should be JSON");
+    assert_eq!(restored_inventory["modules"][0]["lifecycle"], "disabled");
+    assert_eq!(
+        restored_inventory["modules"][0]["restored_pending_review"],
+        true
+    );
+}
+
 fn exact_keys(value: &Value, expected: &[&str]) {
     let actual: BTreeSet<&str> = value
         .as_object()
@@ -713,4 +847,57 @@ async fn seed_persona(pool: &PgPool, account_id: Uuid, handle: &str, display_nam
     .fetch_one(pool)
     .await
     .expect("persona should seed")
+}
+
+async fn seed_disabled_module(pool: &PgPool) {
+    sqlx::query(
+        r#"
+        INSERT INTO server_module_releases (
+            release_id, module_id, publisher_id, version, release_format,
+            signed_release, release_sha256, signed_provenance, provenance_sha256,
+            provenance_class, review_id, component_sha256, wit_package, wit_world,
+            wit_major, wit_sha256, requested_capabilities, subscribed_hooks,
+            frame_bytes, memory_bytes, fuel, execution_ms, config_schema, state_schema
+        ) VALUES (
+            $1, 'ignibyte.sentinel', 'ignibyte', '1.0.0',
+            'omarchygs.server-module-release/v1', $2, repeat('a', 64), $3,
+            repeat('b', 64), 'first_party_reviewed_fixture', $4, repeat('c', 64),
+            'ignibyte:omarchygs-server-module@1.0.0', 'module-production', 1,
+            repeat('d', 64), ARRAY['moderation_add_label']::TEXT[],
+            ARRAY['persona_reported']::TEXT[], 65536, 4194304, 100000, 500,
+            'ignibyte.sentinel.config/v1', 'ignibyte.sentinel.state/v1'
+        )
+        "#,
+    )
+    .bind(BUILTIN_RELEASE_ID)
+    .bind(b"test-private-release-body".as_slice())
+    .bind(b"test-private-provenance-body".as_slice())
+    .bind(Uuid::new_v4())
+    .execute(pool)
+    .await
+    .expect("reviewed module release should seed");
+    sqlx::query(
+        r#"
+        INSERT INTO server_module_instances (
+            instance_id, module_id, release_id, lifecycle, lifecycle_revision
+        ) VALUES ($1, $2, $3, 'disabled', 1)
+        "#,
+    )
+    .bind(BUILTIN_INSTANCE_ID)
+    .bind(BUILTIN_MODULE_ID)
+    .bind(BUILTIN_RELEASE_ID)
+    .execute(pool)
+    .await
+    .expect("module instance should seed");
+    sqlx::query(
+        r#"
+        INSERT INTO server_module_state_namespaces (
+            instance_id, state_schema, revision, entries, byte_size
+        ) VALUES ($1, 'ignibyte.sentinel.state/v1', 0, '{}'::JSONB, 2)
+        "#,
+    )
+    .bind(BUILTIN_INSTANCE_ID)
+    .execute(pool)
+    .await
+    .expect("module state namespace should seed");
 }

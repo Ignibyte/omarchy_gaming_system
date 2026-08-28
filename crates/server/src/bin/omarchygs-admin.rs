@@ -24,13 +24,22 @@ use omarchy_gaming_system_server::{
         OperatorCustomAdminConfig, OperatorCustomError, apply_custom_policy,
         authorize_public_authority, import_custom_release,
     },
+    server_modules::{
+        ModuleError, ModuleLifecycleCommand, apply_lifecycle_command, list_module_inventory,
+        prepare_restored_modules,
+    },
 };
 use omarchygs_game_cartridge::rich_2d_host_profile;
 use operator_admin::{
     InvitationFilter, MAX_OPERATOR_DOCUMENT_BYTES, OperatorCommand, OperatorError, ReportFilter,
     apply_command, list_invitations, list_reports,
 };
+use rustix::{
+    fs::{Mode, OFlags, open},
+    process::geteuid,
+};
 use sqlx::postgres::PgPoolOptions;
+use uuid::Uuid;
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -49,6 +58,7 @@ enum AdminError {
     Marketplace(MarketplaceSyncError),
     Catalog(CatalogError),
     Custom(OperatorCustomError),
+    Module(ModuleError),
 }
 
 impl AdminError {
@@ -58,6 +68,7 @@ impl AdminError {
             Self::Marketplace(error) => error.code(),
             Self::Catalog(error) => error.code(),
             Self::Custom(error) => error.code(),
+            Self::Module(error) => error.code(),
         }
     }
 }
@@ -84,6 +95,21 @@ impl From<OperatorCustomError> for AdminError {
     fn from(error: OperatorCustomError) -> Self {
         Self::Custom(error)
     }
+}
+
+impl From<ModuleError> for AdminError {
+    fn from(error: ModuleError) -> Self {
+        Self::Module(error)
+    }
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ModuleRestoreCommand {
+    format: String,
+    operation_id: Uuid,
+    actor: String,
+    reason: String,
 }
 
 async fn run() -> Result<(), AdminError> {
@@ -270,6 +296,46 @@ async fn run() -> Result<(), AdminError> {
         let config = OperatorCustomAdminConfig::from_environment()?;
         serde_json::to_value(apply_custom_policy(&pool, &config, &command).await?)
             .map_err(|_| AdminError::Custom(OperatorCustomError::Internal))?
+    } else if action == OsStr::new("modules") {
+        if arguments.next().is_some() {
+            return Err(ModuleError::InvalidInput.into());
+        }
+        serde_json::to_value(list_module_inventory(&pool).await?)
+            .map_err(|_| AdminError::Module(ModuleError::Internal))?
+    } else if action == OsStr::new("module-apply") {
+        let document_path = arguments
+            .next()
+            .map(PathBuf::from)
+            .ok_or(AdminError::Module(ModuleError::InvalidInput))?;
+        if arguments.next().is_some() {
+            return Err(ModuleError::InvalidInput.into());
+        }
+        let document = read_bounded(&document_path, MAX_OPERATOR_DOCUMENT_BYTES)
+            .map_err(|_| AdminError::Module(ModuleError::InvalidInput))?;
+        let command: ModuleLifecycleCommand = serde_json::from_slice(&document)
+            .map_err(|_| AdminError::Module(ModuleError::InvalidInput))?;
+        serde_json::to_value(apply_lifecycle_command(&pool, &command).await?)
+            .map_err(|_| AdminError::Module(ModuleError::Internal))?
+    } else if action == OsStr::new("module-restore") {
+        let document_path = arguments
+            .next()
+            .map(PathBuf::from)
+            .ok_or(AdminError::Module(ModuleError::InvalidInput))?;
+        if arguments.next().is_some() {
+            return Err(ModuleError::InvalidInput.into());
+        }
+        let document = read_bounded(&document_path, MAX_OPERATOR_DOCUMENT_BYTES)
+            .map_err(|_| AdminError::Module(ModuleError::InvalidInput))?;
+        let command: ModuleRestoreCommand = serde_json::from_slice(&document)
+            .map_err(|_| AdminError::Module(ModuleError::InvalidInput))?;
+        if command.format != "omarchygs.server-module-restore-command/v1" {
+            return Err(ModuleError::InvalidInput.into());
+        }
+        serde_json::to_value(
+            prepare_restored_modules(&pool, command.operation_id, &command.actor, &command.reason)
+                .await?,
+        )
+        .map_err(|_| AdminError::Module(ModuleError::Internal))?
     } else {
         return Err(OperatorError::InvalidInput.into());
     };
@@ -282,25 +348,64 @@ async fn run() -> Result<(), AdminError> {
 
 fn read_bounded(path: &Path, limit: usize) -> Result<Vec<u8>, OperatorError> {
     let link_metadata = std::fs::symlink_metadata(path).map_err(|_| OperatorError::InvalidInput)?;
-    if link_metadata.file_type().is_symlink() || !link_metadata.is_file() {
-        return Err(OperatorError::InvalidInput);
-    }
-    let file = File::open(path).map_err(|_| OperatorError::InvalidInput)?;
-    let metadata = file.metadata().map_err(|_| OperatorError::InvalidInput)?;
-    if !metadata.is_file()
-        || metadata.len() > limit as u64
-        || metadata.dev() != link_metadata.dev()
-        || metadata.ino() != link_metadata.ino()
+    if link_metadata.file_type().is_symlink()
+        || !link_metadata.is_file()
+        || link_metadata.len() == 0
+        || link_metadata.len() > limit as u64
+        || link_metadata.uid() != geteuid().as_raw()
+        || link_metadata.mode() & 0o777 != 0o600
+        || link_metadata.nlink() != 1
     {
         return Err(OperatorError::InvalidInput);
     }
+    let mut file = File::from(
+        open(
+            path,
+            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map_err(|_| OperatorError::InvalidInput)?,
+    );
+    let metadata = file.metadata().map_err(|_| OperatorError::InvalidInput)?;
+    if !trusted_command_metadata(&metadata, &link_metadata, limit) {
+        return Err(OperatorError::InvalidInput);
+    }
     let mut bytes = Vec::with_capacity(metadata.len() as usize);
-    file.take(limit as u64 + 1)
+    (&mut file)
+        .take(limit as u64 + 1)
         .read_to_end(&mut bytes)
         .map_err(|_| OperatorError::InvalidInput)?;
-    if bytes.is_empty() || bytes.len() > limit {
+    let final_metadata = file.metadata().map_err(|_| OperatorError::InvalidInput)?;
+    if bytes.is_empty()
+        || bytes.len() > limit
+        || !trusted_command_metadata(&final_metadata, &metadata, limit)
+    {
         Err(OperatorError::InvalidInput)
     } else {
         Ok(bytes)
     }
+}
+
+fn trusted_command_metadata(
+    current: &std::fs::Metadata,
+    expected: &std::fs::Metadata,
+    limit: usize,
+) -> bool {
+    current.is_file()
+        && current.len() > 0
+        && current.len() <= limit as u64
+        && current.dev() == expected.dev()
+        && current.ino() == expected.ino()
+        && current.len() == expected.len()
+        && current.uid() == expected.uid()
+        && current.uid() == geteuid().as_raw()
+        && current.gid() == expected.gid()
+        && current.mode() == expected.mode()
+        && current.mode() & 0o777 == 0o600
+        && current.nlink() == 1
+        && current.nlink() == expected.nlink()
+        && current.mtime() == expected.mtime()
+        && current.mtime_nsec() == expected.mtime_nsec()
+        && current.ctime() == expected.ctime()
+        && current.ctime_nsec() == expected.ctime_nsec()
 }

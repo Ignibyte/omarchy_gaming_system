@@ -5,6 +5,7 @@ use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use omarchy_gaming_system_server::marketplace_sync::LocalCatalogConfig;
 
 use crate::mfa::MfaCipher;
+use crate::server_modules::ModuleConfig;
 use omarchy_gaming_system_server::operator_custom::OperatorCustomPublicConfig;
 
 const DEFAULT_BIND_ADDRESS: &str = "127.0.0.1:8080";
@@ -20,6 +21,7 @@ pub struct Config {
     pub provider: Option<ProviderConfig>,
     pub cartridge_distribution: Option<LocalCatalogConfig>,
     pub operator_custom: Option<OperatorCustomPublicConfig>,
+    pub module: Option<ModuleConfig>,
 }
 
 pub struct ProviderConfig {
@@ -62,6 +64,11 @@ impl Config {
                 )
             },
         )?;
+        let module = parse_module_config([
+            env::var("OGS_FIRST_PARTY_REPORT_MODULE").ok(),
+            env::var("OGS_MODULE_ADMISSION_SIGNING_SEED").ok(),
+            env::var("OGS_MODULE_PAIRWISE_SECRET").ok(),
+        ])?;
 
         Ok(Self {
             bind_address,
@@ -71,8 +78,37 @@ impl Config {
             provider,
             cartridge_distribution,
             operator_custom,
+            module,
         })
     }
+}
+
+fn parse_module_config(values: [Option<String>; 3]) -> Result<Option<ModuleConfig>> {
+    if values.iter().all(Option::is_none) {
+        return Ok(None);
+    }
+    if values.iter().any(Option::is_none) {
+        return Err(anyhow!(
+            "server-module configuration is all-or-none: set OGS_FIRST_PARTY_REPORT_MODULE=enabled, OGS_MODULE_ADMISSION_SIGNING_SEED, and OGS_MODULE_PAIRWISE_SECRET"
+        ));
+    }
+    let [enabled, admission_seed, pairwise_secret] = values.map(Option::unwrap);
+    if enabled != "enabled" {
+        return Err(anyhow!(
+            "OGS_FIRST_PARTY_REPORT_MODULE must be exactly enabled when server-module configuration is present"
+        ));
+    }
+    let admission_signing_seed =
+        decode_exact_secret("OGS_MODULE_ADMISSION_SIGNING_SEED", &admission_seed, 32)?
+            .try_into()
+            .map_err(|_| anyhow!("OGS_MODULE_ADMISSION_SIGNING_SEED must decode to 32 bytes"))?;
+    let pairwise_secret = decode_exact_secret("OGS_MODULE_PAIRWISE_SECRET", &pairwise_secret, 32)?
+        .try_into()
+        .map_err(|_| anyhow!("OGS_MODULE_PAIRWISE_SECRET must decode to 32 bytes"))?;
+    Ok(Some(ModuleConfig {
+        admission_signing_seed,
+        pairwise_secret,
+    }))
 }
 
 fn parse_server_name(value: Option<String>) -> Result<String> {
@@ -200,7 +236,7 @@ mod tests {
 
     use super::{
         DEFAULT_BIND_ADDRESS, DEFAULT_DATABASE_URL, DEFAULT_SERVER_NAME, parse_mfa_cipher,
-        parse_provider_config, parse_server_name, resolve_bind_address,
+        parse_module_config, parse_provider_config, parse_server_name, resolve_bind_address,
     };
 
     #[test]
@@ -307,5 +343,39 @@ mod tests {
             ])
             .is_err()
         );
+    }
+
+    #[test]
+    fn server_module_configuration_is_disabled_by_default_and_all_or_none() {
+        assert!(
+            parse_module_config([None, None, None])
+                .expect("absent module configuration should disable modules")
+                .is_none()
+        );
+        assert!(
+            parse_module_config([
+                Some("enabled".to_owned()),
+                Some(URL_SAFE_NO_PAD.encode([1_u8; 32])),
+                None,
+            ])
+            .is_err()
+        );
+        assert!(
+            parse_module_config([
+                Some("true".to_owned()),
+                Some(URL_SAFE_NO_PAD.encode([1_u8; 32])),
+                Some(URL_SAFE_NO_PAD.encode([2_u8; 32])),
+            ])
+            .is_err()
+        );
+        let complete = parse_module_config([
+            Some("enabled".to_owned()),
+            Some(URL_SAFE_NO_PAD.encode([1_u8; 32])),
+            Some(URL_SAFE_NO_PAD.encode([2_u8; 32])),
+        ])
+        .expect("complete module configuration should parse")
+        .expect("module should be enabled");
+        assert_eq!(complete.admission_signing_seed, [1_u8; 32]);
+        assert_eq!(complete.pairwise_secret, [2_u8; 32]);
     }
 }

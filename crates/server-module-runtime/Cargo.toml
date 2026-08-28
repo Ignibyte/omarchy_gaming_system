@@ -1,0 +1,25 @@
+[package]
+name = "omarchygs-server-module-runtime"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+build = "build.rs"
+
+[dependencies]
+base64.workspace = true
+ed25519-dalek.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+uuid = { workspace = true, features = ["serde", "v4"] }
+wasmtime.workspace = true
+
+[build-dependencies]
+wat.workspace = true
+wit-component.workspace = true
+wit-parser.workspace = true
+
+[dev-dependencies]
+tempfile = "3.23.0"

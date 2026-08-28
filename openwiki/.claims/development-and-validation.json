@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:36bef74911f0996b1ae1aa90727c02472e4de37b1d64ec6e63515c4d0f8d52f9",
+  "pageVersion": "sha256:8d522c8302d59717de40d49f665ced1b65b312a82cd38e6bd4954a01849a7911",
   "claims": [
     {
       "id": "claim_e75f82f846ca444594c51ed0f48b894b",
@@ -32,11 +32,11 @@
     },
     {
       "id": "claim_171e3e64173941df995e2a10f63d4c51",
-      "statement": "The canonical diff gate runs numbered stages 1 through 23 plus 15a and 15b, ending with the isolated server-module architecture proof before writing a worktree-bound receipt.",
+      "statement": "The canonical diff gate runs numbered stages 1 through 24 plus 15a and 15b, ending with production server-module conformance before writing a worktree-bound receipt.",
       "evidence": [
         {
           "resource": "repo://bin/gate.sh#L73-L116",
-          "version": "repo-lines-v1:sha256:b43c6e7625f2cea13970d8f44ec5ac7138fb5e3426ee267ceab45b1bfc907ab1:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3YmY1ZmE0ZGMyMDc5YWUyNzRhMmVmMjBkODllMjUzMGEwZTg0NTZhMTM2ODA4NGZjNDViZjhhNjc4ZWRhYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1MjA1NzJmMGVmNWMyMzZhMWE5N2NmZDdkMWJjZmEzZTNkNzU2OGExODc1OGMxNjljMWU0N2Q5NDAzZWI0NjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1OGI4NzEwNzI3NGZiN2I2NmFkMzM1ODg4M2IyODQ2ODNiYWJjMzllNDcwM2JjY2JjM2Y0NDZmNzA5MTgxMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "version": "repo-lines-v1:sha256:a443483463c02ed9f26d042b8d3ad4fc6f349a872f4157d69adc31ec7daa9934:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3YmY1ZmE0ZGMyMDc5YWUyNzRhMmVmMjBkODllMjUzMGEwZTg0NTZhMTM2ODA4NGZjNDViZjhhNjc4ZWRhYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1OGI4NzEwNzI3NGZiN2I2NmFkMzM1ODg4M2IyODQ2ODNiYWJjMzllNDcwM2JjY2JjM2Y0NDZmNzA5MTgxMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc1MjA1NzJmMGVmNWMyMzZhMWE5N2NmZDdkMWJjZmEzZTNkNzU2OGExODc1OGMxNjljMWU0N2Q5NDAzZWI0NjkifQ"
         }
       ]
     },
@@ -56,11 +56,15 @@
     },
     {
       "id": "claim_4fd32c9a1f524cdc9a89f6db83ab95d9",
-      "statement": "The dedicated PostgreSQL gate stage runs 66 database-backed marketplace, server, administrator, and operator-CLI cases sequentially against migrated isolated databases after the ordinary unit loop leaves them ignored.",
+      "statement": "The dedicated PostgreSQL gate stage runs 75 database-backed marketplace, server, administrator-domain, and operator-CLI cases sequentially against migrated isolated databases after the ordinary unit loop leaves them ignored.",
       "evidence": [
         {
           "resource": "repo://scripts/test-database.sh",
           "version": "repo-file-v1:sha256:d256e9cf4a48df01d7209c9bf23ac2ac9b0b27b1f16f331791bf11ba1916a115"
+        },
+        {
+          "resource": "repo://crates/server/src/server_module_tests.rs",
+          "version": "repo-file-v1:sha256:44c44e204b1bcee66666f30def144db6fbb4c757261366af1ac0ffa0ea165218"
         },
         {
           "resource": "repo://crates/server/src/marketplace_sync_tests.rs",
@@ -69,6 +73,10 @@
         {
           "resource": "repo://crates/server/src/operator_admin.rs",
           "version": "repo-file-v1:sha256:03a577bdf6b5d1a5f2f9730262c9b51608525c9b0302c37aaeb54def308d2faa"
+        },
+        {
+          "resource": "repo://crates/server/tests/operator_cli.rs",
+          "version": "repo-file-v1:sha256:b41714eba7e36c4c3256b4db53771ce92be08f6d2da2f192bdac092cad4317a3"
         }
       ]
     },
@@ -270,25 +278,7 @@
       "evidence": [
         {
           "resource": "repo://bin/gate.sh",
-          "version": "repo-file-v1:sha256:f04513779aee88e37d6ef150dad538ff490af55483a9b07183f0a0fba90964c1"
-        },
-        {
-          "resource": "repo://scripts/test-game-cartridge-sdk.sh",
-          "version": "repo-file-v1:sha256:aa1d386e2a941e79e88b07b4aba343bcd7763302a7654b809537cb0900eaa761"
-        },
-        {
-          "resource": "repo://crates/game-cartridge/tests/sdk_release.rs",
-          "version": "repo-file-v1:sha256:7b46ed1b5699785d89fc679468d7087cfba0a9798172e94005240555543160dc"
-        }
-      ]
-    },
-    {
-      "id": "claim_3dcc4c5f3f9749e3bcd8b282a2b34e13",
-      "statement": "Gate 13 exports and verifies the deterministic SDK, builds one first-party repository twice from clean Git clones using copied public tools only, verifies byte-identical signed releases, applies signed lifecycle policy, imports through the secure store, and previews the imported cartridge without database, provider, or platform credentials.",
-      "evidence": [
-        {
-          "resource": "repo://bin/gate.sh",
-          "version": "repo-file-v1:sha256:f04513779aee88e37d6ef150dad538ff490af55483a9b07183f0a0fba90964c1"
+          "version": "repo-file-v1:sha256:0f17349f2d529caa38cc8449e6bb837ab1360ef471707a2d72b7666de5f8de74"
         },
         {
           "resource": "repo://scripts/test-game-cartridge-sdk.sh",
@@ -348,7 +338,7 @@
       "evidence": [
         {
           "resource": "repo://bin/gate.sh",
-          "version": "repo-file-v1:sha256:f04513779aee88e37d6ef150dad538ff490af55483a9b07183f0a0fba90964c1"
+          "version": "repo-file-v1:sha256:0f17349f2d529caa38cc8449e6bb837ab1360ef471707a2d72b7666de5f8de74"
         },
         {
           "resource": "repo://scripts/test-provider-conformance.sh",
@@ -366,8 +356,12 @@
     },
     {
       "id": "claim_46dd32af132d418d934303b2ca56f4df",
-      "statement": "The keyboard-first QML fixture corpus runs 52 Qt cases covering accessibility, marketplace trust/package staging, cartridge acquisition/navigation/actions, reports, social/inbox behavior, contrast, focus, traversal, persistent exit, compact containment, Escape authority, hostile envelopes, retry identity, revision refetch, and active-seat enforcement.",
+      "statement": "The keyboard-first QML fixture corpus runs 53 Qt cases covering accessibility, marketplace trust/package staging, cartridge acquisition/navigation/actions, reports, social/inbox behavior, contrast, focus, traversal, persistent exit, compact containment, Escape authority, hostile envelopes, retry identity, revision refetch, and active-seat enforcement.",
       "evidence": [
+        {
+          "resource": "repo://scripts/test-qml-onboarding.sh",
+          "version": "repo-file-v1:sha256:6aa1636599f90d32ab574b780308d57b5ffbe5355136789ac9b7f697dd45dcac"
+        },
         {
           "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml",
           "version": "repo-file-v1:sha256:fc6b02e70b5e0f93260336d56f72b26991e5a1d073f61683b348ae64c2bcaa69"
@@ -458,11 +452,11 @@
     },
     {
       "id": "claim_2c0acffef22a424d86b86a12411ad5bd",
-      "statement": "The operator recovery drill owns two validated generated databases, migrates through the production server, applies real sysop commands, restores a custom PostgreSQL dump in isolation, compares every public application table, checks immutable report and audit state, and rejects a pre-suspension token through the restored server.",
+      "statement": "The operator recovery drill owns two validated generated databases, migrates through the production server, applies real sysop commands, restores a custom PostgreSQL dump in isolation, reconciles restored modules to disabled before configured startup, compares public application tables, checks immutable report and audit state, and rejects a pre-suspension token through the restored server.",
       "evidence": [
         {
-          "resource": "repo://scripts/test-operator-recovery.sh",
-          "version": "repo-file-v1:sha256:9e007f7e8db433f86763d069f2d4e0d0bb571ab773e62730972ff85fdc915478"
+          "resource": "repo://scripts/test-operator-recovery.sh#L1-L568",
+          "version": "repo-lines-v1:sha256:3f367d2d91df5103f8267d42a4a8c6ac320fcd09896ca4164c7b8c42e5f52bcc:eyJzZWxlY3RlZExpbmVDb3VudCI6NTY4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxZDk1ZmMwNGE4MGM5NTJmNDljZTQxODg2MjdjNTNiMGZiZThjNDQwNDFiOTUyZDU5MmFjZDFkZTk5ODYxNDY2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwOGNiNTc2YTI4YWQ5OTI0N2EyYTM2YjBhODVhNGJmZWU0ZDY0ZWFhZjQ5ZmRiMzBlMzIwMTI5NmY4NWRjZDFkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlZDIxMzA3MjkxYWZlOWJiZmJhNDVjMTdmNDk4Yzk4NTE0YTNlNjVkYWRkOGU3MWMzMWI2YTJjZTM4MzY3MWU1In0"
         }
       ]
     },
@@ -496,11 +490,15 @@
     },
     {
       "id": "claim_18b2613b127d4ca88023b62c62c88f1b",
-      "statement": "The module proof runs Rust formatting, linting, tests, docs, deterministic component generation, 13 isolated process scenarios, containment assertions, local-only automation checks, and a production-loader absence check.",
+      "statement": "The historical module proof runs Rust formatting, linting, tests, docs, deterministic component generation, 13 isolated process scenarios, containment assertions, and local-only automation checks; production-loader behavior is validated separately by gate stage 24.",
       "evidence": [
         {
-          "resource": "repo://scripts/test-server-module-spike.sh#L13-L90",
-          "version": "repo-lines-v1:sha256:ae0075953c86a20869efc86b2890645e75af4e8a84c08ba86003cf3ecbd6b898:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1M2E4YmJiODYzMTI5NTA5ZjFjZjExODVmOGQxNTc5N2Y1NzhiMGJmMTQ2ODQwZmRiMGExZWFkMTBhOTU3ODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlOTdmNGVhOThkZDViNjE3Y2I3ZTU1NzhiZTdiNWE5NDQ2OWUwN2Y4MDY4MmI5MzZmNGNkNjhiMWExYWJhODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ5OTU0NjRiMWJhZmZjYmU2OTkwMzgyNjA1MjcxMjkxNWE4OWRlMzRlZjM2ZGViMTNlZDlkNTgzZDE4NzMzMjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/test-server-module-spike.sh#L1-L82",
+          "version": "repo-lines-v1:sha256:103038362abe42f374b01e0169c6c889372e046ecb87768fc49ac13c27208d42:eyJzZWxlY3RlZExpbmVDb3VudCI6ODIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlOTdmNGVhOThkZDViNjE3Y2I3ZTU1NzhiZTdiNWE5NDQ2OWUwN2Y4MDY4MmI5MzZmNGNkNjhiMWExYWJhODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://scripts/test-server-modules.sh#L1-L55",
+          "version": "repo-lines-v1:sha256:8924d9310d1023fe6cc5058bdf3006730d90d7da3a2d0fbd2c91070b2933bac8:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxZDRiYzYxZGY4MjZkM2Y3MTI1NTA5YjAxZTBiYjc0N2EzZDMxNzAxZmJkODM2NTFhODEwODEzYzI4Yzc2M2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -519,18 +517,18 @@
       ]
     },
     {
-      "id": "claim_d777f6f90e0446c8a0820c2d2a012d6b",
-      "statement": "The module proof runs Rust formatting, linting, tests, docs, deterministic component generation, 13 isolated process scenarios, containment assertions, local-only automation checks, and a production-loader absence check.",
+      "id": "claim_453fbc88573e40ae90df2d49b25bfdd9",
+      "statement": "Gate 22 applies the complete embedded migration set to a fresh isolated database, issues two invitations through the local administrator, and proves digest-only one-use registration, exact replay, revocation, safe inventory, login, and audit without hosted automation.",
       "evidence": [
         {
-          "resource": "repo://scripts/test-server-module-spike.sh#L13-L90",
-          "version": "repo-lines-v1:sha256:ae0075953c86a20869efc86b2890645e75af4e8a84c08ba86003cf3ecbd6b898:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1M2E4YmJiODYzMTI5NTA5ZjFjZjExODVmOGQxNTc5N2Y1NzhiMGJmMTQ2ODQwZmRiMGExZWFkMTBhOTU3ODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlOTdmNGVhOThkZDViNjE3Y2I3ZTU1NzhiZTdiNWE5NDQ2OWUwN2Y4MDY4MmI5MzZmNGNkNjhiMWExYWJhODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ5OTU0NjRiMWJhZmZjYmU2OTkwMzgyNjA1MjcxMjkxNWE4OWRlMzRlZjM2ZGViMTNlZDlkNTgzZDE4NzMzMjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/test-private-alpha.sh",
+          "version": "repo-file-v1:sha256:6960c2cbcc6b8a3b58e3b9ded5057aa7ed9cbfba3aab7c5af1a1280b6474446a"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-27T22:03:08.727Z"
+    "at": "2026-08-28T01:06:32.318Z"
   }
 }

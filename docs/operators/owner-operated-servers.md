@@ -239,7 +239,7 @@ platform-owned QML components. It cannot ship raw QML, JavaScript, native
 client code, credentials, or an arbitrary network client.
 
 Custom game backend code uses the registered provider contract. General
-server behavior will use the ADR-0004 server module system: one exact no-WASI
+server behavior uses the ADR-0004 server module system: one exact no-WASI
 component per OS-contained host process, exact WIT compatibility,
 capability-scoped typed hooks/intents, and core reauthorization. Both are executable
 server-side trust decisions made by the operator and may affect the
@@ -248,13 +248,14 @@ server. They must be independently inventoryable, auditable, disableable, and
 recoverable; a general module hook must not masquerade as a game provider or
 mutate protected state outside core authorization.
 
-Production module installation remains unavailable. The Ticket 039 nested
-host and hostile suite are decision evidence only; placing component bytes on
-disk or changing server configuration cannot load them. A future operator
-workflow must require exact provenance/capability review, expected-state
-lifecycle operations, immutable audit, health/readiness, namespaced state
-migration/rollback, player-facing custom-server provenance, and disabled-on-
-restore recovery before administrator-custom modules are enabled.
+The production base currently admits only the compiled-in reviewed Sentinel
+fixture when its exact all-or-none configuration is present. It observes new
+reports and proposes one core-reauthorized moderation label; there is no public
+module route, arbitrary egress, game authority, or configurable executable
+path. Inventory, emergency suspension, recovery, and restore reconciliation
+are database-local. See the [server-module runbook](server-modules.md).
+Administrator-custom module installation remains unavailable and requires its
+own provenance, disclosure, and security gate.
 
 A future Provider SDK may let an administrator run a custom game backend as a
 separate service on the same infrastructure. Co-location does not grant shared

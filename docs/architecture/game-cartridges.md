@@ -917,9 +917,10 @@ authority and policy decisions remain Ticket 019 work.
    source-aware lifecycle/admission, explicit per-server client trust,
    persistent provenance warnings, current/historical acquisition, and
    unchanged inert-cartridge verification/rendering.
-7. **Server modules and hooks:** run the extension isolation spike, then build
-   the selected versioned capability/lifecycle/audit model independently of the
-   provider contract.
+7. **Server modules and hooks — fixed first-party base implemented:** the
+   extension isolation proof now feeds one production observation-only
+   capability/lifecycle/audit base independently of the provider contract;
+   custom installation and additional hooks remain gated.
 8. **Reviewed external providers:** add publisher onboarding, catalog review,
    quotas, monitoring, suspension, support policy, and game-scoped achievement
    trust.

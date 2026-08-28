@@ -79,12 +79,4 @@ if ./scripts/check-local-only-automation.sh "$ogs_hostile_root"; then
   exit 1
 fi
 
-if rg -n \
-  'omarchygs-server-module-spike|ModuleRuntime|module-host|server_module' \
-  crates/server client migrations Cargo.toml compose.yaml \
-  --glob '!server-module-spike/**'; then
-  echo "Production module loader/configuration unexpectedly exists" >&2
-  exit 1
-fi
-
 echo "Server module isolation architecture proof passed"
