@@ -9,6 +9,8 @@ members = [
     "crates/marketplace-publisher",
     "crates/marketplace-trust",
     "crates/provider-sdk",
+    "crates/provider-conformance",
+    "crates/provider-starter",
     "crates/server",
     "crates/server-module-runtime",
 ]

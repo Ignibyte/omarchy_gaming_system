@@ -5,6 +5,8 @@ openwiki_generated: true
 sources:
   - id: openwiki-source-0bb8016edf4f4744d3a09cf4
     resource: repo://bin/gate.sh
+  - id: openwiki-source-0196de8872a3fef5b0b350d3
+    resource: repo://client/qml/CartridgeController.qml
   - id: openwiki-source-998b0f5a7b56d7475101b7a2
     resource: repo://client/qml/components/OgsTheme.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
@@ -31,10 +33,16 @@ sources:
     resource: repo://crates/marketplace-publisher/src/bin/omarchygs-marketplace-publisher.rs
   - id: openwiki-source-2bc4557686cbe5b8dfa44f45
     resource: repo://crates/marketplace-publisher/src/lib.rs
-  - id: openwiki-source-b1f8833a60126ffa9920d6ec
-    resource: repo://crates/provider-sdk/src/lib.rs
-  - id: openwiki-source-cc42881d788651842a70ae54
-    resource: repo://crates/provider-sdk/src/release.rs
+  - id: openwiki-source-18fcba4155ece2440818ba7e
+    resource: repo://crates/marketplace-publisher/src/store.rs
+  - id: openwiki-source-47b086efad31c47b42bf6f76
+    resource: repo://crates/provider-conformance/src/release.rs
+  - id: openwiki-source-01584c5ba7d35b160c5de691
+    resource: repo://crates/provider-conformance/src/runner.rs
+  - id: openwiki-source-752bcc832cc8ddb9cef7a0f9
+    resource: repo://crates/provider-starter/src/rules.rs
+  - id: openwiki-source-80af29333d26b2334a88a2fb
+    resource: repo://crates/provider-starter/src/runtime.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-ba203ea2e600f294ab58ef02
@@ -89,6 +97,8 @@ sources:
     resource: repo://docs/planning/ROADMAP.md
   - id: openwiki-source-85dba8f87dd5947de337aca5
     resource: repo://docs/product-charter.md
+  - id: openwiki-source-646f44c73d051dad95b4a950
+    resource: repo://examples/provider-relay-forge/src/lib.rs
   - id: openwiki-source-cb6494f7cbf0d5d23ffe082a
     resource: repo://migrations/0012_game_challenges.sql
   - id: openwiki-source-11256f84337d259ecf424a45
@@ -101,9 +111,9 @@ sources:
     resource: repo://packaging/arch/PKGBUILD
   - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
     resource: repo://scripts/check-qml-style.py
-  - id: openwiki-source-6568db81b3a045799e94d1af
-    resource: repo://scripts/test-provider-sdk.sh
-generated: {by: "codex", at: "2026-08-30T02:11:48.120Z"}
+  - id: openwiki-source-6323e860f0976ef977f38cf6
+    resource: repo://scripts/test-provider-developer-kit.sh
+generated: {by: "codex", at: "2026-08-30T21:12:56.668Z"}
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -153,9 +163,14 @@ in the native companion before custom install or play is eligible. When the
 optional provider runtime is configured, the server also exposes the
 operator-pinned Door Legends provider release and routes its player operations
 through authenticated exact-v1 capability negotiation to a separate provider
-process and database. A separate public-only Provider SDK preview packages that
-provider-facing contract and a deterministic locally signed release without
-platform registration, broker, database, egress, or admission authority. The main QML
+process and database. The public provider developer kit packages that
+provider-facing contract, a fixed four-route Axum/PostgreSQL starter, a
+fifteen-case TLS conformance runner, and deterministic locally signed release
+artifacts. Its `ProviderGame` seam receives only deterministic game state and
+payloads; it has no platform registration, broker, egress, admission,
+administration, or player-route authority. Relay Forge consumes those public
+packages as an independent clean-room proof and is not a production-admitted
+provider. The main QML
 connector now handles direct or saved server selection through exact public
 discovery, masked invitation entry and account registration, password or MFA
 sign-in, and owned-persona creation or selection before entering an
@@ -293,9 +308,11 @@ sessions retain OmarchyGS rules authority, while a Door Legends session pins
 one exact provider release as its only durable rules/state/revision authority.
 Ticket 044 extracts the provider-facing half into a public-only crate, requires
 an authenticated exact-v1/four-capability preflight before effects, and proves
-deterministic locally signed exports in two clean consumer clones. External
-provider onboarding and the starter/conformance/second-game and sidecar slices
-remain later work. Ticket 033 adds independently
+deterministic locally signed exports in two clean consumer clones. Ticket 045
+adds the public starter and conformance crates, deterministic three-package
+developer-kit export, and independently built Relay Forge second-game proof.
+Provider sidecar/operations and external onboarding remain later work. Ticket
+033 adds independently
 trusted main-client acquisition,
 private caching, and server-profile mounting. Ticket 034 adds immutable exact
 session presentation pins, mounted render-plan launch, trusted QML gameplay,
@@ -338,11 +355,12 @@ observation base, Ticket 041 adds database-local operator-custom custody, exact
 lifecycle, shared runtime dispatch, restore review, aggregate disclosure, and
 operator responsibility, and Ticket 042 packages the compatible reviewed
 successor with exact owner-controlled upgrade and immediate rollback. None
-expands the hook or capability vocabulary. The public Provider SDK preview is
-implemented; its starter/conformance/second-game and sidecar/operations slices,
-external provider onboarding, public module administration, marketplace module
-admission, and broader hook classes remain roadmap work. The bounded custom path
-is not a general plugin loader.
+expands the hook or capability vocabulary. The public Provider SDK, starter,
+conformance runner, deterministic developer-kit release, and second clean-room
+game are implemented. Provider sidecar/operations, external provider onboarding,
+public module administration, marketplace module admission, and broader hook
+classes remain roadmap work. The bounded custom path is not a general plugin
+loader.
 
 ## Task routing
 
@@ -353,9 +371,9 @@ is not a general plugin loader.
 | Change player reporting, account suspension, report disposition, invitation administration, operator audit, or platform restore | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `reports.rs`, `operator_admin.rs`, `bin/omarchygs-admin.rs`; migrations `0016`–`0017`; `docs/operators/operator-safety-and-recovery.md`; `docs/operators/private-alpha.md` | Report API and operator-domain PostgreSQL tests; real CLI test; recovery and private-alpha drills |
 | Change QML endpoint/profile selection, appearance/accessibility, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `ServerProfiles.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/components/`, `client/qml/screens/`, `client/qml/game/` | `scripts/check-qml-style.py`; `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
-| Change cartridge packaging, trusted rendering, SDK portability, provider integration, marketplace or operator-custom trust, synchronization, server admission, player acquisition, session pinning, historical recovery, signed-screen navigation, package staging, or trusted launch | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/provider-sdk`; `crates/game-cartridge-renderer`; `crates/client-cartridge-runtime`; `crates/marketplace-trust`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `operator_custom.rs`; `session_cartridges.rs`; `marketplace_sync.rs`; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `client/qml/MarketplaceController.qml`; `CartridgeController.qml`; `GameController.qml`; `client/qml/cartridge`; migrations `0014`–`0015` and `0019`–`0024`; ADR-0002; Tickets 015–019, 032–038, and 044 | Cartridge/renderer/SDK/provider focused scripts, including `scripts/test-provider-sdk.sh`; root-signed trust-channel test; marketplace/custom PostgreSQL lifecycle/admission/migration tests; hostile companion/QML contract tests; clean-clone Door Legends pilot; native package smoke; threat/authority review and constitutional authority check |
+| Change cartridge packaging, trusted rendering, SDK portability, provider integration, marketplace or operator-custom trust, synchronization, server admission, player acquisition, session pinning, historical recovery, signed-screen navigation, package staging, or trusted launch | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/provider-sdk`; `crates/provider-starter`; `crates/provider-conformance`; `examples/provider-relay-forge`; `crates/game-cartridge-renderer`; `crates/client-cartridge-runtime`; `crates/marketplace-trust`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `operator_custom.rs`; `session_cartridges.rs`; `marketplace_sync.rs`; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `client/qml/MarketplaceController.qml`; `CartridgeController.qml`; `GameController.qml`; `client/qml/cartridge`; migrations `0014`–`0015` and `0019`–`0024`; ADR-0002; Tickets 015–019, 032–038, and 044–045 | Cartridge/renderer/SDK/provider focused scripts, including `scripts/test-provider-sdk.sh`, `scripts/test-provider-developer-kit.sh`, and `scripts/test-provider-starter-conformance.sh`; root-signed trust-channel test; marketplace/custom PostgreSQL lifecycle/admission/migration tests; hostile companion/QML contract tests; clean-clone Relay Forge and Door Legends proofs; native package smoke; threat/authority review and constitutional authority check |
 | Change static marketplace preparation, offline-root signing, immutable activation, local verification, or mirror probes | [Game Cartridges](game-cartridges.md) and [Development and validation](development-and-validation.md) | `crates/marketplace-publisher`; `docs/operators/marketplace-publication.md`; Ticket 037 | `scripts/test-marketplace-publication.sh`; exact-tree, network-less ceremony, mirror, rotation, rollback, security, and canonical diff-gate evidence |
-| Change owner-operated server, Provider SDK, or executable custom-content direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `crates/provider-sdk`; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | `scripts/test-provider-sdk.sh`; current-versus-future audit; provenance/authority review; official-client containment |
+| Change owner-operated server, Provider SDK, or executable custom-content direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `crates/provider-sdk`; `crates/provider-starter`; `crates/provider-conformance`; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | `scripts/test-provider-sdk.sh`; `scripts/test-provider-developer-kit.sh`; `scripts/test-provider-starter-conformance.sh`; current-versus-future audit; provenance/authority review; official-client containment |
 | Change the server-module WIT, fixed loader, host, custom import/custody, report observation, dispatch, typed intent, receipts/gaps, state, lifecycle, disclosure, restore, or containment | [Server modules](server-modules.md) and [Product boundaries](product-boundaries.md) | ADR-0004; `docs/architecture/server-modules.md`; `docs/operators/server-modules.md`; `crates/server-module-runtime`; `crates/server/src/server_modules.rs`; `server_module_custom.rs`; `server_discovery.rs`; trusted QML profile/shell surfaces; migrations `0025`–`0027`; `crates/server-module-spike`; Tickets 039–041 | `scripts/test-server-modules.sh`; focused PostgreSQL/operator/discovery/QML tests; restore drill; `scripts/test-server-module-spike.sh`; threat/authority review; canonical local diff gate |
 | Build, inspect, install, upgrade, remove, or diagnose the native player package | [Development and validation](development-and-validation.md) and `docs/client-installation.md` | `packaging/arch/`; `scripts/check-client-package-source.sh`; `scripts/build-client-package.sh`; `scripts/test-client-package.sh` | Source-contract check; extracted-package conformance; `bin/gate.sh --diff` before delivery |
 | Run or diagnose the local stack and quality gate | [Development and validation](development-and-validation.md) | `scripts/dev.sh`; `bin/gate.sh`; `client/qml/Main.qml` | `bin/gate.sh --fast` or `--diff` |

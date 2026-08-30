@@ -325,7 +325,7 @@ Back/Entry history locally, and sends only screen-bound non-navigation actions
 back to the selected server. Door Legends cartridge v2 proves cyclic Lobby and
 Chronicle navigation plus real provider gameplay from either screen.
 
-### Build against the Provider SDK preview
+### Build a provider with the public developer kit
 
 The public-only `omarchygs-provider-sdk` crate now owns the provider-facing
 model, exact-byte grant/message helpers, pairwise identity, and strict protocol
@@ -335,20 +335,26 @@ bind protocol v1 plus all four required capabilities into the grant, operation,
 response, and callbacks. A missing, partial, extra, unknown, ambiguous, or
 downgrade profile fails before provider state changes.
 
-The local release proof packages only the SDK, builds it from two fresh Git
-clones without a committed path dependency, produces byte-identical exports,
-and verifies the exact lock plus project-signed source/builder provenance:
+The local release proofs package the SDK, starter, and conformance crates,
+build consumers from fresh Git clones without committed path dependencies,
+produce byte-identical exports, and verify the exact lock plus project-signed
+source/builder provenance:
 
 ```bash
 scripts/test-provider-sdk.sh
+scripts/test-provider-developer-kit.sh
+scripts/test-provider-starter-conformance.sh
 ```
 
-The preview includes no platform registry, broker, egress, database, or admin
-implementation and grants no provider admission. Door Legends remains the sole
-authorized provider. Starter/conformance-kit, second-game, sidecar, deployment,
-and external-onboarding work remain separately gated. The preview notice grants
-no redistribution or production license; obtain owner-selected terms before
-external use.
+The game-agnostic starter owns the exact provider routes, separate PostgreSQL
+state, idempotent receipts, and callback delivery while a narrow `ProviderGame`
+trait owns only deterministic rules. The fifteen-case TLS conformance runner
+and Relay Forge clean-room game prove that public seam through the real broker.
+None of these artifacts includes or grants platform registration, admission,
+discovery, egress, player-route, or administrator authority. Door Legends
+remains the sole authorized provider; sidecar operations and external onboarding
+remain separately gated. The preview notice grants no redistribution or
+production license; obtain owner-selected terms before external use.
 
 ### Import operator-custom cartridges
 

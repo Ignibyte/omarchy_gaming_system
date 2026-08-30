@@ -1,0 +1,1 @@
+{"format":"omarchygs.provider-conformance-faults/v1","required_cases":["callback_deduplication","callback_recovery","changed_intent","compatibility","context_mismatch","digest_mismatch","malformed_input","outage_recovery","oversized_input","reconcile","request_replay","signature_mismatch","stale_revision","timeout_unknown_outcome","valid_flow"]}

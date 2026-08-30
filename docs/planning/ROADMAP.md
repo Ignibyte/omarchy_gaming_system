@@ -104,7 +104,7 @@ of supporting more servers.
 - [ ] Public OmarchyGS Provider SDK product:
   - [x] provider-facing contract, exact-v1 authenticated negotiation, and
     deterministic locally signed preview release
-  - [ ] starter backend, portable conformance/fault kit, and second clean-room
+  - [x] starter backend, portable conformance/fault kit, and second clean-room
     game integration
   - [ ] reviewed co-located sidecar profile and deployment/operations guide
 - [ ] Reviewed external providers only after operations, recovery, suspension,

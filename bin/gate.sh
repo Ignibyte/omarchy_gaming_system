@@ -84,6 +84,7 @@ run_gate 11 "production Game Cartridge contract" ./scripts/test-game-cartridge.s
 run_gate 12 "trusted Game Cartridge renderer" ./scripts/test-game-cartridge-renderer.sh
 run_gate 13 "Game Cartridge SDK release" ./scripts/test-game-cartridge-sdk.sh
 run_gate 13a "Provider SDK deterministic release" ./scripts/test-provider-sdk.sh
+run_gate 13b "Provider starter developer kit and second clean-room game" ./scripts/test-provider-developer-kit.sh
 run_gate 14 "Game Cartridge architecture proof" ./scripts/test-game-cartridge-spike.sh
 run_gate 15 "native Omarchy client package source" ./scripts/check-client-package-source.sh
 run_gate 15a "root-signed marketplace trust channel" ./scripts/test-marketplace-trust-channel.sh

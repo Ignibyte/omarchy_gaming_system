@@ -1,0 +1,35 @@
+[package]
+name = "omarchygs-provider-starter"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Public OmarchyGS provider backend starter"
+repository = "https://github.com/Ignibyte/omarchy_gaming_system"
+license-file = "LICENSES.md"
+
+[features]
+default = []
+conformance = []
+
+[dependencies]
+anyhow.workspace = true
+axum.workspace = true
+axum-server.workspace = true
+ed25519-dalek.workspace = true
+omarchygs-provider-sdk = { version = "0.1.0", path = "../provider-sdk" }
+reqwest.workspace = true
+rustls.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+tokio = { workspace = true, features = ["fs"] }
+tracing.workspace = true
+url.workspace = true
+uuid = { workspace = true, features = ["serde", "v4"] }
+
+[dev-dependencies]
+http-body-util.workspace = true
+rcgen.workspace = true
+tempfile = "3.23.0"
+tower.workspace = true

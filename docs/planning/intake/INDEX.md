@@ -1,11 +1,9 @@
 # Project completion intake index
 
-Status as of 2026-08-30: Ticket 044 completed the first Public Provider SDK
-slice with no active pipeline or open ticket. Tickets 042 and 043 were already
-delivered to `origin/main`; earlier external intakes remain blocked on real
-people, systems, accounts, or operating proof. After Ticket 044 delivery
-readback, the starter/conformance/second-game slice is the next locally
-actionable candidate.
+Status as of 2026-08-30: Tickets 044 and 045 implement the public Provider SDK,
+starter, portable conformance/fault kit, and Relay Forge clean-room integration.
+The locally actionable sidecar/operations slice remains next; external intakes
+remain blocked on real people, systems, accounts, or operating proof.
 
 Candidate intake documents are preparation, not completion evidence. Promote
 only one shippable slice at a time through the repository workflow.

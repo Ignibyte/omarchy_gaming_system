@@ -2,20 +2,20 @@
 title: INTAKE-public-provider-sdk-starter-and-sidecar
 status: promoted
 created: 2026-08-30
-ticket: TICKET-044 (delivered slice); next candidate TICKET-045
-pipeline_spec: docs/planning/pipeline/completed/public-provider-sdk-contract-negotiation-and-release.spec.md
+ticket: TICKET-045
+pipeline_spec: docs/planning/pipeline/completed/provider-starter-conformance-and-second-game.spec.md
 ---
 
 # INTAKE-public-provider-sdk-starter-and-sidecar
 
 ## Problem or opportunity
 
-The production `omarchy-game-provider` crate, fixed v1 protocol, separately
-built Door Legends provider, TLS broker, and conformance suite prove the
-backend authority seam. They are still project-internal proof surfaces rather
-than a supported public developer product: compatibility is a fixed implicit
-v1 contract, the example is game-specific, fault fixtures are gate-oriented,
-and no reviewed co-located deployment profile exists.
+The production `omarchy-game-provider` crate, authenticated v1 protocol,
+separately built Door Legends provider, TLS broker, public Provider SDK,
+game-agnostic starter, portable conformance runner, and Relay Forge clean-room
+consumer now prove the reusable backend authority seam. The remaining product
+gap is a reviewed co-located deployment and operations profile; none of the
+developer artifacts authorize provider registration or admission.
 
 Publishing only the existing crate would expose platform registry/broker
 internals without delivering a stable starter, version negotiation, portable
@@ -40,8 +40,8 @@ This roadmap item is likely safest as three consecutive tickets:
 
 1. [delivered by Ticket 044] extract and version the provider-facing SDK plus
    explicit negotiation and deterministic export/release provenance;
-2. build the game-agnostic starter backend and public conformance/fault kit,
-   then prove a second clean-room game integration;
+2. [delivered by Ticket 045] build the game-agnostic starter backend and public
+   conformance/fault kit, then prove a Relay Forge clean-room integration;
 3. design, implement, and drill the authenticated co-located sidecar deployment
    profile and complete the deployment/operations guide.
 
@@ -94,11 +94,13 @@ Each ticket must leave external-provider admission disabled.
   project-owned locally signed preview export; no hosted publication implied.
 - [x] Protocol-version compatibility window and negotiation policy approved as
   exact v1 with launch, command, reconcile, and event capabilities required.
-- [ ] Second clean-room game scope selected.
+- [x] Second clean-room game selected as Relay Forge, a deterministic
+  resource-building state machine distinct from Door Legends.
 - [ ] Co-located transport profile receives a dedicated threat-model decision.
-- [x] Ticket sequence is promoted one shippable slice at a time; Ticket 044 is
-  completed and later slices remain unopened until its delivery readback.
+- [x] Ticket sequence is promoted one shippable slice at a time; Tickets 044
+  and 045 are delivered and the sidecar/operations slice remains next.
 - [x] First promoted ticket's pipeline spec/notes pair completed and archived.
-- [x] `ticket:` and `pipeline_spec:` point to the delivered slice.
-- [x] Status changed to `promoted` only for the Ticket 044 slice; remaining
-  candidate sequence items retain their unchecked decisions.
+- [x] `ticket:` and `pipeline_spec:` retain the most recently delivered slice
+  until the sidecar/operations ticket is opened.
+- [x] Status remains `promoted`; the sidecar slice retains its unchecked
+  threat-model decision.

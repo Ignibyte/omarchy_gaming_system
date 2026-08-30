@@ -261,10 +261,12 @@ suspension, removal, recovery, and restore reconciliation are database-local;
 active custom behavior produces a permanent aggregate client warning. See the
 [server-module runbook](server-modules.md).
 
-The public-only Provider SDK preview now packages the remote provider contract,
-authenticated exact-v1 negotiation, and reproducible release identity. It does
-not authorize a custom backend. A future reviewed sidecar slice may let an
-administrator run one as a separate service on the same infrastructure.
+The public provider developer kit now packages the remote provider contract,
+authenticated exact-v1 negotiation, game-agnostic PostgreSQL starter,
+fifteen-case TLS conformance runner, reproducible release identity, and Relay
+Forge clean-room proof. It does not register or authorize a custom backend.
+A future reviewed sidecar slice may let an administrator run one as a separate
+service on the same infrastructure.
 Co-location does not grant shared database credentials or remove provider
 identity, authentication, quotas, audit, or lifecycle controls; its local
 transport profile requires its own security design.

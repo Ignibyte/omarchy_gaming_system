@@ -155,8 +155,14 @@ Run the canonical proof after provider-boundary changes:
 scripts/test-provider-conformance.sh
 ```
 
-This proof uses a separate TLS process and ephemeral keys. It covers real TLS
+Gate 19 composes the public starter suite before the platform security cases.
+To isolate its two halves, run `scripts/test-provider-developer-kit.sh` for
+deterministic packaging and clean-room consumption, then
+`scripts/test-provider-starter-conformance.sh` for starter persistence, the
+real broker, and the fixed fifteen-case TLS corpus. These proofs use separate
+provider PostgreSQL databases and ephemeral keys. Together they cover real TLS
 trust, grants and message signatures, pairwise privacy, revision conflict,
 exact replay, commit-then-timeout recovery, signed event deduplication,
 redirect/oversized/signature failures, wrong trust roots, outage, restart, and
-reconciliation.
+reconciliation. Their loopback resolver overrides are test-only and do not
+authorize a production sidecar transport.

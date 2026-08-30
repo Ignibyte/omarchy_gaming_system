@@ -73,12 +73,14 @@ separately deployed registered provider.
 Package the backend contract as an **OmarchyGS Provider SDK**. Ticket 044 ships
 the first public-only preview slice: provider model/protocol, authenticated
 exact-v1 capability negotiation, signing/grant/message helpers, schemas and
-fixtures, and deterministic locally signed release provenance. The starter
-service, portable conformance/fault kit, second clean-room backend, and
-deployment/operations guidance remain later slices. A provider owns only the
-rules/state surfaces of its exact registered game release; OmarchyGS remains
-the authenticated broker and platform authority. The provider contract—not a
-general plugin hook—is how portable game backends integrate.
+fixtures, and deterministic locally signed release provenance. Ticket 045 adds
+the game-agnostic starter service, portable fifteen-case conformance/fault kit,
+deterministic three-package developer release, and Relay Forge second clean-room
+backend. Deployment/operations guidance and the reviewed co-located sidecar
+remain later slices. A provider owns only the rules/state surfaces of its exact
+registered game release; OmarchyGS remains the authenticated broker and
+platform authority. The provider contract—not a general plugin hook—is how
+portable game backends integrate.
 
 An operator may deploy a custom provider on the same infrastructure as their
 OmarchyGS server, but it remains a separately identified service with separate
@@ -146,7 +148,9 @@ revocation, audit, or resource limits.
 
 This decision records product direction, not implementation authorization.
 Private-alpha federation and user-supplied native plugins remain non-goals.
-Door Legends v1 remains the sole remote-provider pilot. The current main client
+Door Legends v1 remains the sole remote-provider pilot. Relay Forge is a
+clean-room developer-kit and conformance proof, not a production registration
+or admission. The current main client
 can explicitly acquire, independently verify, cache, update, mount, and locally
 remove marketplace-vetted cartridges selected by the active server. Independent
 verification requires an exact marketplace public key provisioned on the
@@ -202,8 +206,9 @@ evidence.
 3. Bind mounted cartridge presentation to exact authoritative game sessions
    after server marketplace synchronization/import and player
    acquisition/cache/mounting.
-4. Complete the Provider SDK starter/conformance kit, second clean-room backend,
-   and reviewed sidecar/deployment profile after the public contract preview.
+4. Complete the reviewed Provider SDK sidecar/deployment profile after the
+   implemented public contract, starter/conformance kit, and second clean-room
+   backend.
 5. Add explicit operator-local cartridge trust and provenance disclosure.
 6. Run the server extension isolation/hook architecture spike.
 7. Implement the selected module base, administration, audit, and conformance

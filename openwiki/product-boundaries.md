@@ -27,18 +27,18 @@ sources:
     resource: repo://crates/game-cartridge/src/secure_store.rs
   - id: openwiki-source-07e2881dc5e4740f35a238ee
     resource: repo://crates/game-cartridge/src/store.rs
-  - id: openwiki-source-a28da20d4e4846b146ff3e2b
-    resource: repo://crates/game-provider/src/broker.rs
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
   - id: openwiki-source-2bc4557686cbe5b8dfa44f45
     resource: repo://crates/marketplace-publisher/src/lib.rs
-  - id: openwiki-source-b1f8833a60126ffa9920d6ec
-    resource: repo://crates/provider-sdk/src/lib.rs
-  - id: openwiki-source-adabcfde8231b96baa799dd2
-    resource: repo://crates/provider-sdk/src/protocol.rs
+  - id: openwiki-source-01584c5ba7d35b160c5de691
+    resource: repo://crates/provider-conformance/src/runner.rs
+  - id: openwiki-source-752bcc832cc8ddb9cef7a0f9
+    resource: repo://crates/provider-starter/src/rules.rs
+  - id: openwiki-source-80af29333d26b2334a88a2fb
+    resource: repo://crates/provider-starter/src/runtime.rs
   - id: openwiki-source-66facc66e34ad7f2a74321e1
     resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
@@ -83,11 +83,15 @@ sources:
     resource: repo://docs/planning/ROADMAP.md
   - id: openwiki-source-85dba8f87dd5947de337aca5
     resource: repo://docs/product-charter.md
+  - id: openwiki-source-646f44c73d051dad95b4a950
+    resource: repo://examples/provider-relay-forge/src/lib.rs
   - id: openwiki-source-674113ba65eebb6f842b2dda
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-generated: {by: "codex", at: "2026-08-30T00:13:04.632Z"}
+  - id: openwiki-source-6323e860f0976ef977f38cf6
+    resource: repo://scripts/test-provider-developer-kit.sh
+generated: {by: "codex", at: "2026-08-30T21:12:56.668Z"}
 ---
 
 # Product and architecture boundaries
@@ -250,10 +254,14 @@ implemented, as are signed host-local multi-screen navigation and the
 offline-root-authenticated public trust/package channel. Explicit
 operator-custom cartridge trust, source-aware server admission/history, and
 persistent unvetted player warnings are implemented without granting new
-executable or gameplay authority. The public-only Provider SDK preview is also
-implemented: it packages provider-facing protocol and signed-release material
-without registration, admission, discovery, direct-client, or database
-authority. The production server-module boundary now
+executable or gameplay authority. The public provider developer boundary is
+also implemented: the SDK packages provider-facing protocol and signed-release
+material, while the starter, fifteen-case conformance runner, deterministic
+developer-kit export, and Relay Forge clean-room consumer prove provider-side
+implementation. They add no registration, admission, discovery, direct-client,
+broker, egress, or platform-database authority. Relay Forge is not registered
+in production; Door Legends remains the sole authorized remote provider. The
+production server-module boundary now
 includes both one exact compiled-in reviewed observation component and bounded
 database-local operator-custom import and lifecycle. The custom path changes
 provenance, player disclosure, and operator responsibility while retaining the
@@ -406,9 +414,14 @@ to become gameplay authority. Its local ceremony and mirror drills do not
 prove real production root custody, hosting, monitoring, or staff separation.
 
 Executable extension families stay separate. Portable game rules use the
-authenticated provider boundary and the public-only Provider SDK preview.
-Starter/conformance/second-game, sidecar/operations, and external-onboarding
-work remain separate. ADR-0004's
+authenticated provider boundary and the public Provider SDK. The starter owns
+only the four provider-facing protocol routes plus provider-side PostgreSQL
+state, receipts, and callback delivery; its game seam receives no account or
+persona identifiers, platform credentials, broker or registry handles, or
+platform database access. The conformance runner and Relay Forge prove that
+public boundary without changing production registration or admission.
+Sidecar/operations and external onboarding remain separate future work.
+ADR-0004's
 dedicated no-WASI Component Model host is implemented for the opt-in compiled-in
 Sentinel release and up to eight explicitly admitted operator-custom module
 identities. Every release receives only a privacy-minimized

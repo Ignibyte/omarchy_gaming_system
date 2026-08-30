@@ -4,7 +4,7 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `045`**
+- **Next ticket number: `046`**
 
 ## Open queue
 
@@ -12,6 +12,7 @@ None.
 
 ## Closed
 
+- [`TICKET-045` — Provider starter, conformance kit, and second clean-room game](closed/TICKET-045-provider-starter-conformance-and-second-game.md)
 - [`TICKET-044` — Public Provider SDK contract, negotiation, and release](closed/TICKET-044-public-provider-sdk-contract-negotiation-and-release.md)
 - [`TICKET-043` — Local-only automation state reconciliation](closed/TICKET-043-local-only-automation-state-reconciliation.md)
 - [`TICKET-042` — Packaged reviewed server-module release upgrade and rollback](closed/TICKET-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md)

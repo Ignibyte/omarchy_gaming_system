@@ -826,15 +826,26 @@ First-party games use the same public contracts and conformance suite as later
 providers. They may receive a higher catalog trust tier, but not private
 database access or a different identity model.
 
-The cartridge/release SDK remains separate from the public-only
-`omarchygs-provider-sdk` preview. Ticket 044 extracts the provider-facing model,
+The cartridge/release SDK remains separate from the public provider developer
+kit. Ticket 044 extracts the `omarchygs-provider-sdk` provider-facing model,
 pairwise identity, signing/grant/message helpers, exact schemas/fixtures, and
 deterministic locally signed release from the platform implementation. Protocol
 v1 now performs a provider-signed compatibility preflight before effects and
 binds its exact four-capability selection into grants, operations, responses,
 and events. Its packaged clean-clone proof excludes platform registry, broker,
 egress, database, and administrator implementations. Publishing or consuming
-the preview does not admit a provider.
+the SDK does not admit a provider.
+
+Ticket 045 adds `omarchygs-provider-starter` and
+`omarchygs-provider-conformance`. The starter exposes only compatibility,
+launch, command, and reconcile routes; authenticates Host, exact signed bytes,
+registered context, and scoped grants before invoking a narrow deterministic
+rules trait; and persists provider identity, sessions, one-use grants,
+operation receipts, and callback outbox in its own PostgreSQL database. The
+conformance crate supplies a bounded fifteen-case TLS runner and deterministic
+signed three-package developer-kit export. Relay Forge consumes only those
+public packages in two clean builds and integrates through the real broker,
+but it is not a production-admitted provider.
 
 The broker binds that preflight to the release configuration revision and the
 active message key that authenticated it. Grant issuance reloads the locked
@@ -844,10 +855,9 @@ and key checks and supplies its committed snapshot to the operation transport.
 Compatibility and operation I/O share one aggregate registered deadline under
 the same PostgreSQL concurrency lease.
 
-The remaining Provider SDK product work is a game-agnostic starter, portable
-conformance/fault kit, second clean-room backend, reviewed deployment guidance,
-and the co-located sidecar profile. It will not bundle backend code into the
-cartridge or grant a provider direct client access.
+The remaining Provider SDK product work is reviewed remote-deployment guidance
+and the co-located sidecar/operations profile. It will not bundle backend code
+into the cartridge or grant a provider direct client access.
 
 The SDK may support an operator running that provider beside their OmarchyGS
 deployment as a separate service. A co-located profile still needs exact
@@ -928,8 +938,10 @@ authority and policy decisions remain Ticket 019 work.
    acquire an old immutable pin after selection changes, keep exact releases
    mounted side by side, navigate cyclic signed screens locally, and route only
    screen-bound gameplay actions back through OmarchyGS.
-5. **Public backend SDK:** package the provider protocol as a supported starter
-   server, versioned SDK, conformance suite, and operations contract.
+5. **Public backend SDK — developer kit implemented:** Tickets 044–045 package
+   the provider protocol, versioned SDK, game-agnostic starter, fifteen-case
+   conformance suite, deterministic release, and Relay Forge clean-room proof.
+   The reviewed sidecar and operations contract remain gated.
 6. **Operator-custom trust — implemented:** local cartridge signing/import,
    source-aware lifecycle/admission, explicit per-server client trust,
    persistent provenance warnings, current/historical acquisition, and

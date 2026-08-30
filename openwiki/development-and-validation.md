@@ -23,14 +23,12 @@ sources:
     resource: repo://crates/game-cartridge/tests/conformance.rs
   - id: openwiki-source-358b091c74e2027615ce8f4c
     resource: repo://crates/game-cartridge/tests/sdk_release.rs
-  - id: openwiki-source-fea3ada71e31ee06122151f5
-    resource: repo://crates/game-provider/tests/conformance.rs
-  - id: openwiki-source-522c1bcb889a85d7a91b25af
-    resource: repo://crates/game-provider/tests/registry.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
   - id: openwiki-source-ba452807898e03f1e2e27204
     resource: repo://crates/marketplace-publisher/tests/publication.rs
+  - id: openwiki-source-01584c5ba7d35b160c5de691
+    resource: repo://crates/provider-conformance/src/runner.rs
   - id: openwiki-source-24c51fe062f01ef4523fa0b7
     resource: repo://crates/server-module-runtime/tests/conformance.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
@@ -43,8 +41,6 @@ sources:
     resource: repo://crates/server/src/inbox_api_tests.rs
   - id: openwiki-source-22753602a862c32d10560204
     resource: repo://crates/server/src/persona_api_tests.rs
-  - id: openwiki-source-ff1ed569f105aff512baba65
-    resource: repo://crates/server/src/provider_game_api_tests.rs
   - id: openwiki-source-1b621f94587f7516bb90c07a
     resource: repo://crates/server/src/server_discovery_api_tests.rs
   - id: openwiki-source-286b9fd128ca0b68cd7c1f30
@@ -89,19 +85,19 @@ sources:
     resource: repo://scripts/test-operator-recovery.sh
   - id: openwiki-source-a0a026a4d434d1b48884aa8e
     resource: repo://scripts/test-private-alpha.sh
-  - id: openwiki-source-31a4e9d026860da100c233f9
-    resource: repo://scripts/test-provider-authority-pilot.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-  - id: openwiki-source-6568db81b3a045799e94d1af
-    resource: repo://scripts/test-provider-sdk.sh
+  - id: openwiki-source-6323e860f0976ef977f38cf6
+    resource: repo://scripts/test-provider-developer-kit.sh
+  - id: openwiki-source-e44be3ca3ecf28e5a477dab2
+    resource: repo://scripts/test-provider-starter-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
   - id: openwiki-source-8128bd5b86e858053bc20c68
     resource: repo://scripts/test-server-module-spike.sh
   - id: openwiki-source-5f564ae64057cbe621fc587a
     resource: repo://scripts/test-server-modules.sh
-generated: {by: "codex", at: "2026-08-30T00:13:04.632Z"}
+generated: {by: "codex", at: "2026-08-30T21:12:56.668Z"}
 ---
 
 # Development and validation
@@ -285,8 +281,9 @@ human `pacman -U` operation.
 ## Canonical gate
 
 `bin/gate.sh --fast` runs the static development loop without writing a receipt.
-It includes the deterministic Provider SDK release at stage 13a, native client
-package source admission, and the root-signed
+It includes the deterministic Provider SDK release at stage 13a, the public
+provider starter developer kit and clean-room Relay Forge proof at stage 13b,
+native client package source admission, and the root-signed
 marketplace trust-channel proof at stage 15a plus the deterministic static
 publication and offline-root drill at stage 15b. Stage 23 runs the isolated
 server-module architecture proof and stage 24 runs production server-module
@@ -318,9 +315,11 @@ The gate currently covers:
 5. deterministic Game Cartridge SDK export, two clean-clone first-party builds, byte-identical
    signed release verification, signed five-state catalog policy, secure local
    import, and permission/rollback/concurrency regressions;
-6. the public-only Provider SDK package boundary, exact finite signed export,
-   and two clean consumer clones with byte-identical output, no committed path
-   dependency, platform dependency, or repository-path leak;
+6. the public-only Provider SDK package boundary and exact finite signed export,
+   plus the starter/conformance packages, deterministic three-package
+   developer-kit export, and two clean Relay Forge builds with byte-identical
+   output, no committed path dependency, private platform dependency,
+   repository-path leak, credential, or platform identity;
 7. the isolated Game Cartridge workspace format, Clippy, tests, binaries,
    rustdoc, signed package, broker/provider/probe exchange, privacy assertions,
    trusted-QML smoke, and frame/memory/package measurements;
@@ -532,13 +531,34 @@ compatibility binding, strict authenticated parsing, narrow persisted-v1 replay
 helpers, signed provenance, finite inventory, symlink/alias/unknown-entry and
 depth/breadth/path-byte denial, and byte/signature/provenance tampering.
 
+### Provider starter developer kit and conformance
+
+`scripts/test-provider-developer-kit.sh` is the Ticket 045 package/release
+entrypoint and gate 13b in every mode. It packages the SDK, starter, and
+conformance crates twice byte-for-byte, rejects repository paths and private
+platform dependencies, and builds Relay Forge twice from clean Git clones.
+Two independent consumer exports must have identical signed identities and
+contents and must not contain the source path, credentials, database settings,
+or platform account/persona markers.
+
+`scripts/test-provider-starter-conformance.sh` is composed into gate 19. It
+runs provider-starter PostgreSQL persistence tests, then builds Relay Forge and
+drives it through the real broker against a distinct provider database. The
+same script starts the provider as a TLS process twice around a restart and
+requires all fifteen fixed compatibility, context, signature, digest, malformed
+or oversized input, replay, revision, timeout, outage, reconcile, callback,
+and recovery cases to pass. The conformance client binds endpoint, authority,
+and loopback socket exactly; the database check proves durable sessions and
+receipts survive restart while no starter tables enter the platform database.
+
 ### Remote-provider security foundation
 
 `scripts/test-provider-conformance.sh` is the Ticket 018 production security
-entrypoint and gate 19 in diff/full modes. It runs provider unit and public
-protocol tests, then serializes the ignored operator CLI, PostgreSQL registry,
-separate-process TLS egress, and end-to-end broker conformance cases against the
-migrated database. The corpus covers immutable release registration and key
+entrypoint and gate 19 in diff/full modes. It first runs the Ticket 045 starter
+suite above, then provider unit and public protocol tests and the serialized
+ignored operator CLI, PostgreSQL registry, separate-process TLS egress, and
+end-to-end broker conformance cases against the migrated database. The corpus
+covers immutable release registration and key
 rotation; lifecycle denial; authenticated exact-v1 compatibility before
 effects; configuration/key changes between negotiation, grant, and attempt;
 60-second one-scope compatibility-bound pairwise grants; exact request,
@@ -758,6 +778,11 @@ server, so absent or stale provenance fails closed.
   package boundary, exact inventory, signature/provenance, two-clone
   reproducibility, platform dependency, or source-path leak; do not bypass gate
   13a.
+- Provider starter/developer-kit failure: run
+  `scripts/test-provider-developer-kit.sh` for deterministic packaging and
+  clean-room consumption, then `scripts/test-provider-starter-conformance.sh`
+  for PostgreSQL, real-broker, TLS, restart, callback, replay, and fixed-corpus
+  failures; do not bypass gates 13b or 19.
 - Cartridge proof failure: inspect the temporary provider, broker, and QML logs
   printed by `scripts/test-game-cartridge-spike.sh`. Treat signature, identity,
   capability, privacy, replay, resource, or trusted-renderer failures as

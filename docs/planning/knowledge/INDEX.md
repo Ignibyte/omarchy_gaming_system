@@ -122,6 +122,8 @@ and in this register.
 | `PR-omarchy-gaming-system-bound-native-signed-artifact-inventory-001` | Bound signed-artifact traversal using native path identities without separator normalization. | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
 | `PR-omarchy-gaming-system-preserve-durable-wire-preimages-across-upgrades-001` | Preserve persisted canonical request and receipt preimages across protocol upgrades. | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
 | `PR-omarchy-gaming-system-admit-legacy-provider-messages-as-local-duplicates-only-001` | Admit a legacy provider message only as a current-key-authenticated exact immutable local duplicate. | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `PR-omarchy-gaming-system-bind-resolver-overrides-to-exact-authority-port-001` | Bind test-only resolver overrides to the URL's DNS host, canonical authority, and exact port, and reject IP-literal bypasses. | `aar/AAR-045-provider-starter-conformance-and-second-game.md` |
+| `PR-omarchy-gaming-system-bind-test-observations-to-attested-semantics-001` | Bind every immutable identity, session, revision, and body fact that a passing test observation attests independently of transport authentication. | `aar/AAR-045-provider-starter-conformance-and-second-game.md` |
 
 ## Register
 
@@ -473,3 +475,8 @@ and in this register.
 | `PR-omarchy-gaming-system-preserve-durable-wire-preimages-across-upgrades-001` | rule | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
 | `PR-omarchy-gaming-system-admit-legacy-provider-messages-as-local-duplicates-only-001` | rule | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
 | `AD-omarchy-gaming-system-public-provider-sdk-without-admission-authority-001` | decision | `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md`; `../../architecture/game-cartridges.md` |
+| `BF-omarchy-gaming-system-conformance-socket-port-identity-gap-001` | failure | `aar/AAR-045-provider-starter-conformance-and-second-game.md` |
+| `BF-omarchy-gaming-system-conformance-callback-observation-underbinding-001` | failure | `aar/AAR-045-provider-starter-conformance-and-second-game.md` |
+| `PR-omarchy-gaming-system-bind-resolver-overrides-to-exact-authority-port-001` | rule | `aar/AAR-045-provider-starter-conformance-and-second-game.md` |
+| `PR-omarchy-gaming-system-bind-test-observations-to-attested-semantics-001` | rule | `aar/AAR-045-provider-starter-conformance-and-second-game.md` |
+| `AD-omarchy-gaming-system-provider-starter-capability-seam-001` | decision | `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md`; `../../architecture/game-cartridges.md` |

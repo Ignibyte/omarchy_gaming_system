@@ -22,3 +22,5 @@ mise exec -- cargo test -p omarchy-game-provider \
   --features provider-conformance \
   --test admin_cli --test registry --test conformance \
   -- --ignored --test-threads=1
+
+./scripts/test-provider-starter-conformance.sh
