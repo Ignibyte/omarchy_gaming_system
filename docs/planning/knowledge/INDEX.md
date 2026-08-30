@@ -438,3 +438,14 @@ and in this register.
 | `BF-omarchy-gaming-system-private-artifact-ancestor-symlink-001` | failure | `aar/AAR-041-administrator-custom-server-module-installation-and-provenance.md` |
 | `PR-omarchy-gaming-system-reject-symlinked-ancestors-for-private-artifact-reads-001` | rule | `aar/AAR-041-administrator-custom-server-module-installation-and-provenance.md` |
 | `AD-omarchy-gaming-system-operator-custom-server-module-boundary-001` | decision | `../../architecture/adr-0004-process-isolated-wasm-server-modules.md`; `../../architecture/server-modules.md` |
+| `BF-omarchy-gaming-system-reviewed-command-fixture-canonical-order-001` | failure | `aar/AAR-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md` |
+| `BF-omarchy-gaming-system-module-state-schema-literal-drift-001` | failure | `aar/AAR-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md` |
+| `BF-omarchy-gaming-system-packaged-catalog-startup-conflict-fatal-001` | failure | `aar/AAR-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md` |
+| `BF-omarchy-gaming-system-module-namespace-schema-finalization-race-001` | failure | `aar/AAR-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md` |
+| `BF-omarchy-gaming-system-reviewed-operation-edge-database-gap-001` | failure | `aar/AAR-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md` |
+| `PR-omarchy-gaming-system-build-canonical-command-fixtures-from-types-001` | rule | `aar/AAR-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md` |
+| `PR-omarchy-gaming-system-audit-persisted-schema-literals-on-version-bump-001` | rule | `aar/AAR-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md` |
+| `PR-omarchy-gaming-system-isolate-exact-package-outages-from-core-startup-001` | rule | `aar/AAR-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md` |
+| `PR-omarchy-gaming-system-reauthorize-independent-persistence-roots-001` | rule | `aar/AAR-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md` |
+| `PR-omarchy-gaming-system-encode-finite-operation-graphs-in-database-001` | rule | `aar/AAR-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md` |
+| `AD-omarchy-gaming-system-packaged-reviewed-server-module-release-lifecycle-001` | decision | `../../architecture/adr-0004-process-isolated-wasm-server-modules.md`; `../../architecture/server-modules.md` |

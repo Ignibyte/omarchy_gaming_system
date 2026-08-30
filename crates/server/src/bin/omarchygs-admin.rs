@@ -29,8 +29,9 @@ use omarchy_gaming_system_server::{
         decode_import_command, decode_lifecycle_command, import_custom_module,
     },
     server_modules::{
-        ModuleError, ModuleLifecycleCommand, apply_lifecycle_command, list_module_inventory,
-        prepare_restored_modules,
+        ModuleError, ModuleLifecycleCommand, ReviewedModuleAdminConfig,
+        ReviewedModuleReleaseCommand, apply_lifecycle_command, apply_reviewed_release_command,
+        decode_reviewed_release_command, list_module_inventory, prepare_restored_modules,
     },
 };
 use omarchygs_game_cartridge::rich_2d_host_profile;
@@ -319,6 +320,20 @@ async fn run() -> Result<(), AdminError> {
         let command: ModuleLifecycleCommand = serde_json::from_slice(&document)
             .map_err(|_| AdminError::Module(ModuleError::InvalidInput))?;
         serde_json::to_value(apply_lifecycle_command(&pool, &command).await?)
+            .map_err(|_| AdminError::Module(ModuleError::Internal))?
+    } else if action == OsStr::new("reviewed-module-apply") {
+        let document_path = arguments
+            .next()
+            .map(PathBuf::from)
+            .ok_or(AdminError::Module(ModuleError::InvalidInput))?;
+        if arguments.next().is_some() {
+            return Err(ModuleError::InvalidInput.into());
+        }
+        let document = read_bounded(&document_path, MAX_OPERATOR_DOCUMENT_BYTES)
+            .map_err(|_| AdminError::Module(ModuleError::InvalidInput))?;
+        let command: ReviewedModuleReleaseCommand = decode_reviewed_release_command(&document)?;
+        let config = ReviewedModuleAdminConfig::from_environment()?;
+        serde_json::to_value(apply_reviewed_release_command(&pool, &config, &command).await?)
             .map_err(|_| AdminError::Module(ModuleError::Internal))?
     } else if action == OsStr::new("custom-module-import") {
         let document_path = arguments

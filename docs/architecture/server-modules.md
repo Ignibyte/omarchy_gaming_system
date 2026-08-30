@@ -1,10 +1,11 @@
 # OmarchyGS server modules
 
-Status: ADR-0004, the production observation-only base, and database-local
-operator-custom admission are implemented. Production may opt into the
-compiled-in reviewed fixture and may retain up to eight explicitly admitted
-custom module identities. Marketplace module admission, public administration,
-admission hooks, egress, and game authority remain unavailable.
+Status: ADR-0004, the production observation-only base, its two-release
+packaged reviewed catalog, and database-local operator-custom admission are
+implemented. Production may opt into the compiled-in reviewed module, select
+its compatible successor explicitly, and retain up to eight explicitly
+admitted custom module identities. Marketplace module admission, public
+administration, admission hooks, egress, and game authority remain unavailable.
 
 ## Purpose and extension families
 
@@ -193,11 +194,35 @@ staged → disabled → enabling → active → degraded/suspended
 disabled → retired (terminal)
 ```
 
-Opt-in startup registers the exact compiled release, verifies immutable
-release/provenance/WIT/component bindings, probes a fresh contained host, and
-creates a server-signed admission before activation. Database-local
+Opt-in startup registers the bounded exact compiled release catalog, verifies
+immutable release/provenance/WIT/component bindings, and preserves release
+`1.0.0` as a new instance's initial selection. It never auto-upgrades an
+existing instance. Startup resolves that instance's selected release by exact
+UUID, probes a fresh contained host, and creates a server-signed admission
+before activation. Database-local
 `omarchygs-admin` operations carry a whole-command UUID and digest, expected
 revisions, actor, bounded reason, and immutable same-transaction audit.
+
+The packaged `ignibyte.sentinel` catalog contains release `1.0.0` with
+`state/v1` and compatible release `1.1.0` with a distinct component, review,
+release identity, and `state/v2`. WIT, hook, capability, budgets, configuration
+schema, process sandbox, dispatcher, receipts, and core effect authorization
+remain exact and unchanged. `reviewed-module-apply` upgrades only the fixed
+`1.0.0 → 1.1.0` edge from all three expected revisions and a complete bounded
+candidate namespace. Readiness runs outside SQL; finalization re-locks every
+prepared input and atomically publishes a fresh admission, migrated namespace,
+predecessor snapshot, release selection, stale-work gap evidence, lifecycle/
+data audit, and immutable operation receipt. Rollback consumes only that
+immediate `1.0.0` predecessor and snapshot once, restores it as a new state
+revision, and clears the predecessor pointers.
+
+Packaged bytes remain in the installed binary rather than PostgreSQL. Claim
+reconstruction, restart, and restore recovery reproduce the exact selected
+catalog release; they never substitute `1.0.0` for a selected `1.1.0`. If the
+selected release or packaged host is unavailable, the optional worker remains
+absent while core service continues. Fresh core reports record bounded
+`runtime_unconfigured` gaps until an exact package is restored and readiness
+succeeds.
 
 Custom import separately verifies the publisher-signed release and explicit
 operator-custom provenance bound to the stable database server UUID. The
@@ -258,11 +283,14 @@ production crate, exact component digest, packaged host, and durable adapter:
   host/configuration, private bounded custom artifact custody, no public module
   mutation route, and local-only quality automation enforcement.
 
-Ticket 040 implements only the versioned registry, observation
+Ticket 040 implements the versioned registry, observation
 outbox/dispatcher, `persona_reported` hook, `moderation_add_label` proposal,
 namespaced state/lifecycle/recovery, and conformance tooling. The exact fixture
 maps numeric label `7` to the core-owned `priority_review` label after current
 authorization. Ticket 041 adds server-bound operator-custom import,
 enable/upgrade/rollback/removal, shared runtime dispatch, restore review, and
 aggregate player disclosure without adding a hook, capability, network, game,
-or client-code authority.
+or client-code authority. Ticket 042 adds the bounded packaged reviewed
+successor, exact startup/dispatch lookup, atomic reviewed upgrade/one-step
+rollback, and package-mismatch availability behavior without manufacturing a
+marketplace review claim.

@@ -90,10 +90,15 @@ async fn main() -> Result<()> {
     .map_err(|error| anyhow!("invalid cartridge distribution runtime: {}", error.code()))?;
     let (module_service, module_emitter) = match config.module {
         Some(module) => {
-            let emitter = server_modules::ModuleEmitter::configured(&module);
+            let configured_emitter = server_modules::ModuleEmitter::configured(&module);
             let service = optional_module_service(
                 server_modules::ServerModuleService::production(pool.clone(), module).await,
             )?;
+            let emitter = if service.is_some() {
+                configured_emitter
+            } else {
+                server_modules::ModuleEmitter::unconfigured()
+            };
             (service, Some(emitter))
         }
         None => (None, Some(server_modules::ModuleEmitter::unconfigured())),
@@ -146,9 +151,9 @@ fn optional_module_service<T>(
 ) -> Result<Option<T>> {
     match result {
         Ok(service) => Ok(Some(service)),
-        Err(server_modules::ModuleError::Denied) => {
+        Err(server_modules::ModuleError::Denied | server_modules::ModuleError::Unavailable) => {
             warn!(
-                "configured server module is inactive; core service will continue without module execution"
+                "configured server module is inactive or unavailable; core service will continue without module execution"
             );
             Ok(None)
         }
@@ -256,7 +261,9 @@ mod shutdown_tests {
                 .is_none()
         );
         assert!(
-            optional_module_service::<()>(Err(server_modules::ModuleError::Unavailable)).is_err()
+            optional_module_service::<()>(Err(server_modules::ModuleError::Unavailable))
+                .expect("unavailable optional module should preserve core startup")
+                .is_none()
         );
     }
 }

@@ -17,14 +17,17 @@ use omarchy_gaming_system_server::{
         CustomModuleImportCommand, CustomModuleLifecycleAction, CustomModuleLifecycleCommand,
         ModulePrivateKeyDocument, ModulePublicKeyDocument, UNREVIEWED_ACKNOWLEDGEMENT,
     },
-    server_modules::BUILTIN_INSTANCE_ID,
+    server_modules::{
+        BUILTIN_INSTANCE_ID, ReviewedModuleReleaseAction, ReviewedModuleReleaseCommand,
+    },
 };
 use omarchygs_game_cartridge::generate_catalog_keypair;
 use omarchygs_server_module_runtime::{
-    BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID, Capability, FixtureKind, HookKind, MAX_EXECUTION_MS,
-    MAX_FRAME_BYTES, MAX_FUEL, MAX_LINEAR_MEMORY_BYTES, ModuleReleaseManifest, RELEASE_FORMAT,
-    ResourceBudgets, SignedEnvelope, WIT_PACKAGE, WIT_WORLD, WitIdentity, canonical_json,
-    encode_verifying_key, sha256_hex, verifying_key_sha256, wit_sha256,
+    BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID, BUILTIN_SUCCESSOR_RELEASE_ID, Capability, FixtureKind,
+    HookKind, MAX_EXECUTION_MS, MAX_FRAME_BYTES, MAX_FUEL, MAX_LINEAR_MEMORY_BYTES,
+    ModuleReleaseManifest, RELEASE_FORMAT, ResourceBudgets, SignedEnvelope, WIT_PACKAGE, WIT_WORLD,
+    WitIdentity, canonical_json, encode_verifying_key, packaged_reviewed_releases, sha256_hex,
+    sign_active_admission, verifying_key_sha256, wit_sha256,
 };
 
 const CATALOG_ARCHIVE: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -880,6 +883,143 @@ async fn custom_module_cli_imports_replays_and_enables_without_disclosing_secret
     assert_eq!(enabled["lifecycle_revision"], 2);
 }
 
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL plus the packaged host containment path; run scripts/test-database.sh"]
+async fn reviewed_module_cli_upgrades_replays_and_rolls_back_without_state_disclosure(
+    pool: PgPool,
+) {
+    let database_url = isolated_database_url(&pool).await;
+    seed_active_reviewed_module_catalog(&pool).await;
+    let directory = TempDir::new().expect("reviewed command directory should create");
+    let command_path = directory.path().join("reviewed-upgrade.json");
+    let operation_id = Uuid::new_v4();
+    let upgrade = ReviewedModuleReleaseCommand {
+        format: "omarchygs.packaged-reviewed-module-lifecycle-command/v1".into(),
+        operation_id,
+        instance_id: BUILTIN_INSTANCE_ID,
+        action: ReviewedModuleReleaseAction::Upgrade,
+        expected_lifecycle_revision: 2,
+        expected_config_revision: 1,
+        expected_state_revision: 0,
+        target_release_id: Some(BUILTIN_SUCCESSOR_RELEASE_ID),
+        candidate_state: Some(BTreeMap::from([
+            ("schema".into(), "v2".into()),
+            ("review_count".into(), "0".into()),
+        ])),
+        actor: "cli-module-sysop".into(),
+        reason: "Upgrade the packaged reviewed fixture through the local CLI".into(),
+    };
+    write_private_bytes(
+        &command_path,
+        &canonical_json(&upgrade).expect("reviewed upgrade should encode canonically"),
+    );
+    std::fs::set_permissions(&command_path, std::fs::Permissions::from_mode(0o644))
+        .expect("public command mode should set");
+    let public = run_custom_module_admin(&database_url, "reviewed-module-apply", &command_path);
+    assert!(!public.status.success());
+    assert!(public.stdout.is_empty());
+    assert_eq!(public.stderr, b"server_module_invalid_input\n");
+    std::fs::set_permissions(&command_path, std::fs::Permissions::from_mode(0o600))
+        .expect("private command mode should restore");
+
+    let applied = run_custom_module_admin(&database_url, "reviewed-module-apply", &command_path);
+    assert!(
+        applied.status.success(),
+        "reviewed upgrade failed: {}",
+        String::from_utf8_lossy(&applied.stderr)
+    );
+    let receipt: Value =
+        serde_json::from_slice(&applied.stdout).expect("reviewed receipt should be JSON");
+    exact_keys(
+        &receipt,
+        &[
+            "action",
+            "format",
+            "instance_id",
+            "lifecycle_revision",
+            "module_id",
+            "operation_id",
+            "predecessor_snapshot_id",
+            "previous_release_id",
+            "release_id",
+            "replayed",
+            "state_revision",
+            "state_schema",
+        ],
+    );
+    assert_eq!(
+        receipt["format"],
+        "omarchygs.packaged-reviewed-module-receipt/v1"
+    );
+    assert_eq!(receipt["operation_id"], operation_id.to_string());
+    assert_eq!(receipt["action"], "upgrade");
+    assert_eq!(
+        receipt["previous_release_id"],
+        BUILTIN_RELEASE_ID.to_string()
+    );
+    assert_eq!(
+        receipt["release_id"],
+        BUILTIN_SUCCESSOR_RELEASE_ID.to_string()
+    );
+    assert_eq!(receipt["lifecycle_revision"], 3);
+    assert_eq!(receipt["state_schema"], "ignibyte.sentinel.state/v2");
+    assert_eq!(receipt["state_revision"], 1);
+    assert_eq!(receipt["replayed"], false);
+    let output = String::from_utf8(applied.stdout).expect("receipt should be UTF-8");
+    assert!(!output.contains("review_count"));
+
+    let replay = run_custom_module_admin(&database_url, "reviewed-module-apply", &command_path);
+    assert!(replay.status.success());
+    let replay: Value =
+        serde_json::from_slice(&replay.stdout).expect("reviewed replay should be JSON");
+    assert_eq!(replay["replayed"], true);
+    assert_eq!(
+        replay["predecessor_snapshot_id"],
+        receipt["predecessor_snapshot_id"]
+    );
+    let mut changed = upgrade;
+    changed.reason = "Changed intent under an existing operation UUID".into();
+    write_private_bytes(
+        &command_path,
+        &canonical_json(&changed).expect("changed upgrade should encode canonically"),
+    );
+    let conflict = run_custom_module_admin(&database_url, "reviewed-module-apply", &command_path);
+    assert!(!conflict.status.success());
+    assert!(conflict.stdout.is_empty());
+    assert_eq!(conflict.stderr, b"server_module_conflict\n");
+
+    let rollback_path = directory.path().join("reviewed-rollback.json");
+    write_private_bytes(
+        &rollback_path,
+        &canonical_json(&ReviewedModuleReleaseCommand {
+            format: "omarchygs.packaged-reviewed-module-lifecycle-command/v1".into(),
+            operation_id: Uuid::new_v4(),
+            instance_id: BUILTIN_INSTANCE_ID,
+            action: ReviewedModuleReleaseAction::Rollback,
+            expected_lifecycle_revision: 3,
+            expected_config_revision: 1,
+            expected_state_revision: 1,
+            target_release_id: None,
+            candidate_state: None,
+            actor: "cli-module-sysop".into(),
+            reason: "Restore the immediate packaged reviewed predecessor".into(),
+        })
+        .expect("reviewed rollback should encode canonically"),
+    );
+    let rollback = run_custom_module_admin(&database_url, "reviewed-module-apply", &rollback_path);
+    assert!(
+        rollback.status.success(),
+        "reviewed rollback failed: {}",
+        String::from_utf8_lossy(&rollback.stderr)
+    );
+    let rollback: Value =
+        serde_json::from_slice(&rollback.stdout).expect("rollback receipt should be JSON");
+    assert_eq!(rollback["action"], "rollback");
+    assert_eq!(rollback["release_id"], BUILTIN_RELEASE_ID.to_string());
+    assert_eq!(rollback["state_schema"], "ignibyte.sentinel.state/v1");
+    assert_eq!(rollback["state_revision"], 2);
+}
+
 struct CustomModuleCliFixture {
     directory: TempDir,
     command: CustomModuleImportCommand,
@@ -1161,4 +1301,145 @@ async fn seed_disabled_module(pool: &PgPool) {
     .execute(pool)
     .await
     .expect("module state namespace should seed");
+}
+
+async fn seed_active_reviewed_module_catalog(pool: &PgPool) {
+    let catalog = packaged_reviewed_releases().expect("reviewed catalog should build");
+    for release in &catalog {
+        let release_bytes = canonical_json(&release.release).expect("release should encode");
+        let provenance_bytes =
+            canonical_json(&release.provenance).expect("provenance should encode");
+        sqlx::query(
+            r#"
+            INSERT INTO server_module_releases (
+                release_id, module_id, publisher_id, version, release_format,
+                signed_release, release_sha256, signed_provenance,
+                provenance_sha256, provenance_class, review_id,
+                component_sha256, wit_package, wit_world, wit_major, wit_sha256,
+                requested_capabilities, subscribed_hooks, frame_bytes,
+                memory_bytes, fuel, execution_ms, config_schema, state_schema
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9,
+                'first_party_reviewed_fixture', $10, $11, $12, $13, $14,
+                $15, $16, $17, $18, $19, $20, $21, $22, $23
+            )
+            "#,
+        )
+        .bind(release.manifest.release_id)
+        .bind(&release.manifest.module_id)
+        .bind(&release.manifest.publisher_id)
+        .bind(&release.manifest.version)
+        .bind(&release.manifest.format)
+        .bind(&release_bytes)
+        .bind(
+            release
+                .release
+                .payload_sha256()
+                .expect("release digest should derive"),
+        )
+        .bind(&provenance_bytes)
+        .bind(
+            release
+                .provenance
+                .payload_sha256()
+                .expect("provenance digest should derive"),
+        )
+        .bind(release.provenance_statement.review_id)
+        .bind(&release.manifest.component_sha256)
+        .bind(&release.manifest.wit.package)
+        .bind(&release.manifest.wit.world)
+        .bind(i32::from(release.manifest.wit.major))
+        .bind(&release.manifest.wit.sha256)
+        .bind(
+            release
+                .manifest
+                .requested_capabilities
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>(),
+        )
+        .bind(
+            release
+                .manifest
+                .subscribed_hooks
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>(),
+        )
+        .bind(i32::try_from(release.manifest.budgets.frame_bytes).expect("frame budget should fit"))
+        .bind(
+            i32::try_from(release.manifest.budgets.memory_bytes).expect("memory budget should fit"),
+        )
+        .bind(i64::try_from(release.manifest.budgets.fuel).expect("fuel budget should fit"))
+        .bind(
+            i32::try_from(release.manifest.budgets.execution_ms)
+                .expect("execution budget should fit"),
+        )
+        .bind(&release.manifest.config_schema)
+        .bind(&release.manifest.state_schema)
+        .execute(pool)
+        .await
+        .expect("reviewed catalog row should seed");
+    }
+    let server_id: Uuid = sqlx::query_scalar("SELECT id FROM server_identity WHERE singleton")
+        .fetch_one(pool)
+        .await
+        .expect("server identity should resolve");
+    let signer = SigningKey::from_bytes(&[11_u8; 32]);
+    let (admission, signed_admission) =
+        sign_active_admission(&catalog[0], server_id, Uuid::new_v4(), 2, 1, 0, &signer)
+            .expect("initial reviewed admission should sign");
+    let signed_admission_bytes =
+        canonical_json(&signed_admission).expect("admission should encode");
+    sqlx::query(
+        r#"
+        INSERT INTO server_module_admissions (
+            admission_id, lifecycle_revision, release_id, server_id,
+            admission_format, signed_admission, admission_sha256, lifecycle,
+            granted_capabilities, subscribed_hooks, config_revision,
+            state_schema, state_revision
+        ) VALUES ($1, 2, $2, $3, $4, $5, $6, 'active',
+                  ARRAY['moderation_add_label']::TEXT[],
+                  ARRAY['persona_reported']::TEXT[], 1, $7, 0)
+        "#,
+    )
+    .bind(admission.admission_id)
+    .bind(admission.release_id)
+    .bind(server_id)
+    .bind(&admission.format)
+    .bind(&signed_admission_bytes)
+    .bind(sha256_hex(&signed_admission_bytes))
+    .bind(&admission.state_schema)
+    .execute(pool)
+    .await
+    .expect("initial reviewed admission should seed");
+    sqlx::query(
+        r#"
+        INSERT INTO server_module_instances (
+            instance_id, module_id, release_id, current_admission_id,
+            current_admission_revision, lifecycle, lifecycle_revision,
+            config, config_revision, state_schema, state_revision
+        ) VALUES ($1, $2, $3, $4, 2, 'active', 2,
+                  '{"policy":"strict"}'::JSONB, 1,
+                  'ignibyte.sentinel.state/v1', 0)
+        "#,
+    )
+    .bind(BUILTIN_INSTANCE_ID)
+    .bind(BUILTIN_MODULE_ID)
+    .bind(BUILTIN_RELEASE_ID)
+    .bind(admission.admission_id)
+    .execute(pool)
+    .await
+    .expect("active reviewed instance should seed");
+    sqlx::query(
+        r#"
+        INSERT INTO server_module_state_namespaces (
+            instance_id, state_schema, revision, entries, byte_size
+        ) VALUES ($1, 'ignibyte.sentinel.state/v1', 0, '{}'::JSONB, 2)
+        "#,
+    )
+    .bind(BUILTIN_INSTANCE_ID)
+    .execute(pool)
+    .await
+    .expect("initial reviewed namespace should seed");
 }

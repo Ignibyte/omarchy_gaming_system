@@ -35,6 +35,8 @@ sources:
     resource: repo://crates/marketplace-publisher/src/lib.rs
   - id: openwiki-source-18fcba4155ece2440818ba7e
     resource: repo://crates/marketplace-publisher/src/store.rs
+  - id: openwiki-source-18d930eefcf679a5ad34b413
+    resource: repo://crates/server-module-runtime/src/lib.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-ba203ea2e600f294ab58ef02
@@ -65,6 +67,8 @@ sources:
     resource: repo://crates/server/src/reports.rs
   - id: openwiki-source-42fe6bf463fcb01dc5566e16
     resource: repo://crates/server/src/server_discovery.rs
+  - id: openwiki-source-2d8ea93c101c36a0e0974581
+    resource: repo://crates/server/src/server_modules.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
   - id: openwiki-source-76060b846b9222af2c790243
@@ -101,7 +105,7 @@ sources:
     resource: repo://packaging/arch/PKGBUILD
   - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
     resource: repo://scripts/check-qml-style.py
-generated: {by: "codex", at: "2026-08-30T00:13:04.632Z"}
+generated: {by: "codex", at: "2026-08-30T02:11:48.120Z"}
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -174,16 +178,19 @@ multi-screen portable proof. The connector still does not poll or
 subscribe to live WebSocket hints.
 
 Production also has an opt-in server-module boundary. The exact compiled-in
-Sentinel fixture and up to eight explicitly admitted operator-custom identities
-share one no-WASI process host, exact WIT, privacy-minimized persona-report
-hook, typed `priority_review` proposal, core reauthorization, bounded durable
-outbox/state, and immutable request/response receipt evidence. Custom import,
-enable/disable/suspend/recover, readiness-checked upgrade, one-step rollback,
-terminal evidence-retaining removal, and restore review are database-local
-owner operations over private canonical files. Module inactivity, saturation,
-or absent runtime keys never rejects the report; it records bounded aggregate
-gap evidence instead. Public administration, admission hooks, egress, gameplay
-authority, and client code remain unavailable.
+Sentinel catalog contains release `1.0.0` and compatible release `1.1.0`; it and
+up to eight explicitly admitted operator-custom identities share one no-WASI
+process host, exact WIT, privacy-minimized persona-report hook, typed
+`priority_review` proposal, core reauthorization, bounded durable outbox/state,
+and immutable request/response receipt evidence. The local owner can explicitly
+upgrade the reviewed module to `1.1.0` with a complete candidate state and roll
+back once to the retained immediate predecessor. Reviewed lifecycle, custom
+import, custom lifecycle/removal, and restore review are database-local owner
+operations over private canonical files. Module inactivity, saturation, absent
+runtime keys, or an unavailable exact selected package never rejects the
+report; it records bounded aggregate gap evidence instead. Public
+administration, admission hooks, egress, gameplay authority, and client code
+remain unavailable.
 
 An active or degraded custom module adds only a stable-server-bound aggregate
 to public discovery: bounded count and behavior class plus fixed unreviewed-code
@@ -226,8 +233,9 @@ The private-alpha operator path is deliberately separate from the player API.
 queue, resolve or dismiss an open report, reversibly suspend or reactivate an
 account, issue, inventory, or revoke registration invitations, inspect reviewed
 cartridges, apply exact expected-state catalog selections, and execute
-admin-only operator-custom cartridge and server-module import/lifecycle
-commands. Those custom commands load checked owner-private signing material;
+admin-only operator-custom cartridge/server-module commands plus the fixed
+packaged reviewed module upgrade/rollback command. Those custom commands load
+checked owner-private signing material;
 the player server never loads provenance private keys. Its separate
 `marketplace-sync` action also requires a canonical HTTPS origin, bounded DER
 TLS root, pre-provisioned secure store, and either one manual marketplace key
@@ -321,12 +329,14 @@ bypass the inert package, publisher signature, current lifecycle, selected
 server admission, or trusted-QML boundary. Ticket 039 and ADR-0004 now select
 and prove a dedicated no-WASI process boundary for a separate capability-scoped
 server module/hook system. Ticket 040 implements the reviewed Sentinel
-observation base, and Ticket 041 adds database-local operator-custom custody,
-exact lifecycle, shared runtime dispatch, restore review, aggregate disclosure,
-and operator responsibility without expanding the hook or capability
-vocabulary. A public Provider SDK, external provider onboarding, public module
-administration, marketplace module admission, and broader hook classes remain
-roadmap work; the bounded custom path is not a general plugin loader.
+observation base, Ticket 041 adds database-local operator-custom custody, exact
+lifecycle, shared runtime dispatch, restore review, aggregate disclosure, and
+operator responsibility, and Ticket 042 packages the compatible reviewed
+successor with exact owner-controlled upgrade and immediate rollback. None
+expands the hook or capability vocabulary. A public Provider SDK, external
+provider onboarding, public module administration, marketplace module
+admission, and broader hook classes remain roadmap work; the bounded custom
+path is not a general plugin loader.
 
 ## Task routing
 
@@ -544,6 +554,11 @@ material, server-bound operator provenance, exact custom-operation receipts,
 one-step predecessor/snapshot rollback, terminal retained state disposition,
 and explicit runtime-unconfigured, replaced-admission, and removed-module gap
 reasons.
+
+Migration 0028 adds immutable whole-command evidence for packaged reviewed
+release transitions. Its database checks admit only the fixed Sentinel
+`1.0.0 → 1.1.0` upgrade and `1.1.0 → 1.0.0` rollback edges with monotonic
+lifecycle/state revisions and the corresponding state schema.
 
 Current runtime identifiers use the gaming-system namespace; see [Runtime
 foundation](runtime-foundation.md) for the narrow local compatibility window

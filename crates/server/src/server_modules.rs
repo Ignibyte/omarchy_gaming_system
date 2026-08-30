@@ -4,17 +4,18 @@
 //! observation boundary. No module receives a host path, arbitrary
 //! hook/capability, SQL, server secret, client code, or network destination.
 
-use std::{collections::BTreeMap, sync::Arc, time::Duration};
+use std::{collections::BTreeMap, env, sync::Arc, time::Duration};
 
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use hmac::{Hmac, KeyInit, Mac};
 use omarchygs_server_module_runtime::{
-    BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID, Capability, ExecutionTrust, HOOK_FORMAT, HookKind,
-    HookPayload, HostRequest, HostResponse, HostResult, MAX_FRAME_BYTES, ModuleAdmission,
-    ModuleHookEvent, ModuleIntent, ModuleSubject, PRIORITY_REVIEW_LABEL, ProcessSupervisor,
-    RESPONSE_FORMAT, ReviewedRelease, SignedEnvelope, canonical_json, decode_verifying_key,
-    host_request, reviewed_release, sha256_hex, sign_active_admission,
+    BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID, BUILTIN_SUCCESSOR_RELEASE_ID, Capability,
+    ExecutionTrust, HOOK_FORMAT, HookKind, HookPayload, HostRequest, HostResponse, HostResult,
+    MAX_FRAME_BYTES, ModuleAdmission, ModuleHookEvent, ModuleIntent, ModuleSubject,
+    PRIORITY_REVIEW_LABEL, ProcessSupervisor, RESPONSE_FORMAT, ReviewedRelease, SignedEnvelope,
+    canonical_json, decode_verifying_key, host_request, packaged_reviewed_release_by_id,
+    packaged_reviewed_releases, sha256_hex, sign_active_admission,
     verify_host_request_with_release, verify_release_material,
 };
 use serde::{Deserialize, Serialize};
@@ -120,7 +121,7 @@ impl ServerModuleService {
     pub async fn production(pool: PgPool, config: ModuleConfig) -> Result<Self, ModuleError> {
         let supervisor = ProcessSupervisor::packaged_sibling().map_err(|runtime_error| {
             warn!(error = %runtime_error, "packaged module host unavailable");
-            ModuleError::InvalidConfig
+            ModuleError::Unavailable
         })?;
         Self::start_with_executor(pool, config, Arc::new(ProcessExecutor { supervisor })).await
     }
@@ -131,9 +132,22 @@ impl ServerModuleService {
         config: ModuleConfig,
         executor: Arc<dyn ModuleExecutor>,
     ) -> Result<Self, ModuleError> {
+        let catalog = packaged_reviewed_releases().map_err(|error| {
+            warn!(error = %error, "packaged reviewed module catalog is unavailable");
+            ModuleError::Unavailable
+        })?;
+        Self::start_with_executor_and_catalog(pool, config, executor, catalog).await
+    }
+
+    pub(crate) async fn start_with_executor_and_catalog(
+        pool: PgPool,
+        config: ModuleConfig,
+        executor: Arc<dyn ModuleExecutor>,
+        catalog: Vec<ReviewedRelease>,
+    ) -> Result<Self, ModuleError> {
         let core_signer = SigningKey::from_bytes(&config.admission_signing_seed);
         if config.enable_first_party_report {
-            register_and_enable(&pool, &core_signer, Arc::clone(&executor)).await?;
+            register_and_enable(&pool, &core_signer, Arc::clone(&executor), &catalog).await?;
         }
         let emitter = ModuleEmitter {
             pairwise_secret: Some(Arc::new(config.pairwise_secret)),
@@ -216,12 +230,16 @@ impl ModuleExecutor for ProcessExecutor {
 #[derive(FromRow)]
 struct InstanceRow {
     instance_id: Uuid,
+    release_id: Uuid,
     lifecycle: String,
     lifecycle_revision: i64,
     current_admission_id: Option<Uuid>,
     current_admission_revision: Option<i64>,
     config: Json<Value>,
     config_revision: i64,
+    state: Json<Value>,
+    state_schema: String,
+    namespace_state_schema: String,
     state_revision: i64,
     activation_allowed: bool,
     restored_pending_review: bool,
@@ -233,10 +251,38 @@ async fn register_and_enable(
     pool: &PgPool,
     core_signer: &SigningKey,
     executor: Arc<dyn ModuleExecutor>,
+    catalog: &[ReviewedRelease],
 ) -> Result<EnabledInstance, ModuleError> {
-    let reviewed = reviewed_release().map_err(contract_failure)?;
-    let server_id = register_release_and_instance(pool, &reviewed).await?;
+    let server_id = register_release_catalog_and_instance(pool, catalog)
+        .await
+        .map_err(|error| match error {
+            ModuleError::Conflict | ModuleError::InvalidInput => {
+                warn!(
+                    error = error.code(),
+                    "packaged reviewed module catalog conflicts with registered inventory"
+                );
+                ModuleError::Unavailable
+            }
+            other => other,
+        })?;
     let instance = load_instance(pool).await?;
+    let reviewed = catalog
+        .iter()
+        .find(|release| release.manifest.release_id == instance.release_id)
+        .cloned()
+        .ok_or(ModuleError::Unavailable)?;
+    if instance.state_schema != reviewed.manifest.state_schema
+        || instance.namespace_state_schema != instance.state_schema
+    {
+        warn!(
+            release_id = %instance.release_id,
+            instance_state_schema = %instance.state_schema,
+            namespace_state_schema = %instance.namespace_state_schema,
+            reviewed_state_schema = %reviewed.manifest.state_schema,
+            "selected reviewed module state schema is inconsistent"
+        );
+        return Err(ModuleError::Unavailable);
+    }
     if !instance.activation_allowed
         || instance.restored_pending_review
         || matches!(instance.lifecycle.as_str(), "suspended" | "retired")
@@ -286,12 +332,11 @@ async fn register_and_enable(
     Ok(EnabledInstance)
 }
 
-async fn register_release_and_instance(
+async fn register_release_catalog_and_instance(
     pool: &PgPool,
-    reviewed: &ReviewedRelease,
+    catalog: &[ReviewedRelease],
 ) -> Result<Uuid, ModuleError> {
-    let release_bytes = canonical_json(&reviewed.release).map_err(contract_failure)?;
-    let provenance_bytes = canonical_json(&reviewed.provenance).map_err(contract_failure)?;
+    validate_packaged_catalog(catalog)?;
     let mut transaction = pool.begin().await.map_err(database_error)?;
     sqlx::query("SELECT pg_advisory_xact_lock($1)")
         .bind(MODULE_REGISTRY_ADVISORY_LOCK)
@@ -303,8 +348,19 @@ async fn register_release_and_instance(
             .fetch_one(&mut *transaction)
             .await
             .map_err(database_error)?;
-    let inserted = sqlx::query(
-        r#"
+    for reviewed in catalog {
+        let release_bytes = canonical_json(&reviewed.release).map_err(contract_failure)?;
+        let provenance_bytes = canonical_json(&reviewed.provenance).map_err(contract_failure)?;
+        let release_sha256 = reviewed
+            .release
+            .payload_sha256()
+            .map_err(contract_failure)?;
+        let provenance_sha256 = reviewed
+            .provenance
+            .payload_sha256()
+            .map_err(contract_failure)?;
+        let inserted = sqlx::query(
+            r#"
         INSERT INTO server_module_releases (
             release_id, module_id, publisher_id, version, release_format,
             signed_release, release_sha256, signed_provenance, provenance_sha256,
@@ -317,75 +373,117 @@ async fn register_release_and_instance(
         )
         ON CONFLICT (release_id) DO NOTHING
         "#,
-    )
-    .bind(reviewed.manifest.release_id)
-    .bind(&reviewed.manifest.module_id)
-    .bind(&reviewed.manifest.publisher_id)
-    .bind(&reviewed.manifest.version)
-    .bind(&reviewed.manifest.format)
-    .bind(&release_bytes)
-    .bind(
-        reviewed
-            .release
-            .payload_sha256()
-            .map_err(contract_failure)?,
-    )
-    .bind(&provenance_bytes)
-    .bind(
-        reviewed
-            .provenance
-            .payload_sha256()
-            .map_err(contract_failure)?,
-    )
-    .bind(&reviewed.provenance_statement.class)
-    .bind(reviewed.provenance_statement.review_id)
-    .bind(&reviewed.manifest.component_sha256)
-    .bind(&reviewed.manifest.wit.package)
-    .bind(&reviewed.manifest.wit.world)
-    .bind(i32::from(reviewed.manifest.wit.major))
-    .bind(&reviewed.manifest.wit.sha256)
-    .bind(vec![Capability::ModerationAddLabel.to_string()])
-    .bind(vec![HookKind::PersonaReported.to_string()])
-    .bind(i32::try_from(reviewed.manifest.budgets.frame_bytes).map_err(|_| ModuleError::Internal)?)
-    .bind(i32::try_from(reviewed.manifest.budgets.memory_bytes).map_err(|_| ModuleError::Internal)?)
-    .bind(i64::try_from(reviewed.manifest.budgets.fuel).map_err(|_| ModuleError::Internal)?)
-    .bind(i32::try_from(reviewed.manifest.budgets.execution_ms).map_err(|_| ModuleError::Internal)?)
-    .bind(&reviewed.manifest.config_schema)
-    .bind(&reviewed.manifest.state_schema)
-    .execute(&mut *transaction)
-    .await
-    .map_err(database_error)?
-    .rows_affected();
-    if inserted == 0 {
-        let existing = sqlx::query_as::<_, (Vec<u8>, String, Vec<u8>, String, String, String)>(
-            r#"
-            SELECT signed_release, release_sha256, signed_provenance,
-                   provenance_sha256, component_sha256, wit_sha256
+        )
+        .bind(reviewed.manifest.release_id)
+        .bind(&reviewed.manifest.module_id)
+        .bind(&reviewed.manifest.publisher_id)
+        .bind(&reviewed.manifest.version)
+        .bind(&reviewed.manifest.format)
+        .bind(&release_bytes)
+        .bind(&release_sha256)
+        .bind(&provenance_bytes)
+        .bind(&provenance_sha256)
+        .bind(&reviewed.provenance_statement.class)
+        .bind(reviewed.provenance_statement.review_id)
+        .bind(&reviewed.manifest.component_sha256)
+        .bind(&reviewed.manifest.wit.package)
+        .bind(&reviewed.manifest.wit.world)
+        .bind(i32::from(reviewed.manifest.wit.major))
+        .bind(&reviewed.manifest.wit.sha256)
+        .bind(vec![Capability::ModerationAddLabel.to_string()])
+        .bind(vec![HookKind::PersonaReported.to_string()])
+        .bind(
+            i32::try_from(reviewed.manifest.budgets.frame_bytes)
+                .map_err(|_| ModuleError::Internal)?,
+        )
+        .bind(
+            i32::try_from(reviewed.manifest.budgets.memory_bytes)
+                .map_err(|_| ModuleError::Internal)?,
+        )
+        .bind(i64::try_from(reviewed.manifest.budgets.fuel).map_err(|_| ModuleError::Internal)?)
+        .bind(
+            i32::try_from(reviewed.manifest.budgets.execution_ms)
+                .map_err(|_| ModuleError::Internal)?,
+        )
+        .bind(&reviewed.manifest.config_schema)
+        .bind(&reviewed.manifest.state_schema)
+        .execute(&mut *transaction)
+        .await
+        .map_err(database_error)?
+        .rows_affected();
+        if inserted == 0 {
+            let exact: bool = sqlx::query_scalar(
+                r#"
+            SELECT module_id = $2
+               AND publisher_id = $3
+               AND version = $4
+               AND release_format = $5
+               AND signed_release = $6
+               AND release_sha256 = $7
+               AND signed_provenance = $8
+               AND provenance_sha256 = $9
+               AND provenance_class = $10
+               AND review_id = $11
+               AND component_sha256 = $12
+               AND wit_package = $13
+               AND wit_world = $14
+               AND wit_major = $15
+               AND wit_sha256 = $16
+               AND requested_capabilities = $17
+               AND subscribed_hooks = $18
+               AND frame_bytes = $19
+               AND memory_bytes = $20
+               AND fuel = $21
+               AND execution_ms = $22
+               AND config_schema = $23
+               AND state_schema = $24
+               AND artifact_custody = 'packaged_reviewed_fixture'
+               AND component_bytes IS NULL
+               AND provenance_server_id IS NULL
             FROM server_module_releases
             WHERE release_id = $1
             FOR SHARE
             "#,
-        )
-        .bind(reviewed.manifest.release_id)
-        .fetch_one(&mut *transaction)
-        .await
-        .map_err(database_error)?;
-        if existing.0 != release_bytes
-            || existing.1
-                != reviewed
-                    .release
-                    .payload_sha256()
-                    .map_err(contract_failure)?
-            || existing.2 != provenance_bytes
-            || existing.3
-                != reviewed
-                    .provenance
-                    .payload_sha256()
-                    .map_err(contract_failure)?
-            || existing.4 != reviewed.manifest.component_sha256
-            || existing.5 != reviewed.manifest.wit.sha256
-        {
-            return Err(ModuleError::Conflict);
+            )
+            .bind(reviewed.manifest.release_id)
+            .bind(&reviewed.manifest.module_id)
+            .bind(&reviewed.manifest.publisher_id)
+            .bind(&reviewed.manifest.version)
+            .bind(&reviewed.manifest.format)
+            .bind(&release_bytes)
+            .bind(&release_sha256)
+            .bind(&provenance_bytes)
+            .bind(&provenance_sha256)
+            .bind(&reviewed.provenance_statement.class)
+            .bind(reviewed.provenance_statement.review_id)
+            .bind(&reviewed.manifest.component_sha256)
+            .bind(&reviewed.manifest.wit.package)
+            .bind(&reviewed.manifest.wit.world)
+            .bind(i32::from(reviewed.manifest.wit.major))
+            .bind(&reviewed.manifest.wit.sha256)
+            .bind(vec![Capability::ModerationAddLabel.to_string()])
+            .bind(vec![HookKind::PersonaReported.to_string()])
+            .bind(
+                i32::try_from(reviewed.manifest.budgets.frame_bytes)
+                    .map_err(|_| ModuleError::Internal)?,
+            )
+            .bind(
+                i32::try_from(reviewed.manifest.budgets.memory_bytes)
+                    .map_err(|_| ModuleError::Internal)?,
+            )
+            .bind(i64::try_from(reviewed.manifest.budgets.fuel).map_err(|_| ModuleError::Internal)?)
+            .bind(
+                i32::try_from(reviewed.manifest.budgets.execution_ms)
+                    .map_err(|_| ModuleError::Internal)?,
+            )
+            .bind(&reviewed.manifest.config_schema)
+            .bind(&reviewed.manifest.state_schema)
+            .fetch_one(&mut *transaction)
+            .await
+            .map_err(database_error)?;
+            if !exact {
+                return Err(ModuleError::Conflict);
+            }
         }
     }
 
@@ -438,19 +536,41 @@ async fn register_release_and_instance(
 async fn load_instance(pool: &PgPool) -> Result<InstanceRow, ModuleError> {
     sqlx::query_as::<_, InstanceRow>(
         r#"
-        SELECT instance_id, lifecycle, lifecycle_revision, current_admission_id,
-               current_admission_revision, config, config_revision, state_revision,
-               activation_allowed, restored_pending_review
-        FROM server_module_instances
-        WHERE instance_id = $1 AND release_id = $2 AND module_id = $3
+        SELECT i.instance_id, i.release_id, i.lifecycle, i.lifecycle_revision,
+               i.current_admission_id, i.current_admission_revision, i.config,
+               i.config_revision, n.entries AS state, i.state_schema,
+               n.state_schema AS namespace_state_schema, i.state_revision,
+               i.activation_allowed, i.restored_pending_review
+        FROM server_module_instances i
+        JOIN server_module_state_namespaces n ON n.instance_id = i.instance_id
+        WHERE i.instance_id = $1 AND i.module_id = $2
+          AND n.revision = i.state_revision
         "#,
     )
     .bind(BUILTIN_INSTANCE_ID)
-    .bind(BUILTIN_RELEASE_ID)
     .bind(BUILTIN_MODULE_ID)
     .fetch_one(pool)
     .await
     .map_err(database_error)
+}
+
+fn validate_packaged_catalog(catalog: &[ReviewedRelease]) -> Result<(), ModuleError> {
+    if catalog.is_empty()
+        || catalog.len() > 2
+        || catalog[0].manifest.release_id != BUILTIN_RELEASE_ID
+        || catalog.iter().any(|release| {
+            release.manifest.module_id != BUILTIN_MODULE_ID
+                || release.provenance_statement.class != "first_party_reviewed_fixture"
+                || release.provenance_statement.server_id.is_some()
+        })
+        || catalog.windows(2).any(|pair| {
+            pair[0].manifest.release_id == pair[1].manifest.release_id
+                || pair[0].manifest.version >= pair[1].manifest.version
+        })
+    {
+        return Err(ModuleError::Conflict);
+    }
+    Ok(())
 }
 
 async fn load_current_admission(
@@ -589,6 +709,26 @@ fn readiness_request(
     instance: &InstanceRow,
     server_id: Uuid,
 ) -> Result<HostRequest, ModuleError> {
+    readiness_request_for_state(
+        reviewed,
+        signed_admission,
+        server_id,
+        &instance.config.0,
+        instance.config_revision,
+        &instance.state.0,
+        instance.state_revision,
+    )
+}
+
+fn readiness_request_for_state(
+    reviewed: &ReviewedRelease,
+    signed_admission: SignedEnvelope,
+    server_id: Uuid,
+    config: &Value,
+    config_revision: i64,
+    state: &Value,
+    state_revision: i64,
+) -> Result<HostRequest, ModuleError> {
     let admission_payload = decode_signed_payload::<ModuleAdmission>(&signed_admission)?;
     Ok(host_request(
         reviewed,
@@ -599,19 +739,17 @@ fn readiness_request(
             attempt: 1,
             server_id,
             module_id: BUILTIN_MODULE_ID.into(),
-            release_id: BUILTIN_RELEASE_ID,
+            release_id: reviewed.manifest.release_id,
             admission_id: admission_payload.admission_id,
             admission_revision: admission_payload.lifecycle_revision,
             hook: HookKind::PersonaReported,
             causal_revision: 0,
             deadline_ms: admission_payload.budgets.execution_ms,
             subject: ModuleSubject::Pairwise("startup-readiness-probe".into()),
-            config: json_object_to_string_map(&instance.config.0)?,
-            config_revision: u64::try_from(instance.config_revision)
-                .map_err(|_| ModuleError::Internal)?,
-            state: BTreeMap::new(),
-            state_revision: u64::try_from(instance.state_revision)
-                .map_err(|_| ModuleError::Internal)?,
+            config: json_object_to_string_map(config)?,
+            config_revision: u64::try_from(config_revision).map_err(|_| ModuleError::Internal)?,
+            state: json_object_to_string_map(state)?,
+            state_revision: u64::try_from(state_revision).map_err(|_| ModuleError::Internal)?,
             payload: HookPayload::PersonaReported {
                 report_id: Uuid::new_v4(),
                 category: "other".into(),
@@ -1163,10 +1301,11 @@ fn release_from_claim(claimed: &ClaimedEvent) -> Result<ReviewedRelease, ModuleE
     let signed_release: SignedEnvelope = decode_canonical(&claimed.signed_release)?;
     let signed_provenance: SignedEnvelope = decode_canonical(&claimed.signed_provenance)?;
     if claimed.artifact_custody == "packaged_reviewed_fixture" {
-        let reviewed = reviewed_release().map_err(contract_failure)?;
+        let reviewed = packaged_reviewed_release_by_id(claimed.release_id)
+            .map_err(contract_failure)?
+            .ok_or(ModuleError::Conflict)?;
         if claimed.provenance_class != "first_party_reviewed_fixture"
             || claimed.provenance_server_id.is_some()
-            || claimed.release_id != BUILTIN_RELEASE_ID
             || signed_release != reviewed.release
             || signed_provenance != reviewed.provenance
         {
@@ -1685,6 +1824,1047 @@ pub(crate) async fn prune_delivered(pool: &PgPool, instance_id: Uuid) -> Result<
     Ok(())
 }
 
+/// Runtime key material used only by the database-local reviewed lifecycle command.
+#[derive(Clone)]
+pub struct ReviewedModuleAdminConfig {
+    admission_signing_seed: [u8; 32],
+}
+
+#[cfg_attr(test, allow(dead_code))]
+impl ReviewedModuleAdminConfig {
+    /// Require the same complete runtime key pair used by the production dispatcher.
+    pub fn from_environment() -> Result<Self, ModuleError> {
+        let admission = env::var("OGS_MODULE_ADMISSION_SIGNING_SEED")
+            .map_err(|_| ModuleError::InvalidConfig)?;
+        let pairwise =
+            env::var("OGS_MODULE_PAIRWISE_SECRET").map_err(|_| ModuleError::InvalidConfig)?;
+        let admission_signing_seed = decode_module_secret(&admission)?;
+        let _pairwise_secret = decode_module_secret(&pairwise)?;
+        Ok(Self {
+            admission_signing_seed,
+        })
+    }
+
+    fn signer(&self) -> SigningKey {
+        SigningKey::from_bytes(&self.admission_signing_seed)
+    }
+
+    #[cfg(test)]
+    pub(crate) const fn for_test(admission_signing_seed: [u8; 32]) -> Self {
+        Self {
+            admission_signing_seed,
+        }
+    }
+}
+
+/// Exact packaged reviewed release transition selected by a local administrator.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ReviewedModuleReleaseAction {
+    /// Move release 1.0.0 to its one compatible packaged successor.
+    Upgrade,
+    /// Consume the retained immediate predecessor and namespace snapshot.
+    Rollback,
+}
+
+impl ReviewedModuleReleaseAction {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::Upgrade => "upgrade",
+            Self::Rollback => "rollback",
+        }
+    }
+}
+
+/// Canonical database-local packaged reviewed release command.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewedModuleReleaseCommand {
+    /// Exact command schema.
+    pub format: String,
+    /// Whole-command idempotency identity.
+    pub operation_id: Uuid,
+    /// Exact reviewed instance identity.
+    pub instance_id: Uuid,
+    /// Only supported transition action.
+    pub action: ReviewedModuleReleaseAction,
+    /// Required current lifecycle revision.
+    pub expected_lifecycle_revision: u64,
+    /// Required current configuration revision.
+    pub expected_config_revision: u64,
+    /// Required current state revision.
+    pub expected_state_revision: u64,
+    /// Exact successor identity, accepted only by upgrade.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_release_id: Option<Uuid>,
+    /// Complete bounded successor namespace, accepted only by upgrade.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub candidate_state: Option<BTreeMap<String, String>>,
+    /// Local operator identity for immutable audit.
+    pub actor: String,
+    /// Bounded human reason for immutable audit.
+    pub reason: String,
+}
+
+/// Stable non-secret result of one reviewed release transition.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewedModuleReleaseReceipt {
+    /// Exact receipt schema.
+    pub format: String,
+    /// Whole-command idempotency identity.
+    pub operation_id: Uuid,
+    /// Applied transition action.
+    pub action: String,
+    /// Stable reviewed instance identity.
+    pub instance_id: Uuid,
+    /// Stable reviewed module identity.
+    pub module_id: String,
+    /// Release selected before the transition.
+    pub previous_release_id: Uuid,
+    /// Exact selected release after the transition.
+    pub release_id: Uuid,
+    /// Retained or consumed predecessor namespace snapshot.
+    pub predecessor_snapshot_id: Uuid,
+    /// Resulting active lifecycle revision.
+    pub lifecycle_revision: u64,
+    /// Resulting state schema.
+    pub state_schema: String,
+    /// Resulting monotonic state revision.
+    pub state_revision: u64,
+    /// Whether this result was reconstructed from immutable operation evidence.
+    pub replayed: bool,
+}
+
+/// Decode one bounded canonical packaged reviewed release command.
+pub fn decode_reviewed_release_command(
+    bytes: &[u8],
+) -> Result<ReviewedModuleReleaseCommand, ModuleError> {
+    if bytes.is_empty() || bytes.len() > MAX_FRAME_BYTES {
+        return Err(ModuleError::InvalidInput);
+    }
+    decode_canonical(bytes)
+}
+
+#[derive(FromRow)]
+struct ReviewedTransitionCandidate {
+    instance_id: Uuid,
+    module_id: String,
+    release_id: Uuid,
+    lifecycle: String,
+    lifecycle_revision: i64,
+    config: Json<Value>,
+    config_revision: i64,
+    state_schema: String,
+    state_revision: i64,
+    activation_allowed: bool,
+    restored_pending_review: bool,
+    previous_release_id: Option<Uuid>,
+    rollback_snapshot_id: Option<Uuid>,
+    state: Json<Value>,
+    state_byte_size: i32,
+}
+
+#[derive(FromRow)]
+struct LockedReviewedTransition {
+    lifecycle: String,
+    lifecycle_revision: i64,
+    config_revision: i64,
+    config: Json<Value>,
+    state_revision: i64,
+    release_id: Uuid,
+    state_schema: String,
+    namespace_state_schema: String,
+    activation_allowed: bool,
+    restored_pending_review: bool,
+    previous_release_id: Option<Uuid>,
+    rollback_snapshot_id: Option<Uuid>,
+    state: Json<Value>,
+    state_byte_size: i32,
+}
+
+struct PreparedReviewedTransition {
+    candidate: ReviewedTransitionCandidate,
+    target_release: ReviewedRelease,
+    target_state: BTreeMap<String, String>,
+    target_state_schema: String,
+    predecessor_snapshot_id: Uuid,
+    predecessor_snapshot: Option<(String, i64, Json<Value>, i32)>,
+    admission: ModuleAdmission,
+    signed_admission: SignedEnvelope,
+}
+
+#[derive(FromRow)]
+struct ReviewedOperationReplayRow {
+    action: String,
+    command_sha256: String,
+    instance_id: Uuid,
+    previous_release_id: Uuid,
+    release_id: Uuid,
+    predecessor_snapshot_id: Uuid,
+    resulting_lifecycle_revision: i64,
+    resulting_state_schema: String,
+    resulting_state_revision: i64,
+}
+
+impl ReviewedOperationReplayRow {
+    fn receipt(
+        &self,
+        operation_id: Uuid,
+        replayed: bool,
+    ) -> Result<ReviewedModuleReleaseReceipt, ModuleError> {
+        Ok(ReviewedModuleReleaseReceipt {
+            format: "omarchygs.packaged-reviewed-module-receipt/v1".into(),
+            operation_id,
+            action: self.action.clone(),
+            instance_id: self.instance_id,
+            module_id: BUILTIN_MODULE_ID.into(),
+            previous_release_id: self.previous_release_id,
+            release_id: self.release_id,
+            predecessor_snapshot_id: self.predecessor_snapshot_id,
+            lifecycle_revision: u64::try_from(self.resulting_lifecycle_revision)
+                .map_err(|_| ModuleError::Internal)?,
+            state_schema: self.resulting_state_schema.clone(),
+            state_revision: u64::try_from(self.resulting_state_revision)
+                .map_err(|_| ModuleError::Internal)?,
+            replayed,
+        })
+    }
+}
+
+/// Apply an exact packaged reviewed upgrade or one-step rollback.
+#[cfg_attr(test, allow(dead_code))]
+pub async fn apply_reviewed_release_command(
+    pool: &PgPool,
+    config: &ReviewedModuleAdminConfig,
+    command: &ReviewedModuleReleaseCommand,
+) -> Result<ReviewedModuleReleaseReceipt, ModuleError> {
+    let supervisor = ProcessSupervisor::packaged_sibling().map_err(|runtime_error| {
+        warn!(error = %runtime_error, "packaged module host unavailable for reviewed transition");
+        ModuleError::Unavailable
+    })?;
+    apply_reviewed_release_command_with_executor(
+        pool,
+        config,
+        command,
+        Arc::new(ProcessExecutor { supervisor }),
+    )
+    .await
+}
+
+pub(crate) async fn apply_reviewed_release_command_with_executor(
+    pool: &PgPool,
+    config: &ReviewedModuleAdminConfig,
+    command: &ReviewedModuleReleaseCommand,
+    executor: Arc<dyn ModuleExecutor>,
+) -> Result<ReviewedModuleReleaseReceipt, ModuleError> {
+    validate_reviewed_release_command(command)?;
+    let command_sha256 = sha256_hex(&canonical_json(command).map_err(contract_failure)?);
+    if let Some(receipt) = load_reviewed_operation_replay(
+        pool,
+        command.operation_id,
+        command.action.as_str(),
+        &command_sha256,
+    )
+    .await?
+    {
+        return Ok(receipt);
+    }
+    ensure_reviewed_operation_id_available(pool, command.operation_id).await?;
+    let candidate = load_reviewed_transition_candidate(pool, command).await?;
+    let prepared =
+        prepare_reviewed_transition(pool, command, candidate, &config.signer(), executor).await?;
+    finalize_reviewed_transition(pool, command, &command_sha256, prepared).await
+}
+
+fn validate_reviewed_release_command(
+    command: &ReviewedModuleReleaseCommand,
+) -> Result<(), ModuleError> {
+    if command.format != "omarchygs.packaged-reviewed-module-lifecycle-command/v1"
+        || command.operation_id.is_nil()
+        || command.instance_id != BUILTIN_INSTANCE_ID
+        || command.expected_lifecycle_revision == 0
+        || command.expected_config_revision == 0
+    {
+        return Err(ModuleError::InvalidInput);
+    }
+    validate_actor_reason(&command.actor, &command.reason)?;
+    match command.action {
+        ReviewedModuleReleaseAction::Upgrade => {
+            if command.target_release_id != Some(BUILTIN_SUCCESSOR_RELEASE_ID)
+                || command.candidate_state.is_none()
+            {
+                return Err(ModuleError::InvalidInput);
+            }
+            validate_string_map(
+                command
+                    .candidate_state
+                    .as_ref()
+                    .ok_or(ModuleError::InvalidInput)?,
+            )
+        }
+        ReviewedModuleReleaseAction::Rollback => {
+            if command.target_release_id.is_some() || command.candidate_state.is_some() {
+                return Err(ModuleError::InvalidInput);
+            }
+            Ok(())
+        }
+    }
+}
+
+async fn load_reviewed_transition_candidate(
+    pool: &PgPool,
+    command: &ReviewedModuleReleaseCommand,
+) -> Result<ReviewedTransitionCandidate, ModuleError> {
+    let row = sqlx::query_as::<_, ReviewedTransitionCandidate>(
+        r#"
+        SELECT i.instance_id, i.module_id, i.release_id, i.lifecycle,
+               i.lifecycle_revision, i.config, i.config_revision,
+               i.state_schema, i.state_revision, i.activation_allowed,
+               i.restored_pending_review, i.previous_release_id,
+               i.rollback_snapshot_id, n.entries AS state,
+               n.byte_size AS state_byte_size
+        FROM server_module_instances i
+        JOIN server_module_releases r ON r.release_id = i.release_id
+        JOIN server_module_state_namespaces n ON n.instance_id = i.instance_id
+        WHERE i.instance_id = $1 AND i.module_id = $2
+          AND r.provenance_class = 'first_party_reviewed_fixture'
+          AND r.artifact_custody = 'packaged_reviewed_fixture'
+          AND n.revision = i.state_revision
+          AND n.state_schema = i.state_schema
+        "#,
+    )
+    .bind(command.instance_id)
+    .bind(BUILTIN_MODULE_ID)
+    .fetch_optional(pool)
+    .await
+    .map_err(database_error)?
+    .ok_or(ModuleError::Denied)?;
+    if row.lifecycle_revision
+        != i64::try_from(command.expected_lifecycle_revision)
+            .map_err(|_| ModuleError::InvalidInput)?
+        || row.config_revision
+            != i64::try_from(command.expected_config_revision)
+                .map_err(|_| ModuleError::InvalidInput)?
+        || row.state_revision
+            != i64::try_from(command.expected_state_revision)
+                .map_err(|_| ModuleError::InvalidInput)?
+    {
+        return Err(ModuleError::Conflict);
+    }
+    Ok(row)
+}
+
+async fn prepare_reviewed_transition(
+    pool: &PgPool,
+    command: &ReviewedModuleReleaseCommand,
+    candidate: ReviewedTransitionCandidate,
+    signer: &SigningKey,
+    executor: Arc<dyn ModuleExecutor>,
+) -> Result<PreparedReviewedTransition, ModuleError> {
+    if !candidate.activation_allowed
+        || candidate.restored_pending_review
+        || !matches!(candidate.lifecycle.as_str(), "active" | "disabled")
+    {
+        return Err(ModuleError::Denied);
+    }
+    let current_release = packaged_reviewed_release_by_id(candidate.release_id)
+        .map_err(contract_failure)?
+        .ok_or(ModuleError::Unavailable)?;
+    if !packaged_release_database_exact(pool, &current_release).await?
+        || candidate.state_schema != current_release.manifest.state_schema
+    {
+        return Err(ModuleError::Conflict);
+    }
+    let (target_release_id, target_state, predecessor_snapshot_id, predecessor_snapshot) =
+        match command.action {
+            ReviewedModuleReleaseAction::Upgrade => {
+                if candidate.release_id != BUILTIN_RELEASE_ID
+                    || candidate.previous_release_id.is_some()
+                    || candidate.rollback_snapshot_id.is_some()
+                {
+                    return Err(ModuleError::Denied);
+                }
+                let target_release_id =
+                    command.target_release_id.ok_or(ModuleError::InvalidInput)?;
+                let target_state = command
+                    .candidate_state
+                    .clone()
+                    .ok_or(ModuleError::InvalidInput)?;
+                let snapshot_id = Uuid::new_v4();
+                (
+                    target_release_id,
+                    target_state,
+                    snapshot_id,
+                    Some((
+                        candidate.state_schema.clone(),
+                        candidate.state_revision,
+                        candidate.state.clone(),
+                        candidate.state_byte_size,
+                    )),
+                )
+            }
+            ReviewedModuleReleaseAction::Rollback => {
+                if candidate.release_id != BUILTIN_SUCCESSOR_RELEASE_ID
+                    || candidate.previous_release_id != Some(BUILTIN_RELEASE_ID)
+                {
+                    return Err(ModuleError::Denied);
+                }
+                let snapshot_id = candidate.rollback_snapshot_id.ok_or(ModuleError::Denied)?;
+                let snapshot: (String, Json<Value>) = sqlx::query_as(
+                    r#"
+                    SELECT source_schema, entries
+                    FROM server_module_state_snapshots
+                    WHERE snapshot_id = $1 AND instance_id = $2
+                    "#,
+                )
+                .bind(snapshot_id)
+                .bind(candidate.instance_id)
+                .fetch_optional(pool)
+                .await
+                .map_err(database_error)?
+                .ok_or(ModuleError::Conflict)?;
+                if snapshot.0 != "ignibyte.sentinel.state/v1" {
+                    return Err(ModuleError::Conflict);
+                }
+                (
+                    BUILTIN_RELEASE_ID,
+                    json_object_to_string_map(&snapshot.1.0)?,
+                    snapshot_id,
+                    None,
+                )
+            }
+        };
+    validate_string_map(&target_state)?;
+    let target_release = packaged_reviewed_release_by_id(target_release_id)
+        .map_err(contract_failure)?
+        .ok_or(ModuleError::Unavailable)?;
+    if !packaged_release_database_exact(pool, &target_release).await?
+        || target_release.manifest.module_id != candidate.module_id
+        || target_release.manifest.config_schema != current_release.manifest.config_schema
+        || target_release.manifest.wit != current_release.manifest.wit
+        || target_release.manifest.requested_capabilities
+            != current_release.manifest.requested_capabilities
+        || target_release.manifest.subscribed_hooks != current_release.manifest.subscribed_hooks
+        || target_release.manifest.budgets != current_release.manifest.budgets
+    {
+        return Err(ModuleError::Conflict);
+    }
+    let next_lifecycle_revision = command
+        .expected_lifecycle_revision
+        .checked_add(1)
+        .ok_or(ModuleError::Internal)?;
+    let next_state_revision = command
+        .expected_state_revision
+        .checked_add(1)
+        .ok_or(ModuleError::Internal)?;
+    let server_id: Uuid = sqlx::query_scalar("SELECT id FROM server_identity WHERE singleton")
+        .fetch_one(pool)
+        .await
+        .map_err(database_error)?;
+    let (admission, signed_admission) = sign_active_admission(
+        &target_release,
+        server_id,
+        Uuid::new_v4(),
+        next_lifecycle_revision,
+        command.expected_config_revision,
+        next_state_revision,
+        signer,
+    )
+    .map_err(contract_failure)?;
+    let target_state_value = string_map_json(&target_state)?;
+    let request = readiness_request_for_state(
+        &target_release,
+        signed_admission.clone(),
+        server_id,
+        &candidate.config.0,
+        candidate.config_revision,
+        &target_state_value,
+        i64::try_from(next_state_revision).map_err(|_| ModuleError::InvalidInput)?,
+    )?;
+    let response = execute_without_transaction(
+        executor,
+        request.clone(),
+        signer.verifying_key(),
+        target_release.clone(),
+    )
+    .await?;
+    verify_readiness_response(&request, &response)?;
+    Ok(PreparedReviewedTransition {
+        candidate,
+        target_state,
+        target_state_schema: target_release.manifest.state_schema.clone(),
+        target_release,
+        predecessor_snapshot_id,
+        predecessor_snapshot,
+        admission,
+        signed_admission,
+    })
+}
+
+async fn finalize_reviewed_transition(
+    pool: &PgPool,
+    command: &ReviewedModuleReleaseCommand,
+    command_sha256: &str,
+    prepared: PreparedReviewedTransition,
+) -> Result<ReviewedModuleReleaseReceipt, ModuleError> {
+    let mut transaction = pool.begin().await.map_err(database_error)?;
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(MODULE_REGISTRY_ADVISORY_LOCK)
+        .execute(&mut *transaction)
+        .await
+        .map_err(database_error)?;
+    if let Some(receipt) = load_reviewed_operation_replay_tx(
+        &mut transaction,
+        command.operation_id,
+        command.action.as_str(),
+        command_sha256,
+    )
+    .await?
+    {
+        transaction.commit().await.map_err(database_error)?;
+        return Ok(receipt);
+    }
+    ensure_reviewed_operation_id_available_tx(&mut transaction, command.operation_id).await?;
+    let current = sqlx::query_as::<_, LockedReviewedTransition>(
+        r#"
+        SELECT i.lifecycle, i.lifecycle_revision, i.config_revision, i.config,
+               i.state_revision, i.release_id, i.state_schema,
+               n.state_schema AS namespace_state_schema,
+               i.activation_allowed, i.restored_pending_review,
+               i.previous_release_id, i.rollback_snapshot_id,
+               n.entries AS state, n.byte_size AS state_byte_size
+        FROM server_module_instances i
+        JOIN server_module_state_namespaces n ON n.instance_id = i.instance_id
+        WHERE i.instance_id = $1 AND i.module_id = $2
+        FOR UPDATE OF i, n
+        "#,
+    )
+    .bind(command.instance_id)
+    .bind(BUILTIN_MODULE_ID)
+    .fetch_optional(&mut *transaction)
+    .await
+    .map_err(database_error)?
+    .ok_or(ModuleError::Denied)?;
+    if current.lifecycle != prepared.candidate.lifecycle
+        || current.lifecycle_revision != prepared.candidate.lifecycle_revision
+        || current.config_revision != prepared.candidate.config_revision
+        || current.config != prepared.candidate.config
+        || current.state_revision != prepared.candidate.state_revision
+        || current.release_id != prepared.candidate.release_id
+        || current.state_schema != prepared.candidate.state_schema
+        || current.namespace_state_schema != prepared.candidate.state_schema
+        || current.activation_allowed != prepared.candidate.activation_allowed
+        || current.restored_pending_review != prepared.candidate.restored_pending_review
+        || current.previous_release_id != prepared.candidate.previous_release_id
+        || current.rollback_snapshot_id != prepared.candidate.rollback_snapshot_id
+        || current.state != prepared.candidate.state
+        || current.state_byte_size != prepared.candidate.state_byte_size
+        || !packaged_release_database_exact_tx(&mut transaction, &prepared.target_release).await?
+    {
+        return Err(ModuleError::Conflict);
+    }
+    let current_release = packaged_reviewed_release_by_id(prepared.candidate.release_id)
+        .map_err(contract_failure)?
+        .ok_or(ModuleError::Unavailable)?;
+    if !packaged_release_database_exact_tx(&mut transaction, &current_release).await? {
+        return Err(ModuleError::Conflict);
+    }
+
+    if let Some((source_schema, source_revision, entries, byte_size)) =
+        &prepared.predecessor_snapshot
+    {
+        sqlx::query(
+            r#"
+            INSERT INTO server_module_state_snapshots (
+                snapshot_id, instance_id, source_schema, source_revision,
+                entries, byte_size, reason
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+            "#,
+        )
+        .bind(prepared.predecessor_snapshot_id)
+        .bind(command.instance_id)
+        .bind(source_schema)
+        .bind(source_revision)
+        .bind(entries)
+        .bind(byte_size)
+        .bind(format!(
+            "Immediate predecessor for reviewed upgrade operation {}",
+            command.operation_id
+        ))
+        .execute(&mut *transaction)
+        .await
+        .map_err(reviewed_command_database_error)?;
+    }
+
+    let signed_admission = canonical_json(&prepared.signed_admission).map_err(contract_failure)?;
+    sqlx::query(
+        r#"
+        INSERT INTO server_module_admissions (
+            admission_id, lifecycle_revision, release_id, server_id,
+            admission_format, signed_admission, admission_sha256, lifecycle,
+            granted_capabilities, subscribed_hooks, config_revision,
+            state_schema, state_revision
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', $8, $9, $10, $11, $12)
+        "#,
+    )
+    .bind(prepared.admission.admission_id)
+    .bind(i64::try_from(prepared.admission.lifecycle_revision).map_err(|_| ModuleError::Internal)?)
+    .bind(prepared.admission.release_id)
+    .bind(prepared.admission.server_id)
+    .bind(&prepared.admission.format)
+    .bind(&signed_admission)
+    .bind(sha256_hex(&signed_admission))
+    .bind(vec![Capability::ModerationAddLabel.to_string()])
+    .bind(vec![HookKind::PersonaReported.to_string()])
+    .bind(i64::try_from(prepared.admission.config_revision).map_err(|_| ModuleError::Internal)?)
+    .bind(&prepared.admission.state_schema)
+    .bind(i64::try_from(prepared.admission.state_revision).map_err(|_| ModuleError::Internal)?)
+    .execute(&mut *transaction)
+    .await
+    .map_err(reviewed_command_database_error)?;
+
+    terminalize_reviewed_outbox(&mut transaction, command.instance_id).await?;
+    let target_state = string_map_json(&prepared.target_state)?;
+    let resulting_state_revision = i64::try_from(
+        command
+            .expected_state_revision
+            .checked_add(1)
+            .ok_or(ModuleError::Internal)?,
+    )
+    .map_err(|_| ModuleError::InvalidInput)?;
+    let state_updated = sqlx::query(
+        r#"
+        UPDATE server_module_state_namespaces
+        SET state_schema = $2, revision = $3, entries = $4,
+            byte_size = octet_length(($4::JSONB)::TEXT),
+            updated_at = clock_timestamp()
+        WHERE instance_id = $1 AND revision = $5
+        "#,
+    )
+    .bind(command.instance_id)
+    .bind(&prepared.target_state_schema)
+    .bind(resulting_state_revision)
+    .bind(Json(target_state))
+    .bind(i64::try_from(command.expected_state_revision).map_err(|_| ModuleError::InvalidInput)?)
+    .execute(&mut *transaction)
+    .await
+    .map_err(reviewed_command_database_error)?
+    .rows_affected();
+    if state_updated != 1 {
+        return Err(ModuleError::Conflict);
+    }
+    let resulting_lifecycle_revision = i64::try_from(
+        command
+            .expected_lifecycle_revision
+            .checked_add(1)
+            .ok_or(ModuleError::Internal)?,
+    )
+    .map_err(|_| ModuleError::InvalidInput)?;
+    let (previous_release_id, rollback_snapshot_id) = match command.action {
+        ReviewedModuleReleaseAction::Upgrade => (
+            Some(prepared.candidate.release_id),
+            Some(prepared.predecessor_snapshot_id),
+        ),
+        ReviewedModuleReleaseAction::Rollback => (None, None),
+    };
+    let instance_updated = sqlx::query(
+        r#"
+        UPDATE server_module_instances
+        SET release_id = $2, current_admission_id = $3,
+            current_admission_revision = $4, lifecycle = 'active',
+            lifecycle_revision = $4, state_schema = $5, state_revision = $6,
+            consecutive_failures = 0, activation_allowed = TRUE,
+            restored_pending_review = FALSE, previous_release_id = $7,
+            rollback_snapshot_id = $8, state_disposition = 'live',
+            updated_at = clock_timestamp()
+        WHERE instance_id = $1 AND lifecycle_revision = $9
+        "#,
+    )
+    .bind(command.instance_id)
+    .bind(prepared.target_release.manifest.release_id)
+    .bind(prepared.admission.admission_id)
+    .bind(resulting_lifecycle_revision)
+    .bind(&prepared.target_state_schema)
+    .bind(resulting_state_revision)
+    .bind(previous_release_id)
+    .bind(rollback_snapshot_id)
+    .bind(
+        i64::try_from(command.expected_lifecycle_revision)
+            .map_err(|_| ModuleError::InvalidInput)?,
+    )
+    .execute(&mut *transaction)
+    .await
+    .map_err(reviewed_command_database_error)?
+    .rows_affected();
+    if instance_updated != 1 {
+        return Err(ModuleError::Conflict);
+    }
+    sqlx::query(
+        r#"
+        INSERT INTO server_module_data_audit (
+            operation_id, instance_id, action, command_sha256,
+            expected_revision, resulting_revision, snapshot_id, actor, reason
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        "#,
+    )
+    .bind(command.operation_id)
+    .bind(command.instance_id)
+    .bind(match command.action {
+        ReviewedModuleReleaseAction::Upgrade => "state_migrate",
+        ReviewedModuleReleaseAction::Rollback => "state_rollback",
+    })
+    .bind(command_sha256)
+    .bind(i64::try_from(command.expected_state_revision).map_err(|_| ModuleError::InvalidInput)?)
+    .bind(resulting_state_revision)
+    .bind(prepared.predecessor_snapshot_id)
+    .bind(&command.actor)
+    .bind(&command.reason)
+    .execute(&mut *transaction)
+    .await
+    .map_err(reviewed_command_database_error)?;
+    sqlx::query(
+        r#"
+        INSERT INTO server_module_lifecycle_audit (
+            operation_id, instance_id, action, expected_revision,
+            previous_state, resulting_state, resulting_revision, actor, reason
+        ) VALUES ($1, $2, $3, $4, $5, 'active', $6, $7, $8)
+        "#,
+    )
+    .bind(command.operation_id)
+    .bind(command.instance_id)
+    .bind(command.action.as_str())
+    .bind(
+        i64::try_from(command.expected_lifecycle_revision)
+            .map_err(|_| ModuleError::InvalidInput)?,
+    )
+    .bind(&prepared.candidate.lifecycle)
+    .bind(resulting_lifecycle_revision)
+    .bind(&command.actor)
+    .bind(&command.reason)
+    .execute(&mut *transaction)
+    .await
+    .map_err(reviewed_command_database_error)?;
+    sqlx::query(
+        r#"
+        INSERT INTO server_module_reviewed_operations (
+            operation_id, action, command_sha256, instance_id,
+            previous_release_id, release_id, predecessor_snapshot_id,
+            expected_lifecycle_revision, expected_config_revision,
+            expected_state_revision, resulting_lifecycle,
+            resulting_lifecycle_revision, resulting_state_schema,
+            resulting_state_revision, actor, reason
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                  'active', $11, $12, $13, $14, $15)
+        "#,
+    )
+    .bind(command.operation_id)
+    .bind(command.action.as_str())
+    .bind(command_sha256)
+    .bind(command.instance_id)
+    .bind(prepared.candidate.release_id)
+    .bind(prepared.target_release.manifest.release_id)
+    .bind(prepared.predecessor_snapshot_id)
+    .bind(
+        i64::try_from(command.expected_lifecycle_revision)
+            .map_err(|_| ModuleError::InvalidInput)?,
+    )
+    .bind(i64::try_from(command.expected_config_revision).map_err(|_| ModuleError::InvalidInput)?)
+    .bind(i64::try_from(command.expected_state_revision).map_err(|_| ModuleError::InvalidInput)?)
+    .bind(resulting_lifecycle_revision)
+    .bind(&prepared.target_state_schema)
+    .bind(resulting_state_revision)
+    .bind(&command.actor)
+    .bind(&command.reason)
+    .execute(&mut *transaction)
+    .await
+    .map_err(reviewed_command_database_error)?;
+    transaction.commit().await.map_err(database_error)?;
+    ReviewedOperationReplayRow {
+        action: command.action.as_str().into(),
+        command_sha256: command_sha256.into(),
+        instance_id: command.instance_id,
+        previous_release_id: prepared.candidate.release_id,
+        release_id: prepared.target_release.manifest.release_id,
+        predecessor_snapshot_id: prepared.predecessor_snapshot_id,
+        resulting_lifecycle_revision,
+        resulting_state_schema: prepared.target_state_schema,
+        resulting_state_revision,
+    }
+    .receipt(command.operation_id, false)
+}
+
+async fn load_reviewed_operation_replay(
+    pool: &PgPool,
+    operation_id: Uuid,
+    action: &str,
+    command_sha256: &str,
+) -> Result<Option<ReviewedModuleReleaseReceipt>, ModuleError> {
+    let row = sqlx::query_as::<_, ReviewedOperationReplayRow>(
+        r#"
+        SELECT action, command_sha256, instance_id, previous_release_id,
+               release_id, predecessor_snapshot_id,
+               resulting_lifecycle_revision, resulting_state_schema,
+               resulting_state_revision
+        FROM server_module_reviewed_operations
+        WHERE operation_id = $1
+        "#,
+    )
+    .bind(operation_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(database_error)?;
+    reviewed_replay_receipt(row, operation_id, action, command_sha256)
+}
+
+async fn load_reviewed_operation_replay_tx(
+    transaction: &mut Transaction<'_, Postgres>,
+    operation_id: Uuid,
+    action: &str,
+    command_sha256: &str,
+) -> Result<Option<ReviewedModuleReleaseReceipt>, ModuleError> {
+    let row = sqlx::query_as::<_, ReviewedOperationReplayRow>(
+        r#"
+        SELECT action, command_sha256, instance_id, previous_release_id,
+               release_id, predecessor_snapshot_id,
+               resulting_lifecycle_revision, resulting_state_schema,
+               resulting_state_revision
+        FROM server_module_reviewed_operations
+        WHERE operation_id = $1
+        FOR SHARE
+        "#,
+    )
+    .bind(operation_id)
+    .fetch_optional(&mut **transaction)
+    .await
+    .map_err(database_error)?;
+    reviewed_replay_receipt(row, operation_id, action, command_sha256)
+}
+
+fn reviewed_replay_receipt(
+    row: Option<ReviewedOperationReplayRow>,
+    operation_id: Uuid,
+    action: &str,
+    command_sha256: &str,
+) -> Result<Option<ReviewedModuleReleaseReceipt>, ModuleError> {
+    match row {
+        Some(row) if row.action == action && row.command_sha256 == command_sha256 => {
+            Ok(Some(row.receipt(operation_id, true)?))
+        }
+        Some(_) => Err(ModuleError::Conflict),
+        None => Ok(None),
+    }
+}
+
+async fn ensure_reviewed_operation_id_available(
+    pool: &PgPool,
+    operation_id: Uuid,
+) -> Result<(), ModuleError> {
+    let collision: bool = sqlx::query_scalar(
+        r#"
+        SELECT EXISTS(
+            SELECT 1 FROM server_module_lifecycle_audit WHERE operation_id = $1
+            UNION ALL
+            SELECT 1 FROM server_module_data_audit WHERE operation_id = $1
+            UNION ALL
+            SELECT 1 FROM server_module_custom_operations WHERE operation_id = $1
+        )
+        "#,
+    )
+    .bind(operation_id)
+    .fetch_one(pool)
+    .await
+    .map_err(database_error)?;
+    if collision {
+        Err(ModuleError::Conflict)
+    } else {
+        Ok(())
+    }
+}
+
+async fn ensure_reviewed_operation_id_available_tx(
+    transaction: &mut Transaction<'_, Postgres>,
+    operation_id: Uuid,
+) -> Result<(), ModuleError> {
+    let collision: bool = sqlx::query_scalar(
+        r#"
+        SELECT EXISTS(
+            SELECT 1 FROM server_module_lifecycle_audit WHERE operation_id = $1
+            UNION ALL
+            SELECT 1 FROM server_module_data_audit WHERE operation_id = $1
+            UNION ALL
+            SELECT 1 FROM server_module_custom_operations WHERE operation_id = $1
+        )
+        "#,
+    )
+    .bind(operation_id)
+    .fetch_one(&mut **transaction)
+    .await
+    .map_err(database_error)?;
+    if collision {
+        Err(ModuleError::Conflict)
+    } else {
+        Ok(())
+    }
+}
+
+async fn terminalize_reviewed_outbox(
+    transaction: &mut Transaction<'_, Postgres>,
+    instance_id: Uuid,
+) -> Result<(), ModuleError> {
+    let affected = sqlx::query(
+        r#"
+        UPDATE server_module_outbox
+        SET status = 'dead_letter', lease_id = NULL, lease_expires_at = NULL,
+            last_error_code = 'admission_replaced', delivered_at = NULL,
+            dead_lettered_at = clock_timestamp(), updated_at = clock_timestamp()
+        WHERE instance_id = $1 AND status NOT IN ('delivered', 'dead_letter')
+        "#,
+    )
+    .bind(instance_id)
+    .execute(&mut **transaction)
+    .await
+    .map_err(database_error)?
+    .rows_affected();
+    if affected > 0 {
+        sqlx::query(
+            r#"
+            UPDATE server_module_instances
+            SET observation_gap_count = observation_gap_count
+                    + LEAST($2, 9223372036854775807 - observation_gap_count),
+                last_observation_gap_reason = 'admission_replaced',
+                last_observation_gap_at = clock_timestamp(),
+                updated_at = clock_timestamp()
+            WHERE instance_id = $1
+            "#,
+        )
+        .bind(instance_id)
+        .bind(i64::try_from(affected).unwrap_or(i64::MAX))
+        .execute(&mut **transaction)
+        .await
+        .map_err(database_error)?;
+    }
+    Ok(())
+}
+
+async fn packaged_release_database_exact(
+    pool: &PgPool,
+    release: &ReviewedRelease,
+) -> Result<bool, ModuleError> {
+    let release_bytes = canonical_json(&release.release).map_err(contract_failure)?;
+    let provenance_bytes = canonical_json(&release.provenance).map_err(contract_failure)?;
+    sqlx::query_scalar(
+        r#"
+        SELECT EXISTS(
+            SELECT 1 FROM server_module_releases
+            WHERE release_id = $1 AND module_id = $2 AND version = $3
+              AND signed_release = $4 AND release_sha256 = $5
+              AND signed_provenance = $6 AND provenance_sha256 = $7
+              AND provenance_class = 'first_party_reviewed_fixture'
+              AND review_id = $8 AND component_sha256 = $9
+              AND wit_package = $10 AND wit_world = $11 AND wit_major = $12
+              AND wit_sha256 = $13 AND requested_capabilities = $14
+              AND subscribed_hooks = $15 AND frame_bytes = $16
+              AND memory_bytes = $17 AND fuel = $18 AND execution_ms = $19
+              AND config_schema = $20 AND state_schema = $21
+              AND publisher_id = $22 AND release_format = $23
+              AND artifact_custody = 'packaged_reviewed_fixture'
+              AND component_bytes IS NULL AND provenance_server_id IS NULL
+        )
+        "#,
+    )
+    .bind(release.manifest.release_id)
+    .bind(&release.manifest.module_id)
+    .bind(&release.manifest.version)
+    .bind(release_bytes)
+    .bind(release.release.payload_sha256().map_err(contract_failure)?)
+    .bind(provenance_bytes)
+    .bind(
+        release
+            .provenance
+            .payload_sha256()
+            .map_err(contract_failure)?,
+    )
+    .bind(release.provenance_statement.review_id)
+    .bind(&release.manifest.component_sha256)
+    .bind(&release.manifest.wit.package)
+    .bind(&release.manifest.wit.world)
+    .bind(i32::from(release.manifest.wit.major))
+    .bind(&release.manifest.wit.sha256)
+    .bind(vec![Capability::ModerationAddLabel.to_string()])
+    .bind(vec![HookKind::PersonaReported.to_string()])
+    .bind(i32::try_from(release.manifest.budgets.frame_bytes).map_err(|_| ModuleError::Internal)?)
+    .bind(i32::try_from(release.manifest.budgets.memory_bytes).map_err(|_| ModuleError::Internal)?)
+    .bind(i64::try_from(release.manifest.budgets.fuel).map_err(|_| ModuleError::Internal)?)
+    .bind(i32::try_from(release.manifest.budgets.execution_ms).map_err(|_| ModuleError::Internal)?)
+    .bind(&release.manifest.config_schema)
+    .bind(&release.manifest.state_schema)
+    .bind(&release.manifest.publisher_id)
+    .bind(&release.manifest.format)
+    .fetch_one(pool)
+    .await
+    .map_err(database_error)
+}
+
+async fn packaged_release_database_exact_tx(
+    transaction: &mut Transaction<'_, Postgres>,
+    release: &ReviewedRelease,
+) -> Result<bool, ModuleError> {
+    let release_bytes = canonical_json(&release.release).map_err(contract_failure)?;
+    let provenance_bytes = canonical_json(&release.provenance).map_err(contract_failure)?;
+    sqlx::query_scalar(
+        r#"
+        SELECT EXISTS(
+            SELECT 1 FROM server_module_releases
+            WHERE release_id = $1 AND module_id = $2 AND version = $3
+              AND signed_release = $4 AND release_sha256 = $5
+              AND signed_provenance = $6 AND provenance_sha256 = $7
+              AND provenance_class = 'first_party_reviewed_fixture'
+              AND review_id = $8 AND component_sha256 = $9
+              AND wit_package = $10 AND wit_world = $11 AND wit_major = $12
+              AND wit_sha256 = $13 AND requested_capabilities = $14
+              AND subscribed_hooks = $15 AND frame_bytes = $16
+              AND memory_bytes = $17 AND fuel = $18 AND execution_ms = $19
+              AND config_schema = $20 AND state_schema = $21
+              AND publisher_id = $22 AND release_format = $23
+              AND artifact_custody = 'packaged_reviewed_fixture'
+              AND component_bytes IS NULL AND provenance_server_id IS NULL
+        )
+        "#,
+    )
+    .bind(release.manifest.release_id)
+    .bind(&release.manifest.module_id)
+    .bind(&release.manifest.version)
+    .bind(release_bytes)
+    .bind(release.release.payload_sha256().map_err(contract_failure)?)
+    .bind(provenance_bytes)
+    .bind(
+        release
+            .provenance
+            .payload_sha256()
+            .map_err(contract_failure)?,
+    )
+    .bind(release.provenance_statement.review_id)
+    .bind(&release.manifest.component_sha256)
+    .bind(&release.manifest.wit.package)
+    .bind(&release.manifest.wit.world)
+    .bind(i32::from(release.manifest.wit.major))
+    .bind(&release.manifest.wit.sha256)
+    .bind(vec![Capability::ModerationAddLabel.to_string()])
+    .bind(vec![HookKind::PersonaReported.to_string()])
+    .bind(i32::try_from(release.manifest.budgets.frame_bytes).map_err(|_| ModuleError::Internal)?)
+    .bind(i32::try_from(release.manifest.budgets.memory_bytes).map_err(|_| ModuleError::Internal)?)
+    .bind(i64::try_from(release.manifest.budgets.fuel).map_err(|_| ModuleError::Internal)?)
+    .bind(i32::try_from(release.manifest.budgets.execution_ms).map_err(|_| ModuleError::Internal)?)
+    .bind(&release.manifest.config_schema)
+    .bind(&release.manifest.state_schema)
+    .bind(&release.manifest.publisher_id)
+    .bind(&release.manifest.format)
+    .fetch_one(&mut **transaction)
+    .await
+    .map_err(database_error)
+}
+
 /// Operator-selectable lifecycle actions that never install or grant code.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -2166,22 +3346,34 @@ async fn mutate_state(
         return Ok(receipt);
     }
     let mut transaction = pool.begin().await.map_err(database_error)?;
-    let (lifecycle, revision, entries, byte_size): (String, i64, Json<Value>, i32) =
-        sqlx::query_as(
-            r#"
-            SELECT i.lifecycle, n.revision, n.entries, n.byte_size
+    let (
+        lifecycle,
+        revision,
+        entries,
+        byte_size,
+        instance_schema,
+        namespace_schema,
+        release_schema,
+    ): (String, i64, Json<Value>, i32, String, String, String) = sqlx::query_as(
+        r#"
+            SELECT i.lifecycle, n.revision, n.entries, n.byte_size,
+                   i.state_schema, n.state_schema, r.state_schema
             FROM server_module_instances AS i
             JOIN server_module_state_namespaces AS n ON n.instance_id = i.instance_id
+            JOIN server_module_releases AS r ON r.release_id = i.release_id
             WHERE i.instance_id = $1
-            FOR UPDATE OF i, n
+            FOR UPDATE OF i, n, r
             "#,
-        )
-        .bind(BUILTIN_INSTANCE_ID)
-        .fetch_one(&mut *transaction)
-        .await
-        .map_err(database_error)?;
+    )
+    .bind(BUILTIN_INSTANCE_ID)
+    .fetch_one(&mut *transaction)
+    .await
+    .map_err(database_error)?;
     ensure_data_mutable(&mut transaction, lifecycle.as_str()).await?;
     if revision != context.expected_revision {
+        return Err(ModuleError::Conflict);
+    }
+    if instance_schema != namespace_schema || instance_schema != release_schema {
         return Err(ModuleError::Conflict);
     }
     let mut state = json_object_to_string_map(&entries.0)?;
@@ -2195,11 +3387,12 @@ async fn mutate_state(
             INSERT INTO server_module_state_snapshots (
                 snapshot_id, instance_id, source_schema, source_revision,
                 entries, byte_size, reason
-            ) VALUES ($1, $2, 'ignibyte.sentinel.state/v1', $3, $4, $5, $6)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
             "#,
         )
         .bind(snapshot_id)
         .bind(BUILTIN_INSTANCE_ID)
+        .bind(instance_schema)
         .bind(revision)
         .bind(entries)
         .bind(byte_size)
@@ -2265,13 +3458,20 @@ pub async fn rollback_state(
         return Ok(receipt);
     }
     let mut transaction = pool.begin().await.map_err(database_error)?;
-    let (lifecycle, revision): (String, i64) = sqlx::query_as(
+    let (lifecycle, revision, instance_schema, namespace_schema, release_schema): (
+        String,
+        i64,
+        String,
+        String,
+        String,
+    ) = sqlx::query_as(
         r#"
-        SELECT i.lifecycle, n.revision
+        SELECT i.lifecycle, n.revision, i.state_schema, n.state_schema, r.state_schema
         FROM server_module_instances AS i
         JOIN server_module_state_namespaces AS n ON n.instance_id = i.instance_id
+        JOIN server_module_releases AS r ON r.release_id = i.release_id
         WHERE i.instance_id = $1
-        FOR UPDATE OF i, n
+        FOR UPDATE OF i, n, r
         "#,
     )
     .bind(BUILTIN_INSTANCE_ID)
@@ -2282,9 +3482,12 @@ pub async fn rollback_state(
     if revision != expected_revision {
         return Err(ModuleError::Conflict);
     }
-    let entries: Json<Value> = sqlx::query_scalar(
+    if instance_schema != namespace_schema || instance_schema != release_schema {
+        return Err(ModuleError::Conflict);
+    }
+    let (snapshot_schema, entries): (String, Json<Value>) = sqlx::query_as(
         r#"
-        SELECT entries
+        SELECT source_schema, entries
         FROM server_module_state_snapshots
         WHERE snapshot_id = $1 AND instance_id = $2
         FOR SHARE
@@ -2296,6 +3499,9 @@ pub async fn rollback_state(
     .await
     .map_err(database_error)?
     .ok_or(ModuleError::Denied)?;
+    if snapshot_schema != instance_schema {
+        return Err(ModuleError::Denied);
+    }
     let restored = json_object_to_string_map(&entries.0)?;
     let restored_value = string_map_json(&restored)?;
     let next_revision = revision.checked_add(1).ok_or(ModuleError::Internal)?;
@@ -2810,6 +4016,18 @@ fn decode_signed_payload<T: for<'de> Deserialize<'de>>(
     serde_json::from_slice(&bytes).map_err(|_| ModuleError::InvalidInput)
 }
 
+#[cfg_attr(test, allow(dead_code))]
+fn decode_module_secret(value: &str) -> Result<[u8; 32], ModuleError> {
+    let bytes = URL_SAFE_NO_PAD
+        .decode(value)
+        .map_err(|_| ModuleError::InvalidConfig)?;
+    let secret: [u8; 32] = bytes.try_into().map_err(|_| ModuleError::InvalidConfig)?;
+    if URL_SAFE_NO_PAD.encode(secret) != value {
+        return Err(ModuleError::InvalidConfig);
+    }
+    Ok(secret)
+}
+
 fn contract_failure(error: impl std::fmt::Display) -> ModuleError {
     error!(error = %error, "server module contract failed");
     ModuleError::InvalidInput
@@ -2818,4 +4036,15 @@ fn contract_failure(error: impl std::fmt::Display) -> ModuleError {
 fn database_error(error: sqlx::Error) -> ModuleError {
     error!(error = %error, "server module database operation failed");
     ModuleError::Internal
+}
+
+fn reviewed_command_database_error(error: sqlx::Error) -> ModuleError {
+    if error
+        .as_database_error()
+        .and_then(sqlx::error::DatabaseError::code)
+        .is_some_and(|code| code == "23505")
+    {
+        return ModuleError::Conflict;
+    }
+    database_error(error)
 }

@@ -12,6 +12,7 @@ fn main() {
     let output = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo must set OUT_DIR"));
     for name in [
         "valid",
+        "valid-v2",
         "noop",
         "unauthorized",
         "trap",

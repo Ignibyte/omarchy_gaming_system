@@ -52,8 +52,12 @@ pub const RESPONSE_FORMAT: &str = "omarchygs.server-module-response/v1";
 pub const BUILTIN_MODULE_ID: &str = "ignibyte.sentinel";
 /// Stable reviewed release identity.
 pub const BUILTIN_RELEASE_ID: Uuid = Uuid::from_u128(0x10000000000040008000000000000001);
+/// Stable compatible successor release identity.
+pub const BUILTIN_SUCCESSOR_RELEASE_ID: Uuid = Uuid::from_u128(0x10000000000040008000000000000002);
 /// Stable reviewed-fixture provenance identity.
 pub const BUILTIN_REVIEW_ID: Uuid = Uuid::from_u128(0x11000000000040008000000000000001);
+/// Stable compatible successor review identity.
+pub const BUILTIN_SUCCESSOR_REVIEW_ID: Uuid = Uuid::from_u128(0x11000000000040008000000000000002);
 /// Numeric moderation label admitted by the first production slice.
 pub const PRIORITY_REVIEW_LABEL: u64 = 7;
 
@@ -174,6 +178,65 @@ impl FixtureKind {
         }
     }
 }
+
+/// One immutable release in the bounded first-party packaged catalog.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PackagedReviewedRelease {
+    /// Release 1.0.0 and the only automatic initial selection.
+    Initial,
+    /// Compatible release 1.1.0 selected only by an administrator command.
+    Successor,
+}
+
+impl PackagedReviewedRelease {
+    /// Exact immutable release identity.
+    #[must_use]
+    pub const fn release_id(self) -> Uuid {
+        match self {
+            Self::Initial => BUILTIN_RELEASE_ID,
+            Self::Successor => BUILTIN_SUCCESSOR_RELEASE_ID,
+        }
+    }
+
+    const fn review_id(self) -> Uuid {
+        match self {
+            Self::Initial => BUILTIN_REVIEW_ID,
+            Self::Successor => BUILTIN_SUCCESSOR_REVIEW_ID,
+        }
+    }
+
+    const fn version(self) -> &'static str {
+        match self {
+            Self::Initial => "1.0.0",
+            Self::Successor => "1.1.0",
+        }
+    }
+
+    const fn state_schema(self) -> &'static str {
+        match self {
+            Self::Initial => "ignibyte.sentinel.state/v1",
+            Self::Successor => "ignibyte.sentinel.state/v2",
+        }
+    }
+
+    /// Immutable component bytes embedded in the reviewed package.
+    #[must_use]
+    pub fn component_bytes(self) -> &'static [u8] {
+        match self {
+            Self::Initial => FixtureKind::Valid.component_bytes(),
+            Self::Successor => {
+                include_bytes!(concat!(env!("OUT_DIR"), "/valid-v2.component.wasm"))
+            }
+        }
+    }
+}
+
+/// Exact bounded order of packaged reviewed releases.
+pub const PACKAGED_REVIEWED_CATALOG: [PackagedReviewedRelease; 2] = [
+    PackagedReviewedRelease::Initial,
+    PackagedReviewedRelease::Successor,
+];
 
 /// Strict domain-separated signed canonical JSON.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -776,24 +839,71 @@ pub struct VerifiedRequest {
 
 /// Return the exact compiled production release and review statements.
 pub fn reviewed_release() -> Result<ReviewedRelease, ModuleRuntimeError> {
-    reviewed_release_for(FixtureKind::Valid)
+    packaged_reviewed_release(PackagedReviewedRelease::Initial)
+}
+
+/// Return one exact release from the bounded first-party packaged catalog.
+pub fn packaged_reviewed_release(
+    selected: PackagedReviewedRelease,
+) -> Result<ReviewedRelease, ModuleRuntimeError> {
+    build_reviewed_release(
+        selected.release_id(),
+        selected.review_id(),
+        selected.version(),
+        selected.state_schema(),
+        selected.component_bytes(),
+    )
+}
+
+/// Resolve an exact packaged reviewed release without substituting another version.
+pub fn packaged_reviewed_release_by_id(
+    release_id: Uuid,
+) -> Result<Option<ReviewedRelease>, ModuleRuntimeError> {
+    let selected = PACKAGED_REVIEWED_CATALOG
+        .into_iter()
+        .find(|selected| selected.release_id() == release_id);
+    selected.map(packaged_reviewed_release).transpose()
+}
+
+/// Materialize the complete bounded packaged catalog in stable order.
+pub fn packaged_reviewed_releases() -> Result<Vec<ReviewedRelease>, ModuleRuntimeError> {
+    PACKAGED_REVIEWED_CATALOG
+        .into_iter()
+        .map(packaged_reviewed_release)
+        .collect()
 }
 
 /// Return a fixed conformance release for one compiled-in fixture.
 pub fn reviewed_release_for(kind: FixtureKind) -> Result<ReviewedRelease, ModuleRuntimeError> {
+    build_reviewed_release(
+        BUILTIN_RELEASE_ID,
+        BUILTIN_REVIEW_ID,
+        "1.0.0",
+        "ignibyte.sentinel.state/v1",
+        kind.component_bytes(),
+    )
+}
+
+fn build_reviewed_release(
+    release_id: Uuid,
+    review_id: Uuid,
+    version: &str,
+    state_schema: &str,
+    component_bytes: &[u8],
+) -> Result<ReviewedRelease, ModuleRuntimeError> {
     let manifest = ModuleReleaseManifest {
         format: RELEASE_FORMAT.into(),
         module_id: BUILTIN_MODULE_ID.into(),
         publisher_id: "ignibyte".into(),
-        release_id: BUILTIN_RELEASE_ID,
-        version: "1.0.0".into(),
-        component_sha256: sha256_hex(kind.component_bytes()),
+        release_id,
+        version: version.into(),
+        component_sha256: sha256_hex(component_bytes),
         wit: exact_wit(),
         requested_capabilities: vec![Capability::ModerationAddLabel],
         subscribed_hooks: vec![HookKind::PersonaReported],
         budgets: default_budgets(),
         config_schema: "ignibyte.sentinel.config/v1".into(),
-        state_schema: "ignibyte.sentinel.state/v1".into(),
+        state_schema: state_schema.into(),
         entrypoint: "handle".into(),
     };
     manifest.validate()?;
@@ -802,7 +912,7 @@ pub fn reviewed_release_for(kind: FixtureKind) -> Result<ReviewedRelease, Module
     let provenance_statement = ModuleProvenance {
         format: PROVENANCE_FORMAT.into(),
         release_manifest_sha256: release.payload_sha256()?,
-        review_id: Some(BUILTIN_REVIEW_ID),
+        review_id: Some(review_id),
         class: "first_party_reviewed_fixture".into(),
         server_id: None,
     };
@@ -822,7 +932,7 @@ pub fn reviewed_release_for(kind: FixtureKind) -> Result<ReviewedRelease, Module
         publisher_public_key: publisher.verifying_key(),
         provenance_key_id: REVIEW_KEY_ID.into(),
         provenance_public_key: reviewer.verifying_key(),
-        component_bytes: kind.component_bytes().to_vec(),
+        component_bytes: component_bytes.to_vec(),
     })
 }
 

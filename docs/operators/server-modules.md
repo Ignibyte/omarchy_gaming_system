@@ -1,8 +1,14 @@
 # Production server-module runbook
 
-OmarchyGS ships one disabled-by-default, reviewed first-party server module:
-`ignibyte.sentinel` release `10000000-0000-4000-8000-000000000001`. It also
-supports up to eight explicitly admitted operator-custom module identities.
+OmarchyGS ships one disabled-by-default, reviewed first-party server module,
+`ignibyte.sentinel`, with this bounded packaged catalog:
+
+| Version | Release UUID | State schema | Selection |
+|---|---|---|---|
+| `1.0.0` | `10000000-0000-4000-8000-000000000001` | `ignibyte.sentinel.state/v1` | Initial only |
+| `1.1.0` | `10000000-0000-4000-8000-000000000002` | `ignibyte.sentinel.state/v2` | Explicit compatible upgrade |
+
+It also supports up to eight explicitly admitted operator-custom module identities.
 Every module observes only declared hooks and can return only typed proposals
 that core policy reauthorizes. The first hook observes a minimized persona
 report and the only capability is the core-owned `priority_review` label. A
@@ -29,18 +35,21 @@ export OGS_FIRST_PARTY_REPORT_MODULE=enabled
 
 The two runtime secrets are all-or-none. They enable the generic dispatcher
 for already-active custom modules; the optional selector additionally
-registers the packaged first-party fixture and must be exactly `enabled`.
-Padding, malformed/wrong-length secrets, partial configuration, a missing
-sibling host, failed signature/digest/WIT binding, or failed containment
-readiness stops the applicable operation. The admission seed signs
+registers both packaged first-party releases, preserves `1.0.0` as a new
+instance's selection, and must be exactly `enabled`. Startup never upgrades an
+existing instance automatically. Padding, malformed/wrong-length secrets, or
+partial configuration reject server configuration. A missing sibling host,
+missing selected packaged release, or failed containment readiness stops only
+the optional module worker while core HTTP service continues. The admission seed signs
 server-specific exact grants. The pairwise secret derives module-scoped persona
 subjects and must not be reused for another purpose. Neither secret is stored
 in PostgreSQL or a database dump.
 
-With both secrets absent, the server still records a bounded
-`runtime_unconfigured` observation gap for active custom subscriptions but
-runs no module worker or host. This preserves core availability without
-silently claiming that custom behavior executed.
+With both secrets absent—or when the configured worker cannot reproduce the
+exact selected packaged release—the server records a bounded
+`runtime_unconfigured` observation gap for active subscriptions but runs no
+module worker or host. This preserves core availability without silently
+claiming that executable behavior ran.
 
 ## Install an operator-custom release
 
@@ -106,6 +115,77 @@ data revisions, restore state, aggregate queue/receipt counts, saturating
 observation-gap count/reason/time, and the count of upgrade-era receipts that
 predate complete request evidence. It excludes signed bodies, event payloads,
 state values, database configuration, and secrets.
+
+### Packaged reviewed upgrade and rollback
+
+Install the catalog-aware server, administrator, and sibling host from one
+package. Start it once with `OGS_FIRST_PARTY_REPORT_MODULE=enabled` so both
+immutable catalog rows are registered; inventory must still show release
+`10000000-0000-4000-8000-000000000001`. To select the compatible successor,
+create a mode-0600 local command containing the current inventory revisions and
+a complete bounded replacement namespace:
+
+```json
+{
+  "format": "omarchygs.packaged-reviewed-module-lifecycle-command/v1",
+  "operation_id": "33333333-3333-4333-8333-333333333333",
+  "instance_id": "12000000-0000-4000-8000-000000000001",
+  "action": "upgrade",
+  "expected_lifecycle_revision": 2,
+  "expected_config_revision": 1,
+  "expected_state_revision": 0,
+  "target_release_id": "10000000-0000-4000-8000-000000000002",
+  "candidate_state": {
+    "schema": "v2"
+  },
+  "actor": "local-sysop",
+  "reason": "Select reviewed Sentinel 1.1.0 after package review"
+}
+```
+
+```bash
+DATABASE_URL="$DATABASE_URL" \
+  omarchygs-admin reviewed-module-apply /absolute/path/reviewed-upgrade.json
+```
+
+Upgrade accepts only the fixed `1.0.0 → 1.1.0` edge. It requires matching
+lifecycle, configuration, and state revisions, validates the entire candidate
+namespace under `state/v2`, runs a fresh contained readiness probe, and then
+atomically swaps release, state, and admission. All nondelivered old-admission
+work becomes a visible `admission_replaced` dead letter and increments aggregate
+gap evidence. Reusing the operation UUID returns the same receipt only for the
+identical complete command.
+
+Rollback omits `target_release_id` and `candidate_state` and uses the revisions
+returned by inventory after upgrade:
+
+```json
+{
+  "format": "omarchygs.packaged-reviewed-module-lifecycle-command/v1",
+  "operation_id": "44444444-4444-4444-8444-444444444444",
+  "instance_id": "12000000-0000-4000-8000-000000000001",
+  "action": "rollback",
+  "expected_lifecycle_revision": 3,
+  "expected_config_revision": 1,
+  "expected_state_revision": 1,
+  "actor": "local-sysop",
+  "reason": "Restore the immediate reviewed predecessor"
+}
+```
+
+Rollback restores only the retained release-`1.0.0` namespace snapshot as a
+new monotonic revision, publishes a fresh exact admission, and consumes the
+predecessor pointers. A second rollback or arbitrary target is denied.
+
+Do not downgrade an upgraded database to a server package from before Ticket
+042; that binary does not know release `1.1.0`. A catalog-aware build never
+substitutes another release: if its package/host cannot reproduce the selected
+UUID, core remains available, observations record `runtime_unconfigured`, and
+the module stays unavailable. Restore the exact catalog-aware package, inspect
+inventory/audit/gaps, and repeat readiness. After database restore, run
+`module-restore`, review exact package/state/receipts, apply the existing
+reviewed `module-apply` recovery command, and start the configured server; only
+that startup publishes the fresh admission.
 
 Reviewed-fixture lifecycle commands keep their existing format. Custom module
 lifecycle commands use the same private-file custody rules as import and bind

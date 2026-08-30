@@ -1,22 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:24754427e95639a14f3776ec3b975f6b7165397fb47f591a146624e7d4f672ce",
+  "pageVersion": "sha256:4d5558327efbed29e12c65799615e32706547a6cd64e74c0fdd3328d3dde6c2e",
   "claims": [
     {
       "id": "claim_4f65db80bf0a4fd8b7bb50530ec91649",
-      "statement": "ADR-0004 is implemented for the opt-in reviewed Sentinel fixture and for up to eight database-local operator-custom module identities; both execute exact releases through the same dedicated no-WASI OS-contained host, while public administration remains absent.",
+      "statement": "ADR-0004 is implemented for a two-release opt-in packaged reviewed Sentinel catalog and up to eight database-local operator-custom module identities; both use the same exact no-WASI OS-contained host, while public administration remains absent.",
       "evidence": [
         {
-          "resource": "repo://docs/architecture/server-modules.md#L1-L24",
-          "version": "repo-lines-v1:sha256:1be63fde93d9abc5d90e70e57776e290384b412b7f7e088112a47c84cd15c8e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4MjJjMTM0MDU5ODFiNDdiMTE4ZWI0ZmRlODcyYTQxY2I0ZWFjZDUzODFiZTkxZTE1N2U0MTkzZTQzZGY4NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0MjZmOTJmMzFlMTQ0OThiMzkxZWNiNzlkZjc0ZTUwZjcwY2EzN2ZjMjQ4MzFjZWNkZDhkMDkxNGUzNDJmZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0MGJiMTVhZGIyNWQzYWMxMzEyY2MxNGY0MjkzODk0NzM0ZjAzMjhmYTdiZGMwZWJlNTU4MjY1ZjRiOWQ3NjEifQ"
+          "resource": "repo://crates/server-module-runtime/src/lib.rs#L182-L230",
+          "version": "repo-lines-v1:sha256:e01e4467795f1b2622c08ded85e14bc611440d9eb1919264b1be3f371503ea44:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1NDRjNDY1MTk4ZTU0MjAyOGY0ZTBkMTk4NmI2OTcyOThmMWNmYWYyMWFhYjA4OGEzZGNkN2M1Y2Y3NTI0MjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI0YTM2NWE5MGVjMTFlOTA0MzI3NTJjZjkzNzZlYzVlZDM2YjgwYmE1ZThlNjg1NGZjZjk4OTcwZDMwNDQ0NjkifQ"
         },
         {
-          "resource": "repo://crates/server/src/server_module_custom.rs#L32-L43",
-          "version": "repo-lines-v1:sha256:b7a68ede62286dcd5e8d4088b9bd842188fe79776d7ac47f8370f7210d892e8c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2MzA0Mzk4MTg1ZmQ3ZGZmZmRiN2JiYjUxNTkzNzc3YTAzZjk1Mjk0NDJhMzAzNTFjYTBhYjFkNjZkMDc0MTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NjMyN2RhMDBlMWY0ZjBiNjc5ZTQzOWFhMDIyN2I4ZmNmZGJjNjdmZGM0OWExNTZlNDI3ZWQyOThhMjFhNmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZhNjZjMjExMTI3N2Q0YjIzZGU4N2NkMDhiNTA2YTI2YjBmMDk3NGVmZmRhMjAyYjMzNWQ3ZTgwOTM0YmVjMzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUyNzM0MTZmNjE4M2UyNmZhNTgxZGNiYTIxODBmMTc0YTM5OGRkYTAzMjlkNGVlMmQwNmQ1NmM1ZTFkNzFhMjMifQ"
-        },
-        {
-          "resource": "repo://crates/server/src/server_modules.rs#L1-L19",
-          "version": "repo-lines-v1:sha256:f0eda260fc9c5c3b405c7cbe4b02ef31fd3a0ea51ccc3eddc07a3369ca043f1e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiYTJmMjM4OTZmZjkxM2YxMmFhOTQyN2M2ZmMxY2Q3YWUwNjUwMWU4OTEwMjA3ZDQzZjZkNWQ1MDFmYzhiNjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhMWQxYTYzMzkwMjI5Yzc5ODM0N2U4M2EwNDA1NDQxYzk0MDAwMzUyODRhZDE2OGMxYmY2Y2RmMWQ3MGEzNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1ZjM3NTExYWViYmE2MTEwN2QxNWM0ZWZmODkwODFjMDdkYmRmOTE4MDQyYzY5MDc2NTA4YWEzZGIxYjkyMWIifQ"
+          "resource": "repo://docs/architecture/server-modules.md#L1-L25",
+          "version": "repo-lines-v1:sha256:1dd40da9a39a49bdbb33107d88785494b5a2c7227d8ad7c09be4d8c39b9e2b3c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4MjJjMTM0MDU5ODFiNDdiMTE4ZWI0ZmRlODcyYTQxY2I0ZWFjZDUzODFiZTkxZTE1N2U0MTkzZTQzZGY4NDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0MjZmOTJmMzFlMTQ0OThiMzkxZWNiNzlkZjc0ZTUwZjcwY2EzN2ZjMjQ4MzFjZWNkZDhkMDkxNGUzNDJmZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0MGJiMTVhZGIyNWQzYWMxMzEyY2MxNGY0MjkzODk0NzM0ZjAzMjhmYTdiZGMwZWJlNTU4MjY1ZjRiOWQ3NjEifQ"
         }
       ]
     },
@@ -56,19 +52,19 @@
     },
     {
       "id": "claim_8955ea9d4cdb4a94ba81ca5fd6cd0565",
-      "statement": "Core-owned bounded compare-and-set namespaces support readiness-checked upgrade and one-step rollback, PostgreSQL backup retains custom component and trust evidence, and audited restore reconciliation disables every non-retired module pending explicit review and recovery.",
+      "statement": "Core-owned bounded compare-and-set namespaces support contained-readiness upgrades and one-step rollback for packaged reviewed and operator-custom modules, while audited restore reconciliation disables every non-retired module pending explicit review and recovery.",
       "evidence": [
         {
-          "resource": "repo://docs/architecture/server-modules.md#L162-L183",
-          "version": "repo-lines-v1:sha256:b7942ab19a742dfc6639bc4171db2504cf6c83e5e81d5df341483a98e4e53f45:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmZDFlODJkZTUyY2RlZTgyNjM3YWI3YjdlMWRjNWU2YWNkNDk4YWUwN2NmYjVmNGU3ZWE2NmUwNGQwOTQyM2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzM2EyNjczODQ2YzU5NTc0MTUyZTYyMGRlZTUyMzY4Mjg0MTlkNmZlMWEzNTlmNDNmMmFiNjYxZjkzNGRlZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZhOGNhYjM5NGE1NWQ4OGRhZWY2M2Y4MTg5MjZiNGE1NGU4NGE1ZjM1YTdiNDE2OGNmZjkwZmZiOWUyYzdiM2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI2MWMzYWM3YmY5N2I0MjRiZTZjMDE0ZDg3NzI1NjE0MzRmYjRlNDI1NTUwOGY2N2JmZjI4YzQyY2ZjNmI1YzIifQ"
+          "resource": "repo://crates/server/src/server_modules.rs#L2158-L2303",
+          "version": "repo-lines-v1:sha256:a06f216d5bff93705fead5382d2f32f54c4df22c05380feb7f7292997a6daacd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiZTJjZDdmMDZhNjc4N2RhMTVjMDcyY2FlMWVjNjgyODdiZGNkNDE1ZjNlMmRhMDBkYzg2YmMzYjkzNWIxYjAzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJjYmNlMjA5ODBjNGVlMGQ1NjZmMzI1MTA2MTRiYzgwYTBmNDY2OWE2NTFjMTUxNzI2OTQ2MDJiMzFjYzE1NWZjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlMWIzYWY1ZmRhYjJlMDgwNzBkMWM3ODA4MmE2MzYyZjU4YWE5MDJhNmEzNGVlMzRjZWFiZTgyYTE4MGJmZDNjIn0"
         },
         {
-          "resource": "repo://docs/operators/server-modules.md#L164-L201",
-          "version": "repo-lines-v1:sha256:ee8fbeb3754e9ea56938151edb5686516016562c78ad531f46cca414d3d9295b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhZjI2OWMyMGNkY2FhODJmM2Q0NjhmNTkxZGE3ODliZTlkNGVmNjk1YjJjNmQ1MTQ1MTlmYmU0NDEwNjlkMWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjNWEwMmU1YjE5MmFkYjRlNjhjMDI1ZDZjMTkyZjM1NGJlMjI3NzgxMzliYzlmYWQ2MzM1OTMzMWFhNjE3YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgwNmJiZjAwNWJiNWU1NWM0YTJjY2RlMzIwZmIwMGIwOGFkOTNjZDliMmQ3Y2M3MGNmYmVmMjBlYjRkNjg5NDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjMmYzZjQwMDA3OWM0ZDJkYzY1OTBkZWQwMjNjMDc1ZDllZTM1NWY1NmI0MWZkNmY0MWYzNzc5NDY2ZGEzM2QifQ"
+          "resource": "repo://crates/server/src/server_modules.rs#L2305-L2372",
+          "version": "repo-lines-v1:sha256:2ba55a1eb6b2eb7c3e5f22ac3bc901d9e874ad582affa23d19d80fc23b1cb9e2:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1MDFkZDBhMGFjNzlhYjg4NDM3YmY4YzdmZGQzNjdmYjBmMGRhMDY2OTdmOWFiOTA5ZmViNzU0MGJkZWMyYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNjNjNGQxYWY4Y2Q4OWJiMGJkZDc2NTdmZmNiZjY4MDZhNjEwZDc5ZDZjOGQ0YzMwN2MyNDFkZjM5MDA1MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2MGZhNzZhZDI1YzBjMGRmMzVhNjJhZGI3NzYwZDQwM2JmMDFlZDcwMDNkZTFlMGY1YTVlMGViNzVlZGE1ZDIifQ"
         },
         {
-          "resource": "repo://crates/server/src/server_modules.rs#L1951-L2045",
-          "version": "repo-lines-v1:sha256:50a31aa497ea0da8e97b48160831f89b0d6fe5963cd3f5603fd2eb9eda61ec31:eyJzZWxlY3RlZExpbmVDb3VudCI6OTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1MTYyZDY2ZGI3ODViOWI1YjhmZGU1YTEzYjRmMDU4ZTM2YzM1ZTNkMmM4YzQ2NTA4ZjA4ZTIwZTMxYzMwNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4ZTk3Y2M4Yzg5YzczNmU3ZTMxYzJlMmVmMjI2MDI0YmQ5Y2Y0YjYyYTJlYTY5NmFmYjU5YTU3ODU3YTIzNTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzMDBlZTY3YTZjNzU1ZDYyM2Y4NjI0MmJhYjFmZjBkOTUwMTFiMDZmOTI1NTMwNmNhMjExOGE0YWZjOWYzY2EifQ"
+          "resource": "repo://docs/operators/server-modules.md#L151-L188",
+          "version": "repo-lines-v1:sha256:f618a05bb9c6394212bb945b684df434a732524957bf8f211fcc75276096e1fb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5NjkzMmEzMTMyMDczNWE2NThjNDA5ZjMzMTk5NjNkMTczZjM2ZjcxMjk4ODhhYWYzY2FjMGIwMTc1Y2QwZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0YjI5NmE2ZmFjODVjN2IzM2JmZDFlNzAxNjY0MDVlM2VmZmRjNWM3MjI2OTkyMmJkMTJhNmJhY2I0Y2RjNjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhMDU5YjY5MTM1MDY4OTFkYWYxODU3OGJkY2QwMDUxNDNjNGMxOTAxY2NkMDUwM2ZjNzBiNjIyYmM0YWU4MmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzM2NkMjg2MzFkZjQ5NmU0OWZlNGNhNjA0NTFkMmY4YmU1MjdiZGYzNWQ0NmIxZDY2N2Y2N2VlNDEzYTliODQifQ"
         }
       ]
     },
@@ -84,29 +80,29 @@
     },
     {
       "id": "claim_86eef4b8585c4cb292dddde5dbc4f293",
-      "statement": "The independent Ticket 039 architecture proof remains separate, while production conformance validates shared reviewed/custom contracts, real OS containment, packaged-host binding, private database custody, absence of public module routes and network/database host clients, and local-only automation.",
+      "statement": "The independent Ticket 039 architecture proof remains separate, while production conformance validates both packaged reviewed releases, shared reviewed/custom contracts, real OS containment, exact packaged-host binding, local-only administration, and absence of public module routes or client execution code.",
       "evidence": [
         {
           "resource": "repo://scripts/test-server-module-spike.sh",
           "version": "repo-file-v1:sha256:103038362abe42f374b01e0169c6c889372e046ecb87768fc49ac13c27208d42"
         },
         {
-          "resource": "repo://scripts/test-server-modules.sh#L1-L80",
-          "version": "repo-lines-v1:sha256:f57341a8a7d336c4e6dd3f3c541f6e0a3dfa291130f8dc6122d3ac88b4f72d23:eyJzZWxlY3RlZExpbmVDb3VudCI6ODAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxZDRiYzYxZGY4MjZkM2Y3MTI1NTA5YjAxZTBiYjc0N2EzZDMxNzAxZmJkODM2NTFhODEwODEzYzI4Yzc2M2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/test-server-modules.sh#L1-L107",
+          "version": "repo-lines-v1:sha256:904c2ee3574973542991ff5001a67b9ad138e5322a465c21381c98ca72ef6b06:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxZDk1ZmMwNGE4MGM5NTJmNDljZTQxODg2MjdjNTNiMGZiZThjNDQwNDFiOTUyZDU5MmFjZDFkZTk5ODYxNDY2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkMWQ0YmM2MWRmODI2ZDNmNzEyNTUwOWIwMWUwYmI3NDdhM2QzMTcwMWZiZDgzNjUxYTgxMDgxM2MyOGM3NjNiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
     {
       "id": "claim_3c06b9684cad463ea389dcb826d55f64",
-      "statement": "Ticket 040 implements the reviewed observation base, and Ticket 041 adds server-bound operator-custom import, exact lifecycle including one-step rollback and terminal removal, shared dispatch, restore review, aggregate player disclosure, and operator responsibility without adding hooks, egress, gameplay authority, or client code.",
+      "statement": "Ticket 040 implements reviewed observation, Ticket 041 adds bounded operator-custom custody and lifecycle, and Ticket 042 adds the compatible packaged reviewed successor plus explicit atomic upgrade and immediate rollback without expanding hooks, capabilities, egress, gameplay authority, public administration, or client code.",
       "evidence": [
         {
-          "resource": "repo://docs/architecture/server-modules.md#L242-L268",
-          "version": "repo-lines-v1:sha256:36c50537960673d0ddb0d2fc2a27604ff04882254006d7e442017e2ebd585b6e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1ODMxYzMyZjk4YzFhYWNjMThkZGNjNDI5NzVmNmI1ZTAzNjkyYjdmZWNmMGM5ODcyNjNhYzdjMjA4ODQ2MzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwYTM1ODQzODVjYmJmNDUzMWE3ZjlkMDM5OGFhYTM4YWYyNmU0NmYxZTNhNGRlZjNkYWY3NzU2ZmRhNDhlNWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0OTY2Y2Q3NmY1NGU5MTM1NzNhNmNlMjA1YjNmM2FiOWI3MDRhNzc1NGE4ZWM4NDRhZTI1YTJkZDM5NDk3NGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://docs/architecture/server-modules.md#L197-L243",
+          "version": "repo-lines-v1:sha256:e388bb2a1df4f7965466bdbdba8f408615844b1be225fbf4b97110258cd04a54:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5NGIzNzBiMTMzMDQ0NjUxZDI4ZmUyMTc3MWExYmY2OWRiYmM0MDBhYTY2NmM5YjQxYTY5ZjM2NWE0NTg1NzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5ZTM5NDU3MWYyNTEwMmU3OTNkYmFmYjRiMTBmNjgxZjJhMDRkY2JiZjBjZTcxNGNjNDJkYjg4YzNlNzg5MjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwMmVhNzU5N2MxNjM0MjBkODUzNGY0NDRiMWM5ZmZhZGM4ODRiOWRjMWVhNDU1NzExNWU1ZTk0Nzg1ZjYxNzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE4MzFkM2M3OWUzOTYxN2ZlNTdiZTFiMDgxZGUxMmRjNWNjNzdhN2MzZDY2MzliNzE2OTQ0NmUzMjA1NjBhZDYifQ"
         },
         {
-          "resource": "repo://docs/operators/server-modules.md#L203-L225",
-          "version": "repo-lines-v1:sha256:7e17264a4fe2b52ce375c6c6c1400f301dcfe9b0b5d6a944101ce9567f07d044:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2NWIwMDc1NjdmMTk1NzFlNDQ3M2FmOWU2Mjk2OWI0ZDc0OTE2MTBjNTU4MjIwOTBjOGY2ODhiNmEyNTgyZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiYzhhYTJhMDEyNzUzNmQ1N2FlODE4OWQ2NDczY2RhZTM4ODAyZGYwMzMwMzlhMTY2NmIzZjJlN2I3ZDU3YzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJkNGI3ODk5MTk0MDE0MDg0NTY0NzBlZGZlZTQ5ZDlkMWQxYWZmZTFmZTUwZjFhZTQxOWVjNWJlNmJmMDI3ZmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyMGMyNGUyNGFkZTMzZTVhNDc1NDEzZjZjZGIzOWRlZjg2ZjM3ZjA3ZmU1OWYwMzNjODUzNGMxNDA3ZDE3NmUifQ"
+          "resource": "repo://docs/operators/server-modules.md#L151-L188",
+          "version": "repo-lines-v1:sha256:f618a05bb9c6394212bb945b684df434a732524957bf8f211fcc75276096e1fb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5NjkzMmEzMTMyMDczNWE2NThjNDA5ZjMzMTk5NjNkMTczZjM2ZjcxMjk4ODhhYWYzY2FjMGIwMTc1Y2QwZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0YjI5NmE2ZmFjODVjN2IzM2JmZDFlNzAxNjY0MDVlM2VmZmRjNWM3MjI2OTkyMmJkMTJhNmJhY2I0Y2RjNjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhMDU5YjY5MTM1MDY4OTFkYWYxODU3OGJkY2QwMDUxNDNjNGMxOTAxY2NkMDUwM2ZjNzBiNjIyYmM0YWU4MmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzM2NkMjg2MzFkZjQ5NmU0OWZlNGNhNjA0NTFkMmY4YmU1MjdiZGYzNWQ0NmIxZDY2N2Y2N2VlNDEzYTliODQifQ"
         }
       ]
     },
@@ -126,41 +122,33 @@
     },
     {
       "id": "claim_f76652983531450bae41a0c6b49f655c",
-      "statement": "Database-local module import and lifecycle commands use bounded canonical descriptors and an openat2-based owner-private reader that rejects relative custom command paths, symlinked ancestors, final symlinks, hard links, non-0600 ownership or mode, oversize input, and metadata changes during reading.",
+      "statement": "Database-local module command files use bounded canonical decoding and an openat2-based owner-private reader that rejects symlink traversal, magic links, hard links, non-0600 ownership or mode, oversize input, and descriptor metadata changes during reading.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/bin/omarchygs-admin.rs#L303-L370",
-          "version": "repo-lines-v1:sha256:c406af426611d85710e11ec1f1b65e7b65e9abe66f0de854fbaf6d30e8cd4c2d:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkNDA1YTMxNWFlOGJmOTAyY2VkYzcyMmU2MjRmMjE3MTEzMmFhMzJhNTRmODZhNWMyYTA1ZDgxZmU5ODRhMjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhNTQ2YTJmYTQxYWM5OGQ2YTQ0ZTY2ZjczZmUwYzNlNTFhZWEyNDE5MDAwNjBmOTZjMzA2ODI5NTg5ZTA4ODUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNlMTA0ZTAyZjgyMWQ4YjhhNzhmMzFjNTY4NWYzZjFiNTJmZTNjZTliMDA4ZmU1M2Y3MzllYzZlZmZjY2I2ZjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjODYwMGMyYjNlZmZhMjdjOWQ3MDMyMGYwMTJhZDAzZWU1NzI2YTNlMzBiZGQ4YzE0MzE0YjM5NmYzYjc2NzIifQ"
+          "resource": "repo://crates/server/src/bin/omarchygs-admin.rs#L304-L385",
+          "version": "repo-lines-v1:sha256:91b3e71b6185f48068320d842813e6de4db4dc1f3e1e1e9bdc66a3de65f9c2f4:eyJzZWxlY3RlZExpbmVDb3VudCI6ODIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkNDA1YTMxNWFlOGJmOTAyY2VkYzcyMmU2MjRmMjE3MTEzMmFhMzJhNTRmODZhNWMyYTA1ZDgxZmU5ODRhMjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhNTQ2YTJmYTQxYWM5OGQ2YTQ0ZTY2ZjczZmUwYzNlNTFhZWEyNDE5MDAwNjBmOTZjMzA2ODI5NTg5ZTA4ODUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNlMTA0ZTAyZjgyMWQ4YjhhNzhmMzFjNTY4NWYzZjFiNTJmZTNjZTliMDA4ZmU1M2Y3MzllYzZlZmZjY2I2ZjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjODYwMGMyYjNlZmZhMjdjOWQ3MDMyMGYwMTJhZDAzZWU1NzI2YTNlMzBiZGQ4YzE0MzE0YjM5NmYzYjc2NzIifQ"
         },
         {
-          "resource": "repo://crates/server/src/server_module_custom.rs#L1450-L1507",
-          "version": "repo-lines-v1:sha256:7188179d9aa947e4717a486472437d3dc6e3a93c4a2e7b01b2d64e4bca276674:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiZmY1NmQzOGUxYTg1N2VlYjRiY2M0MGQzZDg2NjJmODA2ZDcwYzYzMGJiMDRlNGEyNWRiNjI4MjUyN2Q0MTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4OTc3MWZlMWI2NjI4ODc1YWEyM2U3ZGJlNGFhNzE0NjFkMDBjZGZiNjZkZGYxMWI5ZDgyMGFjNTg5N2ZkZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVlNjM0MGY2YjFiNTE5ZWZlOGVhNTg0MGU5ZmJiMmQ3YzMzOTBmMGJmYTEyNTZlM2VkYTA5ZGVlZDRmY2RjNmUifQ"
-        },
-        {
-          "resource": "repo://crates/server/src/server_module_custom.rs#L1840-L1879",
-          "version": "repo-lines-v1:sha256:966757307d03d17403e46a723f36d05442aee0a3be2a35dfe80a6a09d719e2cd:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5MDlhNTNhNjE4ZDAyOGUxZDMwMDBjMGE3YWJjZWVjYmU1ZmIzN2Y0ZTUxMWVmZTQ2NjQzZmFkNmU2Njg3MmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQyNzc1ZDFhYTg4ZjU5ZTg4ZmE4NDEwNTkyMDE1ZDZjZTZhNzg1NDQ1NjU4Yzk4M2Q0Mzg1YjRlMDhmOGQ0YmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2MTA3NjkxY2Y4Y2I0ZDgyZjExYTI2N2VmZjc1M2VjMTg2MGU0MjQ1NTY5ZTY0MjdkOThlZDAxNDkxYzg5YWUifQ"
+          "resource": "repo://crates/server/src/bin/omarchygs-admin.rs#L396-L460",
+          "version": "repo-lines-v1:sha256:949ab623ebcebef8a8686c9ccb213ecc9311774d9cb9da764e8bbcbee710b961:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1ZmY2MWU0N2RmODUxYjM0OTU2NTZiMzBhYmMxN2M4NDhjNzc5YjNjOWM4OWMxOWQ2MWU0YTkxODc5ZDA1MGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZjZmNDY2ZTU5Y2ZjMzA3MDNjNDVmNzJhZjY1ZGU1NGFjMzYzZDM1NGNjMWEzMzMwMzUwYWNkNDUyNDM0YzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_58932307be3a472a96a8f04abde3426c",
-      "statement": "The module runtime keys are all-or-none and start the generic dispatcher independently of the reviewed-fixture selector; without keys core still starts with a gap-recording unconfigured emitter, and inactive persisted module policy does not prevent core startup.",
+      "statement": "The module runtime keys are all-or-none and the reviewed selector is independent; an unavailable exact packaged release or host suppresses only the optional worker, keeps core HTTP available, and installs an unconfigured emitter that records bounded observation gaps.",
       "evidence": [
         {
-          "resource": "repo://crates/server/src/config.rs#L67-L117",
-          "version": "repo-lines-v1:sha256:34e1ce5abb72f3399ef6a7d1b07887b07c4c570ffba05c4645971b96cd6f0578:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjMTFiZDQ1YzIxNzM5NzFhOTdhMGMzMDIzMjc4MDllZmNiZDA1OTk5MzA0YTdlOWVhODE4NmYwNzE3N2Y5MDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjY2NmMDdlODU4ODFlM2VjODBhOGFiNzc0ODQ4YzBmODc4NmViZmVhYzIxY2UxNDllMWI0NWUzODQxYzAxZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3NzA2MGNjOWY1Y2VlYzRiM2M1MzEyOTQ5MTAyMmM0MjZkNzI1ZDE3NjM2MjIxYTdlYzBjYmJiMDc3NDVjM2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzZTkxMDE2N2E3ZTY0NTZiNjIxYTBjNTVmOGRmMDc1ZGRiYWZmN2VmYTU4ZTllYjU1ZjAzNDhlZDNjZDQ0YTAifQ"
+          "resource": "repo://crates/server/src/main.rs#L91-L105",
+          "version": "repo-lines-v1:sha256:7b675517c875af7480f2fb7a045b1f132c59302bae411e182724bc202886c59c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDhiMWFkMmYzYWQ2YjIyODFlNDBhYTRkZmU4ZTEyMmRhN2MxY2RlOTNkNzIyYzA5YWZkOWMwNmZjZThmMGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkOWUxMjU0NjQyNTU3NmQzZGVhZThjOWI5ZGJmMTI4ZDVkNmRkYWY1ZDdmZTg1NzkzNDkyN2RlZmZhM2I5ZGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdjYzc1ODY3YTJkMDU4Zjg4ZmNkMzljYWE3OWI5NjY5NDQyYjZkNjM0Y2M0MTIzYTYxZTIxZDFkZmRkMGMzNWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU0YmM1M2Y5YmI0NzU5YTM5NjQxZDExZDRjZDEyZDhjNGEyYzVhNDFlNTQxZTJjZWM0MjUwOTUyOTE3NGY1MzgifQ"
         },
         {
-          "resource": "repo://crates/server/src/main.rs#L91-L103",
-          "version": "repo-lines-v1:sha256:a7e457708df74fa543d4fd708b1a4e8562bf4c263b91342b26c2100a6c10cd69:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZDhiMWFkMmYzYWQ2YjIyODFlNDBhYTRkZmU4ZTEyMmRhN2MxY2RlOTNkNzIyYzA5YWZkOWMwNmZjZThmMGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3ZGQxNzM5ZDgxYTFlMDA3MmQ3MTdkNjBiODBiN2RmNWQ1ZTAxMmMxZGM4OGFkZWY0ODJmYmM2ZTcwNTMyY2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdjYzc1ODY3YTJkMDU4Zjg4ZmNkMzljYWE3OWI5NjY5NDQyYjZkNjM0Y2M0MTIzYTYxZTIxZDFkZmRkMGMzNWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZhZWZhMTU1NWI3MDc1ODYyYTU5NGRhNzU0ZWNlYWRmMDRkNTA3MTNlMzA3NzRjZjAyYmI4ZTlhOWViMzM0ZWYifQ"
+          "resource": "repo://crates/server/src/main.rs#L149-L161",
+          "version": "repo-lines-v1:sha256:a85b8ce8bc172a014d520d0e643650d73f0e91180cc2220fe18460d943afa2e6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjMWIwOTFkZTM1NWZiOTk5ZDAwNTZmOTExYmI3NjMwZWYwODMwZDNiYTQ1ODgyNDQ2MGVlNDZiYzgzNjc0ODYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU3N2M2NTQ2ZDI3Y2U3MTJiOTVkNjM1YjJlM2NmYmRiOGM0NTNhOTIwNTdhNmUxODRhYTliOGIxZjFmNWVkMDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhMDZmNWU5ZTZlZWY5ODg1ZDQwNDVlOTM2Y2Y2ZjlkODg2ODA3YmYwNmVkZTk0MjdlNTZkYjljOWY2ODA0NzkifQ"
         },
         {
-          "resource": "repo://crates/server/src/main.rs#L144-L156",
-          "version": "repo-lines-v1:sha256:73eaa8e10baf7ac9224b211ec6dc9ac5ac293b9ad1d1ce85d19e8bfe82d4e011:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjMWIwOTFkZTM1NWZiOTk5ZDAwNTZmOTExYmI3NjMwZWYwODMwZDNiYTQ1ODgyNDQ2MGVlNDZiYzgzNjc0ODYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU3N2M2NTQ2ZDI3Y2U3MTJiOTVkNjM1YjJlM2NmYmRiOGM0NTNhOTIwNTdhNmUxODRhYTliOGIxZjFmNWVkMDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhMDZmNWU5ZTZlZWY5ODg1ZDQwNDVlOTM2Y2Y2ZjlkODg2ODA3YmYwNmVkZTk0MjdlNTZkYjljOWY2ODA0NzkifQ"
-        },
-        {
-          "resource": "repo://docs/operators/server-modules.md#L30-L43",
-          "version": "repo-lines-v1:sha256:07560eade5dc06e39f6d06b56518594b07d3cd461ac5b40f46a3bbe3b4d5023a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxNmY0Y2MxMzc0NzIyY2ZjMmNhNTU2YTI5M2E0OGE3YzBmYzUyMzU5NzhhYjY0Y2NlOGM0ZDdlMmZjZmJhNmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhMzc5MTNiYmRiNjRlNjFkMGMzNDc5Y2U2MTZhNjY4MzM2ODk3Y2I2YTJmZDJlMWE5YTExNzdlY2MyMDQwOWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhYzU0YzhkZTMyOTc0ZDI0M2EzZTkzNjc3ZDRlZTJjNmVmMDRmMjU5ZDcyN2ZmYWE2NzUwMWZhZjhmOTA0NTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjZmZlNDU3NmVmMTg0MDMxNmI1NDRkZWYxMTUxOTRiM2NhZWNiNzYwYzUyNWM1MDE3MzU5NDRhMTA3NDE1NzkifQ"
+          "resource": "repo://docs/operators/server-modules.md#L36-L52",
+          "version": "repo-lines-v1:sha256:2f33bcdd095cea902d6ac8b90e985b23a920f3d51ef1974a19386d434051602b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxNmY0Y2MxMzc0NzIyY2ZjMmNhNTU2YTI5M2E0OGE3YzBmYzUyMzU5NzhhYjY0Y2NlOGM0ZDdlMmZjZmJhNmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmMjBmMWU1ZjNmODJjZTE5ODVjOTdkMDYwOTVlYmE1NTMzOGRmMTVmODVhMjYzZmIxYWUxY2Y2OGIzMDg3OWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhYzU0YzhkZTMyOTc0ZDI0M2EzZTkzNjc3ZDRlZTJjNmVmMDRmMjU5ZDcyN2ZmYWE2NzUwMWZhZjhmOTA0NTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjZmZlNDU3NmVmMTg0MDMxNmI1NDRkZWYxMTUxOTRiM2NhZWNiNzYwYzUyNWM1MDE3MzU5NDRhMTA3NDE1NzkifQ"
         }
       ]
     },
@@ -184,7 +172,7 @@
     },
     {
       "id": "claim_4b40df10a73c4fdfbad95d58152e8e10",
-      "statement": "Custom enable, disable, suspend, recover, upgrade, rollback, and remove require exact lifecycle/configuration/state revisions; upgrade atomically retains one predecessor snapshot, rollback consumes it once, and removal is terminal while evidence remains retained.",
+      "statement": "Custom enable, disable, suspend, recover, upgrade, rollback, and remove require exact lifecycle, configuration, and state revisions; upgrade retains one predecessor snapshot atomically, rollback consumes it once, and removal is terminal while evidence remains retained.",
       "evidence": [
         {
           "resource": "repo://crates/server/src/server_module_custom.rs#L93-L137",
@@ -195,8 +183,8 @@
           "version": "repo-lines-v1:sha256:7c1b28a87f79e372073a9de65fe6ade1f39b5ce1730923cbba4a41212a9d5b2b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiY2RlMjU5ZWY4MTQ5MTQwYmE2ZWFhMzllYTRjMTU4ZjdjY2E5ZjdlZGNjNmI0ZGNmMDA5MGQxNjcxMjljODYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxZjkzZjE0MjJhZTBhMDc3NTQ4NTczMTZlOWJmYTFlMzEwOWYyZDYwN2UwZGY5MmVmNzk3ZDQ1MzEwMDQzYzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVmZjNjNjM3MWNmMDA5MjM1NDAyNmI0ZGVhNTM1MWViNmRhZmI3NjZjMzg5Mzg3Y2ExZjk4M2FkMGE5NmE3ZTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRjNGJmNzljYThhYTkwMTg5NjAwZDA0ODEyOGEzOTkxMmFlYmNiYTVkNzU2YWRhM2UyMjAwZTBkMWUyOWE5NmMifQ"
         },
         {
-          "resource": "repo://docs/operators/server-modules.md#L96-L145",
-          "version": "repo-lines-v1:sha256:f7db18e88ad6484098bd88ddc3ae127245b4b1cb92020a7dc66da6e3a08f00e0:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4Y2I1YmMyMWU5NTNiYWIxMGM2MWFiNzFmZjZhNWIyYzhkODE1OWEzNGZlMGUxMDhlNmY1YTMwMzJmM2Q5OWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZjZjQzOWY2ZGM0ZjY3YjViNTkwYTJiNzYwZWM1NjI1OGEwY2ViNTRlMmQ2ODRjZmEzMWZjODBiNjkwMmI4ZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJlMDAxNDM2YWI4ZTQ0ODdjYTlkMjQxMGZmYjE1OWMwODY5NTE0ZGM3MDNjZDI5OWNlNjc4NTVkMTZlYTc0MmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYxODQyNWZiYTlmNTA4MWZhMmU4MDQ5YzM2MGM3ODIwODVjODM5NWI2ZWNiNzJhOTE5OGY0ZTE3ZjJjYjMyM2YifQ"
+          "resource": "repo://docs/operators/server-modules.md#L190-L224",
+          "version": "repo-lines-v1:sha256:03fef4d44e326fbdb38fdf67dcb856790d3a7b628097dceddaf4cd8a791af24b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2NTA2NTAxYTVkZWQzZjViYTU2MzY0ZDQzMDM0MzI4MDZjZDRiYWU0OWJmMjZjZDAxMWI5ZmIxMjMyNzVkNjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxNDdmZGVhN2MwNTcxYmVkNGJhZGVkMDM3OGQ0MGFhMzMxNWU5MzQyOTg4Mjc3YmNkZWEzMGYyMmE3NWQ1YTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJlZjc3OGM4NzQyZjdjZDZkNDlmYWEzMGViYjA5MGViZGQ0NTE4MjBlOTk4YzczMzEzMjIzODI3OTU1NzE2NzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5NDExNzI5MjY0OTU0Y2Q5MDVlMThjYjJiNTYyMDc3ODQxNTUyYmU3Y2ViMmMxM2JlNDNiZjhiYzhlMDlkZWUifQ"
         }
       ]
     },
@@ -221,10 +209,82 @@
           "version": "repo-lines-v1:sha256:2fc093a7c72cd8d0768708780df3527c8143f19e98934ced01809abeac4bf0e9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2ZjIxMDM2OTBkYWY1ZTgxMjc4Y2M5MmVhNDY3YjAzMDNlZDk4MzMzNDdmMmQ5OWFhMzlmMWY5ZDAzMjYyYTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhOWY4NmQyOGU3ODRmOWZkMzFmYjcyZDE1ZjYwY2JjZWFhZmRkNjY5Y2JkNWI2ZGE3ODg4YTAyMzMyMWViYjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5YzlkNDVlMjkzNjlhMTU1NzExNTg2OTc1YmExYTBiMzlmNTRhODY2NjcyM2I3YTEyNmI2N2UxNWU3NzU0ZDEifQ"
         }
       ]
+    },
+    {
+      "id": "claim_39fe9753845d4918bb0965bd4fa92da9",
+      "statement": "The packaged catalog fixes Sentinel 1.0.0 to state schema v1 and Sentinel 1.1.0 to state schema v2; startup registers and byte-compares both, selects 1.0.0 only for a new instance, and resolves an existing selection by exact release UUID without automatic upgrade.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server-module-runtime/src/lib.rs#L182-L230",
+          "version": "repo-lines-v1:sha256:e01e4467795f1b2622c08ded85e14bc611440d9eb1919264b1be3f371503ea44:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1NDRjNDY1MTk4ZTU0MjAyOGY0ZTBkMTk4NmI2OTcyOThmMWNmYWYyMWFhYjA4OGEzZGNkN2M1Y2Y3NTI0MjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI0YTM2NWE5MGVjMTFlOTA0MzI3NTJjZjkzNzZlYzVlZDM2YjgwYmE1ZThlNjg1NGZjZjk4OTcwZDMwNDQ0NjkifQ"
+        },
+        {
+          "resource": "repo://crates/server-module-runtime/src/lib.rs#L840-L874",
+          "version": "repo-lines-v1:sha256:25756f56b85c65783f3d1033d90acac0d9166902486684fdb6636ff00d081da7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwNjUzMDA1YjVhZjZjNDMwYmMyNWM1NzZiZDMwZWNhMGE0NmQyNWNhNGExYjk2N2RjYTM5Y2UyMjNhYWQxMDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhODU4MmRkYTU4NGFiNDliNzAyMDY0NjQ3NjkxYzgyNzhiMTNhMGZlNGM0MzRjZTA4ZGQ4NWY0MzI0YzBmMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxN2ZhNDcxZjRiMjc5OTljNjgyOThiZWRlZTBhMmZhMDMwZWQxOWNmZTY2OTIzZThjYWM2NTBkYWQ1YTAwOWUifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/server_modules.rs#L250-L339",
+          "version": "repo-lines-v1:sha256:ecad058079e46eaf83a380844c402eb594edaad7a7655c575a6847d6687eafb6:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzYmM5ZDQ0MTBlODRhNDRlYmRhMDY0ZjkyYTBlY2YyZTRjOGIwYTM2NDJiMmU1NGE1N2UxZmRhNTUyNGZjNTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlMzlmZjc1MDg4YzhiMzQ2Y2RiYzcyMjA3YjE3OTEyMjZhYjEwNzRmODM0MWMxZTdmZjM5NTIyYjk2NDk2MTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3NGU2N2MzNTg0ZGI3YmRlMWNkZjg3Y2RlMzE0NWIzN2NlM2FkN2QzZTBjMThkY2E4MzJmZTZlYzk1YTQzZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4ZGQ5NWUwOTVjNzk2M2NlMzk3YWNjNTQzZGFkZDQ5ZGE2ZGM3OTA1ODM4NWJkYjRlNTljYmE4ODExNDU4ZDgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_20a04198ee9d44758bc152815149cf1f",
+      "statement": "The database-local reviewed lifecycle command permits only the fixed 1.0.0-to-1.1.0 upgrade with a complete bounded candidate state or a one-use rollback to its retained predecessor; readiness executes outside SQL and finalization reauthorizes every prepared root under the registry lock before one atomic publication.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/bin/omarchygs-admin.rs#L324-L337",
+          "version": "repo-lines-v1:sha256:eadddce86284af5d16dbe3d57fb6bc8a9fc9edc0ff9c40ddba232cb3f38dd382:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE2MWRjMGRjNGUxMjE0Y2Q4ZmE4OGRhOWI3NzI2Y2I1YzA5NWJiNGFhMGNmODMyNDExODFkNTZlZDlmYzJiOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJlZjFhNzI1MmE2YjQwZTkxOGM2MDdhOWVlZGMxZGJkMjQ2Yzc5OTFkMjNlNzZkYmQ2ZTBhOWY3MTBiOGNhM2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg5MzUwYTFkYTMxODQyZGRhNmZkOTg2ZmZiMTFiZDM3NWRhN2YwN2NjNGJhMTY4ZTNjODNmN2JhNTRlZDk3OTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjZTliOWM0YzBjOGQwMDk0ZjUzM2Q2OTBhZDBjZWFjMjFiYjA2ZDY2ZGQxYWQ5ZjNkNTVjNjhhNWYyZTZhOWMifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/server_modules.rs#L2060-L2112",
+          "version": "repo-lines-v1:sha256:2a1aa0f68ca6924b16357e61fd8059f965b417c56f0df17c44b0f06b6d4a1aac:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5ZDI0YTc3NjdlYWVmZmVkODE0YTA1NGJmYjIzNTZhMzI3ZDAyZTlhNGE5OWU4ZGNjZmVmYmQ3MjZjNTIwNTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1Y2JkMDc2OTU5ZGUwOTBkYzdjOGRkYmZlNWI5YmRlM2U1OGE4YTQwYWQ4MTdjZWFhNGU5NTRlZjFhYjcwN2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlYTRmODQ0YjA0YjYxYjk0MTQ3MGRiMmM5NDYwYTAxZjI3YWIzMzljMTdmMjk4MDM3MTZhZjg1MzhhYTEwYTgifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/server_modules.rs#L2158-L2303",
+          "version": "repo-lines-v1:sha256:a06f216d5bff93705fead5382d2f32f54c4df22c05380feb7f7292997a6daacd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiZTJjZDdmMDZhNjc4N2RhMTVjMDcyY2FlMWVjNjgyODdiZGNkNDE1ZjNlMmRhMDBkYzg2YmMzYjkzNWIxYjAzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJjYmNlMjA5ODBjNGVlMGQ1NjZmMzI1MTA2MTRiYzgwYTBmNDY2OWE2NTFjMTUxNzI2OTQ2MDJiMzFjYzE1NWZjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlMWIzYWY1ZmRhYjJlMDgwNzBkMWM3ODA4MmE2MzYyZjU4YWE5MDJhNmEzNGVlMzRjZWFiZTgyYTE4MGJmZDNjIn0"
+        },
+        {
+          "resource": "repo://crates/server/src/server_modules.rs#L2305-L2372",
+          "version": "repo-lines-v1:sha256:2ba55a1eb6b2eb7c3e5f22ac3bc901d9e874ad582affa23d19d80fc23b1cb9e2:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1MDFkZDBhMGFjNzlhYjg4NDM3YmY4YzdmZGQzNjdmYjBmMGRhMDY2OTdmOWFiOTA5ZmViNzU0MGJkZWMyYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNjNjNGQxYWY4Y2Q4OWJiMGJkZDc2NTdmZmNiZjY4MDZhNjEwZDc5ZDZjOGQ0YzMwN2MyNDFkZjM5MDA1MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2MGZhNzZhZDI1YzBjMGRmMzVhNjJhZGI3NzYwZDQwM2JmMDFlZDcwMDNkZTFlMGY1YTVlMGViNzVlZGE1ZDIifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/server_modules.rs#L2400-L2497",
+          "version": "repo-lines-v1:sha256:74f46bb4b2e086df5cea1c54457a3d6447d69694821f74924e519638f0b282b0:eyJzZWxlY3RlZExpbmVDb3VudCI6OTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwMGVjMTJjNDY2N2Q0ZmFlZjg5YmQ2ZTQyZmQ1MDg1NjlhMjQxZDFjNzhiMjE2OTYyNDBiYjEwYTEwNWI0OWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NTgxNjE4NTA2MDZlNzdmYmViNTM1YTI2ZjA1YmNiZDFkOTRhZDdiMjY1ZDhjODZhZjNjOGMwMWY2MTY5M2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxZmE0YWU5MjlhZWI5MTdhYWJjOWVmZTc4OWVlY2YzNzhiMDljNzc4ZDU1N2RlZGY3NjYzMDYzY2ZjYzE5ZmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcxMGJhZGE4YjM5ZGE5ZmNkNzVlNGIxM2Q2ZTg1YTFlYTFkMjEzOGFiZmI4Njc5MzI5NTg2Njk1Yjg5MTE4NWQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_bd02b166e57b4b5cabce5a5bb31d0212",
+      "statement": "Migration 0028 stores immutable whole-command reviewed transition receipts whose database checks admit only the exact packaged v1-to-v2 upgrade and v2-to-v1 rollback edges with monotonic lifecycle and state revisions.",
+      "evidence": [
+        {
+          "resource": "repo://migrations/0028_packaged_reviewed_server_module_releases.sql#L1-L78",
+          "version": "repo-lines-v1:sha256:e1dc5dbd430e7129cb4d127899a22776ebc59a6836394de59cbd65299bc986ae:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjN2Y5YTliODMyYzc0ZWFmMzUxNWZkMDBjMGYxNWM1NWU1N2EzNGI1YWI2ZWJiYWZlOTc5YmVlMTQ4NWY1MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3MGI4ZGEyZDc5MzZmMmM0ZGNlNGE0ZWEzZWExMDEzZTlhM2NmY2U5ODZjY2U4ZTYwNWM5YzNkYzllZjVjMDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7675bec091994365813b56b9ff4373ca",
+      "statement": "Legacy reviewed state maintenance locks and compares the instance, namespace, and selected-release schemas, labels new snapshots with the live schema, and rejects a retained snapshot from a different schema.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/server_modules.rs#L3318-L3429",
+          "version": "repo-lines-v1:sha256:ca2f98c6651d8b00044b3cb5b4f93b9e85c90af257632d8a1d4ac7ed4e5fbb6b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5MzVmYTMyYjRkNjQ3N2E1Zjk2ZjY2MGE5OGZhYTBiODRiNmM4N2Y0MjhiZDc2ZjZkOWM2NzBjMWQzOWY3ZTZlIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI2NDc1ZTk0YTkwNGFjNDliMzE1NGQ0NjcyYTY2ZTg2MjliODZkYWM3NGUzZTI5MzdiZTY5MjdhZTNkYTExYzUzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlZmYzYzYzNzFjZjAwOTIzNTQwMjZiNGRlYTUzNTFlYjZkYWZiNzY2YzM4OTM4N2NhMWY5ODNhZDBhOTZhN2U2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI5MjJmYzA0ODBjNDRmZGFhMzEwYzAxNzBhNmNhNDA0YWFjMmRjZTdiOTA4Y2NkNzA4MWE2YTRjYTQ0MWEwZTAxIn0"
+        },
+        {
+          "resource": "repo://crates/server/src/server_modules.rs#L3433-L3505",
+          "version": "repo-lines-v1:sha256:e70ac273dce9406a56352e516fd6a3ea36f041ba0a75fd051131ac9853e56e6f:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwNWVmMjkyN2I4NGU0MThjMmFmMDMwYzU1NGFiMDNiNTFmOTMxYzAyMGZkZTJlZWE0MzBlOTY5NzQ0ZGY3MDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJlNjIxZDBlZjdiNjkxODExYWE1ZTE5NWUyNDIzMzhhYWQ2OTljMjhiZWUzZWU5MjY5YmJlY2I4YWViNDk0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyMmZjMDQ4MGM0NGZkYWEzMTBjMDE3MGE2Y2E0MDRhYWMyZGNlN2I5MDhjY2Q3MDgxYTZhNGNhNDQxYTBlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQzZjdkYmI2ZWE4NzQxMWUyMTliNzJiMWVhMDAyZGE2ZWFhNzkzMmNlMjkwMjQ1Y2FiOTJiNGY1NWQ1Zjk3YmUifQ"
+        },
+        {
+          "resource": "repo://crates/server/src/server_module_tests.rs#L1121-L1210",
+          "version": "repo-lines-v1:sha256:93484c89e21b760c51fa13dcad4f4522108517f401dcdae14ec851d091f36208:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NTgxNjE4NTA2MDZlNzdmYmViNTM1YTI2ZjA1YmNiZDFkOTRhZDdiMjY1ZDhjODZhZjNjOGMwMWY2MTY5M2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxNmUzMzdmMTUyN2RkYTg5ZThhMmJhZGYwYzkzOWE5ZGY5OWZiZGQ3NTZjMjJlODE3OTY0MTljMDg4ODNiYzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU0OTU3MzA4ZTgzMWM0MzM0NDJkYjE4YTE1Y2YyYWJlZmQwYzcxMGQxM2Y1NjY4MDhkMWUxODEzMjcwYjYxNGYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-30T00:13:04.632Z"
+    "at": "2026-08-30T02:11:48.120Z"
   }
 }

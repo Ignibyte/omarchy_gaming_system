@@ -2,13 +2,15 @@ use std::{collections::BTreeMap, io::Cursor, path::Path};
 
 use ed25519_dalek::SigningKey;
 use omarchygs_server_module_runtime::{
-    ADMISSION_FORMAT, AdmissionCoordinates, BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID, Capability,
-    ExecutionTrust, FixtureKind, HOOK_FORMAT, HookKind, HookPayload, HostRequest, HostResult,
-    MAX_EXECUTION_MS, MAX_FRAME_BYTES, MAX_FUEL, MAX_LINEAR_MEMORY_BYTES, ModuleHookEvent,
-    ModuleReleaseManifest, ModuleRuntime, ModuleSubject, PRIORITY_REVIEW_LABEL, ProcessSupervisor,
+    ADMISSION_FORMAT, AdmissionCoordinates, BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID,
+    BUILTIN_SUCCESSOR_RELEASE_ID, Capability, ExecutionTrust, FixtureKind, HOOK_FORMAT, HookKind,
+    HookPayload, HostRequest, HostResult, MAX_EXECUTION_MS, MAX_FRAME_BYTES, MAX_FUEL,
+    MAX_LINEAR_MEMORY_BYTES, ModuleHookEvent, ModuleReleaseManifest, ModuleRuntime, ModuleSubject,
+    PACKAGED_REVIEWED_CATALOG, PRIORITY_REVIEW_LABEL, PackagedReviewedRelease, ProcessSupervisor,
     RELEASE_FORMAT, RESPONSE_FORMAT, ResourceBudgets, ReviewedRelease, SignedEnvelope, WIT_PACKAGE,
-    WIT_WORLD, WitIdentity, host_request, read_frame, reviewed_release, reviewed_release_for,
-    sha256_hex, sign_active_admission, sign_active_admission_for,
+    WIT_WORLD, WitIdentity, host_request, packaged_reviewed_release,
+    packaged_reviewed_release_by_id, packaged_reviewed_releases, read_frame, reviewed_release,
+    reviewed_release_for, sha256_hex, sign_active_admission, sign_active_admission_for,
     sign_active_admission_with_grants, sign_operator_custom_provenance, verify_host_request,
     verify_release_material, wit_sha256, write_frame,
 };
@@ -45,6 +47,100 @@ fn production_release_is_exact_deterministic_and_separately_admitted() {
     assert_eq!(admission.subscribed_hooks.len(), 1);
     assert_eq!(envelope.document_format, ADMISSION_FORMAT);
     assert_ne!(first.release.payload, envelope.payload);
+}
+
+#[test]
+fn packaged_catalog_is_bounded_exact_compatible_and_executable() {
+    let catalog = packaged_reviewed_releases().expect("packaged catalog should build");
+    assert_eq!(PACKAGED_REVIEWED_CATALOG.len(), 2);
+    assert_eq!(catalog.len(), 2);
+    let initial = &catalog[0];
+    let successor = &catalog[1];
+    assert_eq!(initial.manifest.release_id, BUILTIN_RELEASE_ID);
+    assert_eq!(successor.manifest.release_id, BUILTIN_SUCCESSOR_RELEASE_ID);
+    assert_eq!(successor.manifest.version, "1.1.0");
+    assert_eq!(
+        successor.manifest.state_schema,
+        "ignibyte.sentinel.state/v2"
+    );
+    assert_eq!(
+        successor.manifest.config_schema,
+        initial.manifest.config_schema
+    );
+    assert_eq!(successor.manifest.wit, initial.manifest.wit);
+    assert_eq!(
+        successor.manifest.requested_capabilities,
+        initial.manifest.requested_capabilities
+    );
+    assert_eq!(
+        successor.manifest.subscribed_hooks,
+        initial.manifest.subscribed_hooks
+    );
+    assert_eq!(successor.manifest.budgets, initial.manifest.budgets);
+    assert_ne!(successor.manifest.release_id, initial.manifest.release_id);
+    assert_ne!(
+        successor.manifest.component_sha256,
+        initial.manifest.component_sha256
+    );
+    assert_ne!(
+        successor.provenance_statement.review_id,
+        initial.provenance_statement.review_id
+    );
+    let repeated = packaged_reviewed_release(PackagedReviewedRelease::Successor)
+        .expect("successor should be deterministic");
+    assert_eq!(repeated.release, successor.release);
+    assert_eq!(repeated.provenance, successor.provenance);
+    assert_eq!(repeated.component_bytes, successor.component_bytes);
+    let resolved = packaged_reviewed_release_by_id(BUILTIN_SUCCESSOR_RELEASE_ID)
+        .expect("catalog lookup should succeed")
+        .expect("successor should be present");
+    assert_eq!(resolved.release, successor.release);
+    assert_eq!(resolved.provenance, successor.provenance);
+    assert_eq!(resolved.component_bytes, successor.component_bytes);
+    assert!(
+        packaged_reviewed_release_by_id(Uuid::new_v4())
+            .expect("unknown lookup should be bounded")
+            .is_none()
+    );
+
+    let core = core_key();
+    let (_, admission) = sign_active_admission(successor, SERVER_ID, ADMISSION_ID, 2, 1, 1, &core)
+        .expect("successor admission should sign");
+    let request = host_request(
+        successor,
+        admission,
+        ModuleHookEvent {
+            format: HOOK_FORMAT.into(),
+            event_id: EVENT_ID,
+            attempt: 1,
+            server_id: SERVER_ID,
+            module_id: BUILTIN_MODULE_ID.into(),
+            release_id: BUILTIN_SUCCESSOR_RELEASE_ID,
+            admission_id: ADMISSION_ID,
+            admission_revision: 2,
+            hook: HookKind::PersonaReported,
+            causal_revision: 0,
+            deadline_ms: MAX_EXECUTION_MS,
+            subject: ModuleSubject::Pairwise("pairwise-successor-persona-7".into()),
+            config: BTreeMap::from([("policy".into(), "strict".into())]),
+            config_revision: 1,
+            state: BTreeMap::from([("schema".into(), "v2".into())]),
+            state_revision: 1,
+            payload: HookPayload::PersonaReported {
+                report_id: REPORT_ID,
+                category: "cheating".into(),
+            },
+        },
+    );
+    let runtime = ModuleRuntime::compile_bytes(&successor.component_bytes)
+        .expect("successor should compile under the shared runtime");
+    runtime.readiness().expect("successor WIT should be ready");
+    assert!(matches!(
+        runtime
+            .execute_release(&request, &core.verifying_key(), successor)
+            .outcome,
+        HostResult::Proposed { .. }
+    ));
 }
 
 #[test]

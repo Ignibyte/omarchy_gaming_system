@@ -96,9 +96,6 @@ sources:
   - id: openwiki-source-5f564ae64057cbe621fc587a
     resource: repo://scripts/test-server-modules.sh
 generated: {by: "codex", at: "2026-08-30T00:13:04.632Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-30T00:13:04.632Z
 ---
 
 # Development and validation

@@ -82,7 +82,7 @@ server-authoritative game runtime below.
 - [x] Versioned production server-module base with one reviewed observation
   hook/typed intent, exact admission, configuration/state namespaces,
   lifecycle/restore recovery, process containment, receipts, and conformance
-- [ ] Add reviewed release upgrade/rollback compatibility operations beyond
+- [x] Add reviewed release upgrade/rollback compatibility operations beyond
   the fixed first-party production fixture
 - [x] Administrator-controlled custom server-module installation with explicit
   operator trust, player-facing provenance, and no client executable bridge

@@ -1,6 +1,7 @@
 //! PostgreSQL production server-module integration tests.
 
 use std::{
+    collections::BTreeMap,
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, AtomicU8, Ordering},
@@ -10,8 +11,9 @@ use std::{
 
 use ed25519_dalek::VerifyingKey;
 use omarchygs_server_module_runtime::{
-    FixtureKind, HookPayload, HostRequest, HostResponse, ModuleRuntime, PRIORITY_REVIEW_LABEL,
-    canonical_json, sha256_hex,
+    BUILTIN_RELEASE_ID, BUILTIN_SUCCESSOR_RELEASE_ID, HookPayload, HostRequest, HostResponse,
+    MAX_FRAME_BYTES, ModuleRuntime, PRIORITY_REVIEW_LABEL, canonical_json,
+    packaged_reviewed_releases, sha256_hex,
 };
 use serde_json::{Value, json};
 use sqlx::PgPool;
@@ -22,10 +24,13 @@ use crate::{
     personas::{self, CreatePersonaInput},
     reports::{self, CreateReportInput, ReportError, ReportOutcome},
     server_modules::{
-        BUILTIN_INSTANCE_ID, MAX_UNDELIVERED_EVENTS, ModuleConfig, ModuleError, ModuleExecutor,
-        ModuleLifecycleAction, ModuleLifecycleCommand, ModuleStateOperation, ServerModuleService,
-        apply_lifecycle_command, list_module_inventory, migrate_state, prepare_restored_modules,
-        prune_delivered, rollback_state, update_configuration, update_state,
+        BUILTIN_INSTANCE_ID, MAX_UNDELIVERED_EVENTS, ModuleConfig, ModuleEmitter, ModuleError,
+        ModuleExecutor, ModuleLifecycleAction, ModuleLifecycleCommand, ModuleStateOperation,
+        ReviewedModuleAdminConfig, ReviewedModuleReleaseAction, ReviewedModuleReleaseCommand,
+        ServerModuleService, apply_lifecycle_command, apply_reviewed_release_command_with_executor,
+        decode_reviewed_release_command, list_module_inventory, migrate_state,
+        prepare_restored_modules, prune_delivered, rollback_state, update_configuration,
+        update_state,
     },
     sessions::{self, CreateSessionInput, SessionCreation},
 };
@@ -35,7 +40,6 @@ const MODE_UNAVAILABLE: u8 = 1;
 const MODE_SLOW: u8 = 2;
 
 struct ControlledExecutor {
-    runtime: ModuleRuntime,
     mode: AtomicU8,
     executing: AtomicBool,
     calls: Mutex<Vec<Uuid>>,
@@ -44,8 +48,6 @@ struct ControlledExecutor {
 impl ControlledExecutor {
     fn new() -> Self {
         Self {
-            runtime: ModuleRuntime::compile(FixtureKind::Valid)
-                .expect("reviewed fixture should compile"),
             mode: AtomicU8::new(MODE_VALID),
             executing: AtomicBool::new(false),
             calls: Mutex::new(Vec::new()),
@@ -82,9 +84,15 @@ impl ModuleExecutor for ControlledExecutor {
                 self.executing.store(true, Ordering::SeqCst);
                 std::thread::sleep(Duration::from_millis(750));
                 self.executing.store(false, Ordering::SeqCst);
-                Ok(self.runtime.execute_release(&request, &core_key, &release))
+                let runtime = ModuleRuntime::compile_bytes(&release.component_bytes)
+                    .map_err(|_| ModuleError::Unavailable)?;
+                Ok(runtime.execute_release(&request, &core_key, &release))
             }
-            _ => Ok(self.runtime.execute_release(&request, &core_key, &release)),
+            _ => {
+                let runtime = ModuleRuntime::compile_bytes(&release.component_bytes)
+                    .map_err(|_| ModuleError::Unavailable)?;
+                Ok(runtime.execute_release(&request, &core_key, &release))
+            }
         }
     }
 }
@@ -92,6 +100,47 @@ impl ModuleExecutor for ControlledExecutor {
 struct TestPersona {
     id: Uuid,
     token: String,
+}
+
+#[derive(sqlx::FromRow)]
+struct UpgradedReviewedRoot {
+    release_id: Uuid,
+    state_schema: String,
+    state_revision: i64,
+    previous_release_id: Option<Uuid>,
+    rollback_snapshot_id: Option<Uuid>,
+    state: Value,
+    observation_gap_count: i64,
+    last_observation_gap_reason: Option<String>,
+    outbox_status: String,
+}
+
+#[test]
+fn reviewed_release_command_requires_bounded_canonical_json() {
+    let command = reviewed_release_command(
+        Uuid::new_v4(),
+        ReviewedModuleReleaseAction::Upgrade,
+        2,
+        1,
+        0,
+        Some(BUILTIN_SUCCESSOR_RELEASE_ID),
+        Some(BTreeMap::from([("schema".into(), "v2".into())])),
+        "Decode the canonical reviewed command",
+    );
+    let canonical = canonical_json(&command).expect("reviewed command should encode");
+    assert_eq!(
+        decode_reviewed_release_command(&canonical).expect("canonical command should decode"),
+        command
+    );
+    let pretty = serde_json::to_vec_pretty(&command).expect("pretty command should encode");
+    assert_eq!(
+        decode_reviewed_release_command(&pretty),
+        Err(ModuleError::InvalidInput)
+    );
+    assert_eq!(
+        decode_reviewed_release_command(&vec![b' '; MAX_FRAME_BYTES + 1]),
+        Err(ModuleError::InvalidInput)
+    );
 }
 
 #[sqlx::test(migrations = "../../migrations")]
@@ -832,11 +881,537 @@ async fn upgraded_receipts_distinguish_legacy_evidence_and_require_new_preimages
     assert_eq!(inventory.modules[0].legacy_delivery_receipts, 1);
 }
 
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+async fn reviewed_release_upgrade_dispatches_and_rolls_back_the_immediate_predecessor(
+    pool: PgPool,
+) {
+    let executor = Arc::new(ControlledExecutor::new());
+    let service =
+        ServerModuleService::start_with_executor(pool.clone(), module_config(), executor.clone())
+            .await
+            .expect("reviewed module should start at the initial release");
+    let emitter = service.emitter();
+    service.shutdown().await;
+    let catalog_count: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM server_module_releases WHERE provenance_class = 'first_party_reviewed_fixture'",
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("packaged catalog should be registered");
+    assert_eq!(catalog_count, 2);
+    let initial: (Uuid, i64, i64, i64) = sqlx::query_as(
+        r#"
+        SELECT release_id, lifecycle_revision, config_revision, state_revision
+        FROM server_module_instances WHERE instance_id = $1
+        "#,
+    )
+    .bind(BUILTIN_INSTANCE_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("initial selection should load");
+    assert_eq!(initial, (BUILTIN_RELEASE_ID, 2, 1, 0));
+
+    let reporter =
+        create_test_persona(&pool, "reviewed_upgrade_actor", "reviewed_upgrade_actor").await;
+    let subject =
+        create_test_persona(&pool, "reviewed_upgrade_peer", "reviewed_upgrade_peer").await;
+    create_report(&pool, &reporter, subject.id, Uuid::new_v4(), Some(&emitter))
+        .await
+        .expect("old-admission observation should queue without a worker");
+    let upgrade = reviewed_release_command(
+        Uuid::new_v4(),
+        ReviewedModuleReleaseAction::Upgrade,
+        2,
+        1,
+        0,
+        Some(BUILTIN_SUCCESSOR_RELEASE_ID),
+        Some(BTreeMap::from([
+            ("schema".into(), "v2".into()),
+            ("review_count".into(), "0".into()),
+        ])),
+        "Upgrade the packaged reviewed fixture",
+    );
+    let admin = ReviewedModuleAdminConfig::for_test([11_u8; 32]);
+    let upgraded =
+        apply_reviewed_release_command_with_executor(&pool, &admin, &upgrade, executor.clone())
+            .await
+            .expect("compatible reviewed upgrade should commit");
+    assert!(!upgraded.replayed);
+    assert_eq!(upgraded.previous_release_id, BUILTIN_RELEASE_ID);
+    assert_eq!(upgraded.release_id, BUILTIN_SUCCESSOR_RELEASE_ID);
+    assert_eq!(upgraded.lifecycle_revision, 3);
+    assert_eq!(upgraded.state_schema, "ignibyte.sentinel.state/v2");
+    assert_eq!(upgraded.state_revision, 1);
+    let replayed =
+        apply_reviewed_release_command_with_executor(&pool, &admin, &upgrade, executor.clone())
+            .await
+            .expect("exact reviewed upgrade replay should succeed");
+    assert!(replayed.replayed);
+    assert_eq!(
+        replayed.predecessor_snapshot_id,
+        upgraded.predecessor_snapshot_id
+    );
+    let mut changed_replay = upgrade.clone();
+    changed_replay.reason = "Changed intent under the same operation UUID".into();
+    assert_eq!(
+        apply_reviewed_release_command_with_executor(
+            &pool,
+            &admin,
+            &changed_replay,
+            executor.clone(),
+        )
+        .await,
+        Err(ModuleError::Conflict)
+    );
+    let mut stale_upgrade = upgrade.clone();
+    stale_upgrade.operation_id = Uuid::new_v4();
+    stale_upgrade.reason = "A stale reviewed upgrade must not republish".into();
+    assert_eq!(
+        apply_reviewed_release_command_with_executor(
+            &pool,
+            &admin,
+            &stale_upgrade,
+            executor.clone(),
+        )
+        .await,
+        Err(ModuleError::Conflict)
+    );
+    let upgraded_root = sqlx::query_as::<_, UpgradedReviewedRoot>(
+        r#"
+        SELECT i.release_id, i.state_schema, i.state_revision,
+               i.previous_release_id, i.rollback_snapshot_id, n.entries AS state,
+               i.observation_gap_count, i.last_observation_gap_reason,
+               o.status AS outbox_status
+        FROM server_module_instances i
+        JOIN server_module_state_namespaces n ON n.instance_id = i.instance_id
+        JOIN server_module_outbox o ON o.instance_id = i.instance_id
+        WHERE i.instance_id = $1
+        "#,
+    )
+    .bind(BUILTIN_INSTANCE_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("upgraded root should load");
+    assert_eq!(upgraded_root.release_id, BUILTIN_SUCCESSOR_RELEASE_ID);
+    assert_eq!(upgraded_root.state_schema, "ignibyte.sentinel.state/v2");
+    assert_eq!(upgraded_root.state_revision, 1);
+    assert_eq!(upgraded_root.previous_release_id, Some(BUILTIN_RELEASE_ID));
+    assert_eq!(
+        upgraded_root.rollback_snapshot_id,
+        Some(upgraded.predecessor_snapshot_id)
+    );
+    assert_eq!(
+        upgraded_root.state,
+        json!({"schema": "v2", "review_count": "0"})
+    );
+    assert_eq!(upgraded_root.observation_gap_count, 1);
+    assert_eq!(
+        upgraded_root.last_observation_gap_reason,
+        Some("admission_replaced".into())
+    );
+    assert_eq!(upgraded_root.outbox_status, "dead_letter");
+
+    let restarted =
+        ServerModuleService::start_with_executor(pool.clone(), module_config(), executor.clone())
+            .await
+            .expect("restart should resolve and probe the exact successor");
+    create_report(
+        &pool,
+        &reporter,
+        subject.id,
+        Uuid::new_v4(),
+        Some(&restarted.emitter()),
+    )
+    .await
+    .expect("successor observation should enqueue");
+    wait_for_outbox_status(&pool, "delivered", 1).await;
+    let delivered_release: Uuid = sqlx::query_scalar(
+        "SELECT release_id FROM server_module_outbox WHERE status = 'delivered' LIMIT 1",
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("successor delivery should retain its exact release");
+    assert_eq!(delivered_release, BUILTIN_SUCCESSOR_RELEASE_ID);
+    restarted.shutdown().await;
+
+    let rollback = reviewed_release_command(
+        Uuid::new_v4(),
+        ReviewedModuleReleaseAction::Rollback,
+        3,
+        1,
+        1,
+        None,
+        None,
+        "Roll back to the retained immediate predecessor",
+    );
+    let rolled_back =
+        apply_reviewed_release_command_with_executor(&pool, &admin, &rollback, executor.clone())
+            .await
+            .expect("one-step reviewed rollback should commit");
+    assert_eq!(
+        rolled_back.previous_release_id,
+        BUILTIN_SUCCESSOR_RELEASE_ID
+    );
+    assert_eq!(rolled_back.release_id, BUILTIN_RELEASE_ID);
+    assert_eq!(
+        rolled_back.predecessor_snapshot_id,
+        upgraded.predecessor_snapshot_id
+    );
+    assert_eq!(rolled_back.lifecycle_revision, 4);
+    assert_eq!(rolled_back.state_schema, "ignibyte.sentinel.state/v1");
+    assert_eq!(rolled_back.state_revision, 2);
+    let rollback_root: (Uuid, String, Value, Option<Uuid>, Option<Uuid>) = sqlx::query_as(
+        r#"
+        SELECT i.release_id, i.state_schema, n.entries,
+               i.previous_release_id, i.rollback_snapshot_id
+        FROM server_module_instances i
+        JOIN server_module_state_namespaces n ON n.instance_id = i.instance_id
+        WHERE i.instance_id = $1
+        "#,
+    )
+    .bind(BUILTIN_INSTANCE_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("rollback root should load");
+    assert_eq!(
+        rollback_root,
+        (
+            BUILTIN_RELEASE_ID,
+            "ignibyte.sentinel.state/v1".into(),
+            json!({}),
+            None,
+            None,
+        )
+    );
+    let second_rollback = reviewed_release_command(
+        Uuid::new_v4(),
+        ReviewedModuleReleaseAction::Rollback,
+        4,
+        1,
+        2,
+        None,
+        None,
+        "A repeated rollback must be denied",
+    );
+    assert_eq!(
+        apply_reviewed_release_command_with_executor(&pool, &admin, &second_rollback, executor,)
+            .await,
+        Err(ModuleError::Denied)
+    );
+    let operation_count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM server_module_reviewed_operations")
+            .fetch_one(&pool)
+            .await
+            .expect("reviewed operation evidence should query");
+    assert_eq!(operation_count, 2);
+    let immutable = sqlx::query(
+        "UPDATE server_module_reviewed_operations SET reason = 'tampered' WHERE operation_id = $1",
+    )
+    .bind(upgrade.operation_id)
+    .execute(&pool)
+    .await
+    .expect_err("reviewed operation evidence must be immutable");
+    assert_eq!(
+        immutable
+            .as_database_error()
+            .and_then(|error| error.code().map(|code| code.into_owned())),
+        Some("P0001".into())
+    );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+async fn reviewed_release_state_maintenance_preserves_schema_boundaries(pool: PgPool) {
+    let executor = Arc::new(ControlledExecutor::new());
+    let service =
+        ServerModuleService::start_with_executor(pool.clone(), module_config(), executor.clone())
+            .await
+            .expect("reviewed module should start at the initial release");
+    service.shutdown().await;
+    let admin = ReviewedModuleAdminConfig::for_test([11_u8; 32]);
+    let upgraded = apply_reviewed_release_command_with_executor(
+        &pool,
+        &admin,
+        &reviewed_release_command(
+            Uuid::new_v4(),
+            ReviewedModuleReleaseAction::Upgrade,
+            2,
+            1,
+            0,
+            Some(BUILTIN_SUCCESSOR_RELEASE_ID),
+            Some(BTreeMap::from([
+                ("schema".into(), "v2".into()),
+                ("review_count".into(), "0".into()),
+            ])),
+            "Upgrade before schema-aware state maintenance",
+        ),
+        executor,
+    )
+    .await
+    .expect("reviewed upgrade should commit");
+    apply_lifecycle_command(
+        &pool,
+        &lifecycle_command(
+            Uuid::new_v4(),
+            upgraded
+                .lifecycle_revision
+                .try_into()
+                .expect("reviewed lifecycle revision should fit PostgreSQL BIGINT"),
+            ModuleLifecycleAction::Disable,
+            "Disable the successor for state maintenance",
+        ),
+    )
+    .await
+    .expect("successor should disable for state maintenance");
+
+    assert_eq!(
+        rollback_state(
+            &pool,
+            Uuid::new_v4(),
+            upgraded.predecessor_snapshot_id,
+            1,
+            "module-test",
+            "Reject a predecessor snapshot from another schema",
+        )
+        .await,
+        Err(ModuleError::Denied)
+    );
+    let migrated = migrate_state(
+        &pool,
+        Uuid::new_v4(),
+        1,
+        &[ModuleStateOperation::Set {
+            key: "review_count".into(),
+            value: "1".into(),
+        }],
+        "module-test",
+        "Retain a successor-schema snapshot",
+    )
+    .await
+    .expect("successor state migration should retain a snapshot");
+    let snapshot_id = migrated.snapshot_id.expect("migration needs a snapshot");
+    let snapshot_schema: String = sqlx::query_scalar(
+        "SELECT source_schema FROM server_module_state_snapshots WHERE snapshot_id = $1",
+    )
+    .bind(snapshot_id)
+    .fetch_one(&pool)
+    .await
+    .expect("successor snapshot schema should load");
+    assert_eq!(snapshot_schema, "ignibyte.sentinel.state/v2");
+    let rolled_back = rollback_state(
+        &pool,
+        Uuid::new_v4(),
+        snapshot_id,
+        migrated.resulting_revision,
+        "module-test",
+        "Restore a snapshot from the selected schema",
+    )
+    .await
+    .expect("same-schema state rollback should remain monotonic");
+    assert_eq!(rolled_back.resulting_revision, 3);
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-database.sh"]
+async fn reviewed_transition_failures_are_atomic_and_missing_package_records_gaps(pool: PgPool) {
+    let executor = Arc::new(ControlledExecutor::new());
+    let service =
+        ServerModuleService::start_with_executor(pool.clone(), module_config(), executor.clone())
+            .await
+            .expect("reviewed module should start");
+    service.shutdown().await;
+    let admin = ReviewedModuleAdminConfig::for_test([11_u8; 32]);
+    let command = reviewed_release_command(
+        Uuid::new_v4(),
+        ReviewedModuleReleaseAction::Upgrade,
+        2,
+        1,
+        0,
+        Some(BUILTIN_SUCCESSOR_RELEASE_ID),
+        Some(BTreeMap::from([("schema".into(), "v2".into())])),
+        "Exercise transition failure atomicity",
+    );
+    executor.set_mode(MODE_UNAVAILABLE);
+    assert_eq!(
+        apply_reviewed_release_command_with_executor(&pool, &admin, &command, executor.clone(),)
+            .await,
+        Err(ModuleError::Unavailable)
+    );
+    let failed_root: (Uuid, String, i64, i64, i64, i64) = sqlx::query_as(
+        r#"
+        SELECT i.release_id, i.state_schema, i.lifecycle_revision,
+               i.state_revision,
+               (SELECT count(*) FROM server_module_reviewed_operations),
+               (SELECT count(*) FROM server_module_state_snapshots)
+        FROM server_module_instances i WHERE i.instance_id = $1
+        "#,
+    )
+    .bind(BUILTIN_INSTANCE_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("failed transition root should load");
+    assert_eq!(
+        failed_root,
+        (
+            BUILTIN_RELEASE_ID,
+            "ignibyte.sentinel.state/v1".into(),
+            2,
+            0,
+            0,
+            0,
+        )
+    );
+
+    executor.set_mode(MODE_VALID);
+    let (first, second) = tokio::join!(
+        apply_reviewed_release_command_with_executor(&pool, &admin, &command, executor.clone(),),
+        apply_reviewed_release_command_with_executor(&pool, &admin, &command, executor.clone(),),
+    );
+    let first = first.expect("one concurrent reviewed command should commit");
+    let second = second.expect("the identical concurrent command should replay");
+    assert_ne!(first.replayed, second.replayed);
+    assert_eq!(first.release_id, second.release_id);
+    assert_eq!(
+        first.predecessor_snapshot_id,
+        second.predecessor_snapshot_id
+    );
+    let upgraded = if first.replayed { second } else { first };
+    let initial_only = packaged_reviewed_releases()
+        .expect("packaged catalog should build")
+        .into_iter()
+        .take(1)
+        .collect();
+    assert!(matches!(
+        ServerModuleService::start_with_executor_and_catalog(
+            pool.clone(),
+            module_config(),
+            executor.clone(),
+            initial_only,
+        )
+        .await,
+        Err(ModuleError::Unavailable)
+    ));
+    let mut changed_catalog = packaged_reviewed_releases().expect("packaged catalog should build");
+    changed_catalog[1].manifest.version = "1.1.1".into();
+    assert!(matches!(
+        ServerModuleService::start_with_executor_and_catalog(
+            pool.clone(),
+            module_config(),
+            executor.clone(),
+            changed_catalog,
+        )
+        .await,
+        Err(ModuleError::Unavailable)
+    ));
+    sqlx::query(
+        "UPDATE server_module_state_namespaces SET state_schema = 'ignibyte.sentinel.state/v1' WHERE instance_id = $1",
+    )
+    .bind(BUILTIN_INSTANCE_ID)
+    .execute(&pool)
+    .await
+    .expect("schema mismatch fixture should update");
+    assert!(matches!(
+        ServerModuleService::start_with_executor(pool.clone(), module_config(), executor.clone(),)
+            .await,
+        Err(ModuleError::Unavailable)
+    ));
+    sqlx::query(
+        "UPDATE server_module_state_namespaces SET state_schema = 'ignibyte.sentinel.state/v2' WHERE instance_id = $1",
+    )
+    .bind(BUILTIN_INSTANCE_ID)
+    .execute(&pool)
+    .await
+    .expect("schema mismatch fixture should restore");
+    let reporter =
+        create_test_persona(&pool, "missing_package_actor", "missing_package_actor").await;
+    let subject = create_test_persona(&pool, "missing_package_peer", "missing_package_peer").await;
+    create_report(
+        &pool,
+        &reporter,
+        subject.id,
+        Uuid::new_v4(),
+        Some(&ModuleEmitter::unconfigured()),
+    )
+    .await
+    .expect("core report should survive a missing selected package");
+    let gap: (i64, Option<String>) = sqlx::query_as(
+        r#"
+        SELECT observation_gap_count, last_observation_gap_reason
+        FROM server_module_instances WHERE instance_id = $1
+        "#,
+    )
+    .bind(BUILTIN_INSTANCE_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("missing-package gap should load");
+    assert_eq!(gap, (1, Some("runtime_unconfigured".into())));
+
+    let restored = prepare_restored_modules(
+        &pool,
+        Uuid::new_v4(),
+        "module-test",
+        "Reconcile the reviewed successor after restore",
+    )
+    .await
+    .expect("restore reconciliation should disable the successor");
+    assert_eq!(restored[0].resulting_revision, 4);
+    apply_lifecycle_command(
+        &pool,
+        &lifecycle_command(
+            Uuid::new_v4(),
+            4,
+            ModuleLifecycleAction::Recover,
+            "Approve exact reviewed successor recovery",
+        ),
+    )
+    .await
+    .expect("reviewed restore recovery should clear the startup gate");
+    let recovered =
+        ServerModuleService::start_with_executor(pool.clone(), module_config(), executor)
+            .await
+            .expect("full package should re-probe the exact selected successor");
+    let selected: Uuid =
+        sqlx::query_scalar("SELECT release_id FROM server_module_instances WHERE instance_id = $1")
+            .bind(BUILTIN_INSTANCE_ID)
+            .fetch_one(&pool)
+            .await
+            .expect("recovered selection should load");
+    assert_eq!(selected, upgraded.release_id);
+    recovered.shutdown().await;
+}
+
 fn module_config() -> ModuleConfig {
     ModuleConfig {
         enable_first_party_report: true,
         admission_signing_seed: [11_u8; 32],
         pairwise_secret: [22_u8; 32],
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn reviewed_release_command(
+    operation_id: Uuid,
+    action: ReviewedModuleReleaseAction,
+    expected_lifecycle_revision: u64,
+    expected_config_revision: u64,
+    expected_state_revision: u64,
+    target_release_id: Option<Uuid>,
+    candidate_state: Option<BTreeMap<String, String>>,
+    reason: &str,
+) -> ReviewedModuleReleaseCommand {
+    ReviewedModuleReleaseCommand {
+        format: "omarchygs.packaged-reviewed-module-lifecycle-command/v1".into(),
+        operation_id,
+        instance_id: BUILTIN_INSTANCE_ID,
+        action,
+        expected_lifecycle_revision,
+        expected_config_revision,
+        expected_state_revision,
+        target_release_id,
+        candidate_state,
+        actor: "module-test".into(),
+        reason: reason.into(),
     }
 }
 
