@@ -248,14 +248,18 @@ server. They must be independently inventoryable, auditable, disableable, and
 recoverable; a general module hook must not masquerade as a game provider or
 mutate protected state outside core authorization.
 
-The production base currently admits only the compiled-in reviewed Sentinel
-fixture when its exact all-or-none configuration is present. It observes new
-reports and proposes one core-reauthorized moderation label; there is no public
-module route, arbitrary egress, game authority, or configurable executable
-path. Inventory, emergency suspension, recovery, and restore reconciliation
-are database-local. See the [server-module runbook](server-modules.md).
-Administrator-custom module installation remains unavailable and requires its
-own provenance, disclosure, and security gate.
+The production base admits the compiled-in reviewed Sentinel fixture and up to
+eight privately imported operator-custom module identities. Custom import
+verifies publisher integrity, records separate server-bound operator
+provenance, stores exact immutable bytes, grants only an allowlisted subset,
+and requires explicit acknowledgement that the code is unreviewed and
+unsupported. Reviewed and custom releases share the same exact no-WASI host,
+typed intent, core reauthorization, state, lifecycle, and restore boundary.
+There is no public module route, arbitrary egress, game authority, configurable
+host path, or client executable bridge. Inventory, upgrade/rollback, emergency
+suspension, removal, recovery, and restore reconciliation are database-local;
+active custom behavior produces a permanent aggregate client warning. See the
+[server-module runbook](server-modules.md).
 
 A future Provider SDK may let an administrator run a custom game backend as a
 separate service on the same infrastructure. Co-location does not grant shared

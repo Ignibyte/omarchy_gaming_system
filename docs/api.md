@@ -62,6 +62,29 @@ route. An operator-custom server also advertises
 That public object is a candidate for an explicit player trust decision, not
 automatic trust. It contains no private key or marketplace-review claim.
 
+Independently, a server with one or more active or degraded operator-custom
+server modules advertises `server.operator-custom-modules.v1` and this bounded
+aggregate:
+
+```json
+{
+  "operator_custom_modules": {
+    "format": "omarchygs.operator-custom-modules-disclosure/v1",
+    "server_id": "58ee076d-0216-422c-b1e2-48ee7fa648bb",
+    "active_count": 1,
+    "behavior_capabilities": ["moderation_labels"],
+    "warning": "This server runs operator-custom code not reviewed or supported by OmarchyGS.",
+    "support_boundary": "Security, privacy, availability, and support are the server operator's responsibility."
+  }
+}
+```
+
+The count is 1–8 and behavior capabilities are sorted, unique public classes.
+This disclosure is not module inventory or executable acquisition: it excludes
+module/release/version identity, component/config/state bytes, paths, keys,
+signing authority, and operator identity. The object is absent when no custom
+module is active or degraded. There is no public module mutation route.
+
 The UUID is generated once by migration `0018`, is immutable in ordinary
 database operation, and survives PostgreSQL dump/restore. The public name is
 the independently changeable `OGS_SERVER_NAME`. Capabilities are unique and

@@ -16,4 +16,5 @@ docker compose up -d --wait db
 export DATABASE_URL="${DATABASE_URL:-postgres://omarchy_gaming_system:omarchy_gaming_system@127.0.0.1:5432/omarchy_gaming_system}"
 
 ./scripts/test-marketplace-trust-migration.sh
+mise exec -- cargo build -p omarchygs-server-module-runtime --bin omarchygs-module-host
 mise exec -- cargo test -p omarchy-gaming-system-server -- --ignored --test-threads=1

@@ -190,12 +190,14 @@ them, and every operator mutation appends immutable audit. See
 [operator safety and platform recovery](docs/operators/operator-safety-and-recovery.md)
 for the command and backup/restore procedure.
 
-Operators may explicitly enable one fixed reviewed first-party report
-observation module. It runs as a no-WASI component in a fresh contained process
-and can only propose a core-reauthorized moderation label; custom module
-installation and public module administration remain unavailable. See the
-[server-module runbook](docs/operators/server-modules.md) for configuration,
-inventory, suspension, and restore handling.
+Operators may explicitly enable the fixed reviewed report-observation module
+or privately admit server-bound operator-custom modules. Both run the same
+exact no-WASI component contract in fresh contained processes and can only
+propose a core-reauthorized moderation label. Custom import and lifecycle are
+database-local, capped at eight module identities, permanently disclosed to
+players while active, and never exposed through public module administration.
+See the [server-module runbook](docs/operators/server-modules.md) for custody,
+configuration, lifecycle, support, and restore handling.
 
 The production catalog now includes **Signal Siege v1**, a deterministic
 asynchronous duel against a server-side bot. An owned persona can start a

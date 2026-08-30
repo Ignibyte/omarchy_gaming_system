@@ -87,17 +87,22 @@ fn parse_module_config(values: [Option<String>; 3]) -> Result<Option<ModuleConfi
     if values.iter().all(Option::is_none) {
         return Ok(None);
     }
-    if values.iter().any(Option::is_none) {
+    let [selector, admission_seed, pairwise_secret] = values;
+    if admission_seed.is_some() != pairwise_secret.is_some() {
         return Err(anyhow!(
-            "server-module configuration is all-or-none: set OGS_FIRST_PARTY_REPORT_MODULE=enabled, OGS_MODULE_ADMISSION_SIGNING_SEED, and OGS_MODULE_PAIRWISE_SECRET"
+            "server-module runtime keys are all-or-none: set both OGS_MODULE_ADMISSION_SIGNING_SEED and OGS_MODULE_PAIRWISE_SECRET"
         ));
     }
-    let [enabled, admission_seed, pairwise_secret] = values.map(Option::unwrap);
-    if enabled != "enabled" {
+    if selector.as_deref().is_some_and(|value| value != "enabled") {
         return Err(anyhow!(
-            "OGS_FIRST_PARTY_REPORT_MODULE must be exactly enabled when server-module configuration is present"
+            "OGS_FIRST_PARTY_REPORT_MODULE must be exactly enabled when present"
         ));
     }
+    let (Some(admission_seed), Some(pairwise_secret)) = (admission_seed, pairwise_secret) else {
+        return Err(anyhow!(
+            "OGS_FIRST_PARTY_REPORT_MODULE requires both server-module runtime keys"
+        ));
+    };
     let admission_signing_seed =
         decode_exact_secret("OGS_MODULE_ADMISSION_SIGNING_SEED", &admission_seed, 32)?
             .try_into()
@@ -106,6 +111,7 @@ fn parse_module_config(values: [Option<String>; 3]) -> Result<Option<ModuleConfi
         .try_into()
         .map_err(|_| anyhow!("OGS_MODULE_PAIRWISE_SECRET must decode to 32 bytes"))?;
     Ok(Some(ModuleConfig {
+        enable_first_party_report: selector.is_some(),
         admission_signing_seed,
         pairwise_secret,
     }))
@@ -375,7 +381,21 @@ mod tests {
         ])
         .expect("complete module configuration should parse")
         .expect("module should be enabled");
+        assert!(complete.enable_first_party_report);
         assert_eq!(complete.admission_signing_seed, [1_u8; 32]);
         assert_eq!(complete.pairwise_secret, [2_u8; 32]);
+        let runtime_only = parse_module_config([
+            None,
+            Some(URL_SAFE_NO_PAD.encode([3_u8; 32])),
+            Some(URL_SAFE_NO_PAD.encode([4_u8; 32])),
+        ])
+        .expect("runtime-only module configuration should parse")
+        .expect("generic module runtime should be enabled");
+        assert!(!runtime_only.enable_first_party_report);
+        assert_eq!(runtime_only.admission_signing_seed, [3_u8; 32]);
+        assert!(
+            parse_module_config([Some("enabled".to_owned()), None, None]).is_err(),
+            "the packaged selector cannot run without generic runtime keys"
+        );
     }
 }

@@ -81,10 +81,12 @@ result recorded.
   establish an explicitly marked local trust domain for inert custom
   cartridges without weakening official-client validation. Executable server
   extensions remain a separate gated system; the current production base
-  admits only one fixed reviewed observation module when explicitly enabled.
+  admits the fixed reviewed observation module and bounded, explicitly
+  acknowledged, server-bound operator-custom modules through database-local
+  administration and permanent player disclosure.
 - Portable game backends use the brokered provider protocol and a future public
   Provider SDK. General server modules and hooks are a separate, versioned,
-  capability-scoped extension family whose process-isolated first-party base
+  capability-scoped extension family whose shared process-isolated runtime
   cannot become game authority or client executable content.
 
 ## Definition of private-alpha done

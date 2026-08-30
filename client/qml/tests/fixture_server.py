@@ -249,6 +249,21 @@ class Handler(BaseHTTPRequestHandler):
                 document["operator_custom"] = self._operator_discovery()
                 self._json(200, document)
                 return
+            if self.state.mode in {
+                "custom_modules", "custom_modules_hostile", "custom_modules_wrong_server"
+            }:
+                document = self._discovery_document(
+                    SERVER_ID, "Custom Module Fixture Community"
+                )
+                document["capabilities"].append("server.operator-custom-modules.v1")
+                document["capabilities"].sort()
+                document["operator_custom_modules"] = self._module_disclosure()
+                if self.state.mode == "custom_modules_hostile":
+                    document["operator_custom_modules"]["component_bytes"] = "AGFzbQ"
+                elif self.state.mode == "custom_modules_wrong_server":
+                    document["operator_custom_modules"]["server_id"] = REPLACEMENT_SERVER_ID
+                self._json(200, document)
+                return
             self._json(200, self._discovery_document(
                 SERVER_ID, "Fixture Community"
             ))
@@ -1285,6 +1300,23 @@ class Handler(BaseHTTPRequestHandler):
             "capabilities": DISCOVERY_CAPABILITIES.copy(),
         }
 
+    @staticmethod
+    def _module_disclosure() -> dict[str, Any]:
+        return {
+            "format": "omarchygs.operator-custom-modules-disclosure/v1",
+            "server_id": SERVER_ID,
+            "active_count": 1,
+            "behavior_capabilities": ["moderation_labels"],
+            "warning": (
+                "This server runs operator-custom code not reviewed or supported "
+                "by OmarchyGS."
+            ),
+            "support_boundary": (
+                "Security, privacy, availability, and support are the server "
+                "operator's responsibility."
+            ),
+        }
+
     def _require_no_authorization(self, context: str) -> None:
         if self.headers.get("Authorization") is not None:
             self.state.violate(f"{context} unexpectedly carried Authorization")
@@ -1402,6 +1434,7 @@ def main() -> int:
     mode = sys.argv[2]
     if mode not in {
         "normal", "server_two", "catalog_only", "identity_changed", "incompatible", "slow",
+        "custom_modules", "custom_modules_hostile", "custom_modules_wrong_server",
         "malformed", "wrong_identity", "oversized", "custom",
     }:
         print(f"unsupported fixture mode: {mode}", file=sys.stderr)

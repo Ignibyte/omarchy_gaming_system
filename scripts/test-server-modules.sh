@@ -21,7 +21,9 @@ OGS_MODULE_HOST_TEST_BINARY="$ogs_host" \
     -- --ignored --exact --nocapture
 
 if ! rg -q 'ProcessSupervisor::packaged_sibling\(\)' \
-  crates/server/src/server_modules.rs; then
+  crates/server/src/server_modules.rs \
+  || ! rg -q 'ProcessSupervisor::packaged_sibling\(\)' \
+    crates/server/src/server_module_custom.rs; then
   echo "Production module startup is not bound to the packaged sibling host" >&2
   exit 1
 fi
@@ -44,9 +46,32 @@ if rg -n '(^|[[:space:]])(reqwest|sqlx|hyper|tonic)[[:space:]]*=' \
   exit 1
 fi
 
-if rg -n 'fn[[:space:]]+(install|upload|import)_.*module|custom.*module.*(path|bytes)' \
-  crates/server/src/server_modules.rs crates/server/src/bin/omarchygs-admin.rs; then
-  echo "Custom production module installation appeared before its gated ticket" >&2
+for ogs_required_custom_boundary in \
+  'custom-module-import' \
+  'custom-module-apply' \
+  'OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC' \
+  'I understand this module is unreviewed and unsupported by OmarchyGS.'; do
+  if ! rg -F -q "$ogs_required_custom_boundary" \
+    crates/server/src/server_module_custom.rs \
+    crates/server/src/bin/omarchygs-admin.rs; then
+    echo "Production custom-module boundary is missing: $ogs_required_custom_boundary" >&2
+    exit 1
+  fi
+done
+
+for ogs_required_custom_schema in \
+  "artifact_custody = 'database_immutable'" \
+  "provenance_class = 'operator_custom'" \
+  'server_module_custom_operations_immutable_rows'; do
+  if ! rg -F -q "$ogs_required_custom_schema" \
+    migrations/0027_operator_custom_server_modules.sql; then
+    echo "Production custom-module custody is missing: $ogs_required_custom_schema" >&2
+    exit 1
+  fi
+done
+
+if rg -n 'custom-module-(import|apply)|server_module_custom' crates/server/src/app.rs; then
+  echo "Custom module administration escaped the database-local CLI" >&2
   exit 1
 fi
 

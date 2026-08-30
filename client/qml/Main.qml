@@ -31,6 +31,9 @@ ApplicationWindow {
                                                    : playerReady ? "PLAYER READY" : "SETUP"
     readonly property color shellStateColor: hasShellError ? theme.danger
                                                    : playerReady ? theme.accent : theme.warning
+    readonly property var customModuleDisclosure: onboarding.currentServer
+            && onboarding.currentServer.operator_custom_modules !== undefined
+            ? onboarding.currentServer.operator_custom_modules : null
 
     Components.OgsTheme { id: theme }
 
@@ -230,7 +233,8 @@ ApplicationWindow {
         Loader {
             id: screenLoader
             objectName: "screenLoader"
-            anchors.top: brandBar.bottom
+            anchors.top: customModuleWarning.visible
+                         ? customModuleWarning.bottom : brandBar.bottom
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: footer.top
@@ -239,6 +243,40 @@ ApplicationWindow {
                 if (screenLoader.item && screenLoader.item.focusInitial)
                     screenLoader.item.focusInitial()
             })
+        }
+
+        Rectangle {
+            id: customModuleWarning
+            objectName: "operatorCustomModuleWarning"
+            anchors.top: brandBar.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: visible ? 52 : 0
+            visible: root.customModuleDisclosure !== null
+            color: theme.warning
+            Accessible.role: Accessible.AlertMessage
+            Accessible.name: visible
+                             ? root.customModuleDisclosure.warning + " "
+                               + root.customModuleDisclosure.support_boundary : ""
+
+            Text {
+                anchors.fill: parent
+                anchors.leftMargin: theme.spaceLg
+                anchors.rightMargin: theme.spaceLg
+                text: customModuleWarning.visible
+                      ? root.customModuleDisclosure.warning + " "
+                        + root.customModuleDisclosure.support_boundary : ""
+                textFormat: Text.PlainText
+                color: theme.background
+                font.family: theme.fontFamily
+                font.bold: true
+                font.pixelSize: theme.captionSize
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                wrapMode: Text.WordWrap
+                maximumLineCount: 3
+                elide: Text.ElideRight
+            }
         }
 
         Text {

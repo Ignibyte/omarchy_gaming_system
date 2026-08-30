@@ -1,17 +1,31 @@
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     os::unix::fs::{PermissionsExt as _, symlink},
+    path::{Path, PathBuf},
     process::Command,
 };
 
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
+use ed25519_dalek::SigningKey;
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tempfile::TempDir;
 use uuid::Uuid;
 
-use omarchy_gaming_system_server::server_modules::BUILTIN_INSTANCE_ID;
+use omarchy_gaming_system_server::{
+    server_module_custom::{
+        CustomModuleImportCommand, CustomModuleLifecycleAction, CustomModuleLifecycleCommand,
+        ModulePrivateKeyDocument, ModulePublicKeyDocument, UNREVIEWED_ACKNOWLEDGEMENT,
+    },
+    server_modules::BUILTIN_INSTANCE_ID,
+};
 use omarchygs_game_cartridge::generate_catalog_keypair;
-use omarchygs_server_module_runtime::{BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID};
+use omarchygs_server_module_runtime::{
+    BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID, Capability, FixtureKind, HookKind, MAX_EXECUTION_MS,
+    MAX_FRAME_BYTES, MAX_FUEL, MAX_LINEAR_MEMORY_BYTES, ModuleReleaseManifest, RELEASE_FORMAT,
+    ResourceBudgets, SignedEnvelope, WIT_PACKAGE, WIT_WORLD, WitIdentity, canonical_json,
+    encode_verifying_key, sha256_hex, verifying_key_sha256, wit_sha256,
+};
 
 const CATALOG_ARCHIVE: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const CATALOG_IDENTITY: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
@@ -745,6 +759,253 @@ async fn module_cli_lists_safe_inventory_and_applies_lifecycle_restore_commands(
         restored_inventory["modules"][0]["restored_pending_review"],
         true
     );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL plus the packaged host containment path; run scripts/test-database.sh"]
+async fn custom_module_cli_imports_replays_and_enables_without_disclosing_secrets(pool: PgPool) {
+    let database_url = isolated_database_url(&pool).await;
+    let server_id: Uuid = sqlx::query_scalar("SELECT id FROM server_identity WHERE singleton")
+        .fetch_one(&pool)
+        .await
+        .expect("server identity should resolve");
+    let fixture = custom_module_cli_fixture(server_id);
+    let import_path = fixture.directory.path().join("import-command.json");
+    write_private_bytes(
+        &import_path,
+        &canonical_json(&fixture.command).expect("import command should encode canonically"),
+    );
+
+    std::fs::set_permissions(&import_path, std::fs::Permissions::from_mode(0o644))
+        .expect("public import command mode should set");
+    let public_command =
+        run_custom_module_admin(&database_url, "custom-module-import", &import_path);
+    assert!(!public_command.status.success());
+    assert!(public_command.stdout.is_empty());
+    assert_eq!(public_command.stderr, b"server_module_invalid_input\n");
+    std::fs::set_permissions(&import_path, std::fs::Permissions::from_mode(0o600))
+        .expect("private import command mode should restore");
+
+    let imported = run_custom_module_admin(&database_url, "custom-module-import", &import_path);
+    assert!(
+        imported.status.success(),
+        "custom import failed: {}",
+        String::from_utf8_lossy(&imported.stderr)
+    );
+    assert!(imported.stderr.is_empty());
+    let receipt: Value =
+        serde_json::from_slice(&imported.stdout).expect("custom import receipt should be JSON");
+    exact_keys(
+        &receipt,
+        &[
+            "action",
+            "format",
+            "instance_id",
+            "lifecycle",
+            "lifecycle_revision",
+            "module_id",
+            "operation_id",
+            "release_id",
+            "replayed",
+            "state_revision",
+        ],
+    );
+    assert_eq!(receipt["action"], "import");
+    assert_eq!(receipt["lifecycle"], "disabled");
+    assert_eq!(receipt["replayed"], false);
+    let instance_id = Uuid::parse_str(
+        receipt["instance_id"]
+            .as_str()
+            .expect("instance identity should be text"),
+    )
+    .expect("instance identity should parse");
+    let release_id = Uuid::parse_str(
+        receipt["release_id"]
+            .as_str()
+            .expect("release identity should be text"),
+    )
+    .expect("release identity should parse");
+    let import_output = String::from_utf8(imported.stdout).expect("receipt should be UTF-8");
+    for private in [
+        fixture.command.component_path.to_string_lossy().as_ref(),
+        fixture
+            .command
+            .provenance_private_key_path
+            .to_string_lossy()
+            .as_ref(),
+        fixture.provenance_seed.as_str(),
+        "signed_release",
+        "component_bytes",
+        "publisher_public_key",
+    ] {
+        assert!(!import_output.contains(private));
+    }
+
+    let replay = run_custom_module_admin(&database_url, "custom-module-import", &import_path);
+    assert!(replay.status.success());
+    let replay: Value =
+        serde_json::from_slice(&replay.stdout).expect("import replay should be JSON");
+    assert_eq!(replay["replayed"], true);
+    assert_eq!(replay["instance_id"], instance_id.to_string());
+
+    let lifecycle_path = fixture.directory.path().join("enable-command.json");
+    let lifecycle = CustomModuleLifecycleCommand {
+        format: "omarchygs.operator-custom-module-lifecycle-command/v1".into(),
+        action: CustomModuleLifecycleAction::Enable,
+        operation_id: Uuid::new_v4(),
+        instance_id,
+        expected_lifecycle_revision: 1,
+        expected_config_revision: 1,
+        expected_state_revision: 0,
+        target_release_id: None,
+        candidate_state: None,
+        actor: "cli-module-sysop".into(),
+        reason: "Enable the exact reviewed custom module".into(),
+    };
+    write_private_bytes(
+        &lifecycle_path,
+        &canonical_json(&lifecycle).expect("lifecycle command should encode canonically"),
+    );
+    let enabled = run_custom_module_admin(&database_url, "custom-module-apply", &lifecycle_path);
+    assert!(
+        enabled.status.success(),
+        "custom enable failed: {}",
+        String::from_utf8_lossy(&enabled.stderr)
+    );
+    let enabled: Value =
+        serde_json::from_slice(&enabled.stdout).expect("enable receipt should be JSON");
+    assert_eq!(enabled["action"], "enable");
+    assert_eq!(enabled["release_id"], release_id.to_string());
+    assert_eq!(enabled["lifecycle"], "active");
+    assert_eq!(enabled["lifecycle_revision"], 2);
+}
+
+struct CustomModuleCliFixture {
+    directory: TempDir,
+    command: CustomModuleImportCommand,
+    provenance_seed: String,
+}
+
+fn custom_module_cli_fixture(server_id: Uuid) -> CustomModuleCliFixture {
+    let directory = TempDir::new().expect("custom module fixture directory should create");
+    let publisher = SigningKey::from_bytes(&[31_u8; 32]);
+    let provenance = SigningKey::from_bytes(&[41_u8; 32]);
+    let provenance_seed = URL_SAFE_NO_PAD.encode(provenance.to_bytes());
+    let component = FixtureKind::Valid.component_bytes();
+    let manifest = ModuleReleaseManifest {
+        format: RELEASE_FORMAT.into(),
+        module_id: "community.cli-helper".into(),
+        publisher_id: "community".into(),
+        release_id: Uuid::new_v4(),
+        version: "1.0.0".into(),
+        component_sha256: sha256_hex(component),
+        wit: WitIdentity {
+            package: WIT_PACKAGE.into(),
+            world: WIT_WORLD.into(),
+            major: 1,
+            sha256: wit_sha256(),
+        },
+        requested_capabilities: vec![Capability::ModerationAddLabel],
+        subscribed_hooks: vec![HookKind::PersonaReported],
+        budgets: ResourceBudgets {
+            frame_bytes: MAX_FRAME_BYTES as u32,
+            memory_bytes: MAX_LINEAR_MEMORY_BYTES as u32,
+            fuel: MAX_FUEL,
+            execution_ms: MAX_EXECUTION_MS,
+        },
+        config_schema: "community.cli-helper.config/v1".into(),
+        state_schema: "community.cli-helper.state/v1".into(),
+        entrypoint: "handle".into(),
+    };
+    let release = SignedEnvelope::sign(
+        RELEASE_FORMAT,
+        "community-publisher-v1",
+        &manifest,
+        &publisher,
+    )
+    .expect("publisher release should sign");
+    let public_key = ModulePublicKeyDocument {
+        format: "omarchygs.server-module-public-key/v1".into(),
+        algorithm: "ed25519".into(),
+        key_id: "community-publisher-v1".into(),
+        verifying_key: encode_verifying_key(&publisher.verifying_key()),
+    };
+    let private_key = ModulePrivateKeyDocument {
+        format: "omarchygs.server-module-private-key/v1".into(),
+        algorithm: "ed25519".into(),
+        key_id: "server-custom-root-v1".into(),
+        signing_seed: provenance_seed.clone(),
+    };
+    let release_path = directory.path().join("release.json");
+    let component_path = directory.path().join("component.wasm");
+    let publisher_path = directory.path().join("publisher.json");
+    let provenance_path = directory.path().join("provenance-private.json");
+    write_private_bytes(
+        &release_path,
+        &canonical_json(&release).expect("release should encode"),
+    );
+    write_private_bytes(&component_path, component);
+    write_private_bytes(
+        &publisher_path,
+        &canonical_json(&public_key).expect("publisher key should encode"),
+    );
+    write_private_bytes(
+        &provenance_path,
+        &canonical_json(&private_key).expect("private key should encode"),
+    );
+
+    CustomModuleCliFixture {
+        command: CustomModuleImportCommand {
+            format: "omarchygs.operator-custom-module-import-command/v1".into(),
+            operation_id: Uuid::new_v4(),
+            server_id,
+            signed_release_path: canonical_path(&release_path),
+            component_path: canonical_path(&component_path),
+            publisher_public_key_path: canonical_path(&publisher_path),
+            provenance_private_key_path: canonical_path(&provenance_path),
+            publisher_key_sha256: verifying_key_sha256(&publisher.verifying_key()),
+            provenance_key_sha256: verifying_key_sha256(&provenance.verifying_key()),
+            granted_capabilities: vec![Capability::ModerationAddLabel],
+            initial_config: BTreeMap::from([("policy".into(), "strict".into())]),
+            initial_state: BTreeMap::new(),
+            acknowledgement: UNREVIEWED_ACKNOWLEDGEMENT.into(),
+            actor: "cli-module-sysop".into(),
+            reason: "Import the exact custom module through the local CLI".into(),
+        },
+        directory,
+        provenance_seed,
+    }
+}
+
+fn canonical_path(path: &Path) -> PathBuf {
+    path.canonicalize()
+        .expect("fixture path should canonicalize")
+}
+
+fn write_private_bytes(path: &Path, bytes: &[u8]) {
+    std::fs::write(path, bytes).expect("private fixture should write");
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
+        .expect("private fixture permissions should restrict");
+}
+
+fn run_custom_module_admin(
+    database_url: &url::Url,
+    action: &str,
+    command_path: &Path,
+) -> std::process::Output {
+    Command::new(env!("CARGO_BIN_EXE_omarchygs-admin"))
+        .args([action, command_path.to_str().expect("UTF-8 command path")])
+        .env("DATABASE_URL", database_url.as_str())
+        .env(
+            "OGS_MODULE_ADMISSION_SIGNING_SEED",
+            URL_SAFE_NO_PAD.encode([11_u8; 32]),
+        )
+        .env(
+            "OGS_MODULE_PAIRWISE_SECRET",
+            URL_SAFE_NO_PAD.encode([22_u8; 32]),
+        )
+        .output()
+        .expect("custom module CLI should execute")
 }
 
 fn exact_keys(value: &Value, expected: &[&str]) {

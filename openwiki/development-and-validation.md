@@ -9,14 +9,6 @@ sources:
     resource: repo://client/qml/cartridge/nodes/TrustedImageNode.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
-  - id: openwiki-source-152956378e80408d69d9dfb7
-    resource: repo://client/qml/tests/fixture/tst_games.qml
-  - id: openwiki-source-f03bc5208aed9dab57ccb120
-    resource: repo://client/qml/tests/fixture/tst_marketplace.qml
-  - id: openwiki-source-93421eb71ebe4d41b6a9af26
-    resource: repo://client/qml/tests/fixture/tst_onboarding.qml
-  - id: openwiki-source-4f6d9bd2b8e769f9585e0296
-    resource: repo://client/qml/tests/fixture/tst_social.qml
   - id: openwiki-source-77962cc0ed2673a227f6eaee
     resource: repo://client/qml/tests/fixture/tst_transport.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
@@ -39,6 +31,8 @@ sources:
     resource: repo://crates/game-signal-siege/src/lib.rs
   - id: openwiki-source-ba452807898e03f1e2e27204
     resource: repo://crates/marketplace-publisher/tests/publication.rs
+  - id: openwiki-source-24c51fe062f01ef4523fa0b7
+    resource: repo://crates/server-module-runtime/tests/conformance.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
     resource: repo://crates/server/src/challenge_api_tests.rs
   - id: openwiki-source-9ba5739252220892895a7a47
@@ -47,14 +41,12 @@ sources:
     resource: repo://crates/server/src/game_api_tests.rs
   - id: openwiki-source-b2c7af59f511c4ed8a004fb0
     resource: repo://crates/server/src/inbox_api_tests.rs
-  - id: openwiki-source-d65cbc07fe905285d60110ae
-    resource: repo://crates/server/src/marketplace_sync_tests.rs
-  - id: openwiki-source-94ddb58f2dc1a71ed1959533
-    resource: repo://crates/server/src/operator_admin.rs
   - id: openwiki-source-22753602a862c32d10560204
     resource: repo://crates/server/src/persona_api_tests.rs
-  - id: openwiki-source-37dbfbe1f44680fae1be88b6
-    resource: repo://crates/server/src/server_module_tests.rs
+  - id: openwiki-source-1b621f94587f7516bb90c07a
+    resource: repo://crates/server/src/server_discovery_api_tests.rs
+  - id: openwiki-source-286b9fd128ca0b68cd7c1f30
+    resource: repo://crates/server/src/server_module_custom_tests.rs
   - id: openwiki-source-76060b846b9222af2c790243
     resource: repo://crates/server/src/signal_siege_api_tests.rs
   - id: openwiki-source-46fb4135d6a71efad1062c0d
@@ -103,10 +95,10 @@ sources:
     resource: repo://scripts/test-server-module-spike.sh
   - id: openwiki-source-5f564ae64057cbe621fc587a
     resource: repo://scripts/test-server-modules.sh
-generated: {by: "codex", at: "2026-08-28T01:06:32.318Z"}
+generated: {by: "codex", at: "2026-08-30T00:13:04.632Z"}
 verified:
   - by: openwiki/0.3.3
-    at: 2026-08-28T01:06:32.318Z
+    at: 2026-08-30T00:13:04.632Z
 ---
 
 # Development and validation
@@ -368,10 +360,12 @@ The gate currently covers:
 15. the isolated server-module nested workspace's format, lint, 21-test corpus,
     deterministic exact-WIT component fixtures, 13 contained process scenarios,
     typed-intent/state/lifecycle checks, and local-only automation enforcement;
-16. the production server-module crate and packaged host's exact release/WIT/
-    framing contract, real OS containment, fixed sibling loader, absent custom
-    artifact inputs and public routes, plus migrated observation, gap, receipt,
-    readiness-race, state/lifecycle, and restore evidence.
+16. the production server-module crate and packaged host's shared reviewed/
+    custom exact release/WIT/framing contract, real OS containment, fixed
+    sibling loader, private database-custodied custom artifacts, local-only
+    import/lifecycle boundary, absence of public routes and host network/
+    database clients, plus migrated observation, gap, receipt, readiness-race,
+    upgrade/rollback/removal, state/lifecycle, disclosure, and restore evidence.
 
 ### Platform operator recovery
 
@@ -421,18 +415,27 @@ lint, unit/integration conformance, and warning-denied rustdoc for the normal
 workspace module runtime, builds the packaged sibling host, and executes its
 ignored real-process case under the production systemd-user, Bubblewrap,
 prlimit, Wasmtime memory/fuel, and parent-deadline boundary. The script also
-asserts that production uses only the packaged sibling, accepts no component,
-release, WIT, URL, or host path, adds no public module route, gives the host no
-network/database client dependency, exposes no custom install/import entrypoint,
-and preserves local-only quality automation.
+asserts that production uses only the packaged sibling, accepts no
+environment-selected component/release/WIT/URL/host path, gives the host no
+network/database client dependency, retains custom components through private
+database custody, exposes custom import and lifecycle only through the local
+administrator, adds no public module route, and preserves local-only quality
+automation.
 
-`scripts/test-database.sh` owns the durable adapter evidence. Six serial
+`scripts/test-database.sh` owns the durable adapter evidence. Five reviewed-base
 server-module cases cover atomic private report emission, core reauthorization,
-receipt replay and retained request evidence after pruning, bounded failures
-and circuit degradation, fail-open inactive/saturated gap accounting,
-configuration/state readiness races, lifecycle/state CAS and rollback, restore,
-and honest legacy receipt upgrade semantics. The real administrator CLI suite
-adds safe inventory and private lifecycle/restore command-file coverage.
+receipt replay and retained request evidence after pruning, bounded failures and
+circuit degradation, fail-open gap accounting, readiness races,
+lifecycle/state CAS and rollback, restore, and honest legacy receipt semantics.
+Five custom-module cases add publisher/provenance and immutable custody,
+idempotent import, the eight-identity ceiling, exact expected-revision
+lifecycle, atomic upgrade and one-step rollback, terminal removal, restore
+review, concurrent CAS, shared dispatch, private receipts, and stale-admission
+denial. The real administrator CLI suite exercises safe inventory, private
+lifecycle/restore commands, and actual custom import/replay/contained enable.
+Discovery API and the 55-case QML fixture add aggregate privacy, hostile shape,
+server-identity binding, profile persistence, persistent accessibility warning,
+and compact-layout evidence.
 
 ### Production Game Cartridge conformance
 
@@ -583,14 +586,16 @@ dual-proof disablement with cleanup. Together with two account-registration
 router cases, three invitation-registration cases, three session tests, three
 persona tests, five game tests, seven challenge tests, six synchronization
 tests, four Signal Siege cases, one Door Legends authority case, two report
-cases, one server-discovery case, five cartridge-catalog cases, and six
-production server-module cases, these make sixty-two PostgreSQL-backed server
-tests. Three additional library integration tests cover marketplace
-synchronization/key rotation and operator-custom cartridge admission. Five
+cases, two server-discovery cases, five cartridge-catalog cases, and five
+reviewed-base production server-module cases, these make sixty-three
+PostgreSQL-backed server binary tests. Eight additional library integration
+tests cover marketplace synchronization/key rotation, operator-custom
+cartridge admission, and five operator-custom module cases. Five
 operator-domain database tests cover the local queues, account containment,
 invitation lifecycle, report disposition, concurrency, replay, and append-only
-audit; five integration tests execute the real CLI adapters, including the
-module commands.
+audit; six integration tests execute the real CLI adapters, including reviewed
+and custom module commands. The complete database stage therefore runs 82
+PostgreSQL-backed cases sequentially.
 The synchronization cases
 exercise durable baseline/incremental/reset behavior, mutation-coupled event
 delivery, owner privacy, and real-TCP WebSocket authentication, hinting, frame
@@ -639,10 +644,12 @@ server, so absent or stale provenance fails closed.
   failure; a trap, resource abuse, crash, or timeout must still produce its
   bounded stable outcome and permit a clean restart.
 - Production module failure: run `scripts/test-server-modules.sh`, then separate
-  signed-contract/runtime failures from packaged-host containment and fixed-
-  loader assertions. For durable emission, gaps, receipts, readiness races,
-  lifecycle, state, or restore failures, run the ignored `server_module_tests`
-  serially through `scripts/test-database.sh`; do not bypass gates 21 or 24.
+  signed-contract/runtime failures from packaged-host containment, private
+  custody, local-command, and fixed-loader assertions. For custom import,
+  lifecycle, disclosure, durable emission, gaps, receipts, readiness races,
+  state, or restore failures, run the ignored `server_module_tests` and
+  `server_module_custom_tests` serially through `scripts/test-database.sh` plus
+  the QML fixture when discovery changed; do not bypass gates 17, 18, 21, or 24.
 - Cartridge preview rejection: read the machine-readable preview error code;
   verify signature/compatibility, pinned view schema, exact action shape,
   private empty output directory, and selected Core/Rich-2D budget. Run

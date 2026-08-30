@@ -105,6 +105,36 @@ TestCase {
         controller.destroy()
     }
 
+    function test_operator_custom_module_disclosure_is_identity_bound_and_private() {
+        let controller = controllerAt(fixtureConfig.custom_modules_url)
+        tryCompare(controller, "state", "access", 5000)
+        compare(controller.connectionState, "ready")
+        verify(controller.currentServer.capabilities.indexOf(
+                   "server.operator-custom-modules.v1") !== -1)
+        const disclosure = controller.currentServer.operator_custom_modules
+        compare(disclosure.server_id, controller.currentServer.server_id)
+        compare(disclosure.active_count, 1)
+        compare(disclosure.behavior_capabilities.length, 1)
+        compare(disclosure.behavior_capabilities[0], "moderation_labels")
+        compare(disclosure.warning,
+                "This server runs operator-custom code not reviewed or supported by OmarchyGS.")
+        const serialized = controller._profileStore.serializedProfiles()
+        verify(serialized.indexOf("component_bytes") === -1)
+        verify(serialized.indexOf("signing") === -1)
+        verify(serialized.indexOf("module_id") === -1)
+        controller.destroy()
+
+        controller = controllerAt(fixtureConfig.custom_modules_hostile_url)
+        tryCompare(controller, "connectionState", "protocol_error", 5000)
+        compare(controller.hasSession, false)
+        controller.destroy()
+
+        controller = controllerAt(fixtureConfig.custom_modules_wrong_server_url)
+        tryCompare(controller, "connectionState", "protocol_error", 5000)
+        compare(controller.hasSession, false)
+        controller.destroy()
+    }
+
     function test_profiles_are_isolated_and_identity_replacement_fails_closed() {
         const controller = createTemporaryObject(controllerComponent, testCase)
         verify(controller !== null)

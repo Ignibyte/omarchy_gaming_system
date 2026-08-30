@@ -550,6 +550,8 @@ QtObject {
                       "protocol_version", "capabilities"]
         if (document.operator_custom !== undefined)
             keys.push("operator_custom")
+        if (document.operator_custom_modules !== undefined)
+            keys.push("operator_custom_modules")
         if (!api.exactKeys(document, keys)
                 || document.service !== "omarchy-gaming-system"
                 || !_validUuid(document.server_id)
@@ -558,7 +560,10 @@ QtObject {
                 || !Array.isArray(document.capabilities)
                 || document.capabilities.length > 32
                 || (document.operator_custom !== undefined
-                    && !_validOperatorCustom(document.operator_custom)))
+                    && !_validOperatorCustom(document.operator_custom))
+                || (document.operator_custom_modules !== undefined
+                    && !_validOperatorCustomModules(document.operator_custom_modules,
+                                                    document.server_id)))
             return {"ok": false}
         let previous = ""
         for (let index = 0; index < document.capabilities.length; index++) {
@@ -584,6 +589,8 @@ QtObject {
         }
         if (document.operator_custom !== undefined)
             profile.operator_custom = document.operator_custom
+        if (document.operator_custom_modules !== undefined)
+            profile.operator_custom_modules = document.operator_custom_modules
         return {
             "ok": true,
             "incompatible": incompatible,
@@ -608,6 +615,31 @@ QtObject {
                 && key.key_id === value.key_id && key.authority_id === value.authority_id
                 && typeof key.verifying_key === "string"
                 && /^[A-Za-z0-9_-]{43}$/.test(key.verifying_key)
+    }
+
+    function _validOperatorCustomModules(value, serverId) {
+        if (!value || typeof value !== "object"
+                || !api.exactKeys(value, ["format", "server_id", "active_count",
+                                          "behavior_capabilities", "warning",
+                                          "support_boundary"])
+                || value.format !== "omarchygs.operator-custom-modules-disclosure/v1"
+                || value.server_id !== serverId
+                || !Number.isInteger(value.active_count)
+                || value.active_count < 1 || value.active_count > 8
+                || !Array.isArray(value.behavior_capabilities)
+                || value.behavior_capabilities.length > 4
+                || value.warning !== "This server runs operator-custom code not reviewed or supported by OmarchyGS."
+                || value.support_boundary !== "Security, privacy, availability, and support are the server operator's responsibility.")
+            return false
+        let previous = ""
+        for (let index = 0; index < value.behavior_capabilities.length; index++) {
+            const capability = value.behavior_capabilities[index]
+            if (capability !== "moderation_labels"
+                    || (index > 0 && previous >= capability))
+                return false
+            previous = capability
+        }
+        return true
     }
 
     function _boundedPublicString(value, maximum, minimum) {

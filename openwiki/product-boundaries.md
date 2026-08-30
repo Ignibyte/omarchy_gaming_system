@@ -81,10 +81,7 @@ sources:
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-generated: {by: "codex", at: "2026-08-28T00:35:08.763Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-28T01:06:32.318Z
+generated: {by: "codex", at: "2026-08-30T00:13:04.632Z"}
 ---
 
 # Product and architecture boundaries
@@ -245,14 +242,17 @@ mounting are implemented. Eligible session-to-cartridge binding, trusted
 entry-screen rendering, and server-authorized declared actions are also
 implemented, as are signed host-local multi-screen navigation and the
 offline-root-authenticated public trust/package channel. Explicit
-operator-custom trust, source-aware server admission/history, and persistent
-unvetted player warnings are implemented without granting new executable or
-gameplay authority. The first production server-module slice is also
-implemented for one exact compiled-in reviewed observation component without
-opening custom installation. Federation, server
+operator-custom cartridge trust, source-aware server admission/history, and
+persistent unvetted player warnings are implemented without granting new
+executable or gameplay authority. The production server-module boundary now
+includes both one exact compiled-in reviewed observation component and bounded
+database-local operator-custom import and lifecycle. The custom path changes
+provenance, player disclosure, and operator responsibility while retaining the
+same no-WASI host, typed intent, capability, state, receipt, and
+core-reauthorization limits. Federation, server
 identity fork/rotation, marketplace-root rotation, remote administration,
 external-provider onboarding, automatic privileged package installation,
-and general plugins remain later slices.
+broader hooks, module egress, and general plugins remain later slices.
 
 The current server is a local development slice. Bearer tokens require
 production TLS in transit, and public login requires distributed attempt
@@ -390,15 +390,23 @@ prove real production root custody, hosting, monitoring, or staff separation.
 
 Executable extension families stay separate. Portable game rules use the
 authenticated provider boundary and a future public Provider SDK. ADR-0004's
-dedicated no-WASI Component Model host is implemented for one opt-in,
-compiled-in Sentinel release. It receives only a privacy-minimized
-`persona_reported` observation and may propose only one typed moderation label;
-core reauthorizes current authority and commits the effect. The isolated Ticket
-039 proof remains independent. No dynamic Rust plugin ABI, discovery
-marketplace, arbitrary executable path, mutable hosted marketplace application
-service, operator-custom module installation, additional hook class, or
-external-provider onboarding is implemented or authorized.
-See [Server modules](server-modules.md) for the exact boundary and next slices.
+dedicated no-WASI Component Model host is implemented for the opt-in compiled-in
+Sentinel release and up to eight explicitly admitted operator-custom module
+identities. Every release receives only a privacy-minimized
+`persona_reported` observation and may propose only the granted typed moderation
+label; core reauthorizes current authority and commits the effect. Reviewed and
+custom provenance use distinct claims and player warnings but the same WIT,
+capability, resource, state, dispatcher, receipt, and sandbox rules.
+
+Custom administration is database-local over owner-private canonical files and
+exact expected revisions. It does not create an HTTP, WebSocket, QML,
+cartridge, or marketplace installation route, and runtime paths remain
+core-created from immutable PostgreSQL custody. The isolated Ticket 039 proof
+remains independent. No dynamic Rust plugin ABI, discovery marketplace,
+operator-selected execution path, mutable hosted marketplace application
+service, additional hook class, egress, game authority, or external-provider
+onboarding is implemented or authorized. See [Server modules](server-modules.md)
+for the exact boundary and local responsibility model.
 
 The implemented public channel authenticates bounded trust and native package
 metadata, not gameplay or privileged installation. Its package bootstrap pins

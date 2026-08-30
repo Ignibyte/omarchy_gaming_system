@@ -21,6 +21,21 @@ const BASE_CAPABILITIES: [&str; 12] = [
     "sync.websocket-hints.v1",
 ];
 
+pub(crate) const CUSTOM_MODULE_WARNING: &str =
+    "This server runs operator-custom code not reviewed or supported by OmarchyGS.";
+pub(crate) const CUSTOM_MODULE_SUPPORT_BOUNDARY: &str =
+    "Security, privacy, availability, and support are the server operator's responsibility.";
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+pub(crate) struct OperatorCustomModulesDisclosure {
+    format: &'static str,
+    server_id: String,
+    active_count: u8,
+    behavior_capabilities: Vec<&'static str>,
+    warning: &'static str,
+    support_boundary: &'static str,
+}
+
 #[derive(Debug, Serialize, PartialEq, Eq)]
 pub(crate) struct DiscoveryDocument {
     service: &'static str,
@@ -30,6 +45,8 @@ pub(crate) struct DiscoveryDocument {
     capabilities: Vec<&'static str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     operator_custom: Option<OperatorCustomAuthority>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    operator_custom_modules: Option<OperatorCustomModulesDisclosure>,
 }
 
 pub(crate) async fn document(
@@ -44,12 +61,53 @@ pub(crate) async fn document(
             .fetch_one(pool)
             .await?;
 
+    let (active_count, moderation_labels): (i64, bool) = sqlx::query_as(
+        r#"
+        SELECT count(*), COALESCE(
+            bool_or('moderation_add_label' = ANY(a.granted_capabilities)),
+            FALSE
+        )
+        FROM server_module_instances i
+        JOIN server_module_releases r ON r.release_id = i.release_id
+        LEFT JOIN server_module_admissions a
+          ON a.admission_id = i.current_admission_id
+         AND a.lifecycle_revision = i.current_admission_revision
+        WHERE r.provenance_class = 'operator_custom'
+          AND i.lifecycle IN ('active', 'degraded')
+        "#,
+    )
+    .fetch_one(pool)
+    .await?;
+    let operator_custom_modules = if active_count == 0 {
+        None
+    } else {
+        let active_count = u8::try_from(active_count)
+            .ok()
+            .filter(|count| (1..=8).contains(count))
+            .ok_or_else(|| {
+                sqlx::Error::Protocol("custom module disclosure count invalid".into())
+            })?;
+        Some(OperatorCustomModulesDisclosure {
+            format: "omarchygs.operator-custom-modules-disclosure/v1",
+            server_id: server_id.to_string(),
+            active_count,
+            behavior_capabilities: if moderation_labels {
+                vec!["moderation_labels"]
+            } else {
+                Vec::new()
+            },
+            warning: CUSTOM_MODULE_WARNING,
+            support_boundary: CUSTOM_MODULE_SUPPORT_BOUNDARY,
+        })
+    };
+
     Ok(document_for(
         server_id,
         server_name,
         provider_enabled,
         cartridge_runtime_enabled,
         operator_custom,
+        operator_custom_modules,
     ))
 }
 
@@ -59,6 +117,7 @@ fn document_for(
     provider_enabled: bool,
     cartridge_runtime_enabled: bool,
     operator_custom: Option<&OperatorCustomAuthority>,
+    operator_custom_modules: Option<OperatorCustomModulesDisclosure>,
 ) -> DiscoveryDocument {
     let mut capabilities = BASE_CAPABILITIES.to_vec();
     if provider_enabled {
@@ -75,6 +134,10 @@ fn document_for(
         capabilities.push("games.operator-custom-cartridges.v1");
         capabilities.sort_unstable();
     }
+    if operator_custom_modules.is_some() {
+        capabilities.push("server.operator-custom-modules.v1");
+        capabilities.sort_unstable();
+    }
 
     DiscoveryDocument {
         service: "omarchy-gaming-system",
@@ -83,6 +146,7 @@ fn document_for(
         protocol_version: PROTOCOL_VERSION,
         capabilities,
         operator_custom: operator_custom.cloned(),
+        operator_custom_modules,
     }
 }
 
@@ -100,8 +164,8 @@ mod tests {
     #[test]
     fn provider_capability_is_truthful_and_ordered() {
         let server_id = Uuid::from_u128(1);
-        let base = document_for(server_id, "Test Community", false, false, None);
-        let provider = document_for(server_id, "Test Community", true, false, None);
+        let base = document_for(server_id, "Test Community", false, false, None, None);
+        let provider = document_for(server_id, "Test Community", true, false, None, None);
 
         assert!(!base.capabilities.contains(&"games.registered-provider.v1"));
         assert!(
@@ -119,7 +183,14 @@ mod tests {
 
     #[test]
     fn acquisition_capability_is_truthful_and_ordered() {
-        let document = document_for(Uuid::from_u128(1), "Test Community", false, true, None);
+        let document = document_for(
+            Uuid::from_u128(1),
+            "Test Community",
+            false,
+            true,
+            None,
+            None,
+        );
         assert!(
             document
                 .capabilities

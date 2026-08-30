@@ -24,6 +24,10 @@ use omarchy_gaming_system_server::{
         OperatorCustomAdminConfig, OperatorCustomError, apply_custom_policy,
         authorize_public_authority, import_custom_release,
     },
+    server_module_custom::{
+        CustomModuleAdminConfig, MAX_CUSTOM_MODULE_COMMAND_BYTES, apply_custom_lifecycle,
+        decode_import_command, decode_lifecycle_command, import_custom_module,
+    },
     server_modules::{
         ModuleError, ModuleLifecycleCommand, apply_lifecycle_command, list_module_inventory,
         prepare_restored_modules,
@@ -35,7 +39,7 @@ use operator_admin::{
     apply_command, list_invitations, list_reports,
 };
 use rustix::{
-    fs::{Mode, OFlags, open},
+    fs::{CWD, Mode, OFlags, ResolveFlags, openat2},
     process::geteuid,
 };
 use sqlx::postgres::PgPoolOptions;
@@ -316,6 +320,34 @@ async fn run() -> Result<(), AdminError> {
             .map_err(|_| AdminError::Module(ModuleError::InvalidInput))?;
         serde_json::to_value(apply_lifecycle_command(&pool, &command).await?)
             .map_err(|_| AdminError::Module(ModuleError::Internal))?
+    } else if action == OsStr::new("custom-module-import") {
+        let document_path = arguments
+            .next()
+            .map(PathBuf::from)
+            .ok_or(AdminError::Module(ModuleError::InvalidInput))?;
+        if !document_path.is_absolute() || arguments.next().is_some() {
+            return Err(ModuleError::InvalidInput.into());
+        }
+        let document = read_bounded(&document_path, MAX_CUSTOM_MODULE_COMMAND_BYTES)
+            .map_err(|_| AdminError::Module(ModuleError::InvalidInput))?;
+        let command = decode_import_command(&document)?;
+        let config = CustomModuleAdminConfig::from_environment()?;
+        serde_json::to_value(import_custom_module(&pool, &config, &command).await?)
+            .map_err(|_| AdminError::Module(ModuleError::Internal))?
+    } else if action == OsStr::new("custom-module-apply") {
+        let document_path = arguments
+            .next()
+            .map(PathBuf::from)
+            .ok_or(AdminError::Module(ModuleError::InvalidInput))?;
+        if !document_path.is_absolute() || arguments.next().is_some() {
+            return Err(ModuleError::InvalidInput.into());
+        }
+        let document = read_bounded(&document_path, MAX_CUSTOM_MODULE_COMMAND_BYTES)
+            .map_err(|_| AdminError::Module(ModuleError::InvalidInput))?;
+        let command = decode_lifecycle_command(&document)?;
+        let config = CustomModuleAdminConfig::from_environment()?;
+        serde_json::to_value(apply_custom_lifecycle(&pool, &config, &command).await?)
+            .map_err(|_| AdminError::Module(ModuleError::Internal))?
     } else if action == OsStr::new("module-restore") {
         let document_path = arguments
             .next()
@@ -359,10 +391,12 @@ fn read_bounded(path: &Path, limit: usize) -> Result<Vec<u8>, OperatorError> {
         return Err(OperatorError::InvalidInput);
     }
     let mut file = File::from(
-        open(
+        openat2(
+            CWD,
             path,
             OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
             Mode::empty(),
+            ResolveFlags::NO_SYMLINKS | ResolveFlags::NO_MAGICLINKS,
         )
         .map_err(|_| OperatorError::InvalidInput)?,
     );

@@ -1,12 +1,12 @@
 ---
 title: TICKET-041-administrator-custom-server-module-installation-and-provenance
-status: open
+status: closed
 ticket_number: 041
 type: feature
 created: 2026-08-27
-closed:
+closed: 2026-08-29
 intake:
-pipeline_spec:
+pipeline_spec: docs/planning/pipeline/completed/administrator-custom-server-module-installation-and-provenance.spec.md
 ---
 
 # TICKET-041-administrator-custom-server-module-installation-and-provenance
@@ -49,5 +49,5 @@ capabilities, inherit server secrets, or become OmarchyGS-supported code.
 ## Links
 
 - Intake:
-- Pipeline spec:
+- Pipeline spec: [administrator-custom-server-module-installation-and-provenance.spec.md](../../pipeline/completed/administrator-custom-server-module-installation-and-provenance.spec.md)
 - Architecture: [ADR-0004](../../../architecture/adr-0004-process-isolated-wasm-server-modules.md), [Server modules](../../../architecture/server-modules.md)

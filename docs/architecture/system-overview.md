@@ -45,13 +45,15 @@ PostgreSQL
   ADR-0004 process-isolated no-WASI Component Model host, exact WIT contracts,
   and capability-scoped typed hooks/intents. Core reauthorizes every proposal;
   modules cannot shortcut domain authorization or become gameplay authority.
-- The production module base is disabled unless the exact all-or-none
-  first-party configuration is present. It admits only the compiled-in reviewed
-  Sentinel release, durably observes new persona reports, and may propose only
-  a core-reauthorized `priority_review` label. It exposes no public module route,
-  custom artifact path, arbitrary egress, client code, or gameplay authority.
-- A server operator may eventually admit marketplace-vetted or explicitly
-  operator-custom content. Provenance and support expectations differ, but the
+- The production module base uses all-or-none runtime keys. It can register the
+  compiled-in reviewed Sentinel release and can dispatch up to eight privately
+  admitted, server-bound operator-custom module identities. Both durably
+  observe minimized report events and may propose only a core-reauthorized
+  `priority_review` label. It exposes no public mutation route, configurable
+  host/artifact path, arbitrary egress, client code, or gameplay authority.
+- A server operator may admit explicitly operator-custom content and may later
+  admit marketplace-vetted modules after that separate gate. Provenance and
+  support expectations differ, but the
   official client never accepts raw server-supplied QML, JavaScript, native
   code, credentials, or arbitrary network destinations from either class.
 - The player-device deployment unit is a native Arch package containing only
@@ -384,7 +386,8 @@ that direction to owner-operated communities. A vetted marketplace can publish
 exact signed releases, and each server operator now chooses what to synchronize
 and independently admit. Players can acquire/cache current selected cartridges
 or explicitly recover an exact old session pin for trusted mounted rendering. A
-future Provider SDK packages the brokered backend contract; a separate future module base supplies typed,
-capability-scoped server hooks only after an isolation spike. Operator-custom
-server content must be visibly distinct from vetted content and remains
-subject to every official-client cartridge bound.
+future Provider SDK packages the brokered backend contract. The separate
+module base now supplies its first observation-only typed hook through one
+shared process-isolated runtime for reviewed and operator-custom provenance.
+Operator-custom server behavior is visibly distinct, remains server-bound and
+unsupported, and cannot weaken any official-client cartridge bound.

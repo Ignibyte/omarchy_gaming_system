@@ -96,7 +96,7 @@ async fn main() -> Result<()> {
             )?;
             (service, Some(emitter))
         }
-        None => (None, None),
+        None => (None, Some(server_modules::ModuleEmitter::unconfigured())),
     };
     let module_shutdown = module_service
         .as_ref()

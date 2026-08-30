@@ -77,10 +77,11 @@ The current gates are:
     capability-scoped typed hooks/intents, state/lifecycle/replay bounds,
     systemd/Bubblewrap containment, hostile runtime cases, deterministic
     fixtures, and local-only automation enforcement
-24. The production server-module base, including the fixed reviewed component
-    digest, no-WASI process containment, hostile host recovery, packaged-host
-    binding, absence of public administration routes/custom artifact inputs,
-    and local-only automation enforcement
+24. The production server-module base and operator-custom admission path,
+    including reviewed/custom trust separation, exact component custody,
+    no-WASI process containment, hostile host recovery, packaged-host binding,
+    database-local private administration, absence of public administration
+    routes/client executable delivery, and local-only automation enforcement
 
 Repository-local CodeGraph and OpenWiki are workflow instruments, not CI
 dependencies. `scripts/setup-pipeline-tools.sh` prepares their pinned generated

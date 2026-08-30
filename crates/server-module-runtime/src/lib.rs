@@ -1,8 +1,9 @@
 //! Production contract and isolated execution boundary for OmarchyGS server modules.
 //!
-//! The current production catalog contains exactly one reviewed first-party
-//! fixture. This crate deliberately exposes no arbitrary artifact loader,
-//! network hostcall, WASI linker, database handle, or client-code surface.
+//! Releases may be reviewed or explicitly trusted by a server operator, but
+//! every artifact crosses the same exact Component Model, capability, resource,
+//! and process-containment boundary. This crate exposes no network hostcall,
+//! WASI linker, database handle, server secret, or client-code surface.
 
 use std::{
     collections::BTreeMap,
@@ -24,7 +25,7 @@ use wasmtime::component::{Component, Linker};
 use wasmtime::{Config, Engine, Store, StoreLimits, StoreLimitsBuilder};
 
 /// Maximum component and signed-document bytes accepted before processing.
-pub const MAX_ARTIFACT_BYTES: usize = 1024 * 1024;
+pub const MAX_ARTIFACT_BYTES: usize = 2 * 1024 * 1024;
 /// Maximum canonical local-control frame accepted before allocation.
 pub const MAX_FRAME_BYTES: usize = 64 * 1024;
 /// Maximum guest linear memory for one invocation.
@@ -368,36 +369,37 @@ pub struct ModuleReleaseManifest {
 }
 
 impl ModuleReleaseManifest {
-    fn validate(&self) -> Result<(), ModuleRuntimeError> {
-        if self.format != RELEASE_FORMAT
-            || self.module_id != BUILTIN_MODULE_ID
-            || self.publisher_id != "ignibyte"
-            || self.release_id != BUILTIN_RELEASE_ID
-            || self.version != "1.0.0"
-            || self.entrypoint != "handle"
+    /// Validate the generic v1 production release contract without granting it.
+    pub fn validate(&self) -> Result<(), ModuleRuntimeError> {
+        if self.format != RELEASE_FORMAT || self.release_id.is_nil() || self.entrypoint != "handle"
         {
             return Err(ModuleRuntimeError::Contract(
-                "release is not the compiled production identity".into(),
+                "release format, identity, or entrypoint is invalid".into(),
             ));
         }
+        validate_lower_identifier("module id", &self.module_id, 96, false)?;
+        validate_lower_identifier("publisher id", &self.publisher_id, 96, false)?;
+        validate_text("release version", &self.version, 64)?;
         validate_digest(&self.component_sha256)?;
         validate_wit(&self.wit)?;
-        validate_sorted_unique("requested capabilities", &self.requested_capabilities)?;
+        validate_sorted_unique_allow_empty("requested capabilities", &self.requested_capabilities)?;
         validate_sorted_unique("subscribed hooks", &self.subscribed_hooks)?;
-        if self.requested_capabilities != [Capability::ModerationAddLabel]
-            || self.subscribed_hooks != [HookKind::PersonaReported]
-            || self.config_schema != "ignibyte.sentinel.config/v1"
-            || self.state_schema != "ignibyte.sentinel.state/v1"
+        if !is_subset(
+            &self.requested_capabilities,
+            &[Capability::ModerationAddLabel],
+        ) || self.subscribed_hooks != [HookKind::PersonaReported]
         {
             return Err(ModuleRuntimeError::Contract(
-                "release power or schema is not allowlisted".into(),
+                "release power or hook is not allowlisted".into(),
             ));
         }
+        validate_lower_identifier("configuration schema", &self.config_schema, 128, true)?;
+        validate_lower_identifier("state schema", &self.state_schema, 128, true)?;
         self.budgets.validate()
     }
 }
 
-/// Independent first-party review statement; it never grants a capability.
+/// Independent review/operator statement; it never grants a capability.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ModuleProvenance {
@@ -405,10 +407,41 @@ pub struct ModuleProvenance {
     pub format: String,
     /// Digest of the signed release payload.
     pub release_manifest_sha256: String,
-    /// Fixed reviewed-fixture identity.
-    pub review_id: Uuid,
+    /// Review identity for reviewed provenance; absent for operator-custom trust.
+    pub review_id: Option<Uuid>,
     /// Human-independent provenance class.
     pub class: String,
+    /// Stable owner server binding required only for operator-custom trust.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub server_id: Option<Uuid>,
+}
+
+impl ModuleProvenance {
+    /// Validate the provenance class and its mutually exclusive trust evidence.
+    pub fn validate(&self) -> Result<(), ModuleRuntimeError> {
+        if self.format != PROVENANCE_FORMAT {
+            return Err(ModuleRuntimeError::Contract(
+                "provenance format is invalid".into(),
+            ));
+        }
+        validate_digest(&self.release_manifest_sha256)?;
+        match self.class.as_str() {
+            "first_party_reviewed_fixture" | "marketplace_vetted"
+                if self.review_id.is_some_and(|id| !id.is_nil()) && self.server_id.is_none() =>
+            {
+                Ok(())
+            }
+            "operator_custom"
+                if self.review_id.is_none()
+                    && self.server_id.is_some_and(|server_id| !server_id.is_nil()) =>
+            {
+                Ok(())
+            }
+            _ => Err(ModuleRuntimeError::Contract(
+                "provenance class or authority shape is invalid".into(),
+            )),
+        }
+    }
 }
 
 /// Current core lifecycle state encoded into an exact admission.
@@ -612,6 +645,17 @@ pub struct HostResponse {
     pub outcome: HostResult,
 }
 
+fn rejected_response(request: &HostRequest, code: &str) -> HostResponse {
+    HostResponse {
+        format: RESPONSE_FORMAT.into(),
+        event_id: request.event.event_id,
+        release_id: request.event.release_id,
+        admission_id: request.event.admission_id,
+        admission_revision: request.event.admission_revision,
+        outcome: HostResult::Rejected { code: code.into() },
+    }
+}
+
 /// Host readiness evidence emitted before the request is accepted.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -664,7 +708,7 @@ impl HostReady {
     }
 }
 
-/// Verified immutable release and provenance material.
+/// Verified immutable release, provenance, authorities, and component material.
 #[derive(Clone, Debug)]
 pub struct ReviewedRelease {
     /// Signed release envelope.
@@ -675,6 +719,48 @@ pub struct ReviewedRelease {
     pub provenance: SignedEnvelope,
     /// Strict decoded provenance.
     pub provenance_statement: ModuleProvenance,
+    /// Exact publisher key identity provisioned outside guest frames.
+    pub publisher_key_id: String,
+    /// Exact publisher public key provisioned outside guest frames.
+    pub publisher_public_key: VerifyingKey,
+    /// Exact provenance key identity provisioned outside guest frames.
+    pub provenance_key_id: String,
+    /// Exact provenance public key provisioned outside guest frames.
+    pub provenance_public_key: VerifyingKey,
+    /// Exact immutable binary Component Model artifact.
+    pub component_bytes: Vec<u8>,
+}
+
+/// Out-of-band public trust roots and provenance expectations supplied to a host.
+#[derive(Clone, Debug)]
+pub struct ExecutionTrust {
+    /// Expected publisher key identity.
+    pub publisher_key_id: String,
+    /// Explicitly trusted publisher public key.
+    pub publisher_public_key: VerifyingKey,
+    /// Expected review/operator key identity.
+    pub provenance_key_id: String,
+    /// Explicitly trusted review/operator public key.
+    pub provenance_public_key: VerifyingKey,
+    /// Expected provenance class.
+    pub provenance_class: String,
+    /// Required owner-server binding for custom provenance.
+    pub provenance_server_id: Option<Uuid>,
+}
+
+impl ReviewedRelease {
+    /// Public trust arguments for the isolated host. These are not guest data.
+    #[must_use]
+    pub fn execution_trust(&self) -> ExecutionTrust {
+        ExecutionTrust {
+            publisher_key_id: self.publisher_key_id.clone(),
+            publisher_public_key: self.publisher_public_key,
+            provenance_key_id: self.provenance_key_id.clone(),
+            provenance_public_key: self.provenance_public_key,
+            provenance_class: self.provenance_statement.class.clone(),
+            provenance_server_id: self.provenance_statement.server_id,
+        }
+    }
 }
 
 /// Strict decoded request facts.
@@ -716,8 +802,9 @@ pub fn reviewed_release_for(kind: FixtureKind) -> Result<ReviewedRelease, Module
     let provenance_statement = ModuleProvenance {
         format: PROVENANCE_FORMAT.into(),
         release_manifest_sha256: release.payload_sha256()?,
-        review_id: BUILTIN_REVIEW_ID,
+        review_id: Some(BUILTIN_REVIEW_ID),
         class: "first_party_reviewed_fixture".into(),
+        server_id: None,
     };
     let reviewer = SigningKey::from_bytes(&REVIEW_FIXTURE_SEED);
     let provenance = SignedEnvelope::sign(
@@ -731,7 +818,92 @@ pub fn reviewed_release_for(kind: FixtureKind) -> Result<ReviewedRelease, Module
         manifest,
         provenance,
         provenance_statement,
+        publisher_key_id: PUBLISHER_KEY_ID.into(),
+        publisher_public_key: publisher.verifying_key(),
+        provenance_key_id: REVIEW_KEY_ID.into(),
+        provenance_public_key: reviewer.verifying_key(),
+        component_bytes: kind.component_bytes().to_vec(),
     })
+}
+
+/// Verify and assemble one exact release from independently supplied trust roots.
+pub fn verify_release_material(
+    release: SignedEnvelope,
+    provenance: SignedEnvelope,
+    trust: &ExecutionTrust,
+    component_bytes: Vec<u8>,
+) -> Result<ReviewedRelease, ModuleRuntimeError> {
+    validate_lower_identifier("publisher key id", &trust.publisher_key_id, 96, false)?;
+    validate_lower_identifier("provenance key id", &trust.provenance_key_id, 96, false)?;
+    if component_bytes.len() < 8
+        || component_bytes.len() > MAX_ARTIFACT_BYTES
+        || !component_bytes.starts_with(b"\0asm")
+    {
+        return Err(ModuleRuntimeError::Contract(
+            "component bytes are not a bounded binary component".into(),
+        ));
+    }
+    let manifest: ModuleReleaseManifest = release.verify(
+        RELEASE_FORMAT,
+        &trust.publisher_key_id,
+        &trust.publisher_public_key,
+    )?;
+    manifest.validate()?;
+    let provenance_statement: ModuleProvenance = provenance.verify(
+        PROVENANCE_FORMAT,
+        &trust.provenance_key_id,
+        &trust.provenance_public_key,
+    )?;
+    provenance_statement.validate()?;
+    if provenance_statement.class != trust.provenance_class
+        || provenance_statement.server_id != trust.provenance_server_id
+        || provenance_statement.release_manifest_sha256 != release.payload_sha256()?
+        || manifest.component_sha256 != sha256_hex(&component_bytes)
+    {
+        return Err(ModuleRuntimeError::Integrity(
+            "release, provenance, server, or component binding mismatch".into(),
+        ));
+    }
+    Ok(ReviewedRelease {
+        release,
+        manifest,
+        provenance,
+        provenance_statement,
+        publisher_key_id: trust.publisher_key_id.clone(),
+        publisher_public_key: trust.publisher_public_key,
+        provenance_key_id: trust.provenance_key_id.clone(),
+        provenance_public_key: trust.provenance_public_key,
+        component_bytes,
+    })
+}
+
+/// Sign server-bound operator-custom provenance after publisher verification.
+pub fn sign_operator_custom_provenance(
+    release: &SignedEnvelope,
+    server_id: Uuid,
+    provenance_key_id: &str,
+    provenance_key: &SigningKey,
+) -> Result<(ModuleProvenance, SignedEnvelope), ModuleRuntimeError> {
+    if server_id.is_nil() {
+        return Err(ModuleRuntimeError::Contract(
+            "operator-custom provenance requires a server identity".into(),
+        ));
+    }
+    let statement = ModuleProvenance {
+        format: PROVENANCE_FORMAT.into(),
+        release_manifest_sha256: release.payload_sha256()?,
+        review_id: None,
+        class: "operator_custom".into(),
+        server_id: Some(server_id),
+    };
+    statement.validate()?;
+    let envelope = SignedEnvelope::sign(
+        PROVENANCE_FORMAT,
+        provenance_key_id,
+        &statement,
+        provenance_key,
+    )?;
+    Ok((statement, envelope))
 }
 
 /// Create one server-specific active signed admission for an explicit grant.
@@ -744,9 +916,8 @@ pub fn sign_active_admission(
     state_revision: u64,
     core_key: &SigningKey,
 ) -> Result<(ModuleAdmission, SignedEnvelope), ModuleRuntimeError> {
-    sign_active_admission_for(
+    sign_active_admission_with_grants(
         reviewed,
-        FixtureKind::Valid,
         AdmissionCoordinates {
             server_id,
             admission_id,
@@ -754,8 +925,75 @@ pub fn sign_active_admission(
             config_revision,
             state_revision,
         },
+        vec![Capability::ModerationAddLabel],
+        vec![HookKind::PersonaReported],
         core_key,
     )
+}
+
+/// Create a server-specific admission for an explicit reviewed grant subset.
+pub fn sign_active_admission_with_grants(
+    reviewed: &ReviewedRelease,
+    coordinates: AdmissionCoordinates,
+    granted_capabilities: Vec<Capability>,
+    subscribed_hooks: Vec<HookKind>,
+    core_key: &SigningKey,
+) -> Result<(ModuleAdmission, SignedEnvelope), ModuleRuntimeError> {
+    let AdmissionCoordinates {
+        server_id,
+        admission_id,
+        lifecycle_revision,
+        config_revision,
+        state_revision,
+    } = coordinates;
+    if server_id.is_nil()
+        || admission_id.is_nil()
+        || lifecycle_revision == 0
+        || config_revision == 0
+    {
+        return Err(ModuleRuntimeError::Contract(
+            "invalid admission identity or revision".into(),
+        ));
+    }
+    verify_release_material(
+        reviewed.release.clone(),
+        reviewed.provenance.clone(),
+        &reviewed.execution_trust(),
+        reviewed.component_bytes.clone(),
+    )?;
+    validate_sorted_unique_allow_empty("granted capabilities", &granted_capabilities)?;
+    validate_sorted_unique("subscribed hooks", &subscribed_hooks)?;
+    if !is_subset(
+        &granted_capabilities,
+        &reviewed.manifest.requested_capabilities,
+    ) || !is_subset(&subscribed_hooks, &reviewed.manifest.subscribed_hooks)
+    {
+        return Err(ModuleRuntimeError::Contract(
+            "admission grant exceeds the release request".into(),
+        ));
+    }
+    let admission = ModuleAdmission {
+        format: ADMISSION_FORMAT.into(),
+        server_id,
+        admission_id,
+        lifecycle_revision,
+        lifecycle: LifecycleStatus::Active,
+        module_id: reviewed.manifest.module_id.clone(),
+        release_id: reviewed.manifest.release_id,
+        component_sha256: reviewed.manifest.component_sha256.clone(),
+        release_manifest_sha256: reviewed.release.payload_sha256()?,
+        provenance_sha256: reviewed.provenance.payload_sha256()?,
+        wit: reviewed.manifest.wit.clone(),
+        granted_capabilities,
+        subscribed_hooks,
+        budgets: reviewed.manifest.budgets.clone(),
+        config_revision,
+        state_schema: reviewed.manifest.state_schema.clone(),
+        state_revision,
+    };
+    validate_admission(&admission)?;
+    let envelope = SignedEnvelope::sign(ADMISSION_FORMAT, CORE_KEY_ID, &admission, core_key)?;
+    Ok((admission, envelope))
 }
 
 /// Admission coordinates varied only by the fixed hostile conformance corpus.
@@ -776,44 +1014,14 @@ pub fn sign_active_admission_for(
     coordinates: AdmissionCoordinates,
     core_key: &SigningKey,
 ) -> Result<(ModuleAdmission, SignedEnvelope), ModuleRuntimeError> {
-    let AdmissionCoordinates {
-        server_id,
-        admission_id,
-        lifecycle_revision,
-        config_revision,
-        state_revision,
-    } = coordinates;
-    if server_id.is_nil()
-        || admission_id.is_nil()
-        || lifecycle_revision == 0
-        || config_revision == 0
-    {
-        return Err(ModuleRuntimeError::Contract(
-            "invalid admission identity or revision".into(),
-        ));
-    }
     verify_reviewed_release(reviewed, kind)?;
-    let admission = ModuleAdmission {
-        format: ADMISSION_FORMAT.into(),
-        server_id,
-        admission_id,
-        lifecycle_revision,
-        lifecycle: LifecycleStatus::Active,
-        module_id: reviewed.manifest.module_id.clone(),
-        release_id: reviewed.manifest.release_id,
-        component_sha256: reviewed.manifest.component_sha256.clone(),
-        release_manifest_sha256: reviewed.release.payload_sha256()?,
-        provenance_sha256: reviewed.provenance.payload_sha256()?,
-        wit: reviewed.manifest.wit.clone(),
-        granted_capabilities: vec![Capability::ModerationAddLabel],
-        subscribed_hooks: vec![HookKind::PersonaReported],
-        budgets: default_budgets(),
-        config_revision,
-        state_schema: reviewed.manifest.state_schema.clone(),
-        state_revision,
-    };
-    let envelope = SignedEnvelope::sign(ADMISSION_FORMAT, CORE_KEY_ID, &admission, core_key)?;
-    Ok((admission, envelope))
+    sign_active_admission_with_grants(
+        reviewed,
+        coordinates,
+        vec![Capability::ModerationAddLabel],
+        vec![HookKind::PersonaReported],
+        core_key,
+    )
 }
 
 /// Build a complete host request from core-owned persisted facts.
@@ -836,28 +1044,42 @@ pub fn verify_host_request(
     core_key: &VerifyingKey,
     kind: FixtureKind,
 ) -> Result<VerifiedRequest, ModuleRuntimeError> {
-    let publisher = SigningKey::from_bytes(&PUBLISHER_FIXTURE_SEED).verifying_key();
-    let reviewer = SigningKey::from_bytes(&REVIEW_FIXTURE_SEED).verifying_key();
-    let release: ModuleReleaseManifest =
-        request
-            .release
-            .verify(RELEASE_FORMAT, PUBLISHER_KEY_ID, &publisher)?;
+    let reviewed = reviewed_release_for(kind)?;
+    verify_host_request_with_release(request, core_key, &reviewed)
+}
+
+/// Verify a complete request against an exact independently trusted release.
+pub fn verify_host_request_with_release(
+    request: &HostRequest,
+    core_key: &VerifyingKey,
+    reviewed: &ReviewedRelease,
+) -> Result<VerifiedRequest, ModuleRuntimeError> {
+    let release: ModuleReleaseManifest = request.release.verify(
+        RELEASE_FORMAT,
+        &reviewed.publisher_key_id,
+        &reviewed.publisher_public_key,
+    )?;
     release.validate()?;
-    let provenance: ModuleProvenance =
-        request
-            .provenance
-            .verify(PROVENANCE_FORMAT, REVIEW_KEY_ID, &reviewer)?;
+    let provenance: ModuleProvenance = request.provenance.verify(
+        PROVENANCE_FORMAT,
+        &reviewed.provenance_key_id,
+        &reviewed.provenance_public_key,
+    )?;
     let admission: ModuleAdmission =
         request
             .admission
             .verify(ADMISSION_FORMAT, CORE_KEY_ID, core_key)?;
-    validate_provenance(&provenance)?;
+    provenance.validate()?;
     validate_admission(&admission)?;
 
     let release_sha = request.release.payload_sha256()?;
     let provenance_sha = request.provenance.payload_sha256()?;
-    let component_sha = sha256_hex(kind.component_bytes());
-    if release.component_sha256 != component_sha
+    let component_sha = sha256_hex(&reviewed.component_bytes);
+    if request.release != reviewed.release
+        || request.provenance != reviewed.provenance
+        || release != reviewed.manifest
+        || provenance != reviewed.provenance_statement
+        || release.component_sha256 != component_sha
         || provenance.release_manifest_sha256 != release_sha
         || admission.module_id != release.module_id
         || admission.release_id != release.release_id
@@ -892,7 +1114,8 @@ pub fn verify_host_request(
 pub struct ModuleRuntime {
     engine: Engine,
     component: Component,
-    kind: FixtureKind,
+    component_sha256: String,
+    fixture_kind: Option<FixtureKind>,
 }
 
 struct StoreState {
@@ -902,7 +1125,13 @@ struct StoreState {
 impl ModuleRuntime {
     /// Compile one immutable compiled-in component.
     pub fn compile(kind: FixtureKind) -> Result<Self, ModuleRuntimeError> {
-        let component_bytes = kind.component_bytes();
+        let mut runtime = Self::compile_bytes(kind.component_bytes())?;
+        runtime.fixture_kind = Some(kind);
+        Ok(runtime)
+    }
+
+    /// Compile one exact bounded binary component with no imports linked.
+    pub fn compile_bytes(component_bytes: &[u8]) -> Result<Self, ModuleRuntimeError> {
         if component_bytes.is_empty()
             || component_bytes.len() > MAX_ARTIFACT_BYTES
             || !component_bytes.starts_with(b"\0asm")
@@ -925,7 +1154,8 @@ impl ModuleRuntime {
         Ok(Self {
             engine,
             component,
-            kind,
+            component_sha256: sha256_hex(component_bytes),
+            fixture_kind: None,
         })
     }
 
@@ -942,6 +1172,26 @@ impl ModuleRuntime {
     /// Verify and execute one event, returning only stable bounded outcomes.
     #[must_use]
     pub fn execute(&self, request: &HostRequest, core_key: &VerifyingKey) -> HostResponse {
+        let reviewed = match self
+            .fixture_kind
+            .and_then(|kind| reviewed_release_for(kind).ok())
+        {
+            Some(reviewed) if reviewed.manifest.component_sha256 == self.component_sha256 => {
+                reviewed
+            }
+            _ => return rejected_response(request, "request_rejected"),
+        };
+        self.execute_release(request, core_key, &reviewed)
+    }
+
+    /// Verify and execute using exact out-of-band release trust material.
+    #[must_use]
+    pub fn execute_release(
+        &self,
+        request: &HostRequest,
+        core_key: &VerifyingKey,
+        reviewed: &ReviewedRelease,
+    ) -> HostResponse {
         let rejected = |code: &str| HostResponse {
             format: RESPONSE_FORMAT.into(),
             event_id: request.event.event_id,
@@ -950,7 +1200,10 @@ impl ModuleRuntime {
             admission_revision: request.event.admission_revision,
             outcome: HostResult::Rejected { code: code.into() },
         };
-        let verified = match verify_host_request(request, core_key, self.kind) {
+        if sha256_hex(&reviewed.component_bytes) != self.component_sha256 {
+            return rejected("request_rejected");
+        }
+        let verified = match verify_host_request_with_release(request, core_key, reviewed) {
             Ok(verified) => verified,
             Err(_) => return rejected("request_rejected"),
         };
@@ -1082,7 +1335,18 @@ impl ProcessSupervisor {
         request: &HostRequest,
         core_key: &VerifyingKey,
     ) -> Result<ExecutionReport, ModuleRuntimeError> {
-        self.execute_fixture(request, core_key, FixtureKind::Valid, None)
+        let reviewed = reviewed_release()?;
+        self.execute_release(request, core_key, &reviewed)
+    }
+
+    /// Execute one exact verified release through a core-created private artifact.
+    pub fn execute_release(
+        &self,
+        request: &HostRequest,
+        core_key: &VerifyingKey,
+        reviewed: &ReviewedRelease,
+    ) -> Result<ExecutionReport, ModuleRuntimeError> {
+        self.execute_release_with_failure(request, core_key, reviewed, None)
     }
 
     /// Execute one fixed hostile fixture for deterministic conformance.
@@ -1093,13 +1357,39 @@ impl ProcessSupervisor {
         kind: FixtureKind,
         failure: Option<&str>,
     ) -> Result<ExecutionReport, ModuleRuntimeError> {
+        let reviewed = reviewed_release_for(kind)?;
+        self.execute_release_with_failure(request, core_key, &reviewed, failure)
+    }
+
+    fn execute_release_with_failure(
+        &self,
+        request: &HostRequest,
+        core_key: &VerifyingKey,
+        reviewed: &ReviewedRelease,
+        failure: Option<&str>,
+    ) -> Result<ExecutionReport, ModuleRuntimeError> {
         if !systemd_user_available() {
             return Err(ModuleRuntimeError::Containment(
                 "systemd user scope is required for independent host limits".into(),
             ));
         }
+        verify_host_request_with_release(request, core_key, reviewed)?;
+        let mut artifact = tempfile::Builder::new()
+            .prefix("omarchygs-module-")
+            .suffix(".component.wasm")
+            .tempfile()?;
+        artifact
+            .as_file_mut()
+            .write_all(&reviewed.component_bytes)?;
+        artifact.as_file_mut().sync_all()?;
         let started = Instant::now();
-        let mut child = spawn_host(&self.host_path, core_key, kind, failure)?;
+        let mut child = spawn_host(
+            &self.host_path,
+            artifact.path(),
+            core_key,
+            &reviewed.execution_trust(),
+            failure,
+        )?;
         let mut stdin = child.stdin.take().ok_or_else(|| {
             ModuleRuntimeError::Containment("module host stdin is unavailable".into())
         })?;
@@ -1202,6 +1492,12 @@ pub fn decode_verifying_key(value: &str) -> Result<VerifyingKey, ModuleRuntimeEr
         .map_err(|_| ModuleRuntimeError::Integrity("invalid public key".into()))
 }
 
+/// Lowercase SHA-256 fingerprint of an exact Ed25519 verifying key.
+#[must_use]
+pub fn verifying_key_sha256(key: &VerifyingKey) -> String {
+    sha256_hex(key.as_bytes())
+}
+
 /// Canonical JSON bytes for persistence and hashing.
 pub fn canonical_json<T: Serialize>(value: &T) -> Result<Vec<u8>, ModuleRuntimeError> {
     serde_json::to_vec(value).map_err(|error| {
@@ -1289,22 +1585,15 @@ fn verify_reviewed_release(
     reviewed: &ReviewedRelease,
     kind: FixtureKind,
 ) -> Result<(), ModuleRuntimeError> {
-    let publisher = SigningKey::from_bytes(&PUBLISHER_FIXTURE_SEED).verifying_key();
-    let reviewer = SigningKey::from_bytes(&REVIEW_FIXTURE_SEED).verifying_key();
-    let release: ModuleReleaseManifest =
-        reviewed
-            .release
-            .verify(RELEASE_FORMAT, PUBLISHER_KEY_ID, &publisher)?;
-    let provenance: ModuleProvenance =
-        reviewed
-            .provenance
-            .verify(PROVENANCE_FORMAT, REVIEW_KEY_ID, &reviewer)?;
-    release.validate()?;
-    validate_provenance(&provenance)?;
-    if release != reviewed.manifest
-        || provenance != reviewed.provenance_statement
-        || release.component_sha256 != sha256_hex(kind.component_bytes())
-        || provenance.release_manifest_sha256 != reviewed.release.payload_sha256()?
+    let verified = verify_release_material(
+        reviewed.release.clone(),
+        reviewed.provenance.clone(),
+        &reviewed.execution_trust(),
+        reviewed.component_bytes.clone(),
+    )?;
+    if verified.manifest != reviewed.manifest
+        || verified.provenance_statement != reviewed.provenance_statement
+        || reviewed.component_bytes != kind.component_bytes()
     {
         return Err(ModuleRuntimeError::Integrity(
             "reviewed release material mismatch".into(),
@@ -1313,28 +1602,14 @@ fn verify_reviewed_release(
     Ok(())
 }
 
-fn validate_provenance(value: &ModuleProvenance) -> Result<(), ModuleRuntimeError> {
-    if value.format != PROVENANCE_FORMAT
-        || value.review_id != BUILTIN_REVIEW_ID
-        || value.class != "first_party_reviewed_fixture"
-    {
-        return Err(ModuleRuntimeError::Contract(
-            "provenance is not the reviewed fixture".into(),
-        ));
-    }
-    validate_digest(&value.release_manifest_sha256)
-}
-
 fn validate_admission(value: &ModuleAdmission) -> Result<(), ModuleRuntimeError> {
     if value.format != ADMISSION_FORMAT
         || value.server_id.is_nil()
         || value.admission_id.is_nil()
         || value.lifecycle_revision == 0
         || value.lifecycle != LifecycleStatus::Active
-        || value.module_id != BUILTIN_MODULE_ID
-        || value.release_id != BUILTIN_RELEASE_ID
+        || value.release_id.is_nil()
         || value.config_revision == 0
-        || value.state_schema != "ignibyte.sentinel.state/v1"
     {
         return Err(ModuleRuntimeError::Contract(
             "admission shape is invalid".into(),
@@ -1344,10 +1619,14 @@ fn validate_admission(value: &ModuleAdmission) -> Result<(), ModuleRuntimeError>
     validate_digest(&value.release_manifest_sha256)?;
     validate_digest(&value.provenance_sha256)?;
     validate_wit(&value.wit)?;
-    validate_sorted_unique("granted capabilities", &value.granted_capabilities)?;
+    validate_lower_identifier("admitted module id", &value.module_id, 96, false)?;
+    validate_lower_identifier("admitted state schema", &value.state_schema, 128, true)?;
+    validate_sorted_unique_allow_empty("granted capabilities", &value.granted_capabilities)?;
     validate_sorted_unique("subscribed hooks", &value.subscribed_hooks)?;
-    if value.granted_capabilities != [Capability::ModerationAddLabel]
-        || value.subscribed_hooks != [HookKind::PersonaReported]
+    if !is_subset(
+        &value.granted_capabilities,
+        &[Capability::ModerationAddLabel],
+    ) || value.subscribed_hooks != [HookKind::PersonaReported]
     {
         return Err(ModuleRuntimeError::Contract(
             "admission exceeds the production grant".into(),
@@ -1441,6 +1720,38 @@ fn validate_identifier(name: &str, value: &str, max: usize) -> Result<(), Module
     Ok(())
 }
 
+fn validate_lower_identifier(
+    name: &str,
+    value: &str,
+    max: usize,
+    slash_allowed: bool,
+) -> Result<(), ModuleRuntimeError> {
+    let mut bytes = value.bytes();
+    if value.len() > max
+        || !bytes.next().is_some_and(|byte| byte.is_ascii_lowercase())
+        || !bytes.all(|byte| {
+            byte.is_ascii_lowercase()
+                || byte.is_ascii_digit()
+                || matches!(byte, b'.' | b'-' | b'_')
+                || (slash_allowed && byte == b'/')
+        })
+    {
+        return Err(ModuleRuntimeError::Contract(format!("invalid {name}")));
+    }
+    Ok(())
+}
+
+fn validate_text(name: &str, value: &str, max: usize) -> Result<(), ModuleRuntimeError> {
+    if value.is_empty()
+        || value.len() > max
+        || value.trim() != value
+        || value.chars().any(char::is_control)
+    {
+        return Err(ModuleRuntimeError::Contract(format!("invalid {name}")));
+    }
+    Ok(())
+}
+
 fn validate_sorted_unique<T: Ord + Display>(
     name: &str,
     values: &[T],
@@ -1448,6 +1759,18 @@ fn validate_sorted_unique<T: Ord + Display>(
     if values.is_empty() || values.windows(2).any(|pair| pair[0] >= pair[1]) {
         return Err(ModuleRuntimeError::Contract(format!(
             "{name} are empty or not sorted/unique"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_sorted_unique_allow_empty<T: Ord + Display>(
+    name: &str,
+    values: &[T],
+) -> Result<(), ModuleRuntimeError> {
+    if values.windows(2).any(|pair| pair[0] >= pair[1]) {
+        return Err(ModuleRuntimeError::Contract(format!(
+            "{name} are not sorted/unique"
         )));
     }
     Ok(())
@@ -1515,10 +1838,17 @@ fn decode_bounded(value: &str, max: usize, name: &str) -> Result<Vec<u8>, Module
 
 fn spawn_host(
     host_path: &Path,
+    component_path: &Path,
     core_key: &VerifyingKey,
-    kind: FixtureKind,
+    trust: &ExecutionTrust,
     failure: Option<&str>,
 ) -> Result<Child, ModuleRuntimeError> {
+    let component_path = component_path.canonicalize()?;
+    if !component_path.is_absolute() || !component_path.is_file() {
+        return Err(ModuleRuntimeError::Containment(
+            "private module artifact path is invalid".into(),
+        ));
+    }
     let mut sandbox_args = vec![
         "--unshare-all".to_owned(),
         "--die-with-parent".to_owned(),
@@ -1543,16 +1873,35 @@ fn spawn_host(
         "/tmp".to_owned(),
         "--dir".to_owned(),
         "/app".to_owned(),
+        "--dir".to_owned(),
+        "/module".to_owned(),
         "--ro-bind".to_owned(),
         host_path.to_string_lossy().into_owned(),
         "/app/omarchygs-module-host".to_owned(),
+        "--ro-bind".to_owned(),
+        component_path.to_string_lossy().into_owned(),
+        "/module/component.wasm".to_owned(),
         "--setenv".to_owned(),
         "PATH".to_owned(),
         "/usr/bin".to_owned(),
         "--".to_owned(),
         "/app/omarchygs-module-host".to_owned(),
-        "--fixture".to_owned(),
-        kind.as_str().to_owned(),
+        "--component".to_owned(),
+        "/module/component.wasm".to_owned(),
+        "--publisher-key-id".to_owned(),
+        trust.publisher_key_id.clone(),
+        "--publisher-public-key".to_owned(),
+        encode_verifying_key(&trust.publisher_public_key),
+        "--provenance-key-id".to_owned(),
+        trust.provenance_key_id.clone(),
+        "--provenance-public-key".to_owned(),
+        encode_verifying_key(&trust.provenance_public_key),
+        "--provenance-class".to_owned(),
+        trust.provenance_class.clone(),
+        "--provenance-server-id".to_owned(),
+        trust
+            .provenance_server_id
+            .map_or_else(|| "none".to_owned(), |id| id.to_string()),
         "--core-public-key".to_owned(),
         encode_verifying_key(core_key),
     ];

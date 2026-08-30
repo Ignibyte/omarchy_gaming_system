@@ -8,10 +8,11 @@ This directory is the authoritative local ticket store.
 
 ## Open queue
 
-- [`TICKET-041` — Administrator custom server-module installation and provenance](open/TICKET-041-administrator-custom-server-module-installation-and-provenance.md)
+No open tickets.
 
 ## Closed
 
+- [`TICKET-041` — Administrator custom server-module installation and provenance](closed/TICKET-041-administrator-custom-server-module-installation-and-provenance.md)
 - [`TICKET-040` — Production server module base and observation hooks](closed/TICKET-040-production-server-module-base-and-observation-hooks.md)
 - [`TICKET-039` — Server extension isolation and typed-hook architecture spike](closed/TICKET-039-server-extension-isolation-and-typed-hook-architecture-spike.md)
 - [`TICKET-038` — Operator-custom cartridge trust, import, and player warnings](closed/TICKET-038-operator-custom-cartridge-trust-import-and-player-warnings.md)

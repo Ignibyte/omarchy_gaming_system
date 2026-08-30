@@ -91,7 +91,7 @@ sources:
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
   - id: openwiki-source-a5928e7ee39885995efdc170
     resource: repo://scripts/dev.sh
-generated: {by: "codex", at: "2026-08-27T17:23:12.264Z"}
+generated: {by: "codex", at: "2026-08-30T00:13:04.632Z"}
 ---
 
 # Runtime foundation
@@ -148,6 +148,17 @@ Optional operator-custom distribution must be absent or complete; its public
 key path and store root are absolute checked inputs, while its private signing
 key belongs only to `omarchygs-admin` commands.
 
+Server modules use a separate all-or-none runtime pair:
+`OGS_MODULE_ADMISSION_SIGNING_SEED` and `OGS_MODULE_PAIRWISE_SECRET`. Those
+secrets start the generic reviewed/custom dispatcher. The optional
+`OGS_FIRST_PARTY_REPORT_MODULE=enabled` selector additionally registers the
+packaged Sentinel fixture but cannot be configured without both secrets. With
+all three values absent, startup still injects an unconfigured observation
+emitter: core reports remain available, while active custom subscriptions
+record bounded `runtime_unconfigured` gap evidence and no host runs. Persisted
+inactive or restore-blocked policy also leaves core available; malformed keys,
+partial configuration, or a configured applicable host failure stop startup.
+
 ## Health flow
 
 `app::router` installs `GET /health` and shares the database pool through Axum
@@ -166,8 +177,10 @@ serialization, and the QML consumer work together.
 ## Server discovery flow
 
 `app::router` also installs unauthenticated, no-store
-`GET /.well-known/omarchygs`. The exact successful document contains only
-`service`, `server_id`, `server_name`, `protocol_version`, and `capabilities`.
+`GET /.well-known/omarchygs`. Every successful document contains the exact base
+fields `service`, `server_id`, `server_name`, `protocol_version`, and
+`capabilities`; only the two separately bounded operator-custom aggregates may
+be added when their corresponding features are present.
 Protocol 1 publishes one lexically ordered set of currently implemented
 versioned capabilities. `games.cartridge-catalog.v1` is a base capability;
 `games.registered-provider.v1` appears only when the optional provider runtime
@@ -176,8 +189,21 @@ exact cartridge acquisition, session presentation, and historical session
 acquisition capabilities together; otherwise none of those delivery claims is
 advertised. When that runtime also has a validated custom authority, discovery
 adds `games.operator-custom-cartridges.v1` and one bounded public authority
-candidate. The advertised key is not client trust. A missing durable identity returns a
-generic `503 server_discovery_unavailable` rather than database detail. This
+candidate. The advertised key is not client trust.
+
+Independently, when at least one operator-custom server module is active or
+degraded, discovery adds `server.operator-custom-modules.v1` and one aggregate
+bound to the same stable server UUID. It contains only an active count from 1
+through 8, the bounded `moderation_labels` behavior class, the exact unreviewed
+code warning, and the server-operator support boundary. It omits module and
+release identity, component/configuration/state bytes, paths, operator identity,
+private inventory, and key material. The onboarding and profile layers
+exact-validate, copy, persist, and server-identity-bind the aggregate; the shell
+renders the warning continuously before and after sign-in without exposing an
+administration action.
+
+A missing durable identity returns a generic
+`503 server_discovery_unavailable` rather than database detail. This
 compatibility contract is separate from `/health`, which remains operational
 liveness.
 
@@ -937,6 +963,15 @@ append-only custom audit, mutually exclusive source-aware catalog selection,
 and source-pinned current and historical session presentations. Database
 guards keep provenance immutable and require custom lifecycle writers to
 serialize with fresh cartridge-action admission.
+Migrations `0025` and `0026` add the reviewed server-module registry,
+admission/lifecycle/audit, durable report observation outbox, immutable delivery
+and intent receipts, core-owned label effect, namespaced state and rollback,
+bounded observation gaps, and retained request/response evidence. Migration
+`0027` generalizes that registry while preserving reviewed evidence: it adds
+bounded immutable database custody for custom component and public trust
+material, server-bound operator provenance, one-step release/snapshot rollback
+pointers, explicit custom lifecycle and gap reasons, and immutable
+whole-command operation receipts.
 Add later
 capabilities through domain modules and thin handlers rather than placing policy
 directly in SQL or transport code.
@@ -1002,7 +1037,7 @@ and collisions, typed inbox and minimal sync payloads, exact-version acceptance
 and seat order, terminal history and lazy expiry, pending limits, initializer
 and block rollback, production Signal Siege v2 alternation/completion, and
 one-winner terminal races. QML client changes first prove two public profiles
-survive separate writer and reader processes, then run through the 47-case
+survive separate writer and reader processes, then run through the 55-case
 fixture corpus and four live scenarios in `scripts/dev.sh`; those
 prove contrast, semantic headings and status, deterministic focus, reversible
 Tab traversal, Escape authority, minimum-width containment, strict hostile-
@@ -1013,6 +1048,12 @@ Server discovery or identity changes additionally use
 `server_discovery_api_tests.rs`, the configuration unit tests, the focused QML
 compatibility/identity fixtures, and `scripts/test-operator-recovery.sh` for
 source-versus-restored UUID equality.
+Server-module custody or lifecycle changes additionally use
+`server_module_custom_tests.rs` and the real `custom-module-import`/
+`custom-module-apply` CLI case; disclosure changes use the discovery privacy
+case and QML transport/profile/accessibility fixtures. All module runtime or
+authority changes finish with `scripts/test-server-modules.sh`, the restore
+drill, and gate stages 17, 18, 21, and 24.
 Provider player-route changes use `provider_game_api_tests.rs` plus
 `scripts/test-provider-authority-pilot.sh`. The clean-clone proof covers the
 independent TLS process and database, protocol-only dependency, mixed catalog,

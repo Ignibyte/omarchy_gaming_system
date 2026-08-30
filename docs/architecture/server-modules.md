@@ -1,8 +1,9 @@
 # OmarchyGS server modules
 
-Status: ADR-0004 and the production observation-only base are implemented.
-Production may opt into exactly one compiled-in, reviewed first-party module.
-Arbitrary installation, marketplace/custom admission, public administration,
+Status: ADR-0004, the production observation-only base, and database-local
+operator-custom admission are implemented. Production may opt into the
+compiled-in reviewed fixture and may retain up to eight explicitly admitted
+custom module identities. Marketplace module admission, public administration,
 admission hooks, egress, and game authority remain unavailable.
 
 ## Purpose and extension families
@@ -67,7 +68,11 @@ core validates current lifecycle/capability/target/revision/policy
 Production uses a four-byte big-endian frame length followed by canonical JSON,
 with a 64 KiB ceiling rejected before payload allocation. The server resolves
 only its packaged sibling `omarchygs-module-host`; configuration cannot supply
-a component, host path, URL, WIT, release, or native command.
+a component, host path, URL, WIT, release, or native command. A custom
+component enters only through a database-local, owner-private command and is
+retained as immutable PostgreSQL evidence. The parent re-verifies those bytes,
+materializes a private mode-0600 temporary artifact, and read-only binds that
+exact file for the contained child.
 
 Component files are opened once and read through a `MAX+1` bounded reader
 before compilation or signature work. A path metadata pre-check followed by an
@@ -191,13 +196,20 @@ disabled → retired (terminal)
 Opt-in startup registers the exact compiled release, verifies immutable
 release/provenance/WIT/component bindings, probes a fresh contained host, and
 creates a server-signed admission before activation. Database-local
-`omarchygs-admin` inventory, disable, suspend, recover, retire, and restore
-commands use an operation UUID, expected revision, actor, bounded reason, and
-an immutable same-transaction audit record. Disable/suspend releases in-flight
-leases and stops new work. Recovery returns to disabled and clears the restore
-or circuit policy; the next configured startup must pass readiness before it
-returns active. Install, upgrade, custom provenance, and removal remain future
-operations.
+`omarchygs-admin` operations carry a whole-command UUID and digest, expected
+revisions, actor, bounded reason, and immutable same-transaction audit.
+
+Custom import separately verifies the publisher-signed release and explicit
+operator-custom provenance bound to the stable database server UUID. The
+operator repeats publisher/provenance fingerprints, chooses an exact granted
+subset, and acknowledges the unreviewed support boundary. First import creates
+a disabled instance; later immutable releases remain staged. Enable and
+restore recovery run exact readiness and publish a fresh admission. Upgrade
+atomically swaps to a ready staged release and retains one predecessor state
+snapshot; rollback consumes that single predecessor. Disable/suspend release
+in-flight leases and stop new work. Remove is terminal while retaining release,
+component, provenance, state, receipt, and audit evidence. At most eight custom
+module identities bound report fan-out and recovery work.
 
 Marketplace-vetted and operator-custom modules execute under the same WIT,
 conformance, capability, and sandbox rules. Custom provenance requires explicit
@@ -242,13 +254,15 @@ production crate, exact component digest, packaged host, and durable adapter:
 - undeclared capability, component/signature/context tamper, wrong interface,
   forbidden import, excessive memory, trap, infinite loop/fuel exhaustion,
   process exit, outer timeout, and clean restart; and
-- sandbox readiness, host RSS ceiling, deterministic artifacts, fixed
-  production loader/configuration, no public module routes/custom artifact
-  inputs, and local-only quality automation enforcement.
+- sandbox readiness, host RSS ceiling, deterministic artifacts, packaged-only
+  host/configuration, private bounded custom artifact custody, no public module
+  mutation route, and local-only quality automation enforcement.
 
 Ticket 040 implements only the versioned registry, observation
 outbox/dispatcher, `persona_reported` hook, `moderation_add_label` proposal,
 namespaced state/lifecycle/recovery, and conformance tooling. The exact fixture
 maps numeric label `7` to the core-owned `priority_review` label after current
-authorization. Administrator custom installation and additional hooks remain
-separately reviewed follow-up work.
+authorization. Ticket 041 adds server-bound operator-custom import,
+enable/upgrade/rollback/removal, shared runtime dispatch, restore review, and
+aggregate player disclosure without adding a hook, capability, network, game,
+or client-code authority.

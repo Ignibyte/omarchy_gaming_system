@@ -2,11 +2,15 @@ use std::{collections::BTreeMap, io::Cursor, path::Path};
 
 use ed25519_dalek::SigningKey;
 use omarchygs_server_module_runtime::{
-    ADMISSION_FORMAT, AdmissionCoordinates, BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID, FixtureKind,
-    HOOK_FORMAT, HookKind, HookPayload, HostRequest, HostResult, MAX_FRAME_BYTES, ModuleHookEvent,
-    ModuleRuntime, ModuleSubject, PRIORITY_REVIEW_LABEL, ProcessSupervisor, RESPONSE_FORMAT,
-    host_request, read_frame, reviewed_release, reviewed_release_for, sha256_hex,
-    sign_active_admission, sign_active_admission_for, verify_host_request, wit_sha256, write_frame,
+    ADMISSION_FORMAT, AdmissionCoordinates, BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID, Capability,
+    ExecutionTrust, FixtureKind, HOOK_FORMAT, HookKind, HookPayload, HostRequest, HostResult,
+    MAX_EXECUTION_MS, MAX_FRAME_BYTES, MAX_FUEL, MAX_LINEAR_MEMORY_BYTES, ModuleHookEvent,
+    ModuleReleaseManifest, ModuleRuntime, ModuleSubject, PRIORITY_REVIEW_LABEL, ProcessSupervisor,
+    RELEASE_FORMAT, RESPONSE_FORMAT, ResourceBudgets, ReviewedRelease, SignedEnvelope, WIT_PACKAGE,
+    WIT_WORLD, WitIdentity, host_request, read_frame, reviewed_release, reviewed_release_for,
+    sha256_hex, sign_active_admission, sign_active_admission_for,
+    sign_active_admission_with_grants, sign_operator_custom_provenance, verify_host_request,
+    verify_release_material, wit_sha256, write_frame,
 };
 use uuid::Uuid;
 
@@ -88,6 +92,58 @@ fn exact_request_executes_valid_noop_and_bounded_rejection_components() {
 }
 
 #[test]
+fn operator_custom_release_uses_the_same_runtime_and_distinct_trust_claims() {
+    let core = core_key();
+    let reviewed = reviewed_release().expect("reviewed release should build");
+    let reviewed_request = request(FixtureKind::Valid, &core);
+    let runtime = ModuleRuntime::compile_bytes(FixtureKind::Valid.component_bytes())
+        .expect("shared component should compile");
+    runtime.readiness().expect("shared WIT should be ready");
+    assert!(matches!(
+        runtime
+            .execute_release(&reviewed_request, &core.verifying_key(), &reviewed)
+            .outcome,
+        HostResult::Proposed { .. }
+    ));
+
+    let (custom, custom_request) = custom_request(&core);
+    assert_eq!(custom.provenance_statement.class, "operator_custom");
+    assert_eq!(custom.provenance_statement.review_id, None);
+    assert_eq!(custom.provenance_statement.server_id, Some(SERVER_ID));
+    assert!(matches!(
+        runtime
+            .execute_release(&custom_request, &core.verifying_key(), &custom)
+            .outcome,
+        HostResult::Proposed { .. }
+    ));
+
+    let wrong_server = Uuid::from_u128(0x90000000000040008000000000000009);
+    let mut wrong_server_trust = custom.execution_trust();
+    wrong_server_trust.provenance_server_id = Some(wrong_server);
+    assert!(
+        verify_release_material(
+            custom.release.clone(),
+            custom.provenance.clone(),
+            &wrong_server_trust,
+            custom.component_bytes.clone(),
+        )
+        .is_err()
+    );
+    let mut tampered = custom.component_bytes.clone();
+    let last = tampered.len() - 1;
+    tampered[last] ^= 1;
+    assert!(
+        verify_release_material(
+            custom.release.clone(),
+            custom.provenance.clone(),
+            &custom.execution_trust(),
+            tampered,
+        )
+        .is_err()
+    );
+}
+
+#[test]
 fn wrong_component_interface_import_memory_and_authority_are_rejected() {
     for kind in [
         FixtureKind::MemoryHog,
@@ -166,6 +222,21 @@ fn real_process_is_contained_and_recovers_after_failure() {
         HostResult::Proposed { .. }
     ));
 
+    let (custom, custom_request) = custom_request(&core);
+    let custom_report = supervisor
+        .execute_release(&custom_request, &core.verifying_key(), &custom)
+        .expect("operator-custom artifact should use the same containment boundary");
+    assert_eq!(
+        custom_report.containment,
+        "systemd-user-scope+bubblewrap+prlimit"
+    );
+    assert!(custom_report.ready.server_environment_absent);
+    assert!(custom_report.ready.loopback_only);
+    assert!(matches!(
+        custom_report.response.outcome,
+        HostResult::Proposed { .. }
+    ));
+
     for (kind, failure) in [
         (FixtureKind::Trap, None),
         (FixtureKind::Loop, None),
@@ -241,4 +312,101 @@ fn request(kind: FixtureKind, core: &SigningKey) -> HostRequest {
 
 fn core_key() -> SigningKey {
     SigningKey::from_bytes(&[11; 32])
+}
+
+fn custom_request(core: &SigningKey) -> (ReviewedRelease, HostRequest) {
+    let publisher = SigningKey::from_bytes(&[31; 32]);
+    let operator = SigningKey::from_bytes(&[41; 32]);
+    let release_id = Uuid::from_u128(0x60000000000040008000000000000006);
+    let admission_id = Uuid::from_u128(0x70000000000040008000000000000007);
+    let manifest = ModuleReleaseManifest {
+        format: RELEASE_FORMAT.into(),
+        module_id: "community.report-helper".into(),
+        publisher_id: "community".into(),
+        release_id,
+        version: "1.0.0".into(),
+        component_sha256: sha256_hex(FixtureKind::Valid.component_bytes()),
+        wit: WitIdentity {
+            package: WIT_PACKAGE.into(),
+            world: WIT_WORLD.into(),
+            major: 1,
+            sha256: wit_sha256(),
+        },
+        requested_capabilities: vec![Capability::ModerationAddLabel],
+        subscribed_hooks: vec![HookKind::PersonaReported],
+        budgets: ResourceBudgets {
+            frame_bytes: MAX_FRAME_BYTES as u32,
+            memory_bytes: MAX_LINEAR_MEMORY_BYTES as u32,
+            fuel: MAX_FUEL,
+            execution_ms: MAX_EXECUTION_MS,
+        },
+        config_schema: "community.report-helper.config/v1".into(),
+        state_schema: "community.report-helper.state/v1".into(),
+        entrypoint: "handle".into(),
+    };
+    let release = SignedEnvelope::sign(
+        RELEASE_FORMAT,
+        "community-publisher-v1",
+        &manifest,
+        &publisher,
+    )
+    .expect("custom release should sign");
+    let (_, provenance) =
+        sign_operator_custom_provenance(&release, SERVER_ID, "server-custom-root-v1", &operator)
+            .expect("custom provenance should sign");
+    let reviewed = verify_release_material(
+        release,
+        provenance,
+        &ExecutionTrust {
+            publisher_key_id: "community-publisher-v1".into(),
+            publisher_public_key: publisher.verifying_key(),
+            provenance_key_id: "server-custom-root-v1".into(),
+            provenance_public_key: operator.verifying_key(),
+            provenance_class: "operator_custom".into(),
+            provenance_server_id: Some(SERVER_ID),
+        },
+        FixtureKind::Valid.component_bytes().to_vec(),
+    )
+    .expect("custom release should verify");
+    let (_, admission) = sign_active_admission_with_grants(
+        &reviewed,
+        AdmissionCoordinates {
+            server_id: SERVER_ID,
+            admission_id,
+            lifecycle_revision: 1,
+            config_revision: 1,
+            state_revision: 0,
+        },
+        vec![Capability::ModerationAddLabel],
+        vec![HookKind::PersonaReported],
+        core,
+    )
+    .expect("custom admission should sign");
+    let request = host_request(
+        &reviewed,
+        admission,
+        ModuleHookEvent {
+            format: HOOK_FORMAT.into(),
+            event_id: Uuid::from_u128(0x80000000000040008000000000000008),
+            attempt: 1,
+            server_id: SERVER_ID,
+            module_id: manifest.module_id,
+            release_id,
+            admission_id,
+            admission_revision: 1,
+            hook: HookKind::PersonaReported,
+            causal_revision: 0,
+            deadline_ms: MAX_EXECUTION_MS,
+            subject: ModuleSubject::Pairwise("pairwise-custom-persona-7".into()),
+            config: BTreeMap::from([("policy".into(), "strict".into())]),
+            config_revision: 1,
+            state: BTreeMap::new(),
+            state_revision: 0,
+            payload: HookPayload::PersonaReported {
+                report_id: REPORT_ID,
+                category: "cheating".into(),
+            },
+        },
+    );
+    (reviewed, request)
 }

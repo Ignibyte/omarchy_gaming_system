@@ -101,10 +101,7 @@ sources:
     resource: repo://packaging/arch/PKGBUILD
   - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
     resource: repo://scripts/check-qml-style.py
-generated: {by: "codex", at: "2026-08-28T00:35:08.763Z"}
-verified:
-  - by: openwiki/0.3.3
-    at: 2026-08-28T01:06:32.318Z
+generated: {by: "codex", at: "2026-08-30T00:13:04.632Z"}
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -176,14 +173,24 @@ registered-provider authority. Door Legends cartridge v2 is the first cyclic
 multi-screen portable proof. The connector still does not poll or
 subscribe to live WebSocket hints.
 
-Production also has one opt-in first-party server-module slice. The exact
-compiled-in Sentinel component observes privacy-minimized persona-report events
-through a bounded durable outbox and may propose only the core-owned
-`priority_review` label. Core reauthorizes every proposal before effect and
-retains request/response receipt evidence. Module inactivity or queue
-saturation never rejects the report; it records bounded aggregate gap evidence
-instead. Custom module installation, admission hooks, egress, gameplay
+Production also has an opt-in server-module boundary. The exact compiled-in
+Sentinel fixture and up to eight explicitly admitted operator-custom identities
+share one no-WASI process host, exact WIT, privacy-minimized persona-report
+hook, typed `priority_review` proposal, core reauthorization, bounded durable
+outbox/state, and immutable request/response receipt evidence. Custom import,
+enable/disable/suspend/recover, readiness-checked upgrade, one-step rollback,
+terminal evidence-retaining removal, and restore review are database-local
+owner operations over private canonical files. Module inactivity, saturation,
+or absent runtime keys never rejects the report; it records bounded aggregate
+gap evidence instead. Public administration, admission hooks, egress, gameplay
 authority, and client code remain unavailable.
+
+An active or degraded custom module adds only a stable-server-bound aggregate
+to public discovery: bounded count and behavior class plus fixed unreviewed-code
+and operator-support warnings. The official client exact-validates, persists,
+identity-binds, and continuously renders that warning before and after sign-in;
+it receives no component bytes, private inventory, path, state, or signing
+authority.
 
 The main shell, all ten routes, and the trusted cartridge visual boundary now
 share one host-owned theme and explicit plain-text policy. Semantic headings,
@@ -219,9 +226,9 @@ The private-alpha operator path is deliberately separate from the player API.
 queue, resolve or dismiss an open report, reversibly suspend or reactivate an
 account, issue, inventory, or revoke registration invitations, inspect reviewed
 cartridges, apply exact expected-state catalog selections, and execute
-admin-only operator-custom import and lifecycle commands. Those custom
-commands load a checked owner-private signing key; the player server never
-loads it. Its separate
+admin-only operator-custom cartridge and server-module import/lifecycle
+commands. Those custom commands load checked owner-private signing material;
+the player server never loads provenance private keys. Its separate
 `marketplace-sync` action also requires a canonical HTTPS origin, bounded DER
 TLS root, pre-provisioned secure store, and either one manual marketplace key
 or a matching offline-root-signed channel bundle. Mixed or partial trust
@@ -313,10 +320,13 @@ The explicit operator-custom path may bypass marketplace review but cannot
 bypass the inert package, publisher signature, current lifecycle, selected
 server admission, or trusted-QML boundary. Ticket 039 and ADR-0004 now select
 and prove a dedicated no-WASI process boundary for a separate capability-scoped
-server module/hook system. A public Provider SDK, external provider onboarding,
-and administrator-supplied server-module installation remain roadmap work. The
-only production module runtime is the exact opt-in compiled-in Sentinel
-observation slice; it is not a general plugin loader.
+server module/hook system. Ticket 040 implements the reviewed Sentinel
+observation base, and Ticket 041 adds database-local operator-custom custody,
+exact lifecycle, shared runtime dispatch, restore review, aggregate disclosure,
+and operator responsibility without expanding the hook or capability
+vocabulary. A public Provider SDK, external provider onboarding, public module
+administration, marketplace module admission, and broader hook classes remain
+roadmap work; the bounded custom path is not a general plugin loader.
 
 ## Task routing
 
@@ -330,7 +340,7 @@ observation slice; it is not a general plugin loader.
 | Change cartridge packaging, trusted rendering, SDK portability, provider integration, marketplace or operator-custom trust, synchronization, server admission, player acquisition, session pinning, historical recovery, signed-screen navigation, package staging, or trusted launch | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/game-cartridge-renderer`; `crates/client-cartridge-runtime`; `crates/marketplace-trust`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `operator_custom.rs`; `session_cartridges.rs`; `marketplace_sync.rs`; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `client/qml/MarketplaceController.qml`; `CartridgeController.qml`; `GameController.qml`; `client/qml/cartridge`; migrations `0014`–`0015` and `0019`–`0024`; ADR-0002; Tickets 015–019 and 032–038 | Cartridge/renderer/SDK/provider focused scripts; root-signed trust-channel test; marketplace/custom PostgreSQL lifecycle/admission/migration tests; hostile companion/QML contract tests; clean-clone Door Legends pilot; native package smoke; threat/authority review and constitutional authority check |
 | Change static marketplace preparation, offline-root signing, immutable activation, local verification, or mirror probes | [Game Cartridges](game-cartridges.md) and [Development and validation](development-and-validation.md) | `crates/marketplace-publisher`; `docs/operators/marketplace-publication.md`; Ticket 037 | `scripts/test-marketplace-publication.sh`; exact-tree, network-less ceremony, mirror, rotation, rollback, security, and canonical diff-gate evidence |
 | Change owner-operated server, Provider SDK, or executable custom-content direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | Current-versus-future audit; provenance/authority review; official-client containment |
-| Change the server-module WIT, fixed loader, host, report observation, dispatch, typed intent, receipts/gaps, state, lifecycle, restore, or containment | [Server modules](server-modules.md) and [Product boundaries](product-boundaries.md) | ADR-0004; `docs/architecture/server-modules.md`; `docs/operators/server-modules.md`; `crates/server-module-runtime`; `crates/server/src/server_modules.rs`; migrations `0025`–`0026`; `crates/server-module-spike`; Tickets 039–041 | `scripts/test-server-modules.sh`; focused PostgreSQL/operator tests; restore drill; `scripts/test-server-module-spike.sh`; threat/authority review; canonical local diff gate |
+| Change the server-module WIT, fixed loader, host, custom import/custody, report observation, dispatch, typed intent, receipts/gaps, state, lifecycle, disclosure, restore, or containment | [Server modules](server-modules.md) and [Product boundaries](product-boundaries.md) | ADR-0004; `docs/architecture/server-modules.md`; `docs/operators/server-modules.md`; `crates/server-module-runtime`; `crates/server/src/server_modules.rs`; `server_module_custom.rs`; `server_discovery.rs`; trusted QML profile/shell surfaces; migrations `0025`–`0027`; `crates/server-module-spike`; Tickets 039–041 | `scripts/test-server-modules.sh`; focused PostgreSQL/operator/discovery/QML tests; restore drill; `scripts/test-server-module-spike.sh`; threat/authority review; canonical local diff gate |
 | Build, inspect, install, upgrade, remove, or diagnose the native player package | [Development and validation](development-and-validation.md) and `docs/client-installation.md` | `packaging/arch/`; `scripts/check-client-package-source.sh`; `scripts/build-client-package.sh`; `scripts/test-client-package.sh` | Source-contract check; extracted-package conformance; `bin/gate.sh --diff` before delivery |
 | Run or diagnose the local stack and quality gate | [Development and validation](development-and-validation.md) | `scripts/dev.sh`; `bin/gate.sh`; `client/qml/Main.qml` | `bin/gate.sh --fast` or `--diff` |
 | Start or resume a non-trivial change | [Codex workflow](codex-workflow.md) | `AGENTS.md`; `$omarchy-workflow`; active pipeline | Phase receipts and canonical gate |
@@ -527,6 +537,13 @@ intent receipts, core-owned report labels, namespaced state and rollback
 snapshots, aggregate observation-gap evidence, and retained request/response
 preimages for new delivery receipts. Legacy receipts remain explicitly
 distinguishable from complete evidence.
+
+Migration 0027 generalizes that registry while preserving reviewed evidence. It
+adds bounded immutable PostgreSQL custody for custom component and public trust
+material, server-bound operator provenance, exact custom-operation receipts,
+one-step predecessor/snapshot rollback, terminal retained state disposition,
+and explicit runtime-unconfigured, replaced-admission, and removed-module gap
+reasons.
 
 Current runtime identifiers use the gaming-system namespace; see [Runtime
 foundation](runtime-foundation.md) for the narrow local compatibility window

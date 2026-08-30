@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8d522c8302d59717de40d49f665ced1b65b312a82cd38e6bd4954a01849a7911",
+  "pageVersion": "sha256:8355f6d7c6dfcb9edcc4e762ec302668c90ab0e6d01a1599dc4f9278cc4523f9",
   "claims": [
     {
       "id": "claim_e75f82f846ca444594c51ed0f48b894b",
@@ -56,27 +56,19 @@
     },
     {
       "id": "claim_4fd32c9a1f524cdc9a89f6db83ab95d9",
-      "statement": "The dedicated PostgreSQL gate stage runs 75 database-backed marketplace, server, administrator-domain, and operator-CLI cases sequentially against migrated isolated databases after the ordinary unit loop leaves them ignored.",
+      "statement": "The dedicated PostgreSQL gate stage runs 82 database-backed server-library, server-binary, administrator-domain, and real operator-CLI cases sequentially against migrated PostgreSQL after the ordinary unit loop leaves them ignored.",
       "evidence": [
         {
           "resource": "repo://scripts/test-database.sh",
-          "version": "repo-file-v1:sha256:d256e9cf4a48df01d7209c9bf23ac2ac9b0b27b1f16f331791bf11ba1916a115"
+          "version": "repo-file-v1:sha256:16e9a518f2fa03c260fe46a4f9a7a8dad46e2fa073aa5a24786055b7d89b732e"
         },
         {
-          "resource": "repo://crates/server/src/server_module_tests.rs",
-          "version": "repo-file-v1:sha256:44c44e204b1bcee66666f30def144db6fbb4c757261366af1ac0ffa0ea165218"
-        },
-        {
-          "resource": "repo://crates/server/src/marketplace_sync_tests.rs",
-          "version": "repo-file-v1:sha256:56b795cb80aaf2a066034be4cf5870d12461c9f434ca30d63548ce8c89a876be"
-        },
-        {
-          "resource": "repo://crates/server/src/operator_admin.rs",
-          "version": "repo-file-v1:sha256:03a577bdf6b5d1a5f2f9730262c9b51608525c9b0302c37aaeb54def308d2faa"
+          "resource": "repo://crates/server/src/server_module_custom_tests.rs",
+          "version": "repo-file-v1:sha256:7568f9a3cf985b9b9b87d729260b8f3234fb95f3eee3392ba39a7ed51b187a4f"
         },
         {
           "resource": "repo://crates/server/tests/operator_cli.rs",
-          "version": "repo-file-v1:sha256:b41714eba7e36c4c3256b4db53771ce92be08f6d2da2f192bdac092cad4317a3"
+          "version": "repo-file-v1:sha256:02c8015873497f6ae98121c7f7f9bba200f3ab39237783d187a68b8ac3b7c6b7"
         }
       ]
     },
@@ -356,35 +348,19 @@
     },
     {
       "id": "claim_46dd32af132d418d934303b2ca56f4df",
-      "statement": "The keyboard-first QML fixture corpus runs 53 Qt cases covering accessibility, marketplace trust/package staging, cartridge acquisition/navigation/actions, reports, social/inbox behavior, contrast, focus, traversal, persistent exit, compact containment, Escape authority, hostile envelopes, retry identity, revision refetch, and active-seat enforcement.",
+      "statement": "The keyboard-first QML fixture corpus runs 55 Qt cases, including exact and hostile operator-custom module disclosure, profile persistence and server-identity binding, a persistent accessible warning, compact containment, and the established accessibility, social, game, cartridge, and marketplace behaviors.",
       "evidence": [
         {
-          "resource": "repo://scripts/test-qml-onboarding.sh",
-          "version": "repo-file-v1:sha256:6aa1636599f90d32ab574b780308d57b5ffbe5355136789ac9b7f697dd45dcac"
+          "resource": "repo://scripts/test-qml-onboarding.sh#L82-L162",
+          "version": "repo-lines-v1:sha256:0fa015b49d5949b4da7dfee5685e813df9892a6acd2794fdd3c582fc565982a8:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YzUxYmE5OTE1OGVjMzYzZDQwYjc3OGVmMjcxMTI2ZGEzZmQ4MzE1ZWU1MjM4MjI0MjA0NjliNTI5YTBiOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiNjRlOTgzZDk5Y2UxZGI2YmYzOWVkMjMwMjNiNjQxOTcyNDRiMTRjNTA4ODU1NDI3MjA3NTE0MTc3ZDgxMzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNlYmFhOGZiODg4M2I2YjBjOGM0ZThmZWQxNThiNmY1NzRlOTBlNWRhODk1ZDZhYmNlYWQ2ZmI0OTllMTVhMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://client/qml/tests/fixture/tst_accessibility.qml",
-          "version": "repo-file-v1:sha256:fc6b02e70b5e0f93260336d56f72b26991e5a1d073f61683b348ae64c2bcaa69"
-        },
-        {
-          "resource": "repo://client/qml/tests/fixture/tst_games.qml",
-          "version": "repo-file-v1:sha256:8381751d7668f94e2cd84c4e874c9d719b75d461ddc5c2c3886df60e0a777b62"
-        },
-        {
-          "resource": "repo://client/qml/tests/fixture/tst_marketplace.qml",
-          "version": "repo-file-v1:sha256:13c8a6648ba8b1daf7b863e376012967ab1ffa858ef9fc00a03d3c18094ed374"
-        },
-        {
-          "resource": "repo://client/qml/tests/fixture/tst_onboarding.qml",
-          "version": "repo-file-v1:sha256:07fa97ae301983cf56bee548c88095498bc2ab532e42c95133739f975d1c073c"
-        },
-        {
-          "resource": "repo://client/qml/tests/fixture/tst_social.qml",
-          "version": "repo-file-v1:sha256:99c69317e6e285abd21f89feebeefe8780a24cb5b25b6f9497d713f57a94a91f"
+          "version": "repo-file-v1:sha256:b5515ad4537a5c4fc55901f327cf31c964531f72cc242894a8332342140a9171"
         },
         {
           "resource": "repo://client/qml/tests/fixture/tst_transport.qml",
-          "version": "repo-file-v1:sha256:2d2dd542715fea4adbac59c316dbac1d56a9ec72cdcf5ec641d2e0826962856c"
+          "version": "repo-file-v1:sha256:bcd5789556742f5ff6eaabe517c37647c31fcd523c15b1a5a8402d70a0970077"
         }
       ]
     },
@@ -490,15 +466,15 @@
     },
     {
       "id": "claim_18b2613b127d4ca88023b62c62c88f1b",
-      "statement": "The historical module proof runs Rust formatting, linting, tests, docs, deterministic component generation, 13 isolated process scenarios, containment assertions, and local-only automation checks; production-loader behavior is validated separately by gate stage 24.",
+      "statement": "The historical module proof remains independent, while gate 24 validates the production shared reviewed/custom runtime, real contained process recovery, packaged-host binding, private database custody, local custom command boundary, absence of public administration and host network/database clients, and local-only automation.",
       "evidence": [
         {
-          "resource": "repo://scripts/test-server-module-spike.sh#L1-L82",
-          "version": "repo-lines-v1:sha256:103038362abe42f374b01e0169c6c889372e046ecb87768fc49ac13c27208d42:eyJzZWxlY3RlZExpbmVDb3VudCI6ODIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlOTdmNGVhOThkZDViNjE3Y2I3ZTU1NzhiZTdiNWE5NDQ2OWUwN2Y4MDY4MmI5MzZmNGNkNjhiMWExYWJhODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/test-server-module-spike.sh",
+          "version": "repo-file-v1:sha256:103038362abe42f374b01e0169c6c889372e046ecb87768fc49ac13c27208d42"
         },
         {
-          "resource": "repo://scripts/test-server-modules.sh#L1-L55",
-          "version": "repo-lines-v1:sha256:8924d9310d1023fe6cc5058bdf3006730d90d7da3a2d0fbd2c91070b2933bac8:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxZDRiYzYxZGY4MjZkM2Y3MTI1NTA5YjAxZTBiYjc0N2EzZDMxNzAxZmJkODM2NTFhODEwODEzYzI4Yzc2M2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/test-server-modules.sh#L1-L80",
+          "version": "repo-lines-v1:sha256:f57341a8a7d336c4e6dd3f3c541f6e0a3dfa291130f8dc6122d3ac88b4f72d23:eyJzZWxlY3RlZExpbmVDb3VudCI6ODAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxZDRiYzYxZGY4MjZkM2Y3MTI1NTA5YjAxZTBiYjc0N2EzZDMxNzAxZmJkODM2NTFhODEwODEzYzI4Yzc2M2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -525,10 +501,36 @@
           "version": "repo-file-v1:sha256:6960c2cbcc6b8a3b58e3b9ded5057aa7ed9cbfba3aab7c5af1a1280b6474446a"
         }
       ]
+    },
+    {
+      "id": "claim_a9e432c4cae34e9588999f9e08e7f34f",
+      "statement": "Ticket 041 focused evidence spans five custom-module PostgreSQL tests, one real CLI import/replay/enable test, shared reviewed/custom runtime conformance, discovery API privacy, QML warning behavior, restore reconciliation, and the full gate's production containment path.",
+      "evidence": [
+        {
+          "resource": "repo://crates/server/src/server_module_custom_tests.rs",
+          "version": "repo-file-v1:sha256:7568f9a3cf985b9b9b87d729260b8f3234fb95f3eee3392ba39a7ed51b187a4f"
+        },
+        {
+          "resource": "repo://crates/server/tests/operator_cli.rs",
+          "version": "repo-file-v1:sha256:02c8015873497f6ae98121c7f7f9bba200f3ab39237783d187a68b8ac3b7c6b7"
+        },
+        {
+          "resource": "repo://crates/server-module-runtime/tests/conformance.rs",
+          "version": "repo-file-v1:sha256:36a1d9a17af005cd150980908ae3d60ff60368398b432a7844f9d2951bf4ee1c"
+        },
+        {
+          "resource": "repo://crates/server/src/server_discovery_api_tests.rs",
+          "version": "repo-file-v1:sha256:f2583619a9ef3ef8119dc590ee1e4e2c1bbd0bad629ce72944d49f03481619df"
+        },
+        {
+          "resource": "repo://scripts/test-server-modules.sh",
+          "version": "repo-file-v1:sha256:f57341a8a7d336c4e6dd3f3c541f6e0a3dfa291130f8dc6122d3ac88b4f72d23"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.3.3",
-    "at": "2026-08-28T01:06:32.318Z"
+    "at": "2026-08-30T00:13:04.632Z"
   }
 }

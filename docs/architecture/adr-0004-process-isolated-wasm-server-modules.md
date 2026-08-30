@@ -1,6 +1,6 @@
 # ADR-0004: Process-isolated Wasm server modules
 
-- Status: accepted; first production observation-only slice implemented as an explicit opt-in
+- Status: accepted; production observation slice and operator-custom admission implemented
 - Date: 2026-08-27
 - Knowledge ID: `AD-omarchy-gaming-system-process-isolated-wasm-server-modules-001`
 
@@ -55,15 +55,16 @@ Operator-custom provenance must name that same admitted server, component
 artifacts must be bounded while they are read, and bounded dispatchers must
 discard empty partition state.
 
-Observation hooks execute from a future durable transactional outbox after the
+Observation hooks execute from a durable transactional outbox after the
 original platform operation commits. Their failure cannot undo that operation.
 Any future admission hook must evaluate an immutable snapshot outside a
 database transaction and re-lock/revalidate authoritative state before commit.
 The first production slice will implement observation hooks only.
 
-Production module discovery, install, database schema, routes, and startup are
-not authorized by this ADR. Ticket 039's nested proof is executable decision
-evidence, not a production loader.
+Public module mutation routes, additional hook/capability vocabulary, module
+egress, and gameplay authority are not authorized by this ADR. Production
+discovery may disclose only bounded behavior/provenance aggregates; private
+inventory and exact local mutation stay outside the network API.
 
 ## Alternatives
 
@@ -132,8 +133,12 @@ reliable.
   `scripts/test-server-module-spike.sh` implement the isolated proof without
   linking it to the production workspace.
 - `crates/server-module-runtime/`, migration `0025_server_modules.sql`, and
-  `scripts/test-server-modules.sh` implement and gate the fixed first-party
-  production observation base without authorizing custom artifact admission.
+  `scripts/test-server-modules.sh` implement and gate the first-party
+  production observation base. Migration
+  `0027_operator_custom_server_modules.sql` and the database-local
+  `custom-module-*` commands add immutable custom artifact custody,
+  server-bound provenance, lifecycle, shared dispatch, and bounded public
+  disclosure without a public administration surface.
 - [WebAssembly Component Model](https://component-model.bytecodealliance.org/)
   defines the WIT and Canonical ABI foundation.
 - [Wasmtime security](https://docs.wasmtime.dev/security.html) describes its

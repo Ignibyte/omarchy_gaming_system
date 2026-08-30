@@ -70,6 +70,7 @@ impl ModuleExecutor for ControlledExecutor {
         &self,
         request: HostRequest,
         core_key: VerifyingKey,
+        release: omarchygs_server_module_runtime::ReviewedRelease,
     ) -> Result<HostResponse, ModuleError> {
         self.calls
             .lock()
@@ -81,9 +82,9 @@ impl ModuleExecutor for ControlledExecutor {
                 self.executing.store(true, Ordering::SeqCst);
                 std::thread::sleep(Duration::from_millis(750));
                 self.executing.store(false, Ordering::SeqCst);
-                Ok(self.runtime.execute(&request, &core_key))
+                Ok(self.runtime.execute_release(&request, &core_key, &release))
             }
-            _ => Ok(self.runtime.execute(&request, &core_key)),
+            _ => Ok(self.runtime.execute_release(&request, &core_key, &release)),
         }
     }
 }
@@ -833,6 +834,7 @@ async fn upgraded_receipts_distinguish_legacy_evidence_and_require_new_preimages
 
 fn module_config() -> ModuleConfig {
     ModuleConfig {
+        enable_first_party_report: true,
         admission_signing_seed: [11_u8; 32],
         pairwise_secret: [22_u8; 32],
     }

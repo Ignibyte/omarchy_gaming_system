@@ -348,4 +348,31 @@ TestCase {
         tryCompare(applicationWindow.gameController, "loadState", "ready", 5000)
         assertScreen("games", "gamesRefreshButton")
     }
+
+    function test_operator_custom_module_warning_is_persistent_accessible_and_compact() {
+        applicationWindow.onboardingController.showServerConfiguration()
+        applicationWindow.onboardingController.connectToServer(
+                    fixtureConfig.custom_modules_url)
+        tryCompare(applicationWindow.onboardingController, "state", "access", 5000)
+        const warning = object("operatorCustomModuleWarning")
+        verify(warning.visible)
+        compare(warning.height, 52)
+        compare(warning.Accessible.role, Accessible.AlertMessage)
+        verify(warning.Accessible.name.indexOf("not reviewed or supported") !== -1)
+        verify(warning.Accessible.name.indexOf("server operator's responsibility") !== -1)
+        applicationWindow.width = 640
+        applicationWindow.height = 420
+        tryCompare(applicationWindow, "width", 640)
+        tryCompare(applicationWindow, "height", 420)
+        tryCompare(warning, "width", applicationWindow.width)
+        verify(warning.x >= 0)
+        verify(warning.x + warning.width <= applicationWindow.width + 1,
+               "warning bounds: x=" + warning.x + " width=" + warning.width
+               + " window=" + applicationWindow.width)
+
+        signIn("social_user", "TEST-ONLY-social-passphrase")
+        tryCompare(applicationWindow.onboardingController, "state", "personas", 5000)
+        verify(warning.visible)
+        verify(warning.Accessible.name.length > 0)
+    }
 }

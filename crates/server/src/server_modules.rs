@@ -1,8 +1,8 @@
 //! PostgreSQL-backed production server-module registry and observation dispatcher.
 //!
-//! Ticket 040 intentionally admits only the compiled-in Sentinel fixture and
-//! one post-commit report observation. No caller can supply executable bytes,
-//! a host path, an arbitrary hook/capability, SQL, or a network destination.
+//! Reviewed and operator-custom releases share one post-commit report
+//! observation boundary. No module receives a host path, arbitrary
+//! hook/capability, SQL, server secret, client code, or network destination.
 
 use std::{collections::BTreeMap, sync::Arc, time::Duration};
 
@@ -10,11 +10,12 @@ use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use hmac::{Hmac, KeyInit, Mac};
 use omarchygs_server_module_runtime::{
-    BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID, Capability, FixtureKind, HOOK_FORMAT, HookKind,
+    BUILTIN_MODULE_ID, BUILTIN_RELEASE_ID, Capability, ExecutionTrust, HOOK_FORMAT, HookKind,
     HookPayload, HostRequest, HostResponse, HostResult, MAX_FRAME_BYTES, ModuleAdmission,
     ModuleHookEvent, ModuleIntent, ModuleSubject, PRIORITY_REVIEW_LABEL, ProcessSupervisor,
-    RESPONSE_FORMAT, ReviewedRelease, SignedEnvelope, canonical_json, host_request,
-    reviewed_release, sha256_hex, sign_active_admission, verify_host_request,
+    RESPONSE_FORMAT, ReviewedRelease, SignedEnvelope, canonical_json, decode_verifying_key,
+    host_request, reviewed_release, sha256_hex, sign_active_admission,
+    verify_host_request_with_release, verify_release_material,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -42,6 +43,8 @@ const MAX_STATE_VALUE_BYTES: usize = 512;
 /// Exact secrets needed only when the reviewed production module is enabled.
 #[derive(Clone)]
 pub struct ModuleConfig {
+    /// Whether the packaged first-party report observer is selected.
+    pub enable_first_party_report: bool,
     /// Server-specific admission signer seed.
     pub admission_signing_seed: [u8; 32],
     /// Purpose-specific pairwise persona derivation secret.
@@ -89,8 +92,7 @@ impl ModuleError {
 /// Optional same-transaction observation producer held by application state.
 #[derive(Clone)]
 pub struct ModuleEmitter {
-    instance_id: Uuid,
-    pairwise_secret: Arc<[u8; 32]>,
+    pairwise_secret: Option<Arc<[u8; 32]>>,
 }
 
 /// One running database dispatcher plus its cloneable event emitter.
@@ -130,10 +132,11 @@ impl ServerModuleService {
         executor: Arc<dyn ModuleExecutor>,
     ) -> Result<Self, ModuleError> {
         let core_signer = SigningKey::from_bytes(&config.admission_signing_seed);
-        let enabled = register_and_enable(&pool, &core_signer, Arc::clone(&executor)).await?;
+        if config.enable_first_party_report {
+            register_and_enable(&pool, &core_signer, Arc::clone(&executor)).await?;
+        }
         let emitter = ModuleEmitter {
-            instance_id: enabled.instance_id,
-            pairwise_secret: Arc::new(config.pairwise_secret),
+            pairwise_secret: Some(Arc::new(config.pairwise_secret)),
         };
         let (shutdown, receiver) = watch::channel(false);
         let worker_pool = pool.clone();
@@ -141,7 +144,7 @@ impl ServerModuleService {
             worker_pool,
             executor,
             core_signer.verifying_key(),
-            Arc::clone(&emitter.pairwise_secret),
+            Arc::new(config.pairwise_secret),
             receiver,
         ));
         Ok(Self {
@@ -185,6 +188,7 @@ pub(crate) trait ModuleExecutor: Send + Sync {
         &self,
         request: HostRequest,
         core_key: VerifyingKey,
+        release: ReviewedRelease,
     ) -> Result<HostResponse, ModuleError>;
 }
 
@@ -197,9 +201,10 @@ impl ModuleExecutor for ProcessExecutor {
         &self,
         request: HostRequest,
         core_key: VerifyingKey,
+        release: ReviewedRelease,
     ) -> Result<HostResponse, ModuleError> {
         self.supervisor
-            .execute(&request, &core_key)
+            .execute_release(&request, &core_key, &release)
             .map(|report| report.response)
             .map_err(|runtime_error| {
                 warn!(error = %runtime_error, "contained module host invocation failed");
@@ -222,9 +227,7 @@ struct InstanceRow {
     restored_pending_review: bool,
 }
 
-struct EnabledInstance {
-    instance_id: Uuid,
-}
+struct EnabledInstance;
 
 async fn register_and_enable(
     pool: &PgPool,
@@ -244,13 +247,15 @@ async fn register_and_enable(
     if instance.lifecycle == "active" {
         let admission = load_current_admission(pool, &instance).await?;
         let request = readiness_request(&reviewed, admission, &instance, server_id)?;
-        let response =
-            execute_without_transaction(executor, request.clone(), core_signer.verifying_key())
-                .await?;
+        let response = execute_without_transaction(
+            executor,
+            request.clone(),
+            core_signer.verifying_key(),
+            reviewed.clone(),
+        )
+        .await?;
         verify_readiness_response(&request, &response)?;
-        return Ok(EnabledInstance {
-            instance_id: instance.instance_id,
-        });
+        return Ok(EnabledInstance);
     }
 
     let next_revision = u64::try_from(instance.lifecycle_revision)
@@ -269,13 +274,16 @@ async fn register_and_enable(
     )
     .map_err(contract_failure)?;
     let request = readiness_request(&reviewed, signed_admission.clone(), &instance, server_id)?;
-    let response =
-        execute_without_transaction(executor, request.clone(), core_signer.verifying_key()).await?;
+    let response = execute_without_transaction(
+        executor,
+        request.clone(),
+        core_signer.verifying_key(),
+        reviewed.clone(),
+    )
+    .await?;
     verify_readiness_response(&request, &response)?;
     finalize_enable(pool, &instance, &admission, &signed_admission).await?;
-    Ok(EnabledInstance {
-        instance_id: instance.instance_id,
-    })
+    Ok(EnabledInstance)
 }
 
 async fn register_release_and_instance(
@@ -632,8 +640,9 @@ async fn execute_without_transaction(
     executor: Arc<dyn ModuleExecutor>,
     request: HostRequest,
     core_key: VerifyingKey,
+    release: ReviewedRelease,
 ) -> Result<HostResponse, ModuleError> {
-    tokio::task::spawn_blocking(move || executor.execute(request, core_key))
+    tokio::task::spawn_blocking(move || executor.execute(request, core_key, release))
         .await
         .map_err(|join_error| {
             error!(error = %join_error, "module executor task failed");
@@ -646,8 +655,15 @@ impl ModuleEmitter {
     #[must_use]
     pub fn configured(config: &ModuleConfig) -> Self {
         Self {
-            instance_id: BUILTIN_INSTANCE_ID,
-            pairwise_secret: Arc::new(config.pairwise_secret),
+            pairwise_secret: Some(Arc::new(config.pairwise_secret)),
+        }
+    }
+
+    /// Build an emitter that preserves gap evidence when runtime keys are absent.
+    #[must_use]
+    pub const fn unconfigured() -> Self {
+        Self {
+            pairwise_secret: None,
         }
     }
 
@@ -665,95 +681,110 @@ impl ModuleEmitter {
         {
             return Err(ModuleError::InvalidInput);
         }
-        let row = sqlx::query_as::<_, EmitContextRow>(
+        let rows = sqlx::query_as::<_, EmitContextRow>(
             r#"
-            SELECT i.lifecycle, i.release_id, i.current_admission_id,
+            SELECT i.instance_id, i.module_id, i.lifecycle, i.release_id,
+                   i.current_admission_id,
                    i.current_admission_revision, i.config, i.config_revision,
                    n.entries AS state, n.revision AS state_revision,
                    a.server_id
             FROM server_module_instances AS i
+            JOIN server_module_releases AS r ON r.release_id = i.release_id
             JOIN server_module_state_namespaces AS n ON n.instance_id = i.instance_id
             LEFT JOIN server_module_admissions AS a
               ON a.admission_id = i.current_admission_id
              AND a.lifecycle_revision = i.current_admission_revision
-            WHERE i.instance_id = $1
+            WHERE r.subscribed_hooks = ARRAY['persona_reported']::TEXT[]
+              AND (
+                i.instance_id = $1
+                OR (r.provenance_class = 'operator_custom' AND i.lifecycle = 'active')
+              )
+            ORDER BY i.instance_id
+            LIMIT 10
             FOR UPDATE OF i
             "#,
         )
-        .bind(self.instance_id)
-        .fetch_optional(&mut **transaction)
-        .await
-        .map_err(database_error)?
-        .ok_or(ModuleError::Conflict)?;
-        if row.lifecycle != "active" {
-            record_observation_gap(transaction, self.instance_id, "module_inactive").await?;
-            return Ok(None);
-        }
-        let admission_id = row.current_admission_id.ok_or(ModuleError::Conflict)?;
-        let admission_revision = row
-            .current_admission_revision
-            .ok_or(ModuleError::Conflict)?;
-        let server_id = row.server_id.ok_or(ModuleError::Conflict)?;
-        let outstanding: i64 = sqlx::query_scalar(
-            r#"
-            SELECT count(*)
-            FROM server_module_outbox
-            WHERE instance_id = $1
-              AND status <> 'delivered'
-            "#,
-        )
-        .bind(self.instance_id)
-        .fetch_one(&mut **transaction)
+        .bind(BUILTIN_INSTANCE_ID)
+        .fetch_all(&mut **transaction)
         .await
         .map_err(database_error)?;
-        if outstanding >= MAX_UNDELIVERED_EVENTS {
-            record_observation_gap(transaction, self.instance_id, "queue_saturated").await?;
-            return Ok(None);
+        if rows.len() > 9 {
+            return Err(ModuleError::Conflict);
         }
-        let pairwise_subject = derive_pairwise_subject(
-            self.pairwise_secret.as_ref(),
-            BUILTIN_MODULE_ID,
-            subject_persona_id,
-        )?;
-        let payload = json!({
-            "kind": "persona_reported",
-            "report_id": report_id,
-            "category": category,
-        });
-        let payload_sha256 = sha256_hex(&canonical_json(&payload).map_err(contract_failure)?);
-        let event_id = Uuid::new_v4();
-        sqlx::query(
-            r#"
-            INSERT INTO server_module_outbox (
-                event_id, instance_id, release_id, admission_id,
-                admission_revision, hook, partition_subject, subject_persona_id,
-                target_report_id, causal_revision, payload, payload_sha256,
-                config_snapshot, config_revision, state_snapshot, state_revision
-            ) VALUES (
-                $1, $2, $3, $4, $5, 'persona_reported', $6, $7,
-                $8, 0, $9, $10, $11, $12, $13, $14
+        let mut first_event = None;
+        for row in rows {
+            if row.lifecycle != "active" {
+                record_observation_gap(transaction, row.instance_id, "module_inactive").await?;
+                continue;
+            }
+            let Some(pairwise_secret) = self.pairwise_secret.as_deref() else {
+                record_observation_gap(transaction, row.instance_id, "runtime_unconfigured")
+                    .await?;
+                continue;
+            };
+            let admission_id = row.current_admission_id.ok_or(ModuleError::Conflict)?;
+            let admission_revision = row
+                .current_admission_revision
+                .ok_or(ModuleError::Conflict)?;
+            row.server_id.ok_or(ModuleError::Conflict)?;
+            let outstanding: i64 = sqlx::query_scalar(
+                r#"
+                SELECT count(*)
+                FROM server_module_outbox
+                WHERE instance_id = $1
+                  AND status <> 'delivered'
+                "#,
             )
-            "#,
-        )
-        .bind(event_id)
-        .bind(self.instance_id)
-        .bind(row.release_id)
-        .bind(admission_id)
-        .bind(admission_revision)
-        .bind(pairwise_subject)
-        .bind(subject_persona_id)
-        .bind(report_id)
-        .bind(Json(payload))
-        .bind(payload_sha256)
-        .bind(row.config)
-        .bind(row.config_revision)
-        .bind(row.state)
-        .bind(row.state_revision)
-        .execute(&mut **transaction)
-        .await
-        .map_err(database_error)?;
-        let _ = server_id;
-        Ok(Some(event_id))
+            .bind(row.instance_id)
+            .fetch_one(&mut **transaction)
+            .await
+            .map_err(database_error)?;
+            if outstanding >= MAX_UNDELIVERED_EVENTS {
+                record_observation_gap(transaction, row.instance_id, "queue_saturated").await?;
+                continue;
+            }
+            let pairwise_subject =
+                derive_pairwise_subject(pairwise_secret, &row.module_id, subject_persona_id)?;
+            let payload = json!({
+                "kind": "persona_reported",
+                "report_id": report_id,
+                "category": category,
+            });
+            let payload_sha256 = sha256_hex(&canonical_json(&payload).map_err(contract_failure)?);
+            let event_id = Uuid::new_v4();
+            sqlx::query(
+                r#"
+                INSERT INTO server_module_outbox (
+                    event_id, instance_id, release_id, admission_id,
+                    admission_revision, hook, partition_subject, subject_persona_id,
+                    target_report_id, causal_revision, payload, payload_sha256,
+                    config_snapshot, config_revision, state_snapshot, state_revision
+                ) VALUES (
+                    $1, $2, $3, $4, $5, 'persona_reported', $6, $7,
+                    $8, 0, $9, $10, $11, $12, $13, $14
+                )
+                "#,
+            )
+            .bind(event_id)
+            .bind(row.instance_id)
+            .bind(row.release_id)
+            .bind(admission_id)
+            .bind(admission_revision)
+            .bind(pairwise_subject)
+            .bind(subject_persona_id)
+            .bind(report_id)
+            .bind(Json(payload))
+            .bind(payload_sha256)
+            .bind(row.config)
+            .bind(row.config_revision)
+            .bind(row.state)
+            .bind(row.state_revision)
+            .execute(&mut **transaction)
+            .await
+            .map_err(database_error)?;
+            first_event.get_or_insert(event_id);
+        }
+        Ok(first_event)
     }
 }
 
@@ -790,6 +821,8 @@ async fn record_observation_gap(
 
 #[derive(FromRow)]
 struct EmitContextRow {
+    instance_id: Uuid,
+    module_id: String,
     lifecycle: String,
     release_id: Uuid,
     current_admission_id: Option<Uuid>,
@@ -818,6 +851,7 @@ fn derive_pairwise_subject(
 struct ClaimedEvent {
     event_id: Uuid,
     instance_id: Uuid,
+    module_id: String,
     release_id: Uuid,
     admission_id: Uuid,
     admission_revision: i64,
@@ -836,6 +870,16 @@ struct ClaimedEvent {
     lease_id: Uuid,
     server_id: Uuid,
     signed_admission: Vec<u8>,
+    signed_release: Vec<u8>,
+    signed_provenance: Vec<u8>,
+    provenance_class: String,
+    provenance_server_id: Option<Uuid>,
+    artifact_custody: String,
+    component_bytes: Option<Vec<u8>>,
+    publisher_key_id: Option<String>,
+    publisher_public_key: Option<String>,
+    provenance_key_id: Option<String>,
+    provenance_public_key: Option<String>,
 }
 
 async fn dispatch_loop(
@@ -886,7 +930,7 @@ async fn dispatch_once(
     let Some(claimed) = claim_next_event(pool).await? else {
         return Ok(false);
     };
-    let request = match request_from_claim(&claimed) {
+    let (request, release) = match request_from_claim(&claimed) {
         Ok(request) => request,
         Err(module_error) => {
             record_delivery_failure(pool, &claimed, module_error.code()).await?;
@@ -903,13 +947,16 @@ async fn dispatch_once(
     if reconcile_existing_delivery(pool, &claimed, &request_receipt.sha256).await? {
         return Ok(true);
     }
-    let response = match execute_without_transaction(executor, request.clone(), core_key).await {
-        Ok(response) => response,
-        Err(module_error) => {
-            record_delivery_failure(pool, &claimed, module_error.code()).await?;
-            return Ok(true);
-        }
-    };
+    let response =
+        match execute_without_transaction(executor, request.clone(), core_key, release.clone())
+            .await
+        {
+            Ok(response) => response,
+            Err(module_error) => {
+                record_delivery_failure(pool, &claimed, module_error.code()).await?;
+                return Ok(true);
+            }
+        };
     if let HostResult::Rejected { code } = &response.outcome {
         let stable = match code.as_str() {
             "request_rejected" => "host_request_rejected",
@@ -926,11 +973,14 @@ async fn dispatch_once(
     if let Err(module_error) = apply_host_response(
         pool,
         &claimed,
-        &request,
-        &request_receipt,
-        &response,
-        &core_key,
-        pairwise_secret,
+        HostApplication {
+            request: &request,
+            request_receipt: &request_receipt,
+            response: &response,
+            core_key: &core_key,
+            release: &release,
+            pairwise_secret,
+        },
     )
     .await
     {
@@ -1024,17 +1074,23 @@ async fn claim_next_event(pool: &PgPool) -> Result<Option<ClaimedEvent>, ModuleE
     .map_err(database_error)?;
     let claimed = sqlx::query_as::<_, ClaimedEvent>(
         r#"
-        SELECT o.event_id, o.instance_id, o.release_id,
+        SELECT o.event_id, o.instance_id, i.module_id, o.release_id,
                o.admission_id, o.admission_revision, o.hook,
                o.partition_subject, o.subject_persona_id, o.target_report_id,
                o.causal_revision, o.payload, o.payload_sha256,
                o.config_snapshot, o.config_revision, o.state_snapshot,
                o.state_revision, o.attempt_count, o.lease_id,
-               a.server_id, a.signed_admission
+               a.server_id, a.signed_admission,
+               r.signed_release, r.signed_provenance, r.provenance_class,
+               r.provenance_server_id, r.artifact_custody, r.component_bytes,
+               r.publisher_key_id, r.publisher_public_key,
+               r.provenance_key_id, r.provenance_public_key
         FROM server_module_outbox AS o
+        JOIN server_module_instances AS i ON i.instance_id = o.instance_id
         JOIN server_module_admissions AS a
           ON a.admission_id = o.admission_id
          AND a.lifecycle_revision = o.admission_revision
+        JOIN server_module_releases AS r ON r.release_id = o.release_id
         WHERE o.sequence = $1 AND o.lease_id = $2
         "#,
     )
@@ -1047,15 +1103,21 @@ async fn claim_next_event(pool: &PgPool) -> Result<Option<ClaimedEvent>, ModuleE
     Ok(Some(claimed))
 }
 
-fn request_from_claim(claimed: &ClaimedEvent) -> Result<HostRequest, ModuleError> {
+fn request_from_claim(
+    claimed: &ClaimedEvent,
+) -> Result<(HostRequest, ReviewedRelease), ModuleError> {
     if claimed.hook != HookKind::PersonaReported.to_string()
-        || claimed.release_id != BUILTIN_RELEASE_ID
         || claimed.attempt_count <= 0
         || claimed.attempt_count > MAX_DELIVERY_ATTEMPTS
     {
         return Err(ModuleError::Conflict);
     }
-    let reviewed = reviewed_release().map_err(contract_failure)?;
+    let reviewed = release_from_claim(claimed)?;
+    if reviewed.manifest.release_id != claimed.release_id
+        || reviewed.manifest.module_id != claimed.module_id
+    {
+        return Err(ModuleError::Conflict);
+    }
     let signed_admission: SignedEnvelope = decode_canonical(&claimed.signed_admission)?;
     let (report_id, category) = parse_report_payload(&claimed.payload.0)?;
     if report_id != claimed.target_report_id
@@ -1064,7 +1126,7 @@ fn request_from_claim(claimed: &ClaimedEvent) -> Result<HostRequest, ModuleError
     {
         return Err(ModuleError::Conflict);
     }
-    Ok(host_request(
+    let request = host_request(
         &reviewed,
         signed_admission,
         ModuleHookEvent {
@@ -1072,7 +1134,7 @@ fn request_from_claim(claimed: &ClaimedEvent) -> Result<HostRequest, ModuleError
             event_id: claimed.event_id,
             attempt: u16::try_from(claimed.attempt_count).map_err(|_| ModuleError::Internal)?,
             server_id: claimed.server_id,
-            module_id: BUILTIN_MODULE_ID.into(),
+            module_id: claimed.module_id.clone(),
             release_id: claimed.release_id,
             admission_id: claimed.admission_id,
             admission_revision: u64::try_from(claimed.admission_revision)
@@ -1093,7 +1155,71 @@ fn request_from_claim(claimed: &ClaimedEvent) -> Result<HostRequest, ModuleError
                 category,
             },
         },
-    ))
+    );
+    Ok((request, reviewed))
+}
+
+fn release_from_claim(claimed: &ClaimedEvent) -> Result<ReviewedRelease, ModuleError> {
+    let signed_release: SignedEnvelope = decode_canonical(&claimed.signed_release)?;
+    let signed_provenance: SignedEnvelope = decode_canonical(&claimed.signed_provenance)?;
+    if claimed.artifact_custody == "packaged_reviewed_fixture" {
+        let reviewed = reviewed_release().map_err(contract_failure)?;
+        if claimed.provenance_class != "first_party_reviewed_fixture"
+            || claimed.provenance_server_id.is_some()
+            || claimed.release_id != BUILTIN_RELEASE_ID
+            || signed_release != reviewed.release
+            || signed_provenance != reviewed.provenance
+        {
+            return Err(ModuleError::Conflict);
+        }
+        return Ok(reviewed);
+    }
+    if claimed.artifact_custody != "database_immutable" {
+        return Err(ModuleError::Conflict);
+    }
+    let expected_server_id = match claimed.provenance_class.as_str() {
+        "operator_custom" => Some(claimed.server_id),
+        "marketplace_vetted" => None,
+        _ => return Err(ModuleError::Conflict),
+    };
+    if claimed.provenance_server_id != expected_server_id {
+        return Err(ModuleError::Conflict);
+    }
+    verify_release_material(
+        signed_release,
+        signed_provenance,
+        &ExecutionTrust {
+            publisher_key_id: claimed
+                .publisher_key_id
+                .clone()
+                .ok_or(ModuleError::Conflict)?,
+            publisher_public_key: decode_verifying_key(
+                claimed
+                    .publisher_public_key
+                    .as_deref()
+                    .ok_or(ModuleError::Conflict)?,
+            )
+            .map_err(contract_failure)?,
+            provenance_key_id: claimed
+                .provenance_key_id
+                .clone()
+                .ok_or(ModuleError::Conflict)?,
+            provenance_public_key: decode_verifying_key(
+                claimed
+                    .provenance_public_key
+                    .as_deref()
+                    .ok_or(ModuleError::Conflict)?,
+            )
+            .map_err(contract_failure)?,
+            provenance_class: claimed.provenance_class.clone(),
+            provenance_server_id: expected_server_id,
+        },
+        claimed
+            .component_bytes
+            .clone()
+            .ok_or(ModuleError::Conflict)?,
+    )
+    .map_err(contract_failure)
 }
 
 async fn reconcile_existing_delivery(
@@ -1148,16 +1274,29 @@ struct ApplyRoot {
     report_status: String,
 }
 
+struct HostApplication<'a> {
+    request: &'a HostRequest,
+    request_receipt: &'a EncodedRequestReceipt,
+    response: &'a HostResponse,
+    core_key: &'a VerifyingKey,
+    release: &'a ReviewedRelease,
+    pairwise_secret: &'a [u8; 32],
+}
+
 async fn apply_host_response(
     pool: &PgPool,
     claimed: &ClaimedEvent,
-    request: &HostRequest,
-    request_receipt: &EncodedRequestReceipt,
-    response: &HostResponse,
-    core_key: &VerifyingKey,
-    pairwise_secret: &[u8; 32],
+    application: HostApplication<'_>,
 ) -> Result<(), ModuleError> {
-    verify_host_request(request, core_key, FixtureKind::Valid).map_err(contract_failure)?;
+    let HostApplication {
+        request,
+        request_receipt,
+        response,
+        core_key,
+        release,
+        pairwise_secret,
+    } = application;
+    verify_host_request_with_release(request, core_key, release).map_err(contract_failure)?;
     if response.format != RESPONSE_FORMAT
         || response.event_id != claimed.event_id
         || response.release_id != claimed.release_id
@@ -1203,7 +1342,7 @@ async fn apply_host_response(
     if root.report_subject_persona_id != claimed.subject_persona_id
         || derive_pairwise_subject(
             pairwise_secret,
-            BUILTIN_MODULE_ID,
+            &claimed.module_id,
             root.report_subject_persona_id,
         )? != claimed.partition_subject
     {
@@ -1714,6 +1853,7 @@ pub async fn apply_lifecycle_command(
 #[derive(FromRow)]
 struct LifecycleReplayRow {
     operation_id: Uuid,
+    module_id: String,
     action: String,
     expected_revision: i64,
     previous_state: String,
@@ -1727,7 +1867,7 @@ impl LifecycleReplayRow {
     fn receipt(&self) -> ModuleLifecycleReceipt {
         ModuleLifecycleReceipt {
             operation_id: self.operation_id,
-            module_id: BUILTIN_MODULE_ID.into(),
+            module_id: self.module_id.clone(),
             previous_state: self.previous_state.clone(),
             resulting_state: self.resulting_state.clone(),
             resulting_revision: self.resulting_revision,
@@ -1741,11 +1881,13 @@ async fn load_lifecycle_replay(
 ) -> Result<Option<LifecycleReplayRow>, ModuleError> {
     sqlx::query_as::<_, LifecycleReplayRow>(
         r#"
-        SELECT operation_id, action, expected_revision, previous_state,
-               resulting_state, resulting_revision, actor, reason
-        FROM server_module_lifecycle_audit
-        WHERE instance_id = $1 AND operation_id = $2
-        FOR UPDATE
+        SELECT a.operation_id, i.module_id, a.action, a.expected_revision,
+               a.previous_state, a.resulting_state, a.resulting_revision,
+               a.actor, a.reason
+        FROM server_module_lifecycle_audit a
+        JOIN server_module_instances i ON i.instance_id = a.instance_id
+        WHERE a.instance_id = $1 AND a.operation_id = $2
+        FOR UPDATE OF a
         "#,
     )
     .bind(BUILTIN_INSTANCE_ID)
@@ -1819,11 +1961,13 @@ pub async fn prepare_restored_modules(
     validate_actor_reason(actor, reason)?;
     let existing = sqlx::query_as::<_, LifecycleReplayRow>(
         r#"
-        SELECT operation_id, action, expected_revision, previous_state,
-               resulting_state, resulting_revision, actor, reason
-        FROM server_module_lifecycle_audit
-        WHERE operation_id = $1 AND action = 'restore'
-        ORDER BY instance_id
+        SELECT a.operation_id, i.module_id, a.action, a.expected_revision,
+               a.previous_state, a.resulting_state, a.resulting_revision,
+               a.actor, a.reason
+        FROM server_module_lifecycle_audit a
+        JOIN server_module_instances i ON i.instance_id = a.instance_id
+        WHERE a.operation_id = $1 AND a.action = 'restore'
+        ORDER BY a.instance_id
         "#,
     )
     .bind(operation_id)
@@ -1840,10 +1984,11 @@ pub async fn prepare_restored_modules(
         return Ok(existing.iter().map(LifecycleReplayRow::receipt).collect());
     }
     let mut transaction = pool.begin().await.map_err(database_error)?;
-    let instances = sqlx::query_as::<_, (Uuid, String, i64)>(
+    let instances = sqlx::query_as::<_, (Uuid, String, String, i64)>(
         r#"
-        SELECT instance_id, lifecycle, lifecycle_revision
+        SELECT instance_id, module_id, lifecycle, lifecycle_revision
         FROM server_module_instances
+        WHERE lifecycle <> 'retired'
         ORDER BY instance_id
         FOR UPDATE
         "#,
@@ -1852,12 +1997,13 @@ pub async fn prepare_restored_modules(
     .await
     .map_err(database_error)?;
     let mut receipts = Vec::with_capacity(instances.len());
-    for (instance_id, previous, revision) in instances {
+    for (instance_id, module_id, previous, revision) in instances {
         let next = revision.checked_add(1).ok_or(ModuleError::Internal)?;
         sqlx::query(
             r#"
             UPDATE server_module_instances
             SET lifecycle = 'disabled', lifecycle_revision = $2,
+                current_admission_id = NULL, current_admission_revision = NULL,
                 activation_allowed = FALSE, restored_pending_review = TRUE,
                 consecutive_failures = 0, updated_at = clock_timestamp()
             WHERE instance_id = $1
@@ -1889,7 +2035,7 @@ pub async fn prepare_restored_modules(
         .map_err(database_error)?;
         receipts.push(ModuleLifecycleReceipt {
             operation_id,
-            module_id: BUILTIN_MODULE_ID.into(),
+            module_id,
             previous_state: previous,
             resulting_state: "disabled".into(),
             resulting_revision: next,

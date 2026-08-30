@@ -114,6 +114,7 @@ and in this register.
 | `PR-omarchy-gaming-system-retain-module-request-preimages-before-pruning-001` | Persist bounded canonical request and response preimages plus the authorized target before pruning replayable transport rows. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
 | `PR-omarchy-gaming-system-reauthorize-readiness-under-finalization-lock-001` | After out-of-transaction readiness work, lock the stable roots and compare every authority-bearing revision before finalizing. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
 | `PR-omarchy-gaming-system-reconcile-restored-modules-before-server-start-001` | Run audited module restore reconciliation against a copied database before any restored server startup, leaving modules disabled pending explicit review and fresh readiness. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
+| `PR-omarchy-gaming-system-reject-symlinked-ancestors-for-private-artifact-reads-001` | Resolve owner-selected private artifacts through an OS primitive that rejects symlinked and magic-link ancestors, then retain final no-follow and stable descriptor checks. | `aar/AAR-041-administrator-custom-server-module-installation-and-provenance.md` |
 
 ## Register
 
@@ -434,3 +435,6 @@ and in this register.
 | `PR-omarchy-gaming-system-reauthorize-readiness-under-finalization-lock-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
 | `PR-omarchy-gaming-system-reconcile-restored-modules-before-server-start-001` | rule | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
 | `AD-omarchy-gaming-system-observation-only-production-server-module-base-001` | decision | `../../architecture/adr-0004-process-isolated-wasm-server-modules.md`; `../../architecture/server-modules.md` |
+| `BF-omarchy-gaming-system-private-artifact-ancestor-symlink-001` | failure | `aar/AAR-041-administrator-custom-server-module-installation-and-provenance.md` |
+| `PR-omarchy-gaming-system-reject-symlinked-ancestors-for-private-artifact-reads-001` | rule | `aar/AAR-041-administrator-custom-server-module-installation-and-provenance.md` |
+| `AD-omarchy-gaming-system-operator-custom-server-module-boundary-001` | decision | `../../architecture/adr-0004-process-isolated-wasm-server-modules.md`; `../../architecture/server-modules.md` |

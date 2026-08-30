@@ -84,9 +84,9 @@ server-authoritative game runtime below.
   lifecycle/restore recovery, process containment, receipts, and conformance
 - [ ] Add reviewed release upgrade/rollback compatibility operations beyond
   the fixed first-party production fixture
-- [ ] Administrator-controlled custom server-module installation with explicit
+- [x] Administrator-controlled custom server-module installation with explicit
   operator trust, player-facing provenance, and no client executable bridge
-- [ ] Reviewed self-hosting terms, privacy/telemetry disclosures, custom-content
+- [x] Reviewed self-hosting terms, privacy/telemetry disclosures, custom-content
   warnings, security contact expectations, and operator responsibility guide
 
 Marketplace publication and a server's local admission are separate decisions.

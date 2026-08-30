@@ -89,6 +89,9 @@ start_fixture normal normal
 start_fixture server_two server_two
 start_fixture catalog_only catalog_only
 start_fixture custom custom
+start_fixture custom_modules custom_modules
+start_fixture custom_modules_hostile custom_modules_hostile
+start_fixture custom_modules_wrong_server custom_modules_wrong_server
 start_fixture identity_changed identity_changed
 start_fixture incompatible incompatible
 start_fixture malformed malformed
@@ -108,6 +111,9 @@ jq -nc \
   --arg server_two_url "${ogs_fixture_urls[server_two]}" \
   --arg catalog_only_url "${ogs_fixture_urls[catalog_only]}" \
   --arg custom_url "${ogs_fixture_urls[custom]}" \
+  --arg custom_modules_url "${ogs_fixture_urls[custom_modules]}" \
+  --arg custom_modules_hostile_url "${ogs_fixture_urls[custom_modules_hostile]}" \
+  --arg custom_modules_wrong_server_url "${ogs_fixture_urls[custom_modules_wrong_server]}" \
   --arg identity_changed_url "${ogs_fixture_urls[identity_changed]}" \
   --arg incompatible_url "${ogs_fixture_urls[incompatible]}" \
   --arg malformed_url "${ogs_fixture_urls[malformed]}" \
@@ -116,6 +122,9 @@ jq -nc \
   --arg oversized_url "${ogs_fixture_urls[oversized]}" \
   '{server_url: $server_url, server_two_url: $server_two_url,
     catalog_only_url: $catalog_only_url, custom_url: $custom_url,
+    custom_modules_url: $custom_modules_url,
+    custom_modules_hostile_url: $custom_modules_hostile_url,
+    custom_modules_wrong_server_url: $custom_modules_wrong_server_url,
     identity_changed_url: $identity_changed_url, incompatible_url: $incompatible_url,
     malformed_url: $malformed_url,
     wrong_identity_url: $wrong_identity_url, slow_url: $slow_url,
@@ -141,7 +150,7 @@ jq -nc \
   -eventdelay 0 \
   -keydelay 0
 
-for ogs_name in normal server_two catalog_only custom identity_changed incompatible malformed wrong_identity slow oversized; do
+for ogs_name in normal server_two catalog_only custom custom_modules custom_modules_hostile custom_modules_wrong_server identity_changed incompatible malformed wrong_identity slow oversized; do
   if ! curl --fail --silent "${ogs_fixture_urls[$ogs_name]}/__fixture__/status" \
     | jq -e '.violations == []' >/dev/null; then
     echo "QML fixture $ogs_name observed a request-contract violation" >&2
