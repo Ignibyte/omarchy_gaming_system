@@ -16,11 +16,14 @@ ogs_pnpm_version="10.33.2"
 ogs_pnpm_integrity_hex="a90faf6feeab71ad6c6e57f94e0fe1a12f5dcc22cd754db40ae9593eb6a3e0b6b12e3540218bb37ae083404b1f2ce6db2a4121e979829b4aff94b99f49da1cf8"
 ogs_pnpm_package_manager="pnpm@$ogs_pnpm_version+sha512.$ogs_pnpm_integrity_hex"
 ogs_openwiki_mode="$ogs_openwiki_source/src/ingestion/code-mode.ts"
+ogs_openwiki_dist_mode="$ogs_openwiki_source/dist/ingestion/code-mode.js"
 ogs_openwiki_session="$ogs_openwiki_source/src/integrations/core/session-manager.ts"
 ogs_bootstrap_dir=""
 ogs_secondary_guide=$(printf '%s%s.md' 'CLAU' 'DE')
 ogs_agent_files_original="const CODE_MODE_AGENT_FILES = [\"AGENTS.md\", \"$ogs_secondary_guide\"];"
 ogs_agent_files_codex='const CODE_MODE_AGENT_FILES = ["AGENTS.md"];'
+ogs_agents_guidance_upstream='The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.'
+ogs_agents_guidance_local='Refresh the repository wiki only through the project-local OpenWiki lifecycle. Hosted CI/CD workflows, including GitHub Actions, are prohibited and rejected by the local gate. Do not hand-edit generated OpenWiki pages unless explicitly asked; update authoritative source and let the local lifecycle regenerate affected pages.'
 
 case "$(uname -s)-$(uname -m)" in
   Linux-x86_64)
@@ -215,17 +218,24 @@ grep -Fxq "$ogs_agent_files_original" "$ogs_openwiki_mode" \
   echo "OpenWiki agent-guide source changed; refusing an unreviewed patch." >&2
   exit 1
 }
+grep -Fq "$ogs_agents_guidance_upstream" "$ogs_openwiki_mode" \
+  || grep -Fq "$ogs_agents_guidance_local" "$ogs_openwiki_mode" || {
+  echo "OpenWiki agent guidance changed; refusing an unreviewed patch." >&2
+  exit 1
+}
 grep -Fq 'createWorkflow: input.mode === "init"' "$ogs_openwiki_session" \
   || grep -Fq 'createWorkflow: false' "$ogs_openwiki_session" || {
   echo "OpenWiki workflow source changed; refusing an unreviewed patch." >&2
   exit 1
 }
 
-# The pinned release maintains more than one root agent guide and generates an
-# unattended provider workflow. This project permits only its trusted Codex
-# surface, so narrow both behaviors in ignored, generated dependency state.
+# The pinned release maintains more than one root agent guide, generates an
+# unattended provider workflow, and describes that workflow as the wiki owner.
+# This project permits only its trusted local Codex surface, so narrow all
+# three behaviors in ignored, generated dependency state.
 sed -i \
-  's/^const CODE_MODE_AGENT_FILES = .*;$/const CODE_MODE_AGENT_FILES = ["AGENTS.md"];/' \
+  -e 's/^const CODE_MODE_AGENT_FILES = .*;$/const CODE_MODE_AGENT_FILES = ["AGENTS.md"];/' \
+  -e "s|$ogs_agents_guidance_upstream|$ogs_agents_guidance_local|" \
   "$ogs_openwiki_mode"
 sed -i \
   's/createWorkflow: input.mode === "init"/createWorkflow: false/' \
@@ -290,6 +300,13 @@ chmod +x "$ogs_openwiki_source/dist/cli/cli.js"
 
 grep -Fxq "$ogs_agent_files_codex" "$ogs_openwiki_mode" || {
   echo "OpenWiki Codex-only agent-guide patch did not apply." >&2
+  exit 1
+}
+grep -Fq "$ogs_agents_guidance_local" "$ogs_openwiki_mode" \
+  && grep -Fq "$ogs_agents_guidance_local" "$ogs_openwiki_dist_mode" \
+  && ! grep -Fq "$ogs_agents_guidance_upstream" "$ogs_openwiki_mode" \
+  && ! grep -Fq "$ogs_agents_guidance_upstream" "$ogs_openwiki_dist_mode" || {
+  echo "OpenWiki local-only agent-guidance patch did not apply." >&2
   exit 1
 }
 

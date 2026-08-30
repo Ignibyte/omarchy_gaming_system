@@ -115,6 +115,8 @@ and in this register.
 | `PR-omarchy-gaming-system-reauthorize-readiness-under-finalization-lock-001` | After out-of-transaction readiness work, lock the stable roots and compare every authority-bearing revision before finalizing. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
 | `PR-omarchy-gaming-system-reconcile-restored-modules-before-server-start-001` | Run audited module restore reconciliation against a copied database before any restored server startup, leaving modules disabled pending explicit review and fresh readiness. | `aar/AAR-040-production-server-module-base-and-observation-hooks.md` |
 | `PR-omarchy-gaming-system-reject-symlinked-ancestors-for-private-artifact-reads-001` | Resolve owner-selected private artifacts through an OS primitive that rejects symlinked and magic-link ancestors, then retain final no-follow and stable descriptor checks. | `aar/AAR-041-administrator-custom-server-module-installation-and-provenance.md` |
+| `PR-omarchy-gaming-system-read-back-hosted-automation-settings-after-policy-delivery-001` | After changing hosted-automation policy, read back the remote permission and workflow inventory while keeping that network check outside the local delivery gate. | `aar/AAR-043-local-only-automation-state-reconciliation.md` |
+| `PR-omarchy-gaming-system-reconcile-contributor-guidance-after-automation-ownership-change-001` | When automation ownership changes, audit the authoritative generator, build output, generated guidance, and durable docs, then repeat the owning lifecycle. | `aar/AAR-043-local-only-automation-state-reconciliation.md` |
 
 ## Register
 
@@ -449,3 +451,8 @@ and in this register.
 | `PR-omarchy-gaming-system-reauthorize-independent-persistence-roots-001` | rule | `aar/AAR-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md` |
 | `PR-omarchy-gaming-system-encode-finite-operation-graphs-in-database-001` | rule | `aar/AAR-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md` |
 | `AD-omarchy-gaming-system-packaged-reviewed-server-module-release-lifecycle-001` | decision | `../../architecture/adr-0004-process-isolated-wasm-server-modules.md`; `../../architecture/server-modules.md` |
+| `BF-omarchy-gaming-system-github-actions-permission-drift-001` | failure | `aar/AAR-043-local-only-automation-state-reconciliation.md` |
+| `BF-omarchy-gaming-system-openwiki-hosted-workflow-guidance-drift-001` | failure | `aar/AAR-043-local-only-automation-state-reconciliation.md` |
+| `PR-omarchy-gaming-system-read-back-hosted-automation-settings-after-policy-delivery-001` | rule | `aar/AAR-043-local-only-automation-state-reconciliation.md` |
+| `PR-omarchy-gaming-system-reconcile-contributor-guidance-after-automation-ownership-change-001` | rule | `aar/AAR-043-local-only-automation-state-reconciliation.md` |
+| `AD-omarchy-gaming-system-local-only-delivery-evidence-reaffirmed-001` | decision | `../../architecture/adr-0001-agent-work-pipeline.md` |

@@ -4,7 +4,7 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `043`**
+- **Next ticket number: `044`**
 
 ## Open queue
 
@@ -12,6 +12,7 @@ No open tickets.
 
 ## Closed
 
+- [`TICKET-043` — Local-only automation state reconciliation](closed/TICKET-043-local-only-automation-state-reconciliation.md)
 - [`TICKET-042` — Packaged reviewed server-module release upgrade and rollback](closed/TICKET-042-packaged-reviewed-server-module-release-upgrade-and-rollback.md)
 - [`TICKET-041` — Administrator custom server-module installation and provenance](closed/TICKET-041-administrator-custom-server-module-installation-and-provenance.md)
 - [`TICKET-040` — Production server module base and observation hooks](closed/TICKET-040-production-server-module-base-and-observation-hooks.md)

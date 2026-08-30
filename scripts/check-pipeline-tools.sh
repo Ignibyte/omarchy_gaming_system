@@ -17,8 +17,11 @@ ogs_openwiki_source="$ogs_prefix/openwiki"
 ogs_openwiki_package="$ogs_openwiki_source/package.json"
 ogs_openwiki_provenance="$ogs_prefix/openwiki-build.provenance"
 ogs_openwiki_mode="$ogs_openwiki_source/src/ingestion/code-mode.ts"
+ogs_openwiki_dist_mode="$ogs_openwiki_source/dist/ingestion/code-mode.js"
 ogs_openwiki_session="$ogs_openwiki_source/src/integrations/core/session-manager.ts"
 ogs_expected_changes=$'src/ingestion/code-mode.ts\nsrc/integrations/core/session-manager.ts'
+ogs_agents_guidance_upstream='The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.'
+ogs_agents_guidance_local='Refresh the repository wiki only through the project-local OpenWiki lifecycle. Hosted CI/CD workflows, including GitHub Actions, are prohibited and rejected by the local gate. Do not hand-edit generated OpenWiki pages unless explicitly asked; update authoritative source and let the local lifecycle regenerate affected pages.'
 
 case "$(uname -s)-$(uname -m)" in
   Linux-x86_64)
@@ -138,7 +141,8 @@ ogs_codegraph_tree_sha256=$(
   echo "OpenWiki checkout is not at pinned commit $ogs_openwiki_commit." >&2
   exit 1
 }
-[[ -f "$ogs_openwiki_source/dist/integrations/core/session-manager.js" ]] || {
+[[ -f "$ogs_openwiki_source/dist/integrations/core/session-manager.js" \
+  && -f "$ogs_openwiki_dist_mode" ]] || {
   echo "OpenWiki Codex lifecycle build is missing." >&2
   exit 1
 }
@@ -150,6 +154,13 @@ ogs_codegraph_tree_sha256=$(
 
 grep -Fxq 'const CODE_MODE_AGENT_FILES = ["AGENTS.md"];' "$ogs_openwiki_mode" || {
   echo "OpenWiki Codex-only agent-guide patch is missing." >&2
+  exit 1
+}
+grep -Fq "$ogs_agents_guidance_local" "$ogs_openwiki_mode" \
+  && grep -Fq "$ogs_agents_guidance_local" "$ogs_openwiki_dist_mode" \
+  && ! grep -Fq "$ogs_agents_guidance_upstream" "$ogs_openwiki_mode" \
+  && ! grep -Fq "$ogs_agents_guidance_upstream" "$ogs_openwiki_dist_mode" || {
+  echo "OpenWiki local-only agent-guidance patch is missing." >&2
   exit 1
 }
 grep -Fq 'createWorkflow: false' "$ogs_openwiki_session" || {

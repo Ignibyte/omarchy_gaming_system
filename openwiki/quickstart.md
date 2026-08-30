@@ -35,8 +35,6 @@ sources:
     resource: repo://crates/marketplace-publisher/src/lib.rs
   - id: openwiki-source-18fcba4155ece2440818ba7e
     resource: repo://crates/marketplace-publisher/src/store.rs
-  - id: openwiki-source-18d930eefcf679a5ad34b413
-    resource: repo://crates/server-module-runtime/src/lib.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-ba203ea2e600f294ab58ef02
@@ -67,8 +65,6 @@ sources:
     resource: repo://crates/server/src/reports.rs
   - id: openwiki-source-42fe6bf463fcb01dc5566e16
     resource: repo://crates/server/src/server_discovery.rs
-  - id: openwiki-source-2d8ea93c101c36a0e0974581
-    resource: repo://crates/server/src/server_modules.rs
   - id: openwiki-source-d943a78fae758ed47e30a12a
     resource: repo://crates/server/src/sessions.rs
   - id: openwiki-source-76060b846b9222af2c790243
