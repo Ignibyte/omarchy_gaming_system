@@ -22,9 +22,11 @@ its screen flow. Both screens consume the same bounded provider-authenticated
 view; the cartridge remains inert JSON with no publisher QML, JavaScript,
 network destination, or executable code.
 
-The authority gate exports `omarchy-game-provider` as a packaged public
-protocol crate, initializes this directory as a new Git repository, clones it,
-and builds the provider without access to a platform path dependency. It then
+The authority gate packages the public-only `omarchygs-provider-sdk`,
+initializes this directory as a new Git repository, clones it, and builds the
+provider without access to a platform path dependency. Before each operation,
+the real broker and provider authenticate an exact v1/four-capability
+compatibility selection and bind it through the grant and messages. The gate then
 runs the real TLS broker, callback, restart, and backup/restore flow:
 
 ```bash

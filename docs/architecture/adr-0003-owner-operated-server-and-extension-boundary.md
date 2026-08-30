@@ -70,13 +70,15 @@ backend process, credentials, arbitrary destination, or direct network client.
 The game backend is either a current platform-compiled definition or a
 separately deployed registered provider.
 
-Package the backend contract later as an **OmarchyGS Provider SDK**. It should
-include the public provider model/protocol, starter service, version
-negotiation, signing/grant helpers, conformance and fault fixtures, and
-deployment/operations guidance. A provider owns only the rules/state surfaces
-of its exact registered game release; OmarchyGS remains the authenticated
-broker and platform authority. The provider contract—not a general plugin
-hook—is how portable game backends integrate.
+Package the backend contract as an **OmarchyGS Provider SDK**. Ticket 044 ships
+the first public-only preview slice: provider model/protocol, authenticated
+exact-v1 capability negotiation, signing/grant/message helpers, schemas and
+fixtures, and deterministic locally signed release provenance. The starter
+service, portable conformance/fault kit, second clean-room backend, and
+deployment/operations guidance remain later slices. A provider owns only the
+rules/state surfaces of its exact registered game release; OmarchyGS remains
+the authenticated broker and platform authority. The provider contract—not a
+general plugin hook—is how portable game backends integrate.
 
 An operator may deploy a custom provider on the same infrastructure as their
 OmarchyGS server, but it remains a separately identified service with separate
@@ -200,7 +202,8 @@ evidence.
 3. Bind mounted cartridge presentation to exact authoritative game sessions
    after server marketplace synchronization/import and player
    acquisition/cache/mounting.
-4. Publish the Provider SDK and prove a second clean-room backend integration.
+4. Complete the Provider SDK starter/conformance kit, second clean-room backend,
+   and reviewed sidecar/deployment profile after the public contract preview.
 5. Add explicit operator-local cartridge trust and provenance disclosure.
 6. Run the server extension isolation/hook architecture spike.
 7. Implement the selected module base, administration, audit, and conformance

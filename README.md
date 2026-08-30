@@ -325,6 +325,31 @@ Back/Entry history locally, and sends only screen-bound non-navigation actions
 back to the selected server. Door Legends cartridge v2 proves cyclic Lobby and
 Chronicle navigation plus real provider gameplay from either screen.
 
+### Build against the Provider SDK preview
+
+The public-only `omarchygs-provider-sdk` crate now owns the provider-facing
+model, exact-byte grant/message helpers, pairwise identity, and strict protocol
+v1 compatibility contract. Before any new launch, command, or reconcile
+attempt, the broker and provider exchange signed compatibility messages and
+bind protocol v1 plus all four required capabilities into the grant, operation,
+response, and callbacks. A missing, partial, extra, unknown, ambiguous, or
+downgrade profile fails before provider state changes.
+
+The local release proof packages only the SDK, builds it from two fresh Git
+clones without a committed path dependency, produces byte-identical exports,
+and verifies the exact lock plus project-signed source/builder provenance:
+
+```bash
+scripts/test-provider-sdk.sh
+```
+
+The preview includes no platform registry, broker, egress, database, or admin
+implementation and grants no provider admission. Door Legends remains the sole
+authorized provider. Starter/conformance-kit, second-game, sidecar, deployment,
+and external-onboarding work remain separately gated. The preview notice grants
+no redistribution or production license; obtain owner-selected terms before
+external use.
+
 ### Import operator-custom cartridges
 
 An owner-operated server can opt into a distinct unreviewed cartridge trust

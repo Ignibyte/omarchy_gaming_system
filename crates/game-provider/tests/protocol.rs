@@ -3,9 +3,9 @@ use http::HeaderValue;
 use omarchy_game_provider::{
     model::ProviderScope,
     protocol::{
-        GrantExpectation, GrantIssuer, HttpMessageSigner, ProviderGrantClaims,
-        ProviderOperationKind, ProviderOperationRequest, RequestSignatureContext, SignatureHeaders,
-        verify_grant, verify_request_signature,
+        GrantExpectation, GrantIssuer, HttpMessageSigner, ProviderCompatibility,
+        ProviderGrantClaims, ProviderOperationKind, ProviderOperationRequest,
+        RequestSignatureContext, SignatureHeaders, verify_grant, verify_request_signature,
     },
 };
 use serde_json::json;
@@ -164,6 +164,7 @@ fn serialized_operation_exposes_pairwise_identity_but_no_local_identity_or_crede
         Uuid::from_u128(11),
         0,
         ProviderOperationKind::Command,
+        ProviderCompatibility::current(),
         json!({"action": "advance"}),
         grant,
     )
@@ -209,6 +210,7 @@ fn grant_claims(issuer: &GrantIssuer) -> ProviderGrantClaims {
         Uuid::from_u128(5),
         subject,
         ProviderScope::Command,
+        ProviderCompatibility::current(),
         NOW,
         NOW + 60,
         Uuid::from_u128(6),
@@ -227,5 +229,6 @@ fn expectation(claims: &ProviderGrantClaims) -> GrantExpectation<'_> {
         platform_session_id: claims.platform_session_id,
         subject: &claims.subject,
         scope: claims.scope,
+        compatibility: &claims.compatibility,
     }
 }

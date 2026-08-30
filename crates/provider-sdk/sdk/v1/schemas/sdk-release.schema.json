@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","additionalProperties":false,"properties":{"key_id":{"minLength":3,"type":"string"},"payload":{"minLength":1,"type":"string"},"signature":{"minLength":1,"type":"string"}},"required":["key_id","payload","signature"],"type":"object"}

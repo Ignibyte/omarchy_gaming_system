@@ -1,9 +1,11 @@
 # Project completion intake index
 
-Status as of 2026-08-30: no active pipeline or open ticket. The next ticket
-number is `043`. Ticket 042 was validated at gated state
-`1d74a6241e750cb75d5e395d5b45477eaba075f493141e03c83a5dca59c0ef3a`,
-committed as `0a9b8bd1b3b4c2056edfd1d620d0d4315d306bb0`, and pushed to `origin/main`.
+Status as of 2026-08-30: Ticket 044 completed the first Public Provider SDK
+slice with no active pipeline or open ticket. Tickets 042 and 043 were already
+delivered to `origin/main`; earlier external intakes remain blocked on real
+people, systems, accounts, or operating proof. After Ticket 044 delivery
+readback, the starter/conformance/second-game slice is the next locally
+actionable candidate.
 
 Candidate intake documents are preparation, not completion evidence. Promote
 only one shippable slice at a time through the repository workflow.

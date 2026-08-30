@@ -117,6 +117,11 @@ and in this register.
 | `PR-omarchy-gaming-system-reject-symlinked-ancestors-for-private-artifact-reads-001` | Resolve owner-selected private artifacts through an OS primitive that rejects symlinked and magic-link ancestors, then retain final no-follow and stable descriptor checks. | `aar/AAR-041-administrator-custom-server-module-installation-and-provenance.md` |
 | `PR-omarchy-gaming-system-read-back-hosted-automation-settings-after-policy-delivery-001` | After changing hosted-automation policy, read back the remote permission and workflow inventory while keeping that network check outside the local delivery gate. | `aar/AAR-043-local-only-automation-state-reconciliation.md` |
 | `PR-omarchy-gaming-system-reconcile-contributor-guidance-after-automation-ownership-change-001` | When automation ownership changes, audit the authoritative generator, build output, generated guidance, and durable docs, then repeat the owning lifecycle. | `aar/AAR-043-local-only-automation-state-reconciliation.md` |
+| `PR-omarchy-gaming-system-finalize-provider-effects-from-current-locked-trust-001` | After compatibility work, re-admit provider authority under its locks and use that exact material for the effect. | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `PR-omarchy-gaming-system-budget-provider-preflight-and-operation-together-001` | Budget compatibility, grant preparation, and provider transport under one aggregate deadline covered by one lease. | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `PR-omarchy-gaming-system-bound-native-signed-artifact-inventory-001` | Bound signed-artifact traversal using native path identities without separator normalization. | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `PR-omarchy-gaming-system-preserve-durable-wire-preimages-across-upgrades-001` | Preserve persisted canonical request and receipt preimages across protocol upgrades. | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `PR-omarchy-gaming-system-admit-legacy-provider-messages-as-local-duplicates-only-001` | Admit a legacy provider message only as a current-key-authenticated exact immutable local duplicate. | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
 
 ## Register
 
@@ -456,3 +461,15 @@ and in this register.
 | `PR-omarchy-gaming-system-read-back-hosted-automation-settings-after-policy-delivery-001` | rule | `aar/AAR-043-local-only-automation-state-reconciliation.md` |
 | `PR-omarchy-gaming-system-reconcile-contributor-guidance-after-automation-ownership-change-001` | rule | `aar/AAR-043-local-only-automation-state-reconciliation.md` |
 | `AD-omarchy-gaming-system-local-only-delivery-evidence-reaffirmed-001` | decision | `../../architecture/adr-0001-agent-work-pipeline.md` |
+| `BF-omarchy-gaming-system-provider-compatibility-stale-trust-snapshot-001` | failure | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `BF-omarchy-gaming-system-provider-two-post-lease-undercoverage-001` | failure | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `BF-omarchy-gaming-system-provider-sdk-unbounded-inventory-walk-001` | failure | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `BF-omarchy-gaming-system-provider-sdk-path-separator-alias-001` | failure | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `BF-omarchy-gaming-system-provider-schema-upgrade-durable-replay-drift-001` | failure | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `BF-omarchy-gaming-system-provider-legacy-callback-lost-ack-denial-001` | failure | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `PR-omarchy-gaming-system-finalize-provider-effects-from-current-locked-trust-001` | rule | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `PR-omarchy-gaming-system-budget-provider-preflight-and-operation-together-001` | rule | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `PR-omarchy-gaming-system-bound-native-signed-artifact-inventory-001` | rule | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `PR-omarchy-gaming-system-preserve-durable-wire-preimages-across-upgrades-001` | rule | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `PR-omarchy-gaming-system-admit-legacy-provider-messages-as-local-duplicates-only-001` | rule | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
+| `AD-omarchy-gaming-system-public-provider-sdk-without-admission-authority-001` | decision | `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md`; `../../architecture/game-cartridges.md` |

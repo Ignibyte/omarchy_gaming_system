@@ -10,6 +10,7 @@ use ed25519_dalek::VerifyingKey;
 use serde::Serialize;
 use serde_json::{Value, json};
 use sqlx::{FromRow, Postgres, Transaction};
+use tokio::time::{Duration, Instant, timeout_at};
 use tracing::error;
 use uuid::Uuid;
 
@@ -18,7 +19,8 @@ use crate::{
     egress::GuardedProviderClient,
     model::SessionAdmission,
     protocol::{
-        GrantIssuer, HttpMessageSigner, ProviderEvent, ProviderOperationKind,
+        GrantIssuer, HttpMessageSigner, ProviderCompatibility, ProviderCompatibilityOffer,
+        ProviderCompatibilitySelection, ProviderEvent, ProviderOperationKind,
         ProviderOperationRequest, ProviderOperationResponse, RequestSignatureContext,
         SignatureHeaders, parse_authenticated_json, sha256_hex, validate_provider_payload,
         verify_request_signature, verify_response_signature,
@@ -204,37 +206,7 @@ impl ProviderBroker {
             return Ok(response);
         }
 
-        let grant = self
-            .registry
-            .issue_grant(
-                &self.grant_issuer,
-                &crate::registry::IssueGrantRequest {
-                    release_id: input.release_id,
-                    persona_id: input.persona_id,
-                    platform_session_id: input.platform_session_id,
-                    scope: input.operation.scope(),
-                    session: input.session,
-                },
-            )
-            .await?;
         let message_id = Uuid::new_v4();
-        let request = ProviderOperationRequest::new(
-            grant.claims.provider_id.clone(),
-            grant.claims.release_id,
-            grant.claims.game_key.clone(),
-            grant.claims.rules_version,
-            grant.claims.cartridge_digest.clone(),
-            grant.claims.platform_session_id,
-            grant.claims.subject.clone(),
-            message_id,
-            input.idempotency_key,
-            input.expected_revision,
-            input.operation,
-            input.payload.clone(),
-            grant.signed,
-        )?;
-        let request_limit = initial_policy.quotas.request_body_bytes as usize;
-        let request_bytes = request.to_bytes(request_limit)?;
         let correlation_id = message_id;
         let (material, lease) = self
             .registry
@@ -245,6 +217,67 @@ impl ProviderBroker {
                 correlation_id,
             )
             .await?;
+        let deadline = Instant::now()
+            + Duration::from_millis(u64::from(material.policy.quotas.total_timeout_ms));
+        let prepared = timeout_at(deadline, async {
+            let (compatibility, compatibility_key_id) =
+                self.negotiate_compatibility(&material).await?;
+            let grant = self
+                .registry
+                .issue_grant(
+                    &self.grant_issuer,
+                    &crate::registry::IssueGrantRequest {
+                        release_id: input.release_id,
+                        persona_id: input.persona_id,
+                        platform_session_id: input.platform_session_id,
+                        scope: input.operation.scope(),
+                        compatibility: compatibility.clone(),
+                        expected_config_revision: material.policy.config_revision,
+                        compatibility_key_id: compatibility_key_id.clone(),
+                        session: input.session,
+                    },
+                )
+                .await?;
+            let operation_material = grant.material.clone();
+            let request = ProviderOperationRequest::new(
+                grant.claims.provider_id.clone(),
+                grant.claims.release_id,
+                grant.claims.game_key.clone(),
+                grant.claims.rules_version,
+                grant.claims.cartridge_digest.clone(),
+                grant.claims.platform_session_id,
+                grant.claims.subject.clone(),
+                message_id,
+                input.idempotency_key,
+                input.expected_revision,
+                input.operation,
+                compatibility,
+                input.payload.clone(),
+                grant.signed,
+            )?;
+            let request_bytes =
+                request.to_bytes(operation_material.policy.quotas.request_body_bytes as usize)?;
+            Ok::<_, ProviderError>((
+                request,
+                request_bytes,
+                grant.claims.token_id,
+                operation_material,
+                compatibility_key_id,
+            ))
+        })
+        .await
+        .map_err(|_| ProviderError::Unavailable)
+        .and_then(|prepared| prepared);
+        let (request, request_bytes, grant_token_id, material, compatibility_key_id) =
+            match prepared {
+                Ok(prepared) => prepared,
+                Err(error) => {
+                    self.registry.release_request(lease).await?;
+                    self.audit_transport_failure(input.release_id, correlation_id, &error)
+                        .await?;
+                    return Err(error);
+                }
+            };
         self.execute_attempt(
             input,
             &intent_digest,
@@ -252,9 +285,72 @@ impl ProviderBroker {
             request_bytes,
             material,
             lease,
-            grant.claims.token_id,
+            grant_token_id,
+            compatibility_key_id,
+            deadline,
         )
         .await
+    }
+
+    async fn negotiate_compatibility(
+        &self,
+        material: &ProviderSecurityMaterial,
+    ) -> Result<(ProviderCompatibility, String)> {
+        let offer_message_id = Uuid::new_v4();
+        let offer = ProviderCompatibilityOffer::current(
+            material.policy.provider_id.clone(),
+            material.policy.release_id,
+            offer_message_id,
+        )?;
+        let limit = material.policy.quotas.request_body_bytes as usize;
+        let body = offer.to_bytes(limit)?;
+        let url = material.policy.endpoint.operation_url("compatibility")?;
+        let authority = material.policy.endpoint.authority();
+        let context = RequestSignatureContext {
+            method: "POST",
+            authority: &authority,
+            path: url.path(),
+            provider_id: &material.policy.provider_id,
+            release_id: material.policy.release_id,
+            message_id: offer_message_id,
+        };
+        let headers = self.message_signer.sign_request(
+            &context,
+            &body,
+            current_unix_seconds()?,
+            &format!("n-{}", Uuid::new_v4()),
+        )?;
+        let raw = self
+            .guarded_client(material)
+            .await?
+            .post("compatibility", headers.to_header_map()?, body)
+            .await?;
+        if raw.status != 200 {
+            return Err(ProviderError::ProtocolRejected);
+        }
+        let response_headers = SignatureHeaders::from_header_map(&raw.headers)?;
+        let response_message_id = response_headers
+            .message_id
+            .parse::<Uuid>()
+            .map_err(|_| ProviderError::ProtocolRejected)?;
+        let verified = verify_response_with_active_keys(
+            material,
+            &response_headers,
+            raw.status,
+            &context,
+            response_message_id,
+            &raw.body,
+            current_unix_seconds()?,
+        )?;
+        let selection: ProviderCompatibilitySelection = parse_authenticated_json(
+            &raw.body,
+            material.policy.quotas.response_body_bytes as usize,
+        )?;
+        selection.validate_for(&offer)?;
+        if selection.message_id != response_message_id {
+            return Err(ProviderError::ProtocolRejected);
+        }
+        Ok((selection.selected, verified.key_id))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -267,9 +363,11 @@ impl ProviderBroker {
         material: ProviderSecurityMaterial,
         lease: ConcurrencyLease,
         grant_token_id: Uuid,
+        compatibility_key_id: String,
+        deadline: Instant,
     ) -> Result<ProviderOperationResponse> {
         let request_digest = sha256_hex(&request_bytes);
-        let attempt_number = match self
+        let (attempt_number, material) = match self
             .create_attempt(
                 input,
                 intent_digest,
@@ -278,25 +376,31 @@ impl ProviderBroker {
                 &request_digest,
                 &request_bytes,
                 material.policy.quotas.total_timeout_ms,
+                material.policy.config_revision,
+                &compatibility_key_id,
             )
             .await
         {
-            Ok(number) => number,
+            Ok(attempt) => attempt,
             Err(error) => {
                 self.registry.release_request(lease).await?;
                 return Err(error);
             }
         };
-        let attempt_result = self
-            .perform_attempt(
+        let attempt_result = timeout_at(
+            deadline,
+            self.perform_attempt(
                 input,
                 intent_digest,
                 attempt_number,
                 request,
                 request_bytes,
                 &material,
-            )
-            .await;
+            ),
+        )
+        .await
+        .map_err(|_| ProviderError::Unavailable)
+        .and_then(|attempt| attempt);
         let release_result = self.registry.release_request(lease).await;
         match attempt_result {
             Ok(response) => {
@@ -502,15 +606,29 @@ impl ProviderBroker {
             return Err(ProviderError::InvalidInput);
         }
         let material = self.registry.load_callback_material(release_id).await?;
-        let authenticated = (|| {
+        let authenticated = async {
             if context.provider_id != material.policy.provider_id {
                 return Err(ProviderError::ProtocolRejected);
             }
             let verified = verify_request_with_active_keys(&material, headers, context, body, now)?;
-            let event: ProviderEvent = parse_authenticated_json(
-                body,
-                material.policy.quotas.response_body_bytes as usize,
-            )?;
+            let limit = material.policy.quotas.response_body_bytes as usize;
+            let event = match parse_authenticated_json::<ProviderEvent>(body, limit) {
+                Ok(event) => event,
+                Err(_) => {
+                    let event = ProviderEvent::from_persisted_v1_bytes(
+                        body,
+                        limit,
+                        ProviderCompatibility::current(),
+                    )?;
+                    if !self
+                        .is_exact_persisted_callback_duplicate(&event, &verified.body_sha256)
+                        .await?
+                    {
+                        return Err(ProviderError::ProtocolRejected);
+                    }
+                    event
+                }
+            };
             event.validate()?;
             if event.provider_id != material.policy.provider_id
                 || event.release_id != release_id
@@ -523,7 +641,8 @@ impl ProviderBroker {
                 return Err(ProviderError::ProtocolRejected);
             }
             Ok((verified, event))
-        })();
+        }
+        .await;
         let (verified, event) = match authenticated {
             Ok(value) => value,
             Err(error) => {
@@ -573,6 +692,37 @@ impl ProviderBroker {
         })
     }
 
+    async fn is_exact_persisted_callback_duplicate(
+        &self,
+        event: &ProviderEvent,
+        body_sha256: &str,
+    ) -> Result<bool> {
+        sqlx::query_scalar(
+            r#"
+            SELECT EXISTS (
+                SELECT 1
+                FROM provider_message_receipts
+                WHERE release_id = $1
+                  AND direction = 'callback'
+                  AND message_id = $2
+                  AND event_id = $3
+                  AND authenticated_sha256 = $4
+                  AND platform_session_id = $5
+                  AND provider_revision = $6
+            )
+            "#,
+        )
+        .bind(event.release_id)
+        .bind(event.message_id)
+        .bind(event.event_id)
+        .bind(body_sha256)
+        .bind(event.platform_session_id)
+        .bind(i64::try_from(event.revision).map_err(|_| ProviderError::ProtocolRejected)?)
+        .fetch_one(self.registry.pool())
+        .await
+        .map_err(|error| map_database_error(error, "load persisted callback duplicate"))
+    }
+
     async fn prepare_operation(
         &self,
         input: &BrokerOperationInput,
@@ -611,7 +761,11 @@ impl ProviderBroker {
             }
             if existing.status == "completed" {
                 let response_body = existing.response_body.ok_or(ProviderError::Internal)?;
-                let response = parse_authenticated_json(&response_body, 524_288)?;
+                let response = ProviderOperationResponse::from_persisted_v1_bytes(
+                    &response_body,
+                    524_288,
+                    ProviderCompatibility::current(),
+                )?;
                 transaction.commit().await.map_err(|error| {
                     map_database_error(error, "commit provider operation replay")
                 })?;
@@ -686,13 +840,26 @@ impl ProviderBroker {
         request_digest: &str,
         request_body: &[u8],
         total_timeout_ms: u32,
-    ) -> Result<i32> {
+        expected_config_revision: u64,
+        compatibility_key_id: &str,
+    ) -> Result<(i32, ProviderSecurityMaterial)> {
         let mut transaction = self
             .registry
             .pool()
             .begin()
             .await
             .map_err(|error| map_database_error(error, "begin provider operation attempt"))?;
+        let material = self
+            .registry
+            .admit_negotiated_attempt_locked(
+                &mut transaction,
+                input.release_id,
+                input.operation.scope(),
+                input.session,
+                expected_config_revision,
+                compatibility_key_id,
+            )
+            .await?;
         let row: AttemptRootRow = sqlx::query_as(
             r#"
             SELECT
@@ -776,7 +943,7 @@ impl ProviderBroker {
             .commit()
             .await
             .map_err(|error| map_database_error(error, "commit provider operation attempt"))?;
-        Ok(attempt_number)
+        Ok((attempt_number, material))
     }
 
     async fn finish_failed_attempt(

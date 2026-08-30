@@ -29,8 +29,8 @@ use omarchy_game_provider::{
         RegisterReleaseInput,
     },
     protocol::{
-        GrantIssuer, HttpMessageSigner, ProviderEvent, ProviderEventKind, RequestSignatureContext,
-        pairwise_subject,
+        GrantIssuer, HttpMessageSigner, ProviderCompatibility, ProviderEvent, ProviderEventKind,
+        RequestSignatureContext, pairwise_subject, sha256_hex,
     },
     registry::ProviderRegistry,
 };
@@ -566,6 +566,73 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         1,
         "exact callback replay must not duplicate platform effects"
     );
+    let (legacy_event_id, legacy_message_id, current_outbox_body): (Uuid, Uuid, Vec<u8>) =
+        sqlx::query_as(
+            "SELECT event_id, message_id, body FROM door_legends_event_outbox WHERE platform_session_id = $1",
+        )
+        .bind(session_id)
+        .fetch_one(&provider_pool)
+        .await
+        .expect("provider callback outbox should read");
+    let mut legacy_outbox: Value =
+        serde_json::from_slice(&current_outbox_body).expect("current outbox body should parse");
+    legacy_outbox
+        .as_object_mut()
+        .expect("outbox event should be an object")
+        .remove("compatibility");
+    let legacy_outbox_body =
+        serde_json::to_vec(&legacy_outbox).expect("legacy outbox body should encode");
+    sqlx::query(
+        "UPDATE provider_message_receipts SET authenticated_sha256 = $3 WHERE release_id = $1 AND direction = 'callback' AND message_id = $2",
+    )
+    .bind(RELEASE_ID)
+    .bind(legacy_message_id)
+    .bind(sha256_hex(&legacy_outbox_body))
+    .execute(&pool)
+    .await
+    .expect("legacy platform receipt should seed");
+    sqlx::query(
+        "UPDATE door_legends_event_outbox SET body = $2, status = 'pending', delivered_at = NULL WHERE event_id = $1",
+    )
+    .bind(legacy_event_id)
+    .bind(legacy_outbox_body)
+    .execute(&provider_pool)
+    .await
+    .expect("legacy provider callback should requeue");
+    wait_for_outbox_attempts(&provider_pool, session_id, 3).await;
+    assert_eq!(
+        sqlx::query_scalar::<_, String>(
+            "SELECT status FROM door_legends_event_outbox WHERE event_id = $1",
+        )
+        .bind(legacy_event_id)
+        .fetch_one(&provider_pool)
+        .await
+        .expect("legacy callback status should read"),
+        "delivered",
+        "byte-exact pre-negotiation retry should resolve as a duplicate"
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM provider_message_receipts WHERE release_id = $1 AND direction = 'callback'",
+        )
+        .bind(RELEASE_ID)
+        .fetch_one(&pool)
+        .await
+        .expect("legacy callback receipt should count"),
+        1,
+        "legacy duplicate must reuse the immutable callback receipt"
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM persona_provider_achievements WHERE game_session_id = $1",
+        )
+        .bind(session_id)
+        .fetch_one(&pool)
+        .await
+        .expect("legacy achievement projection should count"),
+        1,
+        "legacy duplicate must not repeat platform effects"
+    );
     let ignored_event = ProviderEvent::new(
         PROVIDER_ID.to_owned(),
         RELEASE_ID,
@@ -579,6 +646,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         Uuid::new_v4(),
         1,
         ProviderEventKind::ResultAvailable,
+        ProviderCompatibility::current(),
         json!({
             "outcome": "escaped",
             "public_summary": {"ending": "unapproved_rewrite"},
@@ -966,6 +1034,7 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         Uuid::new_v4(),
         0,
         ProviderEventKind::TurnReady,
+        ProviderCompatibility::current(),
         json!({
             "view": {
                 "chronicle_label": "Read the chronicle",

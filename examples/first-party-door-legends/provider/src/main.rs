@@ -12,14 +12,15 @@ use axum::{
 use axum_server::{Handle, tls_rustls::RustlsConfig};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use ed25519_dalek::VerifyingKey;
-use omarchy_game_provider::{
+use omarchygs_provider_sdk::{
     ProviderError,
     protocol::{
-        GrantExpectation, HttpMessageSigner, ProviderEvent, ProviderEventKind,
-        ProviderOperationDisposition, ProviderOperationKind, ProviderOperationRequest,
-        ProviderOperationResponse, ProviderSessionStatus, RequestSignatureContext,
-        SignatureHeaders, parse_authenticated_json, sha256_hex, verify_grant,
-        verify_request_signature,
+        GrantExpectation, HttpMessageSigner, ProviderCompatibility,
+        ProviderCompatibilityOffer, ProviderCompatibilitySelection, ProviderEvent,
+        ProviderEventKind, ProviderOperationDisposition, ProviderOperationKind,
+        ProviderOperationRequest, ProviderOperationResponse, ProviderSessionStatus,
+        RequestSignatureContext, SignatureHeaders, parse_authenticated_json, sha256_hex,
+        verify_grant, verify_request_signature,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -174,6 +175,10 @@ async fn main() -> Result<()> {
         .await
         .context("failed to load Door Legends TLS identity")?;
     let app = Router::new()
+        .route(
+            "/omarchygs/provider/v1/compatibility",
+            post(handle_compatibility),
+        )
         .route("/omarchygs/provider/v1/launch", post(handle_launch))
         .route("/omarchygs/provider/v1/commands", post(handle_command))
         .route("/omarchygs/provider/v1/reconcile", post(handle_reconcile))
@@ -193,6 +198,87 @@ async fn main() -> Result<()> {
         .context("Door Legends provider stopped unexpectedly");
     callback_worker.abort();
     result
+}
+
+async fn handle_compatibility(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    match process_compatibility(&state, &headers, &body) {
+        Ok(response) => response,
+        Err(error_value) => {
+            warn!(code = error_value.code(), "Door Legends compatibility request rejected");
+            Response::builder()
+                .status(StatusCode::UNAUTHORIZED)
+                .body(Body::empty())
+                .unwrap_or_else(|_| Response::new(Body::empty()))
+        }
+    }
+}
+
+fn process_compatibility(
+    state: &AppState,
+    headers: &HeaderMap,
+    body: &[u8],
+) -> Result<Response, ProviderError> {
+    if body.is_empty() || body.len() > 65_536 {
+        return Err(ProviderError::InvalidInput);
+    }
+    let received_authority = headers
+        .get(HOST)
+        .and_then(|value| value.to_str().ok())
+        .ok_or(ProviderError::ProtocolRejected)?;
+    if received_authority != state.authority.as_ref() {
+        return Err(ProviderError::ProtocolRejected);
+    }
+    let signature_headers = SignatureHeaders::from_header_map(headers)?;
+    let message_id = signature_headers
+        .message_id
+        .parse::<Uuid>()
+        .map_err(|_| ProviderError::ProtocolRejected)?;
+    let path = format!("{BASE_PATH}compatibility");
+    let context = RequestSignatureContext {
+        method: "POST",
+        authority: state.authority.as_ref(),
+        path: &path,
+        provider_id: PROVIDER_ID,
+        release_id: state.release_id,
+        message_id,
+    };
+    verify_request_signature(
+        &signature_headers,
+        &context,
+        body,
+        &state.platform_message_key,
+        PLATFORM_MESSAGE_KEY_ID,
+        current_unix_seconds()?,
+    )?;
+    let offer: ProviderCompatibilityOffer = parse_authenticated_json(body, 65_536)?;
+    offer.validate()?;
+    if offer.provider_id != PROVIDER_ID
+        || offer.release_id != state.release_id
+        || offer.message_id != message_id
+    {
+        return Err(ProviderError::ProtocolRejected);
+    }
+    let selection = ProviderCompatibilitySelection::current(&offer, Uuid::new_v4())?;
+    let response_body = serde_json::to_vec(&selection).map_err(|_| ProviderError::Internal)?;
+    let response_headers = state.provider_signer.sign_response(
+        200,
+        &context,
+        selection.message_id,
+        &response_body,
+        current_unix_seconds()?,
+        &format!("door-{}", Uuid::new_v4()),
+    )?;
+    let mut response = Response::builder().status(StatusCode::OK);
+    for (name, value) in &response_headers.to_header_map()? {
+        response = response.header(name, value);
+    }
+    response
+        .body(Body::from(response_body))
+        .map_err(|_| ProviderError::Internal)
 }
 
 async fn handle_launch(State(state): State<AppState>, headers: HeaderMap, body: Bytes) -> Response {
@@ -307,6 +393,7 @@ async fn process_operation(
             platform_session_id: request.platform_session_id,
             subject: &request.subject,
             scope: operation.scope(),
+            compatibility: &request.compatibility,
         },
         current_unix_seconds()?,
     )?;
@@ -335,7 +422,13 @@ async fn process_operation(
     {
         tokio::time::sleep(state.conformance_reconcile_response_delay).await;
     }
-    let response: ProviderOperationResponse = parse_authenticated_json(&response_body, 65_536)?;
+    let response = ProviderOperationResponse::from_persisted_v1_bytes(
+        &response_body,
+        65_536,
+        request.compatibility.clone(),
+    )?;
+    response.validate_for(&request)?;
+    let response_body = serde_json::to_vec(&response).map_err(|_| ProviderError::Internal)?;
     let response_headers = state.provider_signer.sign_response(
         200,
         &context,
@@ -620,6 +713,7 @@ fn build_response(
         } else {
             ProviderSessionStatus::Active
         },
+        request.compatibility.clone(),
         json!({"view": view_for(session)}),
     ))
 }
@@ -664,6 +758,7 @@ async fn enqueue_result(
         event_id,
         u64::try_from(session.revision).map_err(|_| ProviderError::Internal)?,
         ProviderEventKind::ResultAvailable,
+        request.compatibility.clone(),
         json!({
             "outcome": "escaped",
             "public_summary": {"ending": "sunlit_gate"},
@@ -783,6 +878,28 @@ async fn deliver_one_callback(
     let Some(row) = row else {
         return Ok(());
     };
+    let (event, upgraded_body) =
+        match parse_authenticated_json::<ProviderEvent>(&row.body, 65_536) {
+            Ok(event) => (event, None),
+            Err(_) => {
+                let event = ProviderEvent::from_persisted_v1_bytes(
+                    &row.body,
+                    65_536,
+                    ProviderCompatibility::current(),
+                )
+                .map_err(provider_error)?;
+                let upgraded = serde_json::to_vec(&event).context("upgrade persisted callback")?;
+                (event, Some(upgraded))
+            }
+        };
+    if event.provider_id != PROVIDER_ID
+        || event.release_id != release_id
+        || event.event_id != row.event_id
+        || event.message_id != row.message_id
+    {
+        return Err(anyhow!("persisted callback identity mismatch"));
+    }
+    let body = row.body;
     let context = RequestSignatureContext {
         method: "POST",
         authority,
@@ -794,7 +911,7 @@ async fn deliver_one_callback(
     let headers = signer
         .sign_request(
             &context,
-            &row.body,
+            &body,
             current_unix_seconds().map_err(provider_error)?,
             &format!("callback-{}", Uuid::new_v4()),
         )
@@ -803,25 +920,32 @@ async fn deliver_one_callback(
     let response = client
         .post(callback_url.clone())
         .headers(headers.to_header_map().map_err(provider_error)?)
-        .body(row.body)
+        .body(body)
         .send()
         .await?;
-    info!(event_id = %row.event_id, status = %response.status(), "Door Legends callback delivery completed");
+    let response_status = response.status();
+    let delivered = matches!(
+        response_status,
+        StatusCode::NO_CONTENT | StatusCode::ACCEPTED
+    );
+    let upgrade_rejected_legacy =
+        !delivered && response_status == StatusCode::UNAUTHORIZED && upgraded_body.is_some();
+    info!(event_id = %row.event_id, status = %response_status, "Door Legends callback delivery completed");
     sqlx::query(
         r#"
         UPDATE door_legends_event_outbox
         SET attempt_count = attempt_count + 1,
             status = CASE WHEN $2 THEN 'delivered' ELSE status END,
             delivered_at = CASE WHEN $2 THEN clock_timestamp() ELSE delivered_at END,
+            body = CASE WHEN $3 THEN $4 ELSE body END,
             updated_at = clock_timestamp()
         WHERE event_id = $1 AND status = 'pending'
         "#,
     )
     .bind(row.event_id)
-    .bind(matches!(
-        response.status(),
-        StatusCode::NO_CONTENT | StatusCode::ACCEPTED
-    ))
+    .bind(delivered)
+    .bind(upgrade_rejected_legacy)
+    .bind(upgraded_body)
     .execute(pool)
     .await?;
     Ok(())

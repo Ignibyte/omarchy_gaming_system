@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","description":"ProviderOperationRequest, ProviderOperationResponse, and ProviderEvent are authoritative deny_unknown_fields Rust models. Every body carries the exact current compatibility profile and is authenticated over exact bytes before parsing.","type":"object"}

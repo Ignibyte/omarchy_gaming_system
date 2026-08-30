@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","description":"The authenticated grant payload is defined authoritatively by ProviderGrantClaims with deny_unknown_fields. It binds provider, release, game, rules, cartridge, session, pairwise subject, one non-event scope, exact v1 compatibility, issue/expiry, and replay identity.","type":"object"}

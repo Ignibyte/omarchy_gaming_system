@@ -1,5 +1,5 @@
 //! Pairwise identity, signed grants, provider messages, and the fixed HTTP
-//! Message Signatures profile used by OmarchyGS provider protocol v1.
+//! Message Signatures profile used by OmarchyGS Provider SDK protocol v1.
 
 use std::collections::BTreeSet;
 
@@ -38,11 +38,15 @@ pub const MAX_SIGNED_GRANT_BYTES: usize = 8 * 1024;
 pub const MAX_JSON_DEPTH: usize = 12;
 /// Maximum v1 operation/callback JSON values.
 pub const MAX_JSON_VALUES: usize = 2_048;
+/// Sole protocol version supported by this first public SDK release.
+pub const PROVIDER_PROTOCOL_VERSION: u32 = 1;
 
 const GRANT_SCHEMA: &str = "omarchygs.provider-grant/v1";
 const REQUEST_SCHEMA: &str = "omarchygs.provider-request/v1";
 const RESPONSE_SCHEMA: &str = "omarchygs.provider-response/v1";
 const EVENT_SCHEMA: &str = "omarchygs.provider-event/v1";
+const COMPATIBILITY_OFFER_SCHEMA: &str = "omarchygs.provider-compatibility-offer/v1";
+const COMPATIBILITY_SELECTION_SCHEMA: &str = "omarchygs.provider-compatibility-selection/v1";
 const GRANT_DOMAIN: &[u8] = b"omarchygs-provider-grant-v1\0";
 const CONTENT_TYPE: &str = "application/json";
 const SIGNATURE_LABEL: &str = "ogs";
@@ -62,6 +66,147 @@ pub const HEADER_CONTENT_DIGEST: &str = "content-digest";
 pub const HEADER_SIGNATURE_INPUT: &str = "signature-input";
 /// RFC 9421 signature bytes header.
 pub const HEADER_SIGNATURE: &str = "signature";
+
+/// Exact negotiated protocol profile bound into grants and messages.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ProviderCompatibility {
+    /// Selected protocol version.
+    pub protocol_version: u32,
+    /// Exact sorted required capability set.
+    pub capabilities: Vec<ProviderScope>,
+}
+
+impl ProviderCompatibility {
+    /// Construct the sole exact profile accepted by SDK v1.
+    #[must_use]
+    pub fn current() -> Self {
+        Self {
+            protocol_version: PROVIDER_PROTOCOL_VERSION,
+            capabilities: vec![
+                ProviderScope::Launch,
+                ProviderScope::Command,
+                ProviderScope::Reconcile,
+                ProviderScope::Event,
+            ],
+        }
+    }
+
+    /// Fail closed unless this is the complete current profile.
+    pub fn validate(&self) -> Result<()> {
+        if *self == Self::current() {
+            Ok(())
+        } else {
+            Err(ProviderError::ProtocolRejected)
+        }
+    }
+}
+
+/// Platform-authenticated compatibility offer sent before provider effects.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ProviderCompatibilityOffer {
+    /// Protocol schema discriminator.
+    pub schema: String,
+    /// Exact provider.
+    pub provider_id: String,
+    /// Exact release.
+    pub release_id: Uuid,
+    /// Offer replay identity, also carried by signed HTTP headers.
+    pub message_id: Uuid,
+    /// Bounded supported profiles in descending preference order.
+    pub supported: Vec<ProviderCompatibility>,
+}
+
+impl ProviderCompatibilityOffer {
+    /// Construct the exact SDK v1 offer.
+    pub fn current(provider_id: String, release_id: Uuid, message_id: Uuid) -> Result<Self> {
+        let offer = Self {
+            schema: COMPATIBILITY_OFFER_SCHEMA.to_owned(),
+            provider_id,
+            release_id,
+            message_id,
+            supported: vec![ProviderCompatibility::current()],
+        };
+        offer.validate()?;
+        Ok(offer)
+    }
+
+    /// Validate all identity, ordering, uniqueness, and downgrade constraints.
+    pub fn validate(&self) -> Result<()> {
+        if self.schema != COMPATIBILITY_OFFER_SCHEMA
+            || !is_identifier(&self.provider_id, 3, 64, b"-_")
+            || self.release_id.is_nil()
+            || self.message_id.is_nil()
+            || self.supported.len() != 1
+        {
+            return Err(ProviderError::ProtocolRejected);
+        }
+        self.supported[0].validate()
+    }
+
+    /// Serialize exact bounded bytes for signing and transmission.
+    pub fn to_bytes(&self, limit: usize) -> Result<Vec<u8>> {
+        self.validate()?;
+        let bytes = serde_json::to_vec(self).map_err(|_| ProviderError::Internal)?;
+        if bytes.is_empty() || bytes.len() > limit {
+            Err(ProviderError::InvalidInput)
+        } else {
+            Ok(bytes)
+        }
+    }
+}
+
+/// Provider-authenticated exact selection acknowledging one offer.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ProviderCompatibilitySelection {
+    /// Protocol schema discriminator.
+    pub schema: String,
+    /// Exact provider.
+    pub provider_id: String,
+    /// Exact release.
+    pub release_id: Uuid,
+    /// Originating offer replay identity.
+    pub offer_message_id: Uuid,
+    /// Selection replay identity, also carried by signed HTTP headers.
+    pub message_id: Uuid,
+    /// One exact selected profile.
+    pub selected: ProviderCompatibility,
+}
+
+impl ProviderCompatibilitySelection {
+    /// Select the exact current profile from a valid offer.
+    pub fn current(offer: &ProviderCompatibilityOffer, message_id: Uuid) -> Result<Self> {
+        offer.validate()?;
+        let selection = Self {
+            schema: COMPATIBILITY_SELECTION_SCHEMA.to_owned(),
+            provider_id: offer.provider_id.clone(),
+            release_id: offer.release_id,
+            offer_message_id: offer.message_id,
+            message_id,
+            selected: ProviderCompatibility::current(),
+        };
+        selection.validate_for(offer)?;
+        Ok(selection)
+    }
+
+    /// Validate the provider selection against the exact authenticated offer.
+    pub fn validate_for(&self, offer: &ProviderCompatibilityOffer) -> Result<()> {
+        offer.validate()?;
+        if self.schema != COMPATIBILITY_SELECTION_SCHEMA
+            || self.provider_id != offer.provider_id
+            || self.release_id != offer.release_id
+            || self.offer_message_id != offer.message_id
+            || self.message_id.is_nil()
+            || self.message_id == offer.message_id
+            || self.selected != offer.supported[0]
+        {
+            return Err(ProviderError::ProtocolRejected);
+        }
+        self.selected.validate()
+    }
+}
 
 /// Ed25519 signer for short-lived grants plus pairwise persona derivation.
 pub struct GrantIssuer {
@@ -230,6 +375,8 @@ pub struct ProviderGrantClaims {
     pub subject: String,
     /// One exact capability.
     pub scope: ProviderScope,
+    /// Authenticated exact compatibility selected before this operation.
+    pub compatibility: ProviderCompatibility,
     /// Inclusive Unix issue time.
     pub issued_at: i64,
     /// Exclusive Unix expiry time.
@@ -250,6 +397,7 @@ impl ProviderGrantClaims {
         platform_session_id: Uuid,
         subject: String,
         scope: ProviderScope,
+        compatibility: ProviderCompatibility,
         issued_at: i64,
         expires_at: i64,
         token_id: Uuid,
@@ -266,6 +414,7 @@ impl ProviderGrantClaims {
             platform_session_id,
             subject,
             scope,
+            compatibility,
             issued_at,
             expires_at,
             token_id,
@@ -286,6 +435,7 @@ impl ProviderGrantClaims {
             || self.platform_session_id.is_nil()
             || !is_pairwise_subject(&self.subject)
             || self.scope == ProviderScope::Event
+            || self.compatibility.validate().is_err()
             || self.token_id.is_nil()
             || self.expires_at <= self.issued_at
             || self.expires_at - self.issued_at > MAX_GRANT_LIFETIME_SECONDS
@@ -341,6 +491,8 @@ pub struct GrantExpectation<'a> {
     pub subject: &'a str,
     /// One required scope.
     pub scope: ProviderScope,
+    /// Exact preflight selection.
+    pub compatibility: &'a ProviderCompatibility,
 }
 
 /// Verify a signed grant and its complete registered context.
@@ -388,6 +540,7 @@ pub fn verify_grant(
         || claims.platform_session_id != expected.platform_session_id
         || claims.subject != expected.subject
         || claims.scope != expected.scope
+        || claims.compatibility != *expected.compatibility
         || claims.issued_at > now.saturating_add(MAX_CLOCK_SKEW_SECONDS)
         || claims.expires_at <= now
     {
@@ -459,6 +612,8 @@ pub struct ProviderOperationRequest {
     pub expected_revision: u64,
     /// Fixed operation kind.
     pub operation: ProviderOperationKind,
+    /// Exact authenticated preflight selection.
+    pub compatibility: ProviderCompatibility,
     /// Bounded schema-owned operation data.
     pub payload: Value,
     /// One-scope signed platform grant.
@@ -480,6 +635,7 @@ impl ProviderOperationRequest {
         idempotency_key: Uuid,
         expected_revision: u64,
         operation: ProviderOperationKind,
+        compatibility: ProviderCompatibility,
         payload: Value,
         grant: SignedProviderGrant,
     ) -> Result<Self> {
@@ -496,6 +652,7 @@ impl ProviderOperationRequest {
             idempotency_key,
             expected_revision,
             operation,
+            compatibility,
             payload,
             grant,
         };
@@ -515,6 +672,7 @@ impl ProviderOperationRequest {
             || !is_pairwise_subject(&self.subject)
             || self.message_id.is_nil()
             || self.idempotency_key.is_nil()
+            || self.compatibility.validate().is_err()
         {
             return Err(ProviderError::InvalidInput);
         }
@@ -583,8 +741,29 @@ pub struct ProviderOperationResponse {
     pub disposition: ProviderOperationDisposition,
     /// Provider lifecycle result.
     pub status: ProviderSessionStatus,
+    /// Exact compatibility selected before the originating operation.
+    pub compatibility: ProviderCompatibility,
     /// Bounded schema-owned response data.
     pub payload: Value,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PersistedProviderOperationResponseV1 {
+    schema: String,
+    provider_id: String,
+    release_id: Uuid,
+    game_key: String,
+    rules_version: u32,
+    cartridge_digest: String,
+    platform_session_id: Uuid,
+    subject: String,
+    message_id: Uuid,
+    idempotency_key: Uuid,
+    revision: u64,
+    disposition: ProviderOperationDisposition,
+    status: ProviderSessionStatus,
+    payload: Value,
 }
 
 impl ProviderOperationResponse {
@@ -603,6 +782,7 @@ impl ProviderOperationResponse {
         revision: u64,
         disposition: ProviderOperationDisposition,
         status: ProviderSessionStatus,
+        compatibility: ProviderCompatibility,
         payload: Value,
     ) -> Self {
         Self {
@@ -619,14 +799,50 @@ impl ProviderOperationResponse {
             revision,
             disposition,
             status,
+            compatibility,
             payload,
         }
     }
 
+    /// Decode a locally persisted v1 receipt, adding the exact compatibility
+    /// profile to receipts written before negotiation became mandatory.
+    /// Never use this helper for unauthenticated network bytes.
+    pub fn from_persisted_v1_bytes(
+        bytes: &[u8],
+        limit: usize,
+        compatibility: ProviderCompatibility,
+    ) -> Result<Self> {
+        compatibility.validate()?;
+        if let Ok(response) = parse_authenticated_json::<Self>(bytes, limit) {
+            response.validate_shape()?;
+            return Ok(response);
+        }
+        let legacy: PersistedProviderOperationResponseV1 = parse_authenticated_json(bytes, limit)?;
+        let response = Self {
+            schema: legacy.schema,
+            provider_id: legacy.provider_id,
+            release_id: legacy.release_id,
+            game_key: legacy.game_key,
+            rules_version: legacy.rules_version,
+            cartridge_digest: legacy.cartridge_digest,
+            platform_session_id: legacy.platform_session_id,
+            subject: legacy.subject,
+            message_id: legacy.message_id,
+            idempotency_key: legacy.idempotency_key,
+            revision: legacy.revision,
+            disposition: legacy.disposition,
+            status: legacy.status,
+            compatibility,
+            payload: legacy.payload,
+        };
+        response.validate_shape()?;
+        Ok(response)
+    }
+
     /// Validate a response against the exact operation context.
     pub fn validate_for(&self, request: &ProviderOperationRequest) -> Result<()> {
-        if self.schema != RESPONSE_SCHEMA
-            || self.provider_id != request.provider_id
+        self.validate_shape()?;
+        if self.provider_id != request.provider_id
             || self.release_id != request.release_id
             || self.game_key != request.game_key
             || self.rules_version != request.rules_version
@@ -636,6 +852,7 @@ impl ProviderOperationResponse {
             || self.message_id.is_nil()
             || self.message_id == request.message_id
             || self.idempotency_key != request.idempotency_key
+            || self.compatibility != request.compatibility
         {
             return Err(ProviderError::ProtocolRejected);
         }
@@ -663,6 +880,24 @@ impl ProviderOperationResponse {
                     return Err(ProviderError::ProtocolRejected);
                 }
             }
+        }
+        Ok(())
+    }
+
+    fn validate_shape(&self) -> Result<()> {
+        if self.schema != RESPONSE_SCHEMA
+            || !is_identifier(&self.provider_id, 3, 64, b"-_")
+            || self.release_id.is_nil()
+            || !is_identifier(&self.game_key, 3, 32, b"-_")
+            || self.rules_version == 0
+            || !is_sha256_hex(&self.cartridge_digest)
+            || self.platform_session_id.is_nil()
+            || !is_pairwise_subject(&self.subject)
+            || self.message_id.is_nil()
+            || self.idempotency_key.is_nil()
+            || self.compatibility.validate().is_err()
+        {
+            return Err(ProviderError::ProtocolRejected);
         }
         validate_json_payload(&self.payload).map_err(|_| ProviderError::ProtocolRejected)
     }
@@ -696,8 +931,28 @@ pub struct ProviderEvent {
     pub revision: u64,
     /// Fixed event kind.
     pub kind: ProviderEventKind,
+    /// Exact compatibility selected for the originating provider session.
+    pub compatibility: ProviderCompatibility,
     /// Bounded schema-owned event data.
     pub payload: Value,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PersistedProviderEventV1 {
+    schema: String,
+    provider_id: String,
+    release_id: Uuid,
+    game_key: String,
+    rules_version: u32,
+    cartridge_digest: String,
+    platform_session_id: Uuid,
+    subject: String,
+    message_id: Uuid,
+    event_id: Uuid,
+    revision: u64,
+    kind: ProviderEventKind,
+    payload: Value,
 }
 
 impl ProviderEvent {
@@ -715,6 +970,7 @@ impl ProviderEvent {
         event_id: Uuid,
         revision: u64,
         kind: ProviderEventKind,
+        compatibility: ProviderCompatibility,
         payload: Value,
     ) -> Self {
         Self {
@@ -730,8 +986,43 @@ impl ProviderEvent {
             event_id,
             revision,
             kind,
+            compatibility,
             payload,
         }
+    }
+
+    /// Decode a locally persisted v1 outbox event, adding the exact
+    /// compatibility profile to events retained before negotiation became
+    /// mandatory. Never use this helper for unauthenticated network bytes.
+    pub fn from_persisted_v1_bytes(
+        bytes: &[u8],
+        limit: usize,
+        compatibility: ProviderCompatibility,
+    ) -> Result<Self> {
+        compatibility.validate()?;
+        if let Ok(event) = parse_authenticated_json::<Self>(bytes, limit) {
+            event.validate()?;
+            return Ok(event);
+        }
+        let legacy: PersistedProviderEventV1 = parse_authenticated_json(bytes, limit)?;
+        let event = Self {
+            schema: legacy.schema,
+            provider_id: legacy.provider_id,
+            release_id: legacy.release_id,
+            game_key: legacy.game_key,
+            rules_version: legacy.rules_version,
+            cartridge_digest: legacy.cartridge_digest,
+            platform_session_id: legacy.platform_session_id,
+            subject: legacy.subject,
+            message_id: legacy.message_id,
+            event_id: legacy.event_id,
+            revision: legacy.revision,
+            kind: legacy.kind,
+            compatibility,
+            payload: legacy.payload,
+        };
+        event.validate()?;
+        Ok(event)
     }
 
     /// Validate shape before authenticated receipt admission.
@@ -746,6 +1037,7 @@ impl ProviderEvent {
             || !is_pairwise_subject(&self.subject)
             || self.message_id.is_nil()
             || self.event_id.is_nil()
+            || self.compatibility.validate().is_err()
         {
             return Err(ProviderError::ProtocolRejected);
         }
@@ -1365,6 +1657,7 @@ mod tests {
             Uuid::from_u128(0x30000000000000000000000000000001),
             subject,
             ProviderScope::Command,
+            ProviderCompatibility::current(),
             now,
             now + 60,
             Uuid::from_u128(0x40000000000000000000000000000001),
@@ -1390,6 +1683,7 @@ mod tests {
             platform_session_id: claims.platform_session_id,
             subject: &claims.subject,
             scope: claims.scope,
+            compatibility: &claims.compatibility,
         };
         assert_eq!(
             verify_grant(&signed, &issuer.verifying_key(), &expected, now)
@@ -1425,6 +1719,116 @@ mod tests {
             first,
             pairwise_subject(&secret, "provider-one", "game_one", Uuid::from_u128(2))
                 .expect("persona pair should derive")
+        );
+    }
+
+    #[test]
+    fn compatibility_requires_one_exact_current_profile_and_offer_binding() {
+        let offer = ProviderCompatibilityOffer::current(
+            "provider-one".to_owned(),
+            Uuid::from_u128(20),
+            Uuid::from_u128(21),
+        )
+        .expect("current offer should construct");
+        let selection = ProviderCompatibilitySelection::current(&offer, Uuid::from_u128(22))
+            .expect("current selection should construct");
+        selection
+            .validate_for(&offer)
+            .expect("exact selection should verify");
+
+        let mut stripped = offer.clone();
+        stripped.supported[0].capabilities.pop();
+        assert!(stripped.validate().is_err());
+
+        let mut unknown = offer.clone();
+        unknown.supported[0].protocol_version = 2;
+        assert!(unknown.validate().is_err());
+
+        let mut ambiguous = offer.clone();
+        ambiguous.supported.push(ProviderCompatibility::current());
+        assert!(ambiguous.validate().is_err());
+
+        let wrong_offer = ProviderCompatibilityOffer::current(
+            "provider-one".to_owned(),
+            offer.release_id,
+            Uuid::from_u128(23),
+        )
+        .expect("second offer should construct");
+        assert!(selection.validate_for(&wrong_offer).is_err());
+    }
+
+    #[test]
+    fn persisted_v1_receipts_upgrade_without_weakening_network_models() {
+        let issuer = GrantIssuer::new("platform-2026", [7; 32], vec![8; 32])
+            .expect("issuer should construct");
+        let (claims, _) = grant_fixture(&issuer, 1_800_000_000);
+        let response = ProviderOperationResponse::new(
+            claims.provider_id.clone(),
+            claims.release_id,
+            claims.game_key.clone(),
+            claims.rules_version,
+            claims.cartridge_digest.clone(),
+            claims.platform_session_id,
+            claims.subject.clone(),
+            Uuid::from_u128(31),
+            Uuid::from_u128(32),
+            1,
+            ProviderOperationDisposition::Applied,
+            ProviderSessionStatus::Active,
+            ProviderCompatibility::current(),
+            json!({"turn": 1}),
+        );
+        let mut legacy_response = serde_json::to_value(&response).expect("response should encode");
+        legacy_response
+            .as_object_mut()
+            .expect("response should be an object")
+            .remove("compatibility");
+        let legacy_response =
+            serde_json::to_vec(&legacy_response).expect("legacy response should encode");
+        assert!(
+            parse_authenticated_json::<ProviderOperationResponse>(&legacy_response, 65_536)
+                .is_err()
+        );
+        assert_eq!(
+            ProviderOperationResponse::from_persisted_v1_bytes(
+                &legacy_response,
+                65_536,
+                ProviderCompatibility::current(),
+            )
+            .expect("persisted response should upgrade"),
+            response
+        );
+
+        let event = ProviderEvent::new(
+            claims.provider_id,
+            claims.release_id,
+            claims.game_key,
+            claims.rules_version,
+            claims.cartridge_digest,
+            claims.platform_session_id,
+            claims.subject,
+            Uuid::from_u128(33),
+            Uuid::from_u128(34),
+            1,
+            ProviderEventKind::TurnReady,
+            ProviderCompatibility::current(),
+            json!({"turn": 1}),
+        );
+        let mut legacy_event = serde_json::to_value(&event).expect("event should encode");
+        legacy_event
+            .as_object_mut()
+            .expect("event should be an object")
+            .remove("compatibility");
+        let legacy_event = serde_json::to_vec(&legacy_event).expect("legacy event should encode");
+        assert!(parse_authenticated_json::<ProviderEvent>(&legacy_event, 65_536).is_err());
+        assert_eq!(
+            ProviderEvent::from_persisted_v1_bytes(
+                &legacy_event,
+                65_536,
+                ProviderCompatibility::current(),
+            )
+            .expect("persisted event should upgrade"),
+            event
         );
     }
 

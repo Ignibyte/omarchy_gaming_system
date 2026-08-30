@@ -2,6 +2,10 @@
 
 Status: Ticket 018 installs the operator control plane and broker foundation.
 Ticket 019 uses it for one operator-pinned first-party Door Legends release.
+Ticket 044 extracts the provider-facing contract into the public-only
+`omarchygs-provider-sdk` preview and adds authenticated exact-v1 compatibility
+preflight before provider effects. The SDK does not change registration or
+pilot admission.
 Registration alone still does not transfer gameplay authority or make a
 release catalog-visible; the separate pilot activation command is required.
 See [`provider-authority-pilot.md`](provider-authority-pilot.md) for the exact
@@ -29,6 +33,21 @@ Changing endpoint or game/release identity requires registering a new release.
 Key rotation appends a new key with a validity window; it never rewrites an old
 key. Keep old and new keys active during a deliberate overlap, confirm the new
 key in authenticated audit evidence, then suspend or revoke the old key.
+
+Before each new network attempt, the platform sends a signed compatibility
+offer to the release's fixed `compatibility` path. The provider authenticates
+that exact provider/release/message context and returns a signed selection.
+Current SDK v1 permits exactly protocol version 1 with launch, command,
+reconcile, and event capabilities. Negotiation failure releases the request
+lease, records a safe failure audit, issues no grant, creates no attempt, and
+must not reach provider gameplay state. The selected profile is mandatory in
+the later signed grant and every operation, response, and callback body. Grant
+issuance also requires the same release configuration revision and the active
+message key that authenticated the selection, then returns the freshly locked
+security material for the operation. A rotation, revocation, or quota change
+during preflight therefore conflicts before a grant or attempt is created.
+Durable attempt creation repeats the locked revision, lifecycle, scope, and key
+admission and its returned material is the snapshot used for the outbound POST.
 
 ## Applying commands
 
@@ -67,8 +86,9 @@ Rotation uses `command: "rotate_key"`, a `key_kind` of
 ```
 
 Registration additionally supplies the complete `registration` object. Use
-the Rust model and `cargo doc -p omarchy-game-provider --no-deps --open` as the
-authoritative field reference. Validation is all-or-nothing; unknown fields,
+`cargo doc -p omarchy-game-provider --no-deps --open` for the platform
+registry model and `cargo doc -p omarchygs-provider-sdk --no-deps --open` for
+the public protocol contract. Validation is all-or-nothing; unknown fields,
 IP literals, local/special hostnames, noncanonical paths, malformed key bytes,
 missing scopes, and out-of-range quotas fail before mutation.
 
@@ -88,7 +108,14 @@ missing scopes, and out-of-range quotas fail before mutation.
 Completed operation receipts remain replayable as exact historical evidence;
 revocation prevents new network attempts. This distinction lets callers learn
 the already-recorded outcome of an idempotent operation without reopening
-provider authority.
+provider authority. The platform and Door Legends up-convert only their own
+persisted pre-negotiation v1 response/outbox rows to the fixed exact-v1
+compatibility profile. New network messages remain strict and reject a missing
+compatibility field. The sole exception is an authenticated byte-exact retry
+whose message, event, session, revision, and legacy body digest already match
+an immutable callback receipt; it resolves only as a duplicate and cannot
+project again. Door Legends sends a retained legacy outbox body once for that
+lost-ack recovery and upgrades it only after an explicit rejection.
 
 ## Failure and recovery
 
@@ -105,10 +132,14 @@ is a conflict. If the provider remains unavailable, suspend launch admission
 and use authenticated reconciliation after recovery; do not infer success from
 timestamps.
 
-Quota counters and request leases live in PostgreSQL. Expired leases recover
-after a crashed process. Repeated quota exhaustion, signature rejection,
-redirect attempts, body-limit failures, or reconciliation mismatch should be
-treated as provider health/security signals and may justify suspension.
+Quota counters and request leases live in PostgreSQL. Compatibility, grant
+preparation, and the provider operation share one aggregate
+`total_timeout_ms` deadline, so live provider traffic cannot outlast the
+request lease by receiving a second full transport budget. Expired leases
+recover after a crashed process. Repeated quota exhaustion, signature
+rejection, redirect attempts, body-limit failures, or reconciliation mismatch
+should be treated as provider health/security signals and may justify
+suspension.
 
 ## Audit and validation
 

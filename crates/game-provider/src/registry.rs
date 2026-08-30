@@ -12,9 +12,11 @@ use crate::{
     model::{
         ActivatePilotInput, ActiveSessionPolicy, LifecycleStatus, OperationalKeyInput,
         OperationalKeyKind, OperatorCommand, PilotStatus, ProviderEndpoint, ProviderQuotas,
-        ProviderScope, RegisterReleaseInput, ReleasePolicy, SessionAdmission,
+        ProviderScope, RegisterReleaseInput, ReleasePolicy, SessionAdmission, is_identifier,
     },
-    protocol::{GrantIssuer, ProviderGrantClaims, SignedProviderGrant, sha256_hex},
+    protocol::{
+        GrantIssuer, ProviderCompatibility, ProviderGrantClaims, SignedProviderGrant, sha256_hex,
+    },
 };
 
 /// Durable quota families.
@@ -97,6 +99,12 @@ pub struct IssueGrantRequest {
     pub platform_session_id: Uuid,
     /// One exact non-event scope.
     pub scope: ProviderScope,
+    /// Exact authenticated compatibility selected before issuance.
+    pub compatibility: ProviderCompatibility,
+    /// Release configuration revision that authenticated compatibility.
+    pub expected_config_revision: u64,
+    /// Active provider message key that authenticated compatibility.
+    pub compatibility_key_id: String,
     /// New or proven existing provider session.
     pub session: SessionAdmission,
 }
@@ -110,6 +118,8 @@ pub struct IssuedGrant {
     pub signed: SignedProviderGrant,
     /// Exact serialized signed bytes stored in PostgreSQL.
     pub bytes: Vec<u8>,
+    /// Fresh locked security material bound to negotiation and grant issuance.
+    pub material: ProviderSecurityMaterial,
 }
 
 /// One expiring cross-process request concurrency lease.
@@ -264,6 +274,9 @@ impl ProviderRegistry {
             || request.persona_id.is_nil()
             || request.platform_session_id.is_nil()
             || request.scope == ProviderScope::Event
+            || request.compatibility.validate().is_err()
+            || request.expected_config_revision == 0
+            || !is_identifier(&request.compatibility_key_id, 3, 64, b"._-")
         {
             return Err(ProviderError::InvalidInput);
         }
@@ -292,10 +305,16 @@ impl ProviderRegistry {
             .begin()
             .await
             .map_err(|error| map_database_error(error, "begin provider grant"))?;
-        let material = load_material_locked(&mut transaction, request.release_id).await?;
-        let scope_status =
-            load_scope_status(&mut transaction, request.release_id, request.scope).await?;
-        evaluate_admission(&material, scope_status, request.scope, request.session)?;
+        let material = self
+            .admit_negotiated_attempt_locked(
+                &mut transaction,
+                request.release_id,
+                request.scope,
+                request.session,
+                request.expected_config_revision,
+                &request.compatibility_key_id,
+            )
+            .await?;
         let now = database_unix_seconds(&mut transaction).await?;
         charge_quota_locked(
             &mut transaction,
@@ -320,6 +339,7 @@ impl ProviderRegistry {
             request.platform_session_id,
             subject,
             request.scope,
+            request.compatibility.clone(),
             now,
             expires_at,
             token_id,
@@ -379,7 +399,42 @@ impl ProviderRegistry {
             claims,
             signed,
             bytes,
+            material,
         })
+    }
+
+    /// Re-admit a negotiated attempt under the caller's transaction. The
+    /// returned material stays locked until that transaction commits.
+    pub(crate) async fn admit_negotiated_attempt_locked(
+        &self,
+        transaction: &mut Transaction<'_, Postgres>,
+        release_id: Uuid,
+        scope: ProviderScope,
+        session: SessionAdmission,
+        expected_config_revision: u64,
+        compatibility_key_id: &str,
+    ) -> Result<ProviderSecurityMaterial> {
+        if release_id.is_nil()
+            || scope == ProviderScope::Event
+            || expected_config_revision == 0
+            || !is_identifier(compatibility_key_id, 3, 64, b"._-")
+        {
+            return Err(ProviderError::InvalidInput);
+        }
+        let material = load_material_locked(transaction, release_id).await?;
+        if material.policy.config_revision != expected_config_revision {
+            return Err(ProviderError::Conflict);
+        }
+        if !material
+            .message_keys
+            .iter()
+            .any(|key| key.key_id == compatibility_key_id)
+        {
+            return Err(ProviderError::Denied);
+        }
+        let scope_status = load_scope_status(transaction, release_id, scope).await?;
+        evaluate_admission(&material, scope_status, scope, session)?;
+        Ok(material)
     }
 
     /// Atomically re-admit, charge request quota, and acquire an expiring

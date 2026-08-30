@@ -43,6 +43,8 @@ sources:
     resource: repo://crates/server/src/inbox_api_tests.rs
   - id: openwiki-source-22753602a862c32d10560204
     resource: repo://crates/server/src/persona_api_tests.rs
+  - id: openwiki-source-ff1ed569f105aff512baba65
+    resource: repo://crates/server/src/provider_game_api_tests.rs
   - id: openwiki-source-1b621f94587f7516bb90c07a
     resource: repo://crates/server/src/server_discovery_api_tests.rs
   - id: openwiki-source-286b9fd128ca0b68cd7c1f30
@@ -87,8 +89,12 @@ sources:
     resource: repo://scripts/test-operator-recovery.sh
   - id: openwiki-source-a0a026a4d434d1b48884aa8e
     resource: repo://scripts/test-private-alpha.sh
+  - id: openwiki-source-31a4e9d026860da100c233f9
+    resource: repo://scripts/test-provider-authority-pilot.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
+  - id: openwiki-source-6568db81b3a045799e94d1af
+    resource: repo://scripts/test-provider-sdk.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
   - id: openwiki-source-8128bd5b86e858053bc20c68
@@ -279,7 +285,8 @@ human `pacman -U` operation.
 ## Canonical gate
 
 `bin/gate.sh --fast` runs the static development loop without writing a receipt.
-It includes native client package source admission and the root-signed
+It includes the deterministic Provider SDK release at stage 13a, native client
+package source admission, and the root-signed
 marketplace trust-channel proof at stage 15a plus the deterministic static
 publication and offline-root drill at stage 15b. Stage 23 runs the isolated
 server-module architecture proof and stage 24 runs production server-module
@@ -308,22 +315,25 @@ The gate currently covers:
    signed Core/Rich-2D preparation, private output, QML state/input/accessibility
    smoke, aggregate-plan rejection, raster admission, and frame/RSS profile
    enforcement;
-5. deterministic SDK export, two clean-clone first-party builds, byte-identical
+5. deterministic Game Cartridge SDK export, two clean-clone first-party builds, byte-identical
    signed release verification, signed five-state catalog policy, secure local
    import, and permission/rollback/concurrency regressions;
-6. the isolated Game Cartridge workspace format, Clippy, tests, binaries,
+6. the public-only Provider SDK package boundary, exact finite signed export,
+   and two clean consumer clones with byte-identical output, no committed path
+   dependency, platform dependency, or repository-path leak;
+7. the isolated Game Cartridge workspace format, Clippy, tests, binaries,
    rustdoc, signed package, broker/provider/probe exchange, privacy assertions,
    trusted-QML smoke, and frame/memory/package measurements;
-7. the native client source contract in every mode, deterministic
+8. the native client source contract in every mode, deterministic
    root/channel/bootstrap generation and transition tests, plus reproducible
    manual and channel Arch builds, exact QML/companion package inspection,
    hostile trust denial, private-cache creation, cleanup, and extracted
    production-QML smoke in diff/full modes;
-8. the historical migration-0023 upgrade regression followed by the complete
+9. the historical migration-0023 upgrade regression followed by the complete
    ignored server test inventory against SQLx-managed PostgreSQL databases in
    diff/full modes, including exact cartridge distribution, key rotation,
    no-fallback, lifecycle, and concurrency cases;
-9. the live Signal Siege catalog, idempotent launch, bounded completed match,
+10. the live Signal Siege catalog, idempotent launch, bounded completed match,
    final replay/history/sync, health, registration, duplicate-conflict,
    session creation/list, persona creation/list/public lookup/edit/handle
    movement, connection, fail-closed unavailable-game challenge rejection,
@@ -336,28 +346,30 @@ The gate currently covers:
    real QML registration/persona, social/report/inbox, MFA/persona, and two-authority
    Signal Siege challenge/versus/recovery flows, and the standalone QML shell
    smoke;
-10. the production provider boundary's operator registry, lifecycle,
-   grants, fixed signed messages, public-only pinned HTTPS egress, replay and
-   callback deduplication, quotas, concurrency leases, audit, and fail-closed
-   behavior against migrated PostgreSQL and a separate TLS provider process;
-11. the first-party Door Legends authority pilot built from a clean clone,
+11. the production provider boundary's operator registry, lifecycle,
+   authenticated exact-v1 negotiation, compatibility-bound grants/messages,
+   final locked material admission, one aggregate deadline, public-only pinned
+   HTTPS egress, replay and callback deduplication, quotas, concurrency leases,
+   audit, and fail-closed behavior against migrated PostgreSQL and a separate
+   TLS provider process;
+12. the first-party Door Legends authority pilot built from a clean clone,
     running through the real player-server bridge against an independent
     provider database, with replay, revision races, callbacks, projection,
     outage/restart/reconciliation, lifecycle, privacy, and backup/restore proof.
-12. the database-local operator boundary's report inventory and action tests,
+13. the database-local operator boundary's report inventory and action tests,
     real CLI adapter test, and isolated full-schema platform dump/restore drill,
     including immutable audit/report checks and restored old-token denial.
-13. the invite-only private-alpha boundary's issue, first-use registration,
+14. the invite-only private-alpha boundary's issue, first-use registration,
     exact replay, changed-intent denial, sign-in, revocation, secret-free
     inventory, digest-only persistence, and log-secret hygiene.
-14. the static marketplace publisher's canonical plan and handoff contracts,
+15. the static marketplace publisher's canonical plan and handoff contracts,
     deterministic double builds, network-unshared offline signing, exact
     immutable tree and atomic activation, guarded identical TLS mirrors,
     rotation/revocation, and stale-publication rollback denial.
-15. the isolated server-module nested workspace's format, lint, 21-test corpus,
+16. the isolated server-module nested workspace's format, lint, 21-test corpus,
     deterministic exact-WIT component fixtures, 13 contained process scenarios,
     typed-intent/state/lifecycle checks, and local-only automation enforcement;
-16. the production server-module crate and packaged host's shared reviewed/
+17. the production server-module crate and packaged host's shared reviewed/
     custom exact release/WIT/framing contract, real OS containment, fixed
     sibling loader, private database-custodied custom artifacts, local-only
     import/lifecycle boundary, absence of public routes and host network/
@@ -505,6 +517,21 @@ measurement harness; it is not a production provider service, a published SDK,
 or a minimum-hardware Rich-2D benchmark. See [Game Cartridges](game-cartridges.md)
 for the boundary and remaining production work.
 
+### Provider SDK deterministic release
+
+`scripts/test-provider-sdk.sh` is the Ticket 044 package/release entrypoint and
+gate 13a in every mode. It packages only `omarchygs-provider-sdk`, rejects
+platform registry, broker, egress, database, administrator, runtime, and path
+dependencies, and supplies the package to an independent consumer only through
+a command-line Cargo patch. Two fresh no-hardlink Git clones build the consumer,
+export and verify the exact locally signed SDK, and must produce byte-identical
+directories and identities without embedding the OmarchyGS source path.
+
+The crate's own tests cover the exact protocol-1/four-capability negotiation,
+compatibility binding, strict authenticated parsing, narrow persisted-v1 replay
+helpers, signed provenance, finite inventory, symlink/alias/unknown-entry and
+depth/breadth/path-byte denial, and byte/signature/provenance tampering.
+
 ### Remote-provider security foundation
 
 `scripts/test-provider-conformance.sh` is the Ticket 018 production security
@@ -512,11 +539,14 @@ entrypoint and gate 19 in diff/full modes. It runs provider unit and public
 protocol tests, then serializes the ignored operator CLI, PostgreSQL registry,
 separate-process TLS egress, and end-to-end broker conformance cases against the
 migrated database. The corpus covers immutable release registration and key
-rotation; lifecycle denial; 60-second one-scope pairwise grants; exact request,
-response, and callback authentication; public-only resolution and socket
-pinning; strict body/time limits; idempotent replay and concurrent callback
-deduplication; quota and lease races; retry-after-unknown behavior; and safe
-audit records.
+rotation; lifecycle denial; authenticated exact-v1 compatibility before
+effects; configuration/key changes between negotiation, grant, and attempt;
+60-second one-scope compatibility-bound pairwise grants; exact request,
+response, and callback authentication; a single aggregate attempt deadline;
+public-only resolution and socket pinning; strict body/time limits; idempotent
+replay, exact historical duplicate recovery, fresh legacy-message denial, and
+concurrent callback deduplication; quota and lease races; retry-after-unknown
+behavior; and safe audit records.
 
 Gate 19 proves the reusable provider security/control-plane boundary. The
 player server instantiates that crate only when its all-or-none provider
@@ -526,7 +556,7 @@ and authority proof.
 ### First-party remote-provider authority pilot
 
 `scripts/test-provider-authority-pilot.sh` is the Ticket 019 entrypoint and gate
-20 in diff/full modes. It packages the public provider protocol, copies the
+20 in diff/full modes. It packages the public Provider SDK, copies the
 Door Legends example into a fresh Git repository, clones it, and builds its TLS
 provider with default platform features disabled. The script rejects a
 platform-only dependency or source-tree path in the resulting binary.
@@ -535,7 +565,8 @@ The proof creates an independent provider database, runs the real server router
 with an empty compiled registry plus the operator-enabled release, and verifies
 authority-tagged catalog, start, command, read, result, achievement, and sync
 responses. Its single PostgreSQL integration case covers exact replay,
-expected-revision command races, callback tamper/deduplication/policy,
+expected-revision command races, callback tamper/deduplication/policy and
+pre-negotiation lost-ack replay,
 participant privacy, timeout-after-commit reconciliation, outage and process
 restart, suspension, restoration, and terminal retirement. Finally it dumps
 the provider database, restores it into a second database, and checks the
@@ -723,15 +754,19 @@ server, so absent or stale provenance fails closed.
 - SDK/release/import failure: run `scripts/test-game-cartridge-sdk.sh` and fix the
   named export, release provenance, lifecycle, permission, rollback, concurrency,
   or clean-room isolation failure; do not bypass gate 13.
+- Provider SDK failure: run `scripts/test-provider-sdk.sh` and fix the named
+  package boundary, exact inventory, signature/provenance, two-clone
+  reproducibility, platform dependency, or source-path leak; do not bypass gate
+  13a.
 - Cartridge proof failure: inspect the temporary provider, broker, and QML logs
   printed by `scripts/test-game-cartridge-spike.sh`. Treat signature, identity,
   capability, privacy, replay, resource, or trusted-renderer failures as
   architecture failures; do not bypass gate 14. The binaries are loopback-only
   proof artifacts and must not be deployed.
 - Provider-security failure: run `scripts/test-provider-conformance.sh` and fix
-  the named registration, lifecycle, signature, egress, replay, callback,
-  quota/lease, audit, TLS-process, or PostgreSQL race failure; do not bypass
-  gate 19.
+  the named registration, lifecycle, negotiation, stale material, aggregate
+  deadline, signature, egress, replay, callback, quota/lease, audit, TLS-process,
+  or PostgreSQL race failure; do not bypass gate 19.
 - Provider-authority failure: run `scripts/test-provider-authority-pilot.sh`
   and fix the named clean-clone dependency, authority shape, player route,
   replay/revision race, callback projection, lifecycle, independent database,

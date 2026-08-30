@@ -1,0 +1,22 @@
+[package]
+name = "omarchygs-provider-sdk"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+publish = false
+description = "Provider-facing OmarchyGS protocol, negotiation, and release contract"
+repository = "https://github.com/Ignibyte/omarchy_gaming_system"
+license-file = "LICENSES.md"
+
+[dependencies]
+base64 = "0.23.1"
+data-encoding = "2.11.1"
+ed25519-dalek = "2.2.0"
+hmac = "0.13.0"
+http = "1.4.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.11.0"
+thiserror = "2.0"
+uuid = { version = "1.24.1", features = ["serde", "v4"] }
+zeroize = "1.9.0"

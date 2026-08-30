@@ -1,9 +1,9 @@
 ---
 title: INTAKE-public-provider-sdk-starter-and-sidecar
-status: candidate
+status: promoted
 created: 2026-08-30
-ticket:
-pipeline_spec:
+ticket: TICKET-044 (delivered slice); next candidate TICKET-045
+pipeline_spec: docs/planning/pipeline/completed/public-provider-sdk-contract-negotiation-and-release.spec.md
 ---
 
 # INTAKE-public-provider-sdk-starter-and-sidecar
@@ -38,8 +38,8 @@ release by itself.
 
 This roadmap item is likely safest as three consecutive tickets:
 
-1. extract and version the provider-facing SDK plus explicit negotiation and
-   deterministic export/release provenance;
+1. [delivered by Ticket 044] extract and version the provider-facing SDK plus
+   explicit negotiation and deterministic export/release provenance;
 2. build the game-agnostic starter backend and public conformance/fault kit,
    then prove a second clean-room game integration;
 3. design, implement, and drill the authenticated co-located sidecar deployment
@@ -90,11 +90,15 @@ Each ticket must leave external-provider admission disabled.
 ## Promotion checklist
 
 - [x] Ticket 042 delivery explicitly authorized and completed.
-- [ ] SDK package/repository and release-signing ownership approved.
-- [ ] Protocol-version compatibility window and negotiation policy approved.
+- [x] SDK package/repository and release-signing ownership approved for the
+  project-owned locally signed preview export; no hosted publication implied.
+- [x] Protocol-version compatibility window and negotiation policy approved as
+  exact v1 with launch, command, reconcile, and event capabilities required.
 - [ ] Second clean-room game scope selected.
 - [ ] Co-located transport profile receives a dedicated threat-model decision.
-- [ ] Ticket sequence created and indexed one shippable slice at a time.
-- [ ] First promoted ticket's pipeline spec/notes pair created.
-- [ ] `ticket:` and `pipeline_spec:` filled for the promoted slice.
-- [ ] Status changed to `promoted` only for the promoted slice.
+- [x] Ticket sequence is promoted one shippable slice at a time; Ticket 044 is
+  completed and later slices remain unopened until its delivery readback.
+- [x] First promoted ticket's pipeline spec/notes pair completed and archived.
+- [x] `ticket:` and `pipeline_spec:` point to the delivered slice.
+- [x] Status changed to `promoted` only for the Ticket 044 slice; remaining
+  candidate sequence items retain their unchecked decisions.

@@ -21,7 +21,8 @@ use ed25519_dalek::VerifyingKey;
 use omarchy_game_provider::{
     ProviderError,
     protocol::{
-        GrantExpectation, HttpMessageSigner, ProviderEvent, ProviderEventKind,
+        GrantExpectation, HttpMessageSigner, ProviderCompatibilityOffer,
+        ProviderCompatibilitySelection, ProviderEvent, ProviderEventKind,
         ProviderOperationDisposition, ProviderOperationKind, ProviderOperationRequest,
         ProviderOperationResponse, ProviderSessionStatus, RequestSignatureContext,
         SignatureHeaders, parse_authenticated_json, verify_grant, verify_request_signature,
@@ -56,6 +57,10 @@ struct FixtureConfig {
     provider_message_signing_seed_base64: String,
     state_path: PathBuf,
     commit_delay_ms: u64,
+    #[serde(default)]
+    compatibility_delay_ms: u64,
+    #[serde(default)]
+    compatibility_fault: Option<String>,
 }
 
 struct AppState {
@@ -133,6 +138,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         durable: Mutex::new(durable),
     });
     let router = Router::new()
+        .route("/omarchygs/provider/v1/compatibility", post(compatibility))
         .route("/omarchygs/provider/v1/launch", post(operation))
         .route("/omarchygs/provider/v1/commands", post(operation))
         .route("/omarchygs/provider/v1/reconcile", post(operation))
@@ -143,6 +149,84 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .serve(router.into_make_service())
         .await?;
     Ok(())
+}
+
+async fn compatibility(
+    State(state): State<Arc<AppState>>,
+    OriginalUri(uri): OriginalUri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response<Body> {
+    if state.config.compatibility_delay_ms > 0 {
+        tokio::time::sleep(Duration::from_millis(state.config.compatibility_delay_ms)).await;
+    }
+    match handle_compatibility(&state, uri.path(), &headers, &body) {
+        Ok(response) => response,
+        Err(error) => {
+            eprintln!("fixture rejected compatibility request: {}", error.code());
+            safe_error_response(error)
+        }
+    }
+}
+
+fn handle_compatibility(
+    state: &AppState,
+    path: &str,
+    headers: &HeaderMap,
+    body: &[u8],
+) -> Result<Response<Body>, ProviderError> {
+    if path != "/omarchygs/provider/v1/compatibility" {
+        return Err(ProviderError::ProtocolRejected);
+    }
+    let signed_headers = SignatureHeaders::from_header_map(headers)?;
+    let message_id = signed_headers
+        .message_id
+        .parse::<Uuid>()
+        .map_err(|_| ProviderError::ProtocolRejected)?;
+    let context = RequestSignatureContext {
+        method: "POST",
+        authority: &state.config.endpoint_authority,
+        path,
+        provider_id: &state.config.provider_id,
+        release_id: state.config.release_id,
+        message_id,
+    };
+    verify_request_signature(
+        &signed_headers,
+        &context,
+        body,
+        &state.platform_message_key,
+        &state.config.platform_message_key_id,
+        unix_seconds()?,
+    )?;
+    let offer: ProviderCompatibilityOffer = parse_authenticated_json(body, MAX_FIXTURE_BODY_BYTES)?;
+    offer.validate()?;
+    if offer.message_id != message_id
+        || offer.provider_id != state.config.provider_id
+        || offer.release_id != state.config.release_id
+    {
+        return Err(ProviderError::ProtocolRejected);
+    }
+    let mut selection = ProviderCompatibilitySelection::current(&offer, Uuid::new_v4())?;
+    if state.config.compatibility_fault.as_deref() == Some("strip_capability") {
+        selection.selected.capabilities.pop();
+    }
+    let response_body = serde_json::to_vec(&selection).map_err(|_| ProviderError::Internal)?;
+    let response_headers = state.provider_signer.sign_response(
+        StatusCode::OK.as_u16(),
+        &context,
+        selection.message_id,
+        &response_body,
+        unix_seconds()?,
+        &format!("n-{}", Uuid::new_v4()),
+    )?;
+    let mut response = Response::builder().status(StatusCode::OK);
+    for (name, value) in signature_header_values(&response_headers) {
+        response = response.header(name, value);
+    }
+    response
+        .body(Body::from(response_body))
+        .map_err(|_| ProviderError::Internal)
 }
 
 async fn operation(
@@ -215,6 +299,7 @@ async fn handle_operation(
             platform_session_id: request.platform_session_id,
             subject: &request.subject,
             scope: operation.scope(),
+            compatibility: &request.compatibility,
         },
         unix_seconds()?,
     )?;
@@ -352,6 +437,7 @@ fn apply_operation(
         revision,
         disposition,
         ProviderSessionStatus::Active,
+        request.compatibility.clone(),
         json!({"turn": revision}),
     ))
 }
@@ -374,6 +460,7 @@ fn create_event_record(
         Uuid::new_v4(),
         revision,
         ProviderEventKind::TurnReady,
+        request.compatibility.clone(),
         json!({"turn": revision}),
     );
     event.validate()?;

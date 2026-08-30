@@ -1,0 +1,25 @@
+[package]
+name = "omarchygs-provider-sdk"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Provider-facing OmarchyGS protocol, negotiation, and release contract"
+repository = "https://github.com/Ignibyte/omarchy_gaming_system"
+license-file = "sdk/v1/LICENSES.md"
+
+[dependencies]
+base64.workspace = true
+data-encoding.workspace = true
+ed25519-dalek.workspace = true
+hmac.workspace = true
+http.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+uuid = { workspace = true, features = ["serde", "v4"] }
+zeroize.workspace = true
+
+[dev-dependencies]
+tempfile = "3.23.0"

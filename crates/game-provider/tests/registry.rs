@@ -7,7 +7,7 @@ use omarchy_game_provider::{
         OperationalKeyInput, OperationalKeyKind, OperatorCommand, PilotStatus, ProviderEndpoint,
         ProviderQuotas, ProviderScope, RegisterReleaseInput, SessionAdmission,
     },
-    protocol::GrantIssuer,
+    protocol::{GrantIssuer, ProviderCompatibility},
     registry::{IssueGrantRequest, ProviderRegistry},
 };
 use serde_json::Value;
@@ -372,6 +372,128 @@ async fn key_rotation_scope_and_lifecycle_revocation_fail_closed(pool: PgPool) {
 
 #[sqlx::test(migrations = "../../migrations")]
 #[ignore = "requires PostgreSQL; run scripts/test-provider-conformance.sh"]
+async fn grant_rejects_material_changed_after_compatibility(pool: PgPool) {
+    let registry = register_fixture(&pool, quotas()).await;
+    let issuer = GrantIssuer::new("platform-key-1", [11; 32], vec![12; 32])
+        .expect("grant issuer should construct");
+    let persona_id = Uuid::from_u128(0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa);
+    let platform_session_id = Uuid::from_u128(0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb);
+    let (stale_material, stale_lease) = registry
+        .begin_request(
+            release_id(),
+            ProviderScope::Command,
+            SessionAdmission::Existing,
+            Uuid::from_u128(0x44),
+        )
+        .await
+        .expect("preflight request should admit");
+
+    let now = database_now(&pool).await;
+    let replacement = SigningKey::from_bytes(&[10; 32]);
+    registry
+        .apply_operator_command(&OperatorCommand::RotateKey {
+            actor: "integration-operator".to_owned(),
+            reason: "replace the key during compatibility".to_owned(),
+            release_id: release_id(),
+            key_kind: OperationalKeyKind::MessageEd25519,
+            key: OperationalKeyInput {
+                key_id: "provider-key-2".to_owned(),
+                public_material_base64: STANDARD.encode(replacement.verifying_key().as_bytes()),
+                valid_from: now - 1,
+                valid_until: None,
+            },
+        })
+        .await
+        .expect("replacement key should rotate");
+    registry
+        .apply_operator_command(&OperatorCommand::SetKeyStatus {
+            actor: "integration-operator".to_owned(),
+            reason: "revoke the key that authenticated compatibility".to_owned(),
+            release_id: release_id(),
+            key_kind: OperationalKeyKind::MessageEd25519,
+            key_id: "provider-key-1".to_owned(),
+            status: LifecycleStatus::Revoked,
+        })
+        .await
+        .expect("compatibility key should revoke");
+
+    let stale = registry
+        .issue_grant(
+            &issuer,
+            &IssueGrantRequest {
+                release_id: release_id(),
+                persona_id,
+                platform_session_id,
+                scope: ProviderScope::Command,
+                compatibility: ProviderCompatibility::current(),
+                expected_config_revision: stale_material.policy.config_revision,
+                compatibility_key_id: "provider-key-1".to_owned(),
+                session: SessionAdmission::Existing,
+            },
+        )
+        .await;
+    assert!(matches!(stale, Err(ProviderError::Conflict)));
+    let grant_count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM provider_grants WHERE release_id = $1")
+            .bind(release_id())
+            .fetch_one(&pool)
+            .await
+            .expect("grant count should query");
+    let grant_quota: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(sum(used), 0)::BIGINT FROM provider_quota_windows WHERE release_id = $1 AND quota_kind = 'grant'",
+    )
+    .bind(release_id())
+    .fetch_one(&pool)
+    .await
+    .expect("grant quota should query");
+    assert_eq!(grant_count, 0);
+    assert_eq!(grant_quota, 0);
+    registry
+        .release_request(stale_lease)
+        .await
+        .expect("stale request lease should release");
+
+    let current_material = registry
+        .admit(
+            release_id(),
+            ProviderScope::Command,
+            SessionAdmission::Existing,
+        )
+        .await
+        .expect("current material should admit");
+    let current = registry
+        .issue_grant(
+            &issuer,
+            &IssueGrantRequest {
+                release_id: release_id(),
+                persona_id,
+                platform_session_id,
+                scope: ProviderScope::Command,
+                compatibility: ProviderCompatibility::current(),
+                expected_config_revision: current_material.policy.config_revision,
+                compatibility_key_id: "provider-key-2".to_owned(),
+                session: SessionAdmission::Existing,
+            },
+        )
+        .await
+        .expect("current compatibility material should issue");
+    assert_eq!(
+        current.material.policy.config_revision,
+        current_material.policy.config_revision
+    );
+    assert_eq!(
+        current
+            .material
+            .message_keys
+            .iter()
+            .map(|key| key.key_id.as_str())
+            .collect::<Vec<_>>(),
+        vec!["provider-key-2"]
+    );
+}
+
+#[sqlx::test(migrations = "../../migrations")]
+#[ignore = "requires PostgreSQL; run scripts/test-provider-conformance.sh"]
 async fn grant_quota_pairwise_privacy_and_concurrency_are_durable(pool: PgPool) {
     let mut limits = quotas();
     limits.grants_per_minute = 1;
@@ -379,6 +501,11 @@ async fn grant_quota_pairwise_privacy_and_concurrency_are_durable(pool: PgPool) 
     let registry = register_fixture(&pool, limits).await;
     let issuer = GrantIssuer::new("platform-key-1", [11; 32], vec![12; 32])
         .expect("grant issuer should construct");
+    let config_revision = registry
+        .load_policy(release_id())
+        .await
+        .expect("release policy should load")
+        .config_revision;
     let persona_id = Uuid::from_u128(0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa);
     let platform_session_id = Uuid::from_u128(0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb);
     let grant = registry
@@ -389,6 +516,9 @@ async fn grant_quota_pairwise_privacy_and_concurrency_are_durable(pool: PgPool) 
                 persona_id,
                 platform_session_id,
                 scope: ProviderScope::Command,
+                compatibility: ProviderCompatibility::current(),
+                expected_config_revision: config_revision,
+                compatibility_key_id: "provider-key-1".to_owned(),
                 session: SessionAdmission::Existing,
             },
         )
@@ -417,6 +547,9 @@ async fn grant_quota_pairwise_privacy_and_concurrency_are_durable(pool: PgPool) 
                 persona_id,
                 platform_session_id,
                 scope: ProviderScope::Command,
+                compatibility: ProviderCompatibility::current(),
+                expected_config_revision: config_revision,
+                compatibility_key_id: "provider-key-1".to_owned(),
                 session: SessionAdmission::Existing,
             },
         )

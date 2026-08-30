@@ -8,6 +8,7 @@ members = [
     "crates/game-signal-siege",
     "crates/marketplace-publisher",
     "crates/marketplace-trust",
+    "crates/provider-sdk",
     "crates/server",
     "crates/server-module-runtime",
 ]

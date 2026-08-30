@@ -635,18 +635,28 @@ pub(crate) async fn apply_callback(
         .message_id
         .parse::<Uuid>()
         .map_err(|_| GameError::Unauthorized)?;
-    let untrusted: ProviderEvent =
-        serde_json::from_slice(body).map_err(|_| GameError::Unauthorized)?;
-    untrusted.validate().map_err(|_| GameError::Unauthorized)?;
-    if untrusted.release_id != release_id || untrusted.message_id != message_id {
-        return Err(GameError::Unauthorized);
-    }
-    let row = load_callback_session(pool, untrusted.platform_session_id).await?;
+    let path = format!("{CALLBACK_PATH_PREFIX}{release_id}");
+    let context = RequestSignatureContext {
+        method: "POST",
+        authority: runtime.callback_authority.as_ref(),
+        path: &path,
+        provider_id: &signature_headers.provider_id,
+        release_id,
+        message_id,
+    };
+    let now = current_unix_seconds()?;
+    let authenticated = runtime
+        .broker
+        .authenticate_callback(release_id, None, &context, &signature_headers, body, now)
+        .await
+        .map_err(map_callback_auth_error)?;
+    let event = authenticated.event();
+    let row = load_callback_session(pool, event.platform_session_id).await?;
     if row.release_id != release_id
         || row.provider_id != signature_headers.provider_id
-        || row.game_key != untrusted.game_key
-        || row.game_version != i64::from(untrusted.rules_version)
-        || row.cartridge_digest != untrusted.cartridge_digest
+        || row.game_key != event.game_key
+        || row.game_version != i64::from(event.rules_version)
+        || row.cartridge_digest != event.cartridge_digest
     {
         return Err(GameError::Unauthorized);
     }
@@ -654,28 +664,9 @@ pub(crate) async fn apply_callback(
         .broker
         .pairwise_subject(&row.provider_id, &row.game_key, row.persona_id)
         .map_err(map_provider_error)?;
-    let path = format!("{CALLBACK_PATH_PREFIX}{release_id}");
-    let context = RequestSignatureContext {
-        method: "POST",
-        authority: runtime.callback_authority.as_ref(),
-        path: &path,
-        provider_id: &row.provider_id,
-        release_id,
-        message_id,
-    };
-    let now = current_unix_seconds()?;
-    let authenticated = runtime
-        .broker
-        .authenticate_callback(
-            release_id,
-            Some(&subject),
-            &context,
-            &signature_headers,
-            body,
-            now,
-        )
-        .await
-        .map_err(map_callback_auth_error)?;
+    if event.subject != subject {
+        return Err(GameError::Unauthorized);
+    }
     project_callback(pool, runtime, row, authenticated).await
 }
 

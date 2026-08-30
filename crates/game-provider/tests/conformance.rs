@@ -22,7 +22,7 @@ use omarchy_game_provider::{
     },
     protocol::{
         GrantIssuer, HttpMessageSigner, ProviderOperationDisposition, ProviderOperationKind,
-        RequestSignatureContext, SignatureHeaders,
+        RequestSignatureContext, SignatureHeaders, sha256_hex,
     },
     registry::ProviderRegistry,
 };
@@ -74,7 +74,7 @@ async fn separate_tls_provider_proves_replay_faults_events_outage_and_reconcilia
         .expect("message signer should construct");
     let config_path = temp.path().join("fixture-config.json");
     let state_path = temp.path().join("fixture-state.json");
-    let config = json!({
+    let mut config = json!({
         "listen": address,
         "certificate_der_base64": STANDARD.encode(&certificate_der),
         "private_key_der_base64": STANDARD.encode(private_key_der),
@@ -92,7 +92,9 @@ async fn separate_tls_provider_proves_replay_faults_events_outage_and_reconcilia
         "provider_message_key_id": "provider-message-1",
         "provider_message_signing_seed_base64": STANDARD.encode(provider_signing_seed),
         "state_path": state_path,
-        "commit_delay_ms": 900
+        "commit_delay_ms": 2200,
+        "compatibility_delay_ms": 0,
+        "compatibility_fault": "strip_capability"
     });
     std::fs::write(
         &config_path,
@@ -111,7 +113,7 @@ async fn separate_tls_provider_proves_replay_faults_events_outage_and_reconcilia
         request_body_bytes: 16 * 1024,
         response_body_bytes: 8 * 1024,
         connect_timeout_ms: 250,
-        total_timeout_ms: 500,
+        total_timeout_ms: 2_000,
     };
     let endpoint = ProviderEndpoint {
         host: HOST.to_owned(),
@@ -143,6 +145,39 @@ async fn separate_tls_provider_proves_replay_faults_events_outage_and_reconcilia
         ProviderOperationKind::Launch,
         json!({"mode": "solo"}),
     );
+    assert!(matches!(
+        broker.execute(&launch).await,
+        Err(ProviderError::ProtocolRejected)
+    ));
+    let grants_before_compatibility: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM provider_grants WHERE release_id = $1")
+            .bind(RELEASE_ID)
+            .fetch_one(&pool)
+            .await
+            .expect("grant count should query");
+    let attempts_before_compatibility: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM provider_operation_attempts WHERE release_id = $1",
+    )
+    .bind(RELEASE_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("operation attempt count should query");
+    assert_eq!(grants_before_compatibility, 0);
+    assert_eq!(attempts_before_compatibility, 0);
+    assert!(
+        !state_path.exists(),
+        "rejected preflight must not persist provider state"
+    );
+    fixture.stop().await;
+    config["compatibility_fault"] = Value::Null;
+    std::fs::write(
+        &config_path,
+        serde_json::to_vec(&config).expect("updated fixture config should serialize"),
+    )
+    .expect("updated fixture config should write");
+    std::fs::set_permissions(&config_path, Permissions::from_mode(0o600))
+        .expect("updated fixture config permissions should restrict");
+    fixture = spawn_fixture(&config_path, address).await;
     let launched = execute_with_audit(&broker, &pool, &launch, "TLS launch should pass").await;
     assert_eq!(launched.revision, 0);
     assert_eq!(launched.disposition, ProviderOperationDisposition::Applied);
@@ -288,6 +323,75 @@ async fn separate_tls_provider_proves_replay_faults_events_outage_and_reconcilia
         .expect("exact event replay should deduplicate");
     assert_eq!(duplicate_event.0, CallbackDisposition::Duplicate);
 
+    let mut legacy_event: Value =
+        serde_json::from_slice(&event_body).expect("current event should parse as JSON");
+    legacy_event
+        .as_object_mut()
+        .expect("event should be an object")
+        .remove("compatibility");
+    let legacy_body = serde_json::to_vec(&legacy_event).expect("legacy event should encode");
+    sqlx::query(
+        "UPDATE provider_message_receipts SET authenticated_sha256 = $3 WHERE release_id = $1 AND direction = 'callback' AND message_id = $2",
+    )
+    .bind(RELEASE_ID)
+    .bind(event_message_id)
+    .bind(sha256_hex(&legacy_body))
+    .execute(&pool)
+    .await
+    .expect("legacy callback receipt should seed");
+    let provider_message_signer =
+        HttpMessageSigner::new("provider-message-1", provider_signing_seed)
+            .expect("provider message signer should construct");
+    let legacy_headers = provider_message_signer
+        .sign_request(
+            &event_context,
+            &legacy_body,
+            unix_seconds(),
+            &format!("legacy-{}", Uuid::new_v4()),
+        )
+        .expect("legacy callback retry should sign");
+    let legacy_duplicate = broker
+        .ingest_callback(
+            RELEASE_ID,
+            &event_context,
+            &legacy_headers,
+            &legacy_body,
+            unix_seconds(),
+        )
+        .await
+        .expect("exact persisted legacy callback should deduplicate");
+    assert_eq!(legacy_duplicate.0, CallbackDisposition::Duplicate);
+
+    let new_message_id = Uuid::new_v4();
+    legacy_event["message_id"] = json!(new_message_id);
+    legacy_event["event_id"] = json!(Uuid::new_v4());
+    let new_legacy_body =
+        serde_json::to_vec(&legacy_event).expect("new legacy event should encode");
+    let new_legacy_context = RequestSignatureContext {
+        message_id: new_message_id,
+        ..event_context
+    };
+    let new_legacy_headers = provider_message_signer
+        .sign_request(
+            &new_legacy_context,
+            &new_legacy_body,
+            unix_seconds(),
+            &format!("legacy-{}", Uuid::new_v4()),
+        )
+        .expect("new legacy callback should sign");
+    assert!(matches!(
+        broker
+            .ingest_callback(
+                RELEASE_ID,
+                &new_legacy_context,
+                &new_legacy_headers,
+                &new_legacy_body,
+                unix_seconds(),
+            )
+            .await,
+        Err(ProviderError::ProtocolRejected)
+    ));
+
     let commit_timeout = operation_input(
         persona_id,
         platform_session_id,
@@ -296,10 +400,32 @@ async fn separate_tls_provider_proves_replay_faults_events_outage_and_reconcilia
         ProviderOperationKind::Command,
         json!({"action": "advance", "fault": "commit_then_timeout"}),
     );
+    fixture.stop().await;
+    config["compatibility_delay_ms"] = json!(1_100);
+    config["commit_delay_ms"] = json!(1_200);
+    std::fs::write(
+        &config_path,
+        serde_json::to_vec(&config).expect("deadline fixture config should serialize"),
+    )
+    .expect("deadline fixture config should write");
+    std::fs::set_permissions(&config_path, Permissions::from_mode(0o600))
+        .expect("deadline fixture config permissions should restrict");
+    fixture = spawn_fixture(&config_path, address).await;
     assert!(matches!(
         broker.execute(&commit_timeout).await,
         Err(ProviderError::Unavailable)
     ));
+    fixture.stop().await;
+    config["compatibility_delay_ms"] = json!(0);
+    config["commit_delay_ms"] = json!(2_200);
+    std::fs::write(
+        &config_path,
+        serde_json::to_vec(&config).expect("restored fixture config should serialize"),
+    )
+    .expect("restored fixture config should write");
+    std::fs::set_permissions(&config_path, Permissions::from_mode(0o600))
+        .expect("restored fixture config permissions should restrict");
+    fixture = spawn_fixture(&config_path, address).await;
     let recovered = broker
         .execute(&commit_timeout)
         .await

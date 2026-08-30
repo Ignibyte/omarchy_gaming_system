@@ -1,0 +1,11 @@
+[package]
+name = "provider-sdk-consumer"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+publish = false
+
+[workspace]
+
+[dependencies]
+omarchygs-provider-sdk = "0.1.0"

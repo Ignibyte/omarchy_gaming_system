@@ -84,8 +84,10 @@ result recorded.
   admits the fixed reviewed observation module and bounded, explicitly
   acknowledged, server-bound operator-custom modules through database-local
   administration and permanent player disclosure.
-- Portable game backends use the brokered provider protocol and a future public
-  Provider SDK. General server modules and hooks are a separate, versioned,
+- Portable game backends use the brokered provider protocol and the public-only
+  Provider SDK preview with authenticated exact-v1 capability negotiation.
+  Starter/conformance, second-game, sidecar, and external-onboarding work
+  remain gated. General server modules and hooks are a separate, versioned,
   capability-scoped extension family whose shared process-isolated runtime
   cannot become game authority or client executable content.
 

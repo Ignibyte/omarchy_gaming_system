@@ -5,6 +5,12 @@ release. This is not a general provider onboarding path. External providers,
 self-service registration, dynamic discovery, and direct client-provider
 networking remain prohibited.
 
+Door Legends consumes the packaged `omarchygs-provider-sdk` directly. The
+platform and provider authenticate one exact v1/four-capability selection at
+the fixed compatibility endpoint before every new operation attempt, then bind
+it through the grant, request, response, and event. A failed or downgraded
+selection creates no grant/attempt and cannot touch Door Legends state.
+
 ## Authority and failure rules
 
 Door Legends owns its rules, private game state, revision, time, outcome,
@@ -80,7 +86,8 @@ immutable. A different policy requires a new release and explicit review.
 
 Before admitting players, confirm the public catalog shows exactly the
 expected release and `authority: "registered_provider"`; confirm both services
-trust the expected keys and TLS roots; then run:
+trust the expected keys and TLS roots; confirm compatibility preflight is
+returning the exact v1 profile; then run:
 
 ```bash
 scripts/test-provider-authority-pilot.sh

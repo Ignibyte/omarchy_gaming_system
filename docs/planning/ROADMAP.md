@@ -101,8 +101,11 @@ of supporting more servers.
   quotas, replay state, audit, and revocation
 - [x] First-party remote-provider authority migration pilot plus the required
   Constitution §10 amendment
-- [ ] Public OmarchyGS Provider SDK, starter backend server, version
-  negotiation, conformance fixtures, reviewed co-located sidecar profile, and
-  deployment/operations guide
+- [ ] Public OmarchyGS Provider SDK product:
+  - [x] provider-facing contract, exact-v1 authenticated negotiation, and
+    deterministic locally signed preview release
+  - [ ] starter backend, portable conformance/fault kit, and second clean-room
+    game integration
+  - [ ] reviewed co-located sidecar profile and deployment/operations guide
 - [ ] Reviewed external providers only after operations, recovery, suspension,
   and support policy are proven

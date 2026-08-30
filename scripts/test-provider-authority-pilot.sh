@@ -29,13 +29,13 @@ cd "$ogs_root"
 docker compose up -d --wait db
 
 ogs_package_target="$ogs_temp/package-target"
-cargo package -p omarchy-game-provider --allow-dirty --no-verify \
+cargo package -p omarchygs-provider-sdk --allow-dirty --no-verify \
   --target-dir "$ogs_package_target" >/dev/null
-ogs_crate="$(find "$ogs_package_target/package" -maxdepth 1 -type f -name 'omarchy-game-provider-*.crate' -print -quit)"
+ogs_crate="$(find "$ogs_package_target/package" -maxdepth 1 -type f -name 'omarchygs-provider-sdk-*.crate' -print -quit)"
 [[ -n "$ogs_crate" ]]
 mkdir -m 700 -- "$ogs_temp/protocol"
 tar -xzf "$ogs_crate" -C "$ogs_temp/protocol"
-ogs_protocol="$(find "$ogs_temp/protocol" -mindepth 1 -maxdepth 1 -type d -name 'omarchy-game-provider-*' -print -quit)"
+ogs_protocol="$(find "$ogs_temp/protocol" -mindepth 1 -maxdepth 1 -type d -name 'omarchygs-provider-sdk-*' -print -quit)"
 [[ -n "$ogs_protocol" ]]
 
 ogs_source="$ogs_temp/source"
@@ -49,13 +49,13 @@ env GIT_AUTHOR_DATE='2026-01-01T00:00:00Z' \
   git -C "$ogs_source" commit --quiet -m 'Door Legends cartridge and provider'
 git clone --quiet --no-hardlinks "$ogs_source" "$ogs_temp/clone"
 
-ogs_patch="patch.crates-io.omarchy-game-provider.path=\"$ogs_protocol\""
+ogs_patch="patch.crates-io.omarchygs-provider-sdk.path=\"$ogs_protocol\""
 cargo build --manifest-path "$ogs_temp/clone/provider/Cargo.toml" \
   --config "$ogs_patch" --locked --features conformance
 cargo tree --manifest-path "$ogs_temp/clone/provider/Cargo.toml" \
-  --config "$ogs_patch" -p omarchy-game-provider -e features \
+  --config "$ogs_patch" -p omarchygs-provider-sdk -e features \
   >"$ogs_temp/protocol-tree.txt"
-if rg '(^| )((sqlx|reqwest|tokio|tracing) v|omarchy-game-provider feature "platform")' \
+if rg '(^| )((sqlx|reqwest|tokio|tracing) v|omarchy-game-provider|provider-sdk feature "platform")' \
   "$ogs_temp/protocol-tree.txt" >/dev/null; then
   echo 'Door Legends pulled a platform-only provider dependency feature' >&2
   exit 1

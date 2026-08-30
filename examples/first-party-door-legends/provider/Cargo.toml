@@ -17,7 +17,7 @@ axum = "0.8.9"
 axum-server = { version = "0.8.0", features = ["tls-rustls-no-provider"] }
 base64 = "0.23.1"
 ed25519-dalek = "2.2.0"
-omarchy-game-provider = { version = "0.1.0", default-features = false }
+omarchygs-provider-sdk = "0.1.0"
 reqwest = { version = "0.13.4", default-features = false, features = ["rustls-no-provider"] }
 rustls = { version = "0.23.43", default-features = false, features = ["ring", "std", "tls12"] }
 serde = { version = "1.0", features = ["derive"] }

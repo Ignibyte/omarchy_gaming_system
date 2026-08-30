@@ -37,7 +37,7 @@ historical and current-policy proofs, and bounded authenticated native-package
 staging without installation authority.
 [`ADR-0003`](adr-0003-owner-operated-server-and-extension-boundary.md) now
 accepts the owner-operated server, server-curated marketplace, operator-custom
-trust, future Provider SDK, and separately gated server module/hook direction.
+trust, Provider SDK direction, and separately gated server module/hook direction.
 [`ADR-0004`](adr-0004-process-isolated-wasm-server-modules.md) selects one
 no-WASI Component Model release per OS-contained module-host process with typed
 hooks/intents and core reauthorization; it leaves production loading disabled.
@@ -826,13 +826,28 @@ First-party games use the same public contracts and conformance suite as later
 providers. They may receive a higher catalog trust tier, but not private
 database access or a different identity model.
 
-The current exported v1 SDK is cartridge/release focused, while the public
-surface of `omarchy-game-provider` and the Door Legends clean-clone pilot prove
-the backend protocol seam. A later **OmarchyGS Provider SDK** will turn that
-seam into a supported developer product: versioned protocol/model packages,
-starter backend service, signing and grant helpers, conformance/fault fixtures,
-deployment templates, and operational guidance. It will not bundle backend
-code into the cartridge or grant a provider direct client access.
+The cartridge/release SDK remains separate from the public-only
+`omarchygs-provider-sdk` preview. Ticket 044 extracts the provider-facing model,
+pairwise identity, signing/grant/message helpers, exact schemas/fixtures, and
+deterministic locally signed release from the platform implementation. Protocol
+v1 now performs a provider-signed compatibility preflight before effects and
+binds its exact four-capability selection into grants, operations, responses,
+and events. Its packaged clean-clone proof excludes platform registry, broker,
+egress, database, and administrator implementations. Publishing or consuming
+the preview does not admit a provider.
+
+The broker binds that preflight to the release configuration revision and the
+active message key that authenticated it. Grant issuance reloads the locked
+security material and rejects intervening operator changes. Durable attempt
+creation is the final locked admission: it repeats revision, lifecycle, scope,
+and key checks and supplies its committed snapshot to the operation transport.
+Compatibility and operation I/O share one aggregate registered deadline under
+the same PostgreSQL concurrency lease.
+
+The remaining Provider SDK product work is a game-agnostic starter, portable
+conformance/fault kit, second clean-room backend, reviewed deployment guidance,
+and the co-located sidecar profile. It will not bundle backend code into the
+cartridge or grant a provider direct client access.
 
 The SDK may support an operator running that provider beside their OmarchyGS
 deployment as a separate service. A co-located profile still needs exact
@@ -851,15 +866,17 @@ grant records; database quota windows and expiring concurrency leases; durable
 operation attempts and authenticated message receipts; and immutable safe
 security audit events.
 
-The protocol now uses Ed25519 grants over retained canonical claim bytes. Each
+The protocol uses Ed25519 grants over retained canonical claim bytes. Each
 grant lasts at most 60 seconds and binds the OmarchyGS issuer, provider
 audience, exact release/game/rules/cartridge identities, platform session, one
-scope, replay UUID, and an HMAC-derived provider/game pairwise persona subject.
+scope, replay UUID, the exact negotiated v1 compatibility profile, and an
+HMAC-derived provider/game pairwise persona subject.
 The raw persona/account identity and reusable device credentials never cross
 the provider boundary.
 
-Requests, responses, and callback-shaped events use a fixed OmarchyGS v1
-profile of RFC 9421 HTTP Message Signatures and RFC 9530 `Content-Digest`.
+Compatibility offers/selections, requests, responses, and callback-shaped
+events use the fixed OmarchyGS v1 profile of RFC 9421 HTTP Message Signatures
+and RFC 9530 `Content-Digest`.
 Method, authority, path or status, originating request context, content type,
 provider/release/message identities, creation/expiry, nonce, algorithm, key,
 and protocol tag are signed. The strict parser rejects extra, duplicate,

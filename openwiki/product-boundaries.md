@@ -27,12 +27,18 @@ sources:
     resource: repo://crates/game-cartridge/src/secure_store.rs
   - id: openwiki-source-07e2881dc5e4740f35a238ee
     resource: repo://crates/game-cartridge/src/store.rs
+  - id: openwiki-source-a28da20d4e4846b146ff3e2b
+    resource: repo://crates/game-provider/src/broker.rs
   - id: openwiki-source-30e12d7dfe374ac923c8ddbd
     resource: repo://crates/game-runtime/src/lib.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
   - id: openwiki-source-2bc4557686cbe5b8dfa44f45
     resource: repo://crates/marketplace-publisher/src/lib.rs
+  - id: openwiki-source-b1f8833a60126ffa9920d6ec
+    resource: repo://crates/provider-sdk/src/lib.rs
+  - id: openwiki-source-adabcfde8231b96baa799dd2
+    resource: repo://crates/provider-sdk/src/protocol.rs
   - id: openwiki-source-66facc66e34ad7f2a74321e1
     resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
@@ -244,7 +250,10 @@ implemented, as are signed host-local multi-screen navigation and the
 offline-root-authenticated public trust/package channel. Explicit
 operator-custom cartridge trust, source-aware server admission/history, and
 persistent unvetted player warnings are implemented without granting new
-executable or gameplay authority. The production server-module boundary now
+executable or gameplay authority. The public-only Provider SDK preview is also
+implemented: it packages provider-facing protocol and signed-release material
+without registration, admission, discovery, direct-client, or database
+authority. The production server-module boundary now
 includes both one exact compiled-in reviewed observation component and bounded
 database-local operator-custom import and lifecycle. The custom path changes
 provenance, player disclosure, and operator responsibility while retaining the
@@ -331,15 +340,23 @@ adapting it to the session's sole compiled or provider command authority.
 
 For registered-provider sessions, migration 0015 prohibits a writable local
 gameplay snapshot: the platform envelope pins one exact release and keeps local
-state null. The authenticated broker sends only short-lived scoped grants and
-pairwise subjects, preserves operation idempotency and expected provider
-revision, and projects only bounded authenticated views. There is no compiled
-failback.
+state null. Before effects, the authenticated broker requires the provider to
+sign the SDK's sole exact profile: protocol 1 with launch, command, reconcile,
+and event. It binds that selection into short-lived scoped grants and every
+operation, response, and callback, while preserving pairwise subjects,
+idempotency, and expected provider revision. Grant issuance and durable attempt
+creation each re-admit locked current configuration, lifecycle, scope, and key
+material; compatibility and operation I/O share one aggregate deadline under
+the concurrency lease. Only bounded authenticated views are projected. There
+is no compiled failback.
 
 Provider callbacks have no platform effect until OmarchyGS authenticates the
 exact message, rechecks lifecycle and pinned identity, claims the durable
 receipt, validates allowlisted result and achievement policy, and commits the
-projection, audit, and persona-sync invalidation atomically. Suspension denies
+projection, audit, and persona-sync invalidation atomically. A retained
+pre-negotiation callback may be upgraded only after current-key authentication
+and an exact immutable receipt/digest match prove it can resolve solely as a
+duplicate; fresh legacy-shaped callbacks reject. Suspension denies
 new launches, commands, and callbacks but retains private reads and explicit
 reconciliation. Reactivation requires reconciliation before readiness;
 retirement is terminal.
@@ -389,7 +406,9 @@ to become gameplay authority. Its local ceremony and mirror drills do not
 prove real production root custody, hosting, monitoring, or staff separation.
 
 Executable extension families stay separate. Portable game rules use the
-authenticated provider boundary and a future public Provider SDK. ADR-0004's
+authenticated provider boundary and the public-only Provider SDK preview.
+Starter/conformance/second-game, sidecar/operations, and external-onboarding
+work remain separate. ADR-0004's
 dedicated no-WASI Component Model host is implemented for the opt-in compiled-in
 Sentinel release and up to eight explicitly admitted operator-custom module
 identities. Every release receives only a privacy-minimized

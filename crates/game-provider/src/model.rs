@@ -8,6 +8,8 @@ use uuid::Uuid;
 
 use crate::{ProviderError, Result};
 
+pub use omarchygs_provider_sdk::ProviderScope;
+
 /// Maximum accepted operator command document.
 pub const MAX_OPERATOR_DOCUMENT_BYTES: usize = 256 * 1024;
 /// Maximum decoded TLS trust anchor.
@@ -137,36 +139,6 @@ impl LifecycleStatus {
             "suspended" => Ok(Self::Suspended),
             "revoked" => Ok(Self::Revoked),
             _ => Err(ProviderError::Internal),
-        }
-    }
-}
-
-/// One provider capability. Grants always carry exactly one non-event scope.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub enum ProviderScope {
-    /// Create or resume a provider-owned gameplay session.
-    #[serde(rename = "game.launch")]
-    Launch,
-    /// Apply one revision-aware idempotent command.
-    #[serde(rename = "game.command")]
-    Command,
-    /// Query authoritative provider state and receipts.
-    #[serde(rename = "game.reconcile")]
-    Reconcile,
-    /// Deliver an authenticated provider event to the platform boundary.
-    #[serde(rename = "game.event")]
-    Event,
-}
-
-impl ProviderScope {
-    /// Stable protocol/database scope string.
-    #[must_use]
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Launch => "game.launch",
-            Self::Command => "game.command",
-            Self::Reconcile => "game.reconcile",
-            Self::Event => "game.event",
         }
     }
 }

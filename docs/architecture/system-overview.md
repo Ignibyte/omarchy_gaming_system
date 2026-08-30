@@ -386,7 +386,11 @@ that direction to owner-operated communities. A vetted marketplace can publish
 exact signed releases, and each server operator now chooses what to synchronize
 and independently admit. Players can acquire/cache current selected cartridges
 or explicitly recover an exact old session pin for trusted mounted rendering. A
-future Provider SDK packages the brokered backend contract. The separate
+public-only Provider SDK preview now packages the brokered model, authenticated
+exact-v1 compatibility, signing/grant/message helpers, and reproducible release
+contract without platform implementation or admission authority. Its starter,
+portable conformance kit, second clean-room backend, and sidecar/operations
+profile remain future slices. The separate
 module base now supplies its first observation-only typed hook through one
 shared process-isolated runtime for reviewed and operator-custom provenance.
 Operator-custom server behavior is visibly distinct, remains server-bound and
