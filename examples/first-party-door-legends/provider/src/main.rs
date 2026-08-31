@@ -15,12 +15,12 @@ use ed25519_dalek::VerifyingKey;
 use omarchygs_provider_sdk::{
     ProviderError,
     protocol::{
-        GrantExpectation, HttpMessageSigner, ProviderCompatibility,
-        ProviderCompatibilityOffer, ProviderCompatibilitySelection, ProviderEvent,
-        ProviderEventKind, ProviderOperationDisposition, ProviderOperationKind,
-        ProviderOperationRequest, ProviderOperationResponse, ProviderSessionStatus,
-        RequestSignatureContext, SignatureHeaders, parse_authenticated_json, sha256_hex,
-        verify_grant, verify_request_signature,
+        GrantExpectation, HttpMessageSigner, ProviderCompatibility, ProviderCompatibilityOffer,
+        ProviderCompatibilitySelection, ProviderEvent, ProviderEventKind,
+        ProviderOperationDisposition, ProviderOperationKind, ProviderOperationRequest,
+        ProviderOperationResponse, ProviderSessionStatus, RequestSignatureContext,
+        SignatureHeaders, parse_authenticated_json, sha256_hex, verify_grant,
+        verify_request_signature,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -65,6 +65,7 @@ struct Config {
     provider_signing_seed: [u8; 32],
     callback_url: Url,
     callback_root_der: Vec<u8>,
+    sidecar_callback_socket: Option<SocketAddr>,
     callback_socket_override: Option<SocketAddr>,
     conformance_reconcile_response_delay: Duration,
 }
@@ -169,6 +170,7 @@ async fn main() -> Result<()> {
         config.release_id,
         config.callback_url,
         config.callback_root_der,
+        config.sidecar_callback_socket,
         config.callback_socket_override,
     )?;
     let tls = RustlsConfig::from_pem_file(config.tls_certificate, config.tls_private_key)
@@ -208,7 +210,10 @@ async fn handle_compatibility(
     match process_compatibility(&state, &headers, &body) {
         Ok(response) => response,
         Err(error_value) => {
-            warn!(code = error_value.code(), "Door Legends compatibility request rejected");
+            warn!(
+                code = error_value.code(),
+                "Door Legends compatibility request rejected"
+            );
             Response::builder()
                 .status(StatusCode::UNAUTHORIZED)
                 .body(Body::empty())
@@ -793,7 +798,8 @@ fn spawn_callback_worker(
     release_id: Uuid,
     callback_url: Url,
     callback_root_der: Vec<u8>,
-    socket_override: Option<SocketAddr>,
+    sidecar_socket: Option<SocketAddr>,
+    conformance_socket: Option<SocketAddr>,
 ) -> Result<JoinHandle<()>> {
     if callback_url.scheme() != "https"
         || callback_url.query().is_some()
@@ -813,12 +819,28 @@ fn spawn_callback_worker(
         reqwest::Certificate::from_der(&callback_root_der).context("invalid callback TLS root")?;
     let mut client_builder = reqwest::Client::builder()
         .https_only(true)
+        .no_proxy()
         .redirect(reqwest::redirect::Policy::none())
         .tls_certs_only([certificate])
         .connect_timeout(Duration::from_secs(2))
         .timeout(Duration::from_secs(5));
+    if sidecar_socket.is_some() && conformance_socket.is_some() {
+        return Err(anyhow!(
+            "sidecar and conformance callback sockets are mutually exclusive"
+        ));
+    }
+    if let Some(socket) = sidecar_socket {
+        validate_exact_callback_socket(&callback_url, socket)?;
+        client_builder = client_builder.resolve(
+            callback_url
+                .host_str()
+                .ok_or_else(|| anyhow!("callback URL requires a host"))?,
+            socket,
+        );
+    }
     #[cfg(feature = "conformance")]
-    if let Some(socket) = socket_override {
+    if let Some(socket) = conformance_socket {
+        validate_exact_callback_socket(&callback_url, socket)?;
         client_builder = client_builder.resolve(
             callback_url
                 .host_str()
@@ -827,7 +849,7 @@ fn spawn_callback_worker(
         );
     }
     #[cfg(not(feature = "conformance"))]
-    if socket_override.is_some() {
+    if conformance_socket.is_some() {
         return Err(anyhow!(
             "callback socket overrides require the conformance build"
         ));
@@ -855,6 +877,19 @@ fn spawn_callback_worker(
     }))
 }
 
+fn validate_exact_callback_socket(callback_url: &Url, socket: SocketAddr) -> Result<()> {
+    if !socket.ip().is_loopback()
+        || socket.port() == 0
+        || !matches!(callback_url.host(), Some(url::Host::Domain(_)))
+        || callback_url.port_or_known_default() != Some(socket.port())
+    {
+        return Err(anyhow!(
+            "callback socket must match one nonzero loopback DNS endpoint"
+        ));
+    }
+    Ok(())
+}
+
 async fn deliver_one_callback(
     pool: &PgPool,
     signer: &HttpMessageSigner,
@@ -878,20 +913,20 @@ async fn deliver_one_callback(
     let Some(row) = row else {
         return Ok(());
     };
-    let (event, upgraded_body) =
-        match parse_authenticated_json::<ProviderEvent>(&row.body, 65_536) {
-            Ok(event) => (event, None),
-            Err(_) => {
-                let event = ProviderEvent::from_persisted_v1_bytes(
-                    &row.body,
-                    65_536,
-                    ProviderCompatibility::current(),
-                )
-                .map_err(provider_error)?;
-                let upgraded = serde_json::to_vec(&event).context("upgrade persisted callback")?;
-                (event, Some(upgraded))
-            }
-        };
+    let (event, upgraded_body) = match parse_authenticated_json::<ProviderEvent>(&row.body, 65_536)
+    {
+        Ok(event) => (event, None),
+        Err(_) => {
+            let event = ProviderEvent::from_persisted_v1_bytes(
+                &row.body,
+                65_536,
+                ProviderCompatibility::current(),
+            )
+            .map_err(provider_error)?;
+            let upgraded = serde_json::to_vec(&event).context("upgrade persisted callback")?;
+            (event, Some(upgraded))
+        }
+    };
     if event.provider_id != PROVIDER_ID
         || event.release_id != release_id
         || event.event_id != row.event_id
@@ -985,10 +1020,19 @@ impl Config {
                 .map_err(|_| anyhow!("provider message seed must be 32 bytes"))?,
             callback_url,
             callback_root_der: decode_exact("DOOR_LEGENDS_CALLBACK_TLS_ROOT_DER", 4096)?,
+            sidecar_callback_socket: parse_optional_socket("DOOR_LEGENDS_SIDECAR_CALLBACK_SOCKET")?,
             callback_socket_override: parse_callback_socket_override()?,
             conformance_reconcile_response_delay: parse_conformance_reconcile_response_delay()?,
         })
     }
+}
+
+fn parse_optional_socket(name: &str) -> Result<Option<SocketAddr>> {
+    env::var(name)
+        .ok()
+        .map(|value| value.parse())
+        .transpose()
+        .with_context(|| format!("{name} must be a socket address"))
 }
 
 fn parse_conformance_reconcile_response_delay() -> Result<Duration> {
@@ -1108,5 +1152,41 @@ async fn shutdown_signal() {
     tokio::select! {
         () = interrupt => {},
         () = terminate => {},
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn callback_sidecar_socket_binds_domain_loopback_and_port() {
+        let url = Url::parse("https://callbacks.example.test:8443/v1/provider-events/11111111-2222-4333-8444-555555555555")
+            .expect("callback URL");
+        assert!(
+            validate_exact_callback_socket(
+                &url,
+                "127.0.0.1:8443".parse().expect("loopback socket")
+            )
+            .is_ok()
+        );
+        for socket in ["127.0.0.1:8444", "10.0.0.1:8443", "127.0.0.1:0"] {
+            assert!(
+                validate_exact_callback_socket(&url, socket.parse().expect("fixture socket"))
+                    .is_err(),
+                "{socket} must reject"
+            );
+        }
+        let ip_url = Url::parse(
+            "https://127.0.0.1:8443/v1/provider-events/11111111-2222-4333-8444-555555555555",
+        )
+        .expect("IP callback URL");
+        assert!(
+            validate_exact_callback_socket(
+                &ip_url,
+                "127.0.0.1:8443".parse().expect("loopback socket")
+            )
+            .is_err()
+        );
     }
 }

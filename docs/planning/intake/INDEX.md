@@ -2,8 +2,8 @@
 
 Status as of 2026-08-30: Tickets 044 and 045 implement the public Provider SDK,
 starter, portable conformance/fault kit, and Relay Forge clean-room integration.
-The locally actionable sidecar/operations slice remains next; external intakes
-remain blocked on real people, systems, accounts, or operating proof.
+Ticket 046 is the active locally actionable sidecar/operations slice; external
+intakes remain blocked on real people, systems, accounts, or operating proof.
 
 Candidate intake documents are preparation, not completion evidence. Promote
 only one shippable slice at a time through the repository workflow.

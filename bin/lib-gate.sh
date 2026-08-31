@@ -10,7 +10,7 @@ ogs_is_gated_path() {
   git -C "$OGS_PROJECT_ROOT" check-ignore -q "$ogs_path" 2>/dev/null && return 1
 
   case "$ogs_path" in
-    crates/* | client/* | examples/first-party-door-legends/* | migrations/* | \
+    crates/* | client/* | deploy/provider-sidecar/* | examples/first-party-door-legends/* | migrations/* | \
       scripts/*.sh | bin/*.sh | \
       Cargo.toml | Cargo.lock | compose.yaml | mise.toml | \
       .github/workflows/* | .codex/config.toml | .codex/hooks.json | \

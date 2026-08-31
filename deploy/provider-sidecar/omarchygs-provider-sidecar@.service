@@ -1,0 +1,56 @@
+[Unit]
+Description=OmarchyGS provider sidecar %i
+Documentation=file:///usr/share/doc/omarchygs/provider-deployment.md
+After=network.target postgresql.service
+Wants=postgresql.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=omarchygs-provider-%i
+Group=omarchygs-provider-%i
+UMask=0077
+WorkingDirectory=/var/lib/omarchygs/providers/%i
+ExecStart=@PROVIDER_BINARY@ /etc/omarchygs/providers/%i/config.json
+Restart=on-failure
+RestartSec=2
+TimeoutStartSec=30
+TimeoutStopSec=15
+KillMode=mixed
+
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectHostname=yes
+ProtectProc=invisible
+ProcSubset=pid
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+SystemCallArchitectures=native
+
+ReadOnlyPaths=/etc/omarchygs/providers/%i
+ReadOnlyPaths=/run/postgresql
+ReadWritePaths=/var/lib/omarchygs/providers/%i
+TasksMax=64
+LimitNOFILE=1024
+MemoryMax=512M
+CPUQuota=100%
+
+[Install]
+WantedBy=multi-user.target

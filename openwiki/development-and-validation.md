@@ -23,12 +23,14 @@ sources:
     resource: repo://crates/game-cartridge/tests/conformance.rs
   - id: openwiki-source-358b091c74e2027615ce8f4c
     resource: repo://crates/game-cartridge/tests/sdk_release.rs
+  - id: openwiki-source-fea3ada71e31ee06122151f5
+    resource: repo://crates/game-provider/tests/conformance.rs
+  - id: openwiki-source-522c1bcb889a85d7a91b25af
+    resource: repo://crates/game-provider/tests/registry.rs
   - id: openwiki-source-df8490db5b51be8096630e7e
     resource: repo://crates/game-signal-siege/src/lib.rs
   - id: openwiki-source-ba452807898e03f1e2e27204
     resource: repo://crates/marketplace-publisher/tests/publication.rs
-  - id: openwiki-source-01584c5ba7d35b160c5de691
-    resource: repo://crates/provider-conformance/src/runner.rs
   - id: openwiki-source-24c51fe062f01ef4523fa0b7
     resource: repo://crates/server-module-runtime/tests/conformance.rs
   - id: openwiki-source-2c054a2481343f8aacaf65ae
@@ -87,17 +89,13 @@ sources:
     resource: repo://scripts/test-private-alpha.sh
   - id: openwiki-source-513cfb82a80f03b4b9a1484e
     resource: repo://scripts/test-provider-conformance.sh
-  - id: openwiki-source-6323e860f0976ef977f38cf6
-    resource: repo://scripts/test-provider-developer-kit.sh
-  - id: openwiki-source-e44be3ca3ecf28e5a477dab2
-    resource: repo://scripts/test-provider-starter-conformance.sh
   - id: openwiki-source-121d7623408fcbcd07e6d9fc
     resource: repo://scripts/test-qml-onboarding.sh
   - id: openwiki-source-8128bd5b86e858053bc20c68
     resource: repo://scripts/test-server-module-spike.sh
   - id: openwiki-source-5f564ae64057cbe621fc587a
     resource: repo://scripts/test-server-modules.sh
-generated: {by: "codex", at: "2026-08-30T21:12:56.668Z"}
+generated: {by: "codex", at: "2026-08-30T23:28:20.118Z"}
 ---
 
 # Development and validation
@@ -292,7 +290,8 @@ conformance in both fast and diff modes.
 migrated PostgreSQL tests, and
 the live PostgreSQL → Rust game-catalog/health/account/session/persona/
 social/report/inbox/challenge/sync/MFA API → QML smoke, provider security
-conformance, the Door Legends authority pilot, and the isolated platform
+conformance, the reviewed provider sidecar transport/operations drill, the
+Door Legends authority pilot, and the isolated platform
 operator recovery and private-alpha admission drills, then writes a receipt for the exact gated worktree at
 `.git/omarchy-gaming-system-gate-receipt`.
 
@@ -351,24 +350,29 @@ The gate currently covers:
    HTTPS egress, replay and callback deduplication, quotas, concurrency leases,
    audit, and fail-closed behavior against migrated PostgreSQL and a separate
    TLS provider process;
-12. the first-party Door Legends authority pilot built from a clean clone,
+12. the reviewed exact-release provider sidecar profile, including TLS loopback
+    identity, hostile local-peer denial, hardened service/callback-proxy
+    templates, crash/restart/reconciliation, independent provider restore, and
+    a locally signed bounded secret-free receipt;
+13. the first-party Door Legends authority pilot built from a clean clone,
     running through the real player-server bridge against an independent
     provider database, with replay, revision races, callbacks, projection,
-    outage/restart/reconciliation, lifecycle, privacy, and backup/restore proof.
-13. the database-local operator boundary's report inventory and action tests,
+    outage/restart/reconciliation, durable operation fencing, lifecycle races,
+    hostile ambient-proxy denial, privacy, and backup/restore proof.
+14. the database-local operator boundary's report inventory and action tests,
     real CLI adapter test, and isolated full-schema platform dump/restore drill,
     including immutable audit/report checks and restored old-token denial.
-14. the invite-only private-alpha boundary's issue, first-use registration,
+15. the invite-only private-alpha boundary's issue, first-use registration,
     exact replay, changed-intent denial, sign-in, revocation, secret-free
     inventory, digest-only persistence, and log-secret hygiene.
-15. the static marketplace publisher's canonical plan and handoff contracts,
+16. the static marketplace publisher's canonical plan and handoff contracts,
     deterministic double builds, network-unshared offline signing, exact
     immutable tree and atomic activation, guarded identical TLS mirrors,
     rotation/revocation, and stale-publication rollback denial.
-16. the isolated server-module nested workspace's format, lint, 21-test corpus,
+17. the isolated server-module nested workspace's format, lint, 21-test corpus,
     deterministic exact-WIT component fixtures, 13 contained process scenarios,
     typed-intent/state/lifecycle checks, and local-only automation enforcement;
-17. the production server-module crate and packaged host's shared reviewed/
+18. the production server-module crate and packaged host's shared reviewed/
     custom exact release/WIT/framing contract, real OS containment, fixed
     sibling loader, private database-custodied custom artifacts, local-only
     import/lifecycle boundary, absence of public routes and host network/
@@ -572,6 +576,23 @@ Gate 19 proves the reusable provider security/control-plane boundary. The
 player server instantiates that crate only when its all-or-none provider
 configuration is present; gate 20 owns the separately reviewed player-route
 and authority proof.
+
+### Reviewed provider sidecar and operations
+
+`scripts/test-provider-sidecar.sh` is the Ticket 046 focused entrypoint and
+gate 19a in diff/full modes. It builds Relay Forge as a clean-room provider,
+runs the real production sidecar broker against an independent PostgreSQL
+database, and proves the configured release alone reaches the exact loopback
+TLS socket without changing the registered DNS/SNI/Host or signed authority.
+
+The drill rejects a hostile TLS peer holding that port, crashes and restarts
+the provider, denies new work during outage, reconciles retained state, recovers
+callback delivery, restores the provider database separately, validates the
+systemd/config/Caddy containment templates, and signs a bounded receipt that is
+scanned for credentials and database URLs. `scripts/test-provider-authority-pilot.sh`
+adds the player-route proof for durable session reservations, live advisory
+fencing, forced-expiry recovery, suspension/failure ordering, and callback
+delivery with hostile ambient proxy variables.
 
 ### First-party remote-provider authority pilot
 
@@ -792,6 +813,11 @@ server, so absent or stale provenance fails closed.
   the named registration, lifecycle, negotiation, stale material, aggregate
   deadline, signature, egress, replay, callback, quota/lease, audit, TLS-process,
   or PostgreSQL race failure; do not bypass gate 19.
+- Provider-sidecar failure: run `scripts/test-provider-sidecar.sh` and fix the
+  exact release/socket/TLS identity, hostile-peer denial, process/database
+  separation, callback proxy, crash/reconcile, restore, template, or signed
+  receipt failure; do not bypass gate 19a or weaken it into a private-network
+  allowlist.
 - Provider-authority failure: run `scripts/test-provider-authority-pilot.sh`
   and fix the named clean-clone dependency, authority shape, player route,
   replay/revision race, callback projection, lifecycle, independent database,

@@ -4,8 +4,11 @@ Status: Ticket 018 installs the operator control plane and broker foundation.
 Ticket 019 uses it for one operator-pinned first-party Door Legends release.
 Ticket 044 extracts the provider-facing contract into the public-only
 `omarchygs-provider-sdk` preview and adds authenticated exact-v1 compatibility
-preflight before provider effects. The SDK does not change registration or
-pilot admission.
+preflight before provider effects. Tickets 045 and 046 add the starter,
+portable conformance kit, second clean-room game, and reviewed remote/sidecar
+deployment operations. None changes registration or pilot admission. See
+[`provider-deployment.md`](provider-deployment.md) for provisioning, lifecycle,
+restore, rotation, incident, and end-of-life procedures.
 Registration alone still does not transfer gameplay authority or make a
 release catalog-visible; the separate pilot activation command is required.
 See [`provider-authority-pilot.md`](provider-authority-pilot.md) for the exact
@@ -155,7 +158,8 @@ Run the canonical proof after provider-boundary changes:
 scripts/test-provider-conformance.sh
 ```
 
-Gate 19 composes the public starter suite before the platform security cases.
+Gate 19 composes the public starter suite before the platform security cases,
+and gate 19a runs the production sidecar lifecycle and restore drill.
 To isolate its two halves, run `scripts/test-provider-developer-kit.sh` for
 deterministic packaging and clean-room consumption, then
 `scripts/test-provider-starter-conformance.sh` for starter persistence, the
@@ -164,5 +168,7 @@ provider PostgreSQL databases and ephemeral keys. Together they cover real TLS
 trust, grants and message signatures, pairwise privacy, revision conflict,
 exact replay, commit-then-timeout recovery, signed event deduplication,
 redirect/oversized/signature failures, wrong trust roots, outage, restart, and
-reconciliation. Their loopback resolver overrides are test-only and do not
-authorize a production sidecar transport.
+reconciliation. Their conformance resolver overrides remain test-only. The
+distinct production sidecar maps one exact registered release to one equal-port
+loopback TLS socket while preserving canonical DNS/TLS/message identity and all
+existing admission, quota, replay, deadline, audit, and lifecycle controls.

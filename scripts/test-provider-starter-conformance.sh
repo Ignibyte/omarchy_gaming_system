@@ -136,7 +136,7 @@ jq -cn \
   --arg release_id "$ogs_release_id" \
   --arg tls_certificate "$ogs_temp/provider-cert.pem" \
   --arg tls_private_key "$ogs_temp/provider-key.pem" \
-  '{authority:$authority,bind_address:$bind_address,callback_socket_override:$callback_socket_override,callback_tls_root_der_base64:$callback_tls_root_der_base64,callback_url:$callback_url,cartridge_digest:$cartridge_digest,command_response_delay_ms:200,database_url:$database_url,platform_grant_key_id:"platform-grant-1",platform_grant_public_key_base64:$platform_grant_public_key_base64,platform_message_key_id:"platform-message-1",platform_message_public_key_base64:$platform_message_public_key_base64,provider_message_key_id:"provider-message-1",provider_message_signing_seed_base64:$provider_message_signing_seed_base64,release_id:$release_id,tls_certificate:$tls_certificate,tls_private_key:$tls_private_key}' | tr -d '\n' \
+  '{authority:$authority,bind_address:$bind_address,callback_sidecar_socket:null,callback_socket_override:$callback_socket_override,callback_tls_root_der_base64:$callback_tls_root_der_base64,callback_url:$callback_url,cartridge_digest:$cartridge_digest,command_response_delay_ms:200,database_url:$database_url,platform_grant_key_id:"platform-grant-1",platform_grant_public_key_base64:$platform_grant_public_key_base64,platform_message_key_id:"platform-message-1",platform_message_public_key_base64:$platform_message_public_key_base64,provider_message_key_id:"provider-message-1",provider_message_signing_seed_base64:$provider_message_signing_seed_base64,release_id:$release_id,tls_certificate:$tls_certificate,tls_private_key:$tls_private_key}' | tr -d '\n' \
   >"$ogs_temp/provider-config.json"
 chmod 600 "$ogs_temp/provider-config.json"
 

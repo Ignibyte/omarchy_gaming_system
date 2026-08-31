@@ -68,8 +68,8 @@ decide whether broader onboarding is justified.
 
 ## Promotion checklist
 
-- [ ] Ticket 042 delivered and preceding roadmap dependencies dispositioned.
-- [ ] Public Provider SDK/starter/conformance/sidecar roadmap item complete.
+- [x] Ticket 042 delivered and preceding roadmap dependencies dispositioned.
+- [x] Public Provider SDK/starter/conformance/sidecar roadmap item complete.
 - [ ] Official operations, recovery, suspension, support, and review staffing
       evidence approved for external-provider use.
 - [ ] Candidate external provider and exact pilot release selected with consent.

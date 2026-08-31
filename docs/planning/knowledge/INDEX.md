@@ -124,6 +124,10 @@ and in this register.
 | `PR-omarchy-gaming-system-admit-legacy-provider-messages-as-local-duplicates-only-001` | Admit a legacy provider message only as a current-key-authenticated exact immutable local duplicate. | `aar/AAR-044-public-provider-sdk-contract-negotiation-and-release.md` |
 | `PR-omarchy-gaming-system-bind-resolver-overrides-to-exact-authority-port-001` | Bind test-only resolver overrides to the URL's DNS host, canonical authority, and exact port, and reject IP-literal bypasses. | `aar/AAR-045-provider-starter-conformance-and-second-game.md` |
 | `PR-omarchy-gaming-system-bind-test-observations-to-attested-semantics-001` | Bind every immutable identity, session, revision, and body fact that a passing test observation attests independently of transport authentication. | `aar/AAR-045-provider-starter-conformance-and-second-game.md` |
+| `PR-omarchy-gaming-system-treat-local-sockets-as-routing-not-authentication-001` | A co-located provider transport may replace only one exact registered release's socket destination; retain the canonical HTTPS/TLS/message identity and reject broad private-network exceptions. | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `PR-omarchy-gaming-system-linearize-external-effects-with-reservation-and-live-fence-001` | When authorization spans external I/O, pair a durable crash-recovery reservation with a process-held database fence from final admission through transport and response revalidation. | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `PR-omarchy-gaming-system-preserve-newer-lifecycle-during-async-cleanup-001` | Asynchronous response and failure cleanup may clear only its exact operation identity and must preserve newer terminal or operator-controlled lifecycle state. | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `PR-omarchy-gaming-system-disable-ambient-sidecar-management-and-proxy-planes-001` | Sidecar service and callback-proxy templates must explicitly disable ambient proxy selection and mutable administration listeners unless a separately reviewed control plane requires them. | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
 
 ## Register
 
@@ -480,3 +484,14 @@ and in this register.
 | `PR-omarchy-gaming-system-bind-resolver-overrides-to-exact-authority-port-001` | rule | `aar/AAR-045-provider-starter-conformance-and-second-game.md` |
 | `PR-omarchy-gaming-system-bind-test-observations-to-attested-semantics-001` | rule | `aar/AAR-045-provider-starter-conformance-and-second-game.md` |
 | `AD-omarchy-gaming-system-provider-starter-capability-seam-001` | decision | `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md`; `../../architecture/game-cartridges.md` |
+| `BF-omarchy-gaming-system-provider-sidecar-caddy-admin-listener-001` | failure | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `BF-omarchy-gaming-system-provider-callback-ambient-proxy-001` | failure | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `BF-omarchy-gaming-system-provider-operation-admission-transport-race-001` | failure | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `BF-omarchy-gaming-system-provider-operation-live-expiry-reclaim-001` | failure | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `BF-omarchy-gaming-system-provider-operation-failure-lifecycle-overwrite-001` | failure | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `PR-omarchy-gaming-system-treat-local-sockets-as-routing-not-authentication-001` | rule | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `PR-omarchy-gaming-system-linearize-external-effects-with-reservation-and-live-fence-001` | rule | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `PR-omarchy-gaming-system-preserve-newer-lifecycle-during-async-cleanup-001` | rule | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `PR-omarchy-gaming-system-disable-ambient-sidecar-management-and-proxy-planes-001` | rule | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `AD-omarchy-gaming-system-exact-release-tls-sidecar-profile-001` | decision | `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md`; `../../architecture/game-cartridges.md`; `../../security/provider-sidecar-threat-model.md` |
+| `AD-omarchy-gaming-system-provider-session-operation-fence-001` | decision | `../../architecture/game-cartridges.md`; `../../security/provider-sidecar-threat-model.md`; `../../../migrations/0029_provider_operation_reservations.sql` |

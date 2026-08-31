@@ -766,6 +766,39 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
     )
     .await;
     assert_eq!(unavailable.status, StatusCode::SERVICE_UNAVAILABLE);
+    let attempts_before_read_only_command: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM provider_operation_attempts WHERE release_id = $1",
+    )
+    .bind(RELEASE_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("provider attempt count before read-only command");
+    let read_only_command = request_json(
+        app.clone(),
+        &format!(
+            "/v1/personas/{}/game-sessions/{session_id}/commands",
+            alice.id
+        ),
+        &alice.token,
+        json!({
+            "idempotency_key": Uuid::new_v4(),
+            "expected_revision": 1,
+            "command": {"action": "enter"}
+        }),
+    )
+    .await;
+    assert_eq!(read_only_command.status, StatusCode::SERVICE_UNAVAILABLE);
+    let attempts_after_read_only_command: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM provider_operation_attempts WHERE release_id = $1",
+    )
+    .bind(RELEASE_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("provider attempt count after read-only command");
+    assert_eq!(
+        attempts_after_read_only_command, attempts_before_read_only_command,
+        "a non-ready provider session must not attempt a command"
+    );
     provider = spawn_provider(
         Path::new(&binary),
         &provider_database_url,
@@ -820,16 +853,108 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         "/v1/personas/{}/game-sessions/{session_id}/reconcile",
         alice.id
     );
-    let timed_out = request_json(
+    let timed_out_app = app.clone();
+    let timed_out_path = timeout_reconcile_path.clone();
+    let timed_out_token = alice.token.clone();
+    let timed_out_task = tokio::spawn(async move {
+        request_json(
+            timed_out_app,
+            &timed_out_path,
+            &timed_out_token,
+            json!({
+                "idempotency_key": timeout_reconcile_key,
+                "expected_revision": 1
+            }),
+        )
+        .await
+    });
+    wait_for_provider_operation_receipt(
+        &provider_pool,
+        session_id,
+        timeout_reconcile_key,
+        "reconcile",
+    )
+    .await;
+    let attempts_during_reconcile: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM provider_operation_attempts WHERE release_id = $1",
+    )
+    .bind(RELEASE_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("provider attempts during reconciliation should count");
+    let command_during_reconcile = request_json(
+        app.clone(),
+        &format!(
+            "/v1/personas/{}/game-sessions/{session_id}/commands",
+            alice.id
+        ),
+        &alice.token,
+        json!({
+            "idempotency_key": Uuid::new_v4(),
+            "expected_revision": 1,
+            "command": {"action": "enter"}
+        }),
+    )
+    .await;
+    assert_eq!(
+        command_during_reconcile.status,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "{}",
+        command_during_reconcile.body
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM provider_operation_attempts WHERE release_id = $1",
+        )
+        .bind(RELEASE_ID)
+        .fetch_one(&pool)
+        .await
+        .expect("provider attempts after blocked command should count"),
+        attempts_during_reconcile,
+        "a command must not reach the provider while reconciliation owns the session reservation"
+    );
+    sqlx::query(
+        r#"
+        UPDATE game_sessions
+        SET provider_operation_reservation_expires_at = clock_timestamp() - INTERVAL '1 second'
+        WHERE id = $1 AND provider_operation_reservation_id = $2
+        "#,
+    )
+    .bind(session_id)
+    .bind(timeout_reconcile_key)
+    .execute(&pool)
+    .await
+    .expect("test should expire the visible reservation while its process fence remains live");
+    let reconcile_during_expired_live_fence = request_json(
         app.clone(),
         &timeout_reconcile_path,
         &alice.token,
         json!({
-            "idempotency_key": timeout_reconcile_key,
+            "idempotency_key": Uuid::new_v4(),
             "expected_revision": 1
         }),
     )
     .await;
+    assert_eq!(
+        reconcile_during_expired_live_fence.status,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "{}",
+        reconcile_during_expired_live_fence.body
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM provider_operation_attempts WHERE release_id = $1",
+        )
+        .bind(RELEASE_ID)
+        .fetch_one(&pool)
+        .await
+        .expect("provider attempts after fenced expiry should count"),
+        attempts_during_reconcile,
+        "expiry must not reclaim a reservation while the original process fence is live"
+    );
+    let timed_out = timed_out_task
+        .await
+        .expect("timed-out reconciliation task should join");
     assert_eq!(timed_out.status, StatusCode::SERVICE_UNAVAILABLE);
     assert_eq!(
         sqlx::query_scalar::<_, i64>(
@@ -936,7 +1061,10 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
     assert!(
         matches!(
             (race_a.status, race_b.status),
-            (StatusCode::OK, StatusCode::CONFLICT) | (StatusCode::CONFLICT, StatusCode::OK)
+            (StatusCode::OK, StatusCode::CONFLICT)
+                | (StatusCode::CONFLICT, StatusCode::OK)
+                | (StatusCode::OK, StatusCode::SERVICE_UNAVAILABLE)
+                | (StatusCode::SERVICE_UNAVAILABLE, StatusCode::OK)
         ),
         "one expected-revision command must win: a={} b={}",
         race_a.body,
@@ -978,6 +1106,47 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         .and_then(|value| value.parse::<Uuid>().ok())
         .expect("lifecycle session should have a UUID");
     let lifecycle_registry = ProviderRegistry::new(pool.clone());
+    provider.stop().await;
+    provider = spawn_provider(
+        Path::new(&binary),
+        &provider_database_url,
+        provider_address,
+        &provider_authority,
+        &provider_certificate_path,
+        &provider_key_path,
+        &callback_authority,
+        callback_address,
+        callback_certificate.der(),
+        provider_message_seed,
+        [31_u8; 32],
+        [33_u8; 32],
+        &cartridge_digest,
+        Some(3_500),
+    )
+    .await;
+    let lifecycle_race_key = Uuid::new_v4();
+    let lifecycle_race_app = app.clone();
+    let lifecycle_race_token = alice.token.clone();
+    let lifecycle_race_path = format!(
+        "/v1/personas/{}/game-sessions/{lifecycle_session_id}/reconcile",
+        alice.id
+    );
+    let lifecycle_race_task = tokio::spawn(async move {
+        request_json(
+            lifecycle_race_app,
+            &lifecycle_race_path,
+            &lifecycle_race_token,
+            json!({"idempotency_key": lifecycle_race_key, "expected_revision": 0}),
+        )
+        .await
+    });
+    wait_for_provider_operation_receipt(
+        &provider_pool,
+        lifecycle_session_id,
+        lifecycle_race_key,
+        "reconcile",
+    )
+    .await;
     lifecycle_registry
         .apply_operator_command(&OperatorCommand::SetPilotStatus {
             actor: "pilot-operator".to_owned(),
@@ -987,6 +1156,44 @@ async fn clean_clone_door_legends_owns_state_restarts_and_projects_results(pool:
         })
         .await
         .expect("pilot should suspend");
+    let lifecycle_race = lifecycle_race_task
+        .await
+        .expect("lifecycle race reconciliation task should join");
+    assert_eq!(
+        lifecycle_race.status,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "{}",
+        lifecycle_race.body
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, String>(
+            "SELECT provider_availability FROM game_sessions WHERE id = $1",
+        )
+        .bind(lifecycle_session_id)
+        .fetch_one(&pool)
+        .await
+        .expect("lifecycle race availability should read"),
+        "suspended",
+        "an in-flight failure must not overwrite an operator suspension"
+    );
+    provider.stop().await;
+    provider = spawn_provider(
+        Path::new(&binary),
+        &provider_database_url,
+        provider_address,
+        &provider_authority,
+        &provider_certificate_path,
+        &provider_key_path,
+        &callback_authority,
+        callback_address,
+        callback_certificate.der(),
+        provider_message_seed,
+        [31_u8; 32],
+        [33_u8; 32],
+        &cartridge_digest,
+        None,
+    )
+    .await;
     let suspended_command_path = format!(
         "/v1/personas/{}/game-sessions/{lifecycle_session_id}/commands",
         alice.id
@@ -1468,6 +1675,38 @@ async fn wait_for_outbox_delivered(pool: &PgPool, session_id: Uuid) {
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
     panic!("provider callback outbox did not deliver for {session_id}");
+}
+
+async fn wait_for_provider_operation_receipt(
+    pool: &PgPool,
+    session_id: Uuid,
+    idempotency_key: Uuid,
+    operation: &str,
+) {
+    for _ in 0..100 {
+        let exists: bool = sqlx::query_scalar(
+            r#"
+            SELECT EXISTS(
+                SELECT 1
+                FROM door_legends_operation_receipts
+                WHERE platform_session_id = $1
+                  AND idempotency_key = $2
+                  AND operation = $3
+            )
+            "#,
+        )
+        .bind(session_id)
+        .bind(idempotency_key)
+        .bind(operation)
+        .fetch_one(pool)
+        .await
+        .expect("provider operation receipt should query");
+        if exists {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(25)).await;
+    }
+    panic!("provider operation receipt did not appear for {session_id}");
 }
 
 async fn wait_for_outbox_attempts(pool: &PgPool, session_id: Uuid, expected: i32) {

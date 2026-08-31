@@ -855,15 +855,22 @@ and key checks and supplies its committed snapshot to the operation transport.
 Compatibility and operation I/O share one aggregate registered deadline under
 the same PostgreSQL concurrency lease.
 
-The remaining Provider SDK product work is reviewed remote-deployment guidance
-and the co-located sidecar/operations profile. It will not bundle backend code
-into the cartridge or grant a provider direct client access.
+Ticket 046 completes reviewed remote-deployment guidance and a production
+co-located sidecar/operations profile. The broker maps only one configured
+release UUID to one exact equal-port loopback TLS socket, while retaining the
+registered DNS URL as SNI, Host, signed authority, and path. All other releases
+keep guarded public DNS. The provider-to-platform callback uses a separately
+named production sidecar mode with the same exact DNS/port/TLS binding; the
+conformance escape hatch remains feature-gated and distinct.
 
-The SDK may support an operator running that provider beside their OmarchyGS
-deployment as a separate service. A co-located profile still needs exact
-provider identity, separate state/credentials, authentication, bounds, and an
-explicit local transport design; it cannot reuse the conformance-only loopback
-escape hatch or gain platform database access.
+A co-located provider remains a separate OS process and identity with separate
+PostgreSQL state, credentials, writable paths, resource limits, lifecycle, and
+backup/restore. It retains grants, message signatures, scopes, quotas,
+deadlines, replay receipts, audit, and final lifecycle admission. It cannot
+gain platform database access or direct client connectivity. A hostile local
+listener or wrong release, port, TLS identity, signed identity, or partial
+configuration fails closed; recovery after an unknown outcome uses only
+authenticated reconciliation.
 
 ## Implemented remote-provider security foundation
 
@@ -938,10 +945,11 @@ authority and policy decisions remain Ticket 019 work.
    acquire an old immutable pin after selection changes, keep exact releases
    mounted side by side, navigate cyclic signed screens locally, and route only
    screen-bound gameplay actions back through OmarchyGS.
-5. **Public backend SDK — developer kit implemented:** Tickets 044–045 package
+5. **Public backend SDK — implemented:** Tickets 044–046 package
    the provider protocol, versioned SDK, game-agnostic starter, fifteen-case
-   conformance suite, deterministic release, and Relay Forge clean-room proof.
-   The reviewed sidecar and operations contract remain gated.
+   conformance suite, deterministic release, Relay Forge clean-room proof, and
+   reviewed remote/sidecar deployment and recovery operations. External
+   provider review and admission remain separately gated.
 6. **Operator-custom trust — implemented:** local cartridge signing/import,
    source-aware lifecycle/admission, explicit per-server client trust,
    persistent provenance warnings, current/historical acquisition, and

@@ -45,20 +45,24 @@ pub(crate) struct ProviderRuntime {
 
 impl ProviderRuntime {
     pub(crate) fn production(pool: PgPool, config: ProviderConfig) -> Result<Self, ProviderError> {
-        let grant_issuer = GrantIssuer::new(
-            PROVIDER_GRANT_KEY_ID,
-            config.grant_signing_seed,
-            config.pairwise_secret,
-        )?;
-        let message_signer =
-            HttpMessageSigner::new(PROVIDER_MESSAGE_KEY_ID, config.message_signing_seed)?;
+        let ProviderConfig {
+            grant_signing_seed,
+            pairwise_secret,
+            message_signing_seed,
+            callback_authority,
+            sidecar,
+        } = config;
+        let grant_issuer =
+            GrantIssuer::new(PROVIDER_GRANT_KEY_ID, grant_signing_seed, pairwise_secret)?;
+        let message_signer = HttpMessageSigner::new(PROVIDER_MESSAGE_KEY_ID, message_signing_seed)?;
+        let registry = ProviderRegistry::new(pool);
+        let broker = match sidecar {
+            Some(target) => ProviderBroker::sidecar(registry, grant_issuer, message_signer, target),
+            None => ProviderBroker::new(registry, grant_issuer, message_signer),
+        };
         Ok(Self {
-            broker: Arc::new(ProviderBroker::new(
-                ProviderRegistry::new(pool),
-                grant_issuer,
-                message_signer,
-            )),
-            callback_authority: Arc::from(config.callback_authority),
+            broker: Arc::new(broker),
+            callback_authority: Arc::from(callback_authority),
         })
     }
 
@@ -116,6 +120,23 @@ struct PilotManifestRow {
 #[derive(FromRow)]
 struct ProviderSessionOperationRow {
     release_id: Uuid,
+}
+
+#[derive(FromRow)]
+struct ProviderSessionReservationRow {
+    release_id: Uuid,
+    availability: String,
+    reservation_id: Option<Uuid>,
+    reservation_expired: bool,
+    total_timeout_ms: i32,
+}
+
+#[derive(FromRow)]
+struct ProviderResponseProjectionRow {
+    revision: i64,
+    release_id: Uuid,
+    availability: String,
+    reservation_id: Option<Uuid>,
 }
 
 #[derive(FromRow)]
@@ -348,11 +369,14 @@ pub(crate) async fn start_solo_session(
         .map_err(|error| database_error(error, "commit provider session envelope"))?;
 
     let operation = ProviderOperationKind::Launch;
+    let session = load_operation_session(pool, actor_id, session_id).await?;
     let operation_result = execute_operation(
         pool,
         runtime,
         actor_id,
         session_id,
+        session.release_id,
+        None,
         idempotency_key,
         0,
         operation,
@@ -362,7 +386,7 @@ pub(crate) async fn start_solo_session(
     match operation_result {
         Ok(_) | Err(GameError::RevisionConflict) => {}
         Err(error) => {
-            mark_operation_failure(pool, session_id, &error).await?;
+            mark_operation_failure(pool, session_id, None, &error).await?;
         }
     }
     let session = games::load_session_for_participant(pool, actor_id, session_id).await?;
@@ -437,7 +461,6 @@ async fn provider_operation(
     if input.expected_revision < 0 || !input.command.is_object() {
         return Err(GameError::InvalidCommand);
     }
-    load_operation_session(pool, actor_id, session_id).await?;
     let expected_revision =
         u64::try_from(input.expected_revision).map_err(|_| GameError::InvalidCommand)?;
     let payload = match operation {
@@ -445,11 +468,15 @@ async fn provider_operation(
         ProviderOperationKind::Reconcile => json!({}),
         ProviderOperationKind::Launch => return Err(GameError::Internal),
     };
+    let release_id =
+        reserve_operation_session(pool, actor_id, session_id, idempotency_key, operation).await?;
     match execute_operation(
         pool,
         runtime,
         actor_id,
         session_id,
+        release_id,
+        Some(idempotency_key),
         idempotency_key,
         expected_revision,
         operation,
@@ -459,7 +486,7 @@ async fn provider_operation(
     {
         Ok(result) => Ok(result),
         Err(error) => {
-            mark_operation_failure(pool, session_id, &error).await?;
+            mark_operation_failure(pool, session_id, Some(idempotency_key), &error).await?;
             Err(error)
         }
     }
@@ -471,16 +498,45 @@ async fn execute_operation(
     runtime: &ProviderRuntime,
     persona_id: Uuid,
     session_id: Uuid,
+    release_id: Uuid,
+    reservation_id: Option<Uuid>,
     idempotency_key: Uuid,
     expected_revision: u64,
     operation: ProviderOperationKind,
     payload: Value,
 ) -> Result<GameCommandResult, GameError> {
-    let row = load_operation_session(pool, persona_id, session_id).await?;
+    let mut operation_fence = pool
+        .begin()
+        .await
+        .map_err(|error| database_error(error, "begin provider operation fence"))?;
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1::TEXT, 0))")
+        .bind(session_id)
+        .execute(&mut *operation_fence)
+        .await
+        .map_err(|error| database_error(error, "lock provider operation fence"))?;
+    let reservation_matches: bool = sqlx::query_scalar(
+        r#"
+        SELECT EXISTS (
+            SELECT 1
+            FROM game_sessions
+            WHERE id = $1
+              AND authority = 'registered_provider'
+              AND provider_operation_reservation_id IS NOT DISTINCT FROM $2
+        )
+        "#,
+    )
+    .bind(session_id)
+    .bind(reservation_id)
+    .fetch_one(&mut *operation_fence)
+    .await
+    .map_err(|error| database_error(error, "verify provider operation fence"))?;
+    if !reservation_matches {
+        return Err(GameError::ProviderUnavailable);
+    }
     let response = runtime
         .broker
         .execute(&BrokerOperationInput {
-            release_id: row.release_id,
+            release_id,
             persona_id,
             platform_session_id: session_id,
             idempotency_key,
@@ -493,16 +549,31 @@ async fn execute_operation(
             },
             payload,
         })
+        .await;
+    operation_fence
+        .commit()
         .await
-        .map_err(map_provider_error)?;
-    apply_authenticated_response(pool, persona_id, session_id, expected_revision, response).await
+        .map_err(|error| database_error(error, "release provider operation fence"))?;
+    let response = response.map_err(map_provider_error)?;
+    apply_authenticated_response(
+        pool,
+        persona_id,
+        session_id,
+        reservation_id,
+        expected_revision,
+        operation,
+        response,
+    )
+    .await
 }
 
 async fn apply_authenticated_response(
     pool: &PgPool,
     persona_id: Uuid,
     session_id: Uuid,
+    reservation_id: Option<Uuid>,
     expected_revision: u64,
+    operation: ProviderOperationKind,
     response: ProviderOperationResponse,
 ) -> Result<GameCommandResult, GameError> {
     let response_payload: ProviderResponsePayload =
@@ -519,15 +590,13 @@ async fn apply_authenticated_response(
         .begin()
         .await
         .map_err(|error| database_error(error, "begin provider response projection"))?;
-    let current = sqlx::query_as::<_, (i64, String, Uuid, Option<String>)>(
+    let current = sqlx::query_as::<_, ProviderResponseProjectionRow>(
         r#"
         SELECT session.revision,
-               session.status,
-               session.provider_release_id,
-               pilot.status
+               session.provider_release_id AS release_id,
+               session.provider_availability AS availability,
+               session.provider_operation_reservation_id AS reservation_id
         FROM game_sessions AS session
-        LEFT JOIN provider_game_pilots AS pilot
-          ON pilot.release_id = session.provider_release_id
         WHERE session.id = $1
           AND session.authority = 'registered_provider'
           AND session.provider_release_id IS NOT NULL
@@ -544,16 +613,19 @@ async fn apply_authenticated_response(
     .await
     .map_err(|error| database_error(error, "lock provider response envelope"))?
     .ok_or(GameError::GameSessionNotFound)?;
-    if current.2 != response.release_id || response.platform_session_id != session_id {
+    if current.release_id != response.release_id
+        || response.platform_session_id != session_id
+        || current.reservation_id != reservation_id
+    {
         return Err(GameError::ProviderUnavailable);
     }
-    if response_revision < current.0 {
+    if response_revision < current.revision {
         return Err(GameError::RevisionConflict);
     }
     if response.disposition == ProviderOperationDisposition::Applied
         && response.revision > 0
-        && current.0 != expected_revision
-        && current.0 != response_revision
+        && current.revision != expected_revision
+        && current.revision != response_revision
     {
         return Err(GameError::RevisionConflict);
     }
@@ -570,9 +642,15 @@ async fn apply_authenticated_response(
         ProviderSessionStatus::Active => "active",
         ProviderSessionStatus::Completed => "completed",
     };
-    let availability = match current.3.as_deref() {
-        Some("suspended") => "suspended",
-        Some("retired") => "retired",
+    let availability = match current.availability.as_str() {
+        "suspended" => "suspended",
+        "retired" => "retired",
+        _ if response.disposition == ProviderOperationDisposition::RevisionConflict => {
+            "reconciling"
+        }
+        "reconciling" | "unavailable" if operation == ProviderOperationKind::Command => {
+            current.availability.as_str()
+        }
         _ => "ready",
     };
     sqlx::query(
@@ -582,6 +660,9 @@ async fn apply_authenticated_response(
         SET revision = GREATEST(revision, $2),
             status = CASE WHEN $3 = 'completed' THEN 'completed' ELSE status END,
             provider_availability = $4,
+            provider_operation_reservation_id = NULL,
+            provider_operation_reservation_kind = NULL,
+            provider_operation_reservation_expires_at = NULL,
             completed_at = CASE
                 WHEN $3 = 'completed' THEN COALESCE(completed_at, mutation.at)
                 ELSE completed_at
@@ -1097,6 +1178,138 @@ async fn load_operation_session(
     .ok_or(GameError::GameSessionNotFound)
 }
 
+async fn reserve_operation_session(
+    pool: &PgPool,
+    persona_id: Uuid,
+    session_id: Uuid,
+    reservation_id: Uuid,
+    operation: ProviderOperationKind,
+) -> Result<Uuid, GameError> {
+    let mut transaction = pool
+        .begin()
+        .await
+        .map_err(|error| database_error(error, "begin provider operation reservation"))?;
+    let row = sqlx::query_as::<_, ProviderSessionReservationRow>(
+        r#"
+        SELECT
+            session.provider_release_id AS release_id,
+            session.provider_availability AS availability,
+            session.provider_operation_reservation_id AS reservation_id,
+            COALESCE(
+                session.provider_operation_reservation_expires_at <= clock_timestamp(),
+                false
+            ) AS reservation_expired,
+            release.total_timeout_ms
+        FROM game_sessions AS session
+        JOIN provider_releases AS release ON release.release_id = session.provider_release_id
+        JOIN game_session_participants AS participant
+          ON participant.game_session_id = session.id AND participant.persona_id = $2
+        WHERE session.id = $1 AND session.authority = 'registered_provider'
+        FOR UPDATE OF session
+        "#,
+    )
+    .bind(session_id)
+    .bind(persona_id)
+    .fetch_optional(&mut *transaction)
+    .await
+    .map_err(|error| database_error(error, "lock provider operation reservation"))?
+    .ok_or(GameError::GameSessionNotFound)?;
+
+    let fence_available: bool =
+        sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1::TEXT, 0))")
+            .bind(session_id)
+            .fetch_one(&mut *transaction)
+            .await
+            .map_err(|error| database_error(error, "try provider operation fence"))?;
+    if !fence_available {
+        return Err(GameError::ProviderUnavailable);
+    }
+
+    if row.reservation_id.is_some() && !row.reservation_expired {
+        return Err(GameError::ProviderUnavailable);
+    }
+
+    let mut availability = row.availability;
+    if row.reservation_expired {
+        let availability_changed = availability == "ready";
+        let recovered_availability = if availability_changed {
+            "reconciling"
+        } else {
+            availability.as_str()
+        };
+        sqlx::query(
+            r#"
+            UPDATE game_sessions
+            SET provider_availability = $2,
+                provider_operation_reservation_id = NULL,
+                provider_operation_reservation_kind = NULL,
+                provider_operation_reservation_expires_at = NULL,
+                updated_at = CASE
+                    WHEN provider_availability IS DISTINCT FROM $2
+                        THEN GREATEST(updated_at, clock_timestamp())
+                    ELSE updated_at
+                END
+            WHERE id = $1
+            "#,
+        )
+        .bind(session_id)
+        .bind(recovered_availability)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| database_error(error, "recover expired provider operation"))?;
+        if availability_changed {
+            availability = "reconciling".to_owned();
+            append_game_sync(&mut transaction, persona_id, session_id).await?;
+        }
+    }
+
+    if operation == ProviderOperationKind::Command {
+        let guard_error = match availability.as_str() {
+            "ready" => None,
+            "suspended" | "retired" => Some(GameError::GameUnavailable),
+            _ => Some(GameError::ProviderUnavailable),
+        };
+        if let Some(error) = guard_error {
+            if row.reservation_expired {
+                transaction
+                    .commit()
+                    .await
+                    .map_err(|error| database_error(error, "commit provider recovery state"))?;
+            }
+            return Err(error);
+        }
+    }
+
+    let operation_kind = match operation {
+        ProviderOperationKind::Command => "command",
+        ProviderOperationKind::Reconcile => "reconcile",
+        ProviderOperationKind::Launch => return Err(GameError::Internal),
+    };
+    let reservation_ms = i64::from(row.total_timeout_ms) + 1_000;
+    sqlx::query(
+        r#"
+        UPDATE game_sessions
+        SET provider_operation_reservation_id = $2,
+            provider_operation_reservation_kind = $3,
+            provider_operation_reservation_expires_at =
+                clock_timestamp() + ($4::BIGINT * INTERVAL '1 millisecond')
+        WHERE id = $1
+        "#,
+    )
+    .bind(session_id)
+    .bind(reservation_id)
+    .bind(operation_kind)
+    .bind(reservation_ms)
+    .execute(&mut *transaction)
+    .await
+    .map_err(|error| database_error(error, "reserve provider operation"))?;
+    transaction
+        .commit()
+        .await
+        .map_err(|error| database_error(error, "commit provider operation reservation"))?;
+    Ok(row.release_id)
+}
+
 async fn load_callback_session(
     pool: &PgPool,
     session_id: Uuid,
@@ -1200,6 +1413,7 @@ fn canonical_identifier(value: &str, min: usize, max: usize) -> bool {
 async fn mark_operation_failure(
     pool: &PgPool,
     session_id: Uuid,
+    reservation_id: Option<Uuid>,
     error_kind: &GameError,
 ) -> Result<(), GameError> {
     let availability = match error_kind {
@@ -1212,13 +1426,22 @@ async fn mark_operation_failure(
     sqlx::query(
         r#"
         UPDATE game_sessions
-        SET provider_availability = $2,
+        SET provider_availability = CASE
+                WHEN provider_availability IN ('suspended', 'retired')
+                    THEN provider_availability
+                ELSE $2
+            END,
+            provider_operation_reservation_id = NULL,
+            provider_operation_reservation_kind = NULL,
+            provider_operation_reservation_expires_at = NULL,
             updated_at = GREATEST(updated_at, clock_timestamp())
-        WHERE id = $1 AND authority = 'registered_provider' AND status = 'active'
+        WHERE id = $1 AND authority = 'registered_provider'
+          AND provider_operation_reservation_id IS NOT DISTINCT FROM $3
         "#,
     )
     .bind(session_id)
     .bind(availability)
+    .bind(reservation_id)
     .execute(pool)
     .await
     .map_err(|error| database_error(error, "mark provider operation failure"))?;

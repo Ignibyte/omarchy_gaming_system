@@ -14,14 +14,21 @@ use crate::{GameIdentity, store::StarterStore};
 const MAX_CALLBACK_BYTES: usize = 65_536;
 const MAX_CALLBACK_ATTEMPTS: i32 = 8;
 
-/// One exact platform callback target. Socket override is test-only and is
-/// rejected unless the crate is built with `conformance`.
+#[derive(Debug, Clone, Copy)]
+enum CallbackTransport {
+    Remote,
+    Sidecar(SocketAddr),
+    #[cfg(feature = "conformance")]
+    Conformance(SocketAddr),
+}
+
+/// One exact platform callback target. Production remote and sidecar profiles
+/// are explicit; the separate conformance override remains test-only.
 #[derive(Debug, Clone)]
 pub struct CallbackConfig {
     url: Url,
     root_der: Vec<u8>,
-    #[cfg(feature = "conformance")]
-    socket_override: Option<SocketAddr>,
+    transport: CallbackTransport,
 }
 
 impl CallbackConfig {
@@ -32,41 +39,78 @@ impl CallbackConfig {
         release_id: Uuid,
         socket_override: Option<SocketAddr>,
     ) -> AnyResult<Self> {
-        if url.scheme() != "https"
-            || url.username() != ""
-            || url.password().is_some()
-            || url.query().is_some()
-            || url.fragment().is_some()
-            || url.path() != format!("/v1/provider-events/{release_id}")
-            || url.host_str().is_none()
-            || !(64..=4096).contains(&root_der.len())
-        {
-            return Err(anyhow!(
-                "callback target must be one exact bounded HTTPS release URL"
-            ));
-        }
-        if socket_override.is_some() && !cfg!(feature = "conformance") {
-            return Err(anyhow!(
-                "callback socket override requires conformance feature"
-            ));
-        }
-        #[cfg(feature = "conformance")]
-        if let Some(socket) = socket_override
-            && (!socket.ip().is_loopback()
-                || !matches!(url.host(), Some(url::Host::Domain(_)))
-                || url.port_or_known_default() != Some(socket.port()))
-        {
-            return Err(anyhow!(
-                "callback socket override must match one loopback DNS endpoint"
-            ));
-        }
+        validate_target(&url, &root_der, release_id)?;
+        let transport = match socket_override {
+            Some(socket) => {
+                #[cfg(feature = "conformance")]
+                {
+                    validate_exact_loopback(&url, socket)?;
+                    CallbackTransport::Conformance(socket)
+                }
+                #[cfg(not(feature = "conformance"))]
+                {
+                    let _ = socket;
+                    return Err(anyhow!(
+                        "callback socket override requires conformance feature"
+                    ));
+                }
+            }
+            None => CallbackTransport::Remote,
+        };
         Ok(Self {
             url,
             root_der,
-            #[cfg(feature = "conformance")]
-            socket_override,
+            transport,
         })
     }
+
+    /// Construct a production co-located callback target. Only the socket is
+    /// overridden; canonical DNS authority, TLS, path, and signatures remain.
+    pub fn sidecar(
+        url: Url,
+        root_der: Vec<u8>,
+        release_id: Uuid,
+        exact_socket: SocketAddr,
+    ) -> AnyResult<Self> {
+        validate_target(&url, &root_der, release_id)?;
+        validate_exact_loopback(&url, exact_socket)?;
+        Ok(Self {
+            url,
+            root_der,
+            transport: CallbackTransport::Sidecar(exact_socket),
+        })
+    }
+}
+
+fn validate_target(url: &Url, root_der: &[u8], release_id: Uuid) -> AnyResult<()> {
+    if release_id.is_nil()
+        || url.scheme() != "https"
+        || url.username() != ""
+        || url.password().is_some()
+        || url.query().is_some()
+        || url.fragment().is_some()
+        || url.path() != format!("/v1/provider-events/{release_id}")
+        || url.host_str().is_none()
+        || !(64..=4096).contains(&root_der.len())
+    {
+        return Err(anyhow!(
+            "callback target must be one exact bounded HTTPS release URL"
+        ));
+    }
+    Ok(())
+}
+
+fn validate_exact_loopback(url: &Url, socket: SocketAddr) -> AnyResult<()> {
+    if !socket.ip().is_loopback()
+        || socket.port() == 0
+        || !matches!(url.host(), Some(url::Host::Domain(_)))
+        || url.port_or_known_default() != Some(socket.port())
+    {
+        return Err(anyhow!(
+            "callback sidecar socket must match one nonzero loopback DNS endpoint"
+        ));
+    }
+    Ok(())
 }
 
 #[derive(FromRow)]
@@ -101,17 +145,23 @@ pub(crate) fn spawn_callback_worker(
         .tls_certs_only([certificate])
         .connect_timeout(Duration::from_secs(2))
         .timeout(Duration::from_secs(5));
-    #[cfg(feature = "conformance")]
-    let builder = if let Some(socket) = config.socket_override {
-        builder.resolve(
+    let builder = match config.transport {
+        CallbackTransport::Remote => builder,
+        CallbackTransport::Sidecar(socket) => builder.resolve(
             config
                 .url
                 .host_str()
                 .ok_or_else(|| anyhow!("callback target requires host"))?,
             socket,
-        )
-    } else {
-        builder
+        ),
+        #[cfg(feature = "conformance")]
+        CallbackTransport::Conformance(socket) => builder.resolve(
+            config
+                .url
+                .host_str()
+                .ok_or_else(|| anyhow!("callback target requires host"))?,
+            socket,
+        ),
     };
     let client = builder.build().context("build callback client")?;
     let path = config.url.path().to_owned();
@@ -258,14 +308,14 @@ fn unix_seconds() -> AnyResult<i64> {
     i64::try_from(duration.as_secs()).context("system clock overflow")
 }
 
-#[cfg(all(test, feature = "conformance"))]
+#[cfg(test)]
 mod tests {
     use std::net::Ipv4Addr;
 
     use super::*;
 
     #[test]
-    fn conformance_override_binds_domain_and_url_port() {
+    fn sidecar_binds_domain_loopback_and_url_port() {
         let release_id = Uuid::new_v4();
         let url = Url::parse(&format!(
             "https://platform.test:4443/v1/provider-events/{release_id}"
@@ -273,34 +323,62 @@ mod tests {
         .expect("valid callback URL");
         let root = vec![1; 64];
         assert!(
-            CallbackConfig::new(
+            CallbackConfig::sidecar(
                 url.clone(),
                 root.clone(),
                 release_id,
-                Some(SocketAddr::from((Ipv4Addr::LOCALHOST, 4443))),
+                SocketAddr::from((Ipv4Addr::LOCALHOST, 4443)),
             )
             .is_ok()
         );
         assert!(
-            CallbackConfig::new(
-                url,
+            CallbackConfig::sidecar(
+                url.clone(),
                 root.clone(),
                 release_id,
-                Some(SocketAddr::from((Ipv4Addr::LOCALHOST, 4444))),
+                SocketAddr::from((Ipv4Addr::LOCALHOST, 4444)),
             )
             .is_err()
         );
         assert!(
-            CallbackConfig::new(
+            CallbackConfig::sidecar(
                 Url::parse(&format!(
                     "https://127.0.0.1:4443/v1/provider-events/{release_id}"
                 ))
                 .expect("valid IP callback URL"),
                 root,
                 release_id,
-                Some(SocketAddr::from((Ipv4Addr::LOCALHOST, 4443))),
+                SocketAddr::from((Ipv4Addr::LOCALHOST, 4443)),
             )
             .is_err()
+        );
+        assert!(
+            CallbackConfig::sidecar(
+                url,
+                vec![1; 64],
+                release_id,
+                "10.0.0.1:4443".parse().expect("private socket"),
+            )
+            .is_err()
+        );
+    }
+
+    #[cfg(feature = "conformance")]
+    #[test]
+    fn conformance_override_remains_separate() {
+        let release_id = Uuid::new_v4();
+        let url = Url::parse(&format!(
+            "https://platform.test:4443/v1/provider-events/{release_id}"
+        ))
+        .expect("valid callback URL");
+        assert!(
+            CallbackConfig::new(
+                url,
+                vec![1; 64],
+                release_id,
+                Some(SocketAddr::from((Ipv4Addr::LOCALHOST, 4443))),
+            )
+            .is_ok()
         );
     }
 }

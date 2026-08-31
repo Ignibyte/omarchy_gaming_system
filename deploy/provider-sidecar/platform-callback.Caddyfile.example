@@ -1,0 +1,9 @@
+{
+	admin off
+}
+
+https://@PLATFORM_CALLBACK_DNS@:@PLATFORM_CALLBACK_TLS_PORT@ {
+	bind 127.0.0.1
+	tls /etc/omarchygs/callback-proxy/certificate.pem /etc/omarchygs/callback-proxy/private-key.pem
+	reverse_proxy 127.0.0.1:@OMARCHYGS_HTTP_PORT@
+}

@@ -344,6 +344,7 @@ source/builder provenance:
 scripts/test-provider-sdk.sh
 scripts/test-provider-developer-kit.sh
 scripts/test-provider-starter-conformance.sh
+scripts/test-provider-sidecar.sh
 ```
 
 The game-agnostic starter owns the exact provider routes, separate PostgreSQL
@@ -352,9 +353,13 @@ trait owns only deterministic rules. The fifteen-case TLS conformance runner
 and Relay Forge clean-room game prove that public seam through the real broker.
 None of these artifacts includes or grants platform registration, admission,
 discovery, egress, player-route, or administrator authority. Door Legends
-remains the sole authorized provider; sidecar operations and external onboarding
-remain separately gated. The preview notice grants no redistribution or
-production license; obtain owner-selected terms before external use.
+remains the sole authorized provider. The reviewed deployment runbook covers
+remote providers and one exact-release TLS-over-loopback sidecar with separate
+process/state/credentials and recovery drills; external onboarding remains
+separately gated. See
+[`provider-deployment.md`](docs/operators/provider-deployment.md). The preview
+notice grants no redistribution or production license; obtain owner-selected
+terms before external use.
 
 ### Import operator-custom cartridges
 

@@ -16,6 +16,43 @@ use crate::{
 
 const MAX_DNS_ANSWERS: usize = 8;
 
+/// One production co-located transport selection. The registered endpoint
+/// remains the HTTPS/SNI/Host identity; this value changes only its exact
+/// socket destination for one release.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SidecarTarget {
+    release_id: uuid::Uuid,
+    socket: SocketAddr,
+}
+
+impl SidecarTarget {
+    /// Construct an exact release-to-loopback mapping.
+    pub fn new(release_id: uuid::Uuid, socket: SocketAddr) -> Result<Self> {
+        if release_id.is_nil() || !socket.ip().is_loopback() || socket.port() == 0 {
+            return Err(ProviderError::InvalidInput);
+        }
+        Ok(Self { release_id, socket })
+    }
+
+    /// Exact registered release using the sidecar transport.
+    #[must_use]
+    pub const fn release_id(self) -> uuid::Uuid {
+        self.release_id
+    }
+
+    /// Exact loopback destination. This is not an identity or trust anchor.
+    #[must_use]
+    pub const fn socket(self) -> SocketAddr {
+        self.socket
+    }
+
+    /// Return the sidecar socket only for the exact configured release.
+    #[must_use]
+    pub fn socket_for(self, release_id: uuid::Uuid) -> Option<SocketAddr> {
+        (self.release_id == release_id).then_some(self.socket)
+    }
+}
+
 /// One resolution result pinned into an exact guarded client.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedDestination {
@@ -58,6 +95,25 @@ impl GuardedProviderClient {
             .map_err(|_| ProviderError::Unavailable)?;
         let addresses = resolved.map(|socket| socket.ip()).collect::<Vec<_>>();
         let destination = validate_resolution(endpoint, addresses, ResolutionMode::Production)?;
+        Self::from_destination(destination, tls_roots_der, quotas)
+    }
+
+    /// Build a production sidecar client for one exact loopback socket. The
+    /// canonical registered DNS endpoint remains the URL, SNI, and Host value.
+    /// This is intentionally separate from the test-only conformance profile.
+    pub fn sidecar(
+        endpoint: ProviderEndpoint,
+        exact_socket: SocketAddr,
+        tls_roots_der: &[Vec<u8>],
+        quotas: ProviderQuotas,
+    ) -> Result<Self> {
+        endpoint.validate()?;
+        quotas.validate()?;
+        let destination = validate_resolution(
+            endpoint,
+            [exact_socket.ip()],
+            ResolutionMode::Sidecar(exact_socket),
+        )?;
         Self::from_destination(destination, tls_roots_der, quotas)
     }
 
@@ -192,6 +248,7 @@ fn install_crypto_provider() {
 #[derive(Debug, Clone, Copy)]
 enum ResolutionMode {
     Production,
+    Sidecar(SocketAddr),
     #[cfg(any(test, feature = "provider-conformance"))]
     Conformance(SocketAddr),
 }
@@ -209,6 +266,7 @@ fn validate_resolution(
         let socket = SocketAddr::new(address, endpoint.port);
         let allowed = match mode {
             ResolutionMode::Production => is_public_egress_ip(address),
+            ResolutionMode::Sidecar(exact) => address.is_loopback() && socket == exact,
             #[cfg(any(test, feature = "provider-conformance"))]
             ResolutionMode::Conformance(exact) => address.is_loopback() && socket == exact,
         };
@@ -403,5 +461,62 @@ mod tests {
             .map(|last| IpAddr::V4(Ipv4Addr::new(8, 8, 8, last)))
             .collect::<Vec<_>>();
         assert!(validate_resolution(endpoint, too_many, ResolutionMode::Production).is_err());
+    }
+
+    #[test]
+    fn sidecar_target_and_resolution_bind_release_loopback_and_port() {
+        let release_id = uuid::Uuid::new_v4();
+        let exact: SocketAddr = "127.0.0.1:4443".parse().expect("exact socket");
+        assert_eq!(
+            SidecarTarget::new(release_id, exact).expect("valid target"),
+            SidecarTarget {
+                release_id,
+                socket: exact
+            }
+        );
+        let target = SidecarTarget::new(release_id, exact).expect("valid target");
+        assert_eq!(target.socket_for(release_id), Some(exact));
+        assert_eq!(target.socket_for(uuid::Uuid::new_v4()), None);
+        for invalid in ["0.0.0.0:4443", "10.0.0.1:4443", "127.0.0.1:0"] {
+            assert!(
+                SidecarTarget::new(release_id, invalid.parse().expect("invalid fixture socket"))
+                    .is_err(),
+                "{invalid} must reject"
+            );
+        }
+        assert!(SidecarTarget::new(uuid::Uuid::nil(), exact).is_err());
+
+        let endpoint = ProviderEndpoint {
+            host: "provider.example.test".to_owned(),
+            port: exact.port(),
+            base_path: "/omarchygs/provider/v1/".to_owned(),
+        };
+        let destination = validate_resolution(
+            endpoint.clone(),
+            [exact.ip()],
+            ResolutionMode::Sidecar(exact),
+        )
+        .expect("exact sidecar destination");
+        assert_eq!(destination.endpoint, endpoint);
+        assert_eq!(destination.addresses, vec![exact]);
+        assert!(
+            validate_resolution(
+                ProviderEndpoint {
+                    port: 4444,
+                    ..destination.endpoint.clone()
+                },
+                [exact.ip()],
+                ResolutionMode::Sidecar(exact),
+            )
+            .is_err()
+        );
+        assert!(
+            validate_resolution(
+                destination.endpoint,
+                ["127.0.0.2".parse().expect("hostile loopback")],
+                ResolutionMode::Sidecar(exact),
+            )
+            .is_err()
+        );
     }
 }

@@ -12,6 +12,15 @@ connectivity, compiled gameplay fallback, or registration, activation,
 discovery, trust, admission, and publication authority.
 
 One database is pinned to one provider/release/game/rules/cartridge identity.
-The `conformance` feature permits only the exact callback socket override and
-post-commit response delay required by the portable local fault corpus; do not
-enable it for a production provider.
+Production co-location may use `CallbackConfig::sidecar` to map the exact
+canonical HTTPS callback authority to one equal-port loopback TLS socket. It
+retains the platform DNS identity, TLS root, signed path/body, and bounds; it
+does not create a general private-network exception. The `conformance` feature
+permits only the separately named callback socket override and post-commit
+response delay required by the portable local fault corpus; do not enable it
+for a production provider.
+
+See the repository
+[`provider-deployment.md`](../../docs/operators/provider-deployment.md) runbook
+for remote and sidecar deployment, lifecycle, rotation, restore, and incident
+procedures. Neither profile grants registration or admission authority.

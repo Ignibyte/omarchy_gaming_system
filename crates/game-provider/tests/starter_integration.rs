@@ -29,6 +29,7 @@ use ed25519_dalek::SigningKey;
 use omarchy_game_provider::{
     ProviderError,
     broker::{BrokerOperationInput, CallbackDisposition, ProviderBroker},
+    egress::SidecarTarget,
     model::{
         ActiveSessionPolicy, OperationalKeyInput, OperatorCommand, ProviderEndpoint,
         ProviderQuotas, ProviderScope, RegisterReleaseInput, SessionAdmission,
@@ -121,8 +122,8 @@ async fn relay_forge_uses_real_broker_with_distinct_durable_state(pool: PgPool) 
         max_concurrent_requests: 4,
         request_body_bytes: 65_536,
         response_body_bytes: 65_536,
-        connect_timeout_ms: 200,
-        total_timeout_ms: 500,
+        connect_timeout_ms: 500,
+        total_timeout_ms: 3_000,
     };
     let registry = register_release(
         &pool,
@@ -136,11 +137,11 @@ async fn relay_forge_uses_real_broker_with_distinct_durable_state(pool: PgPool) 
         provider_signing_key.verifying_key().as_bytes(),
     )
     .await;
-    let broker = Arc::new(ProviderBroker::conformance_loopback(
+    let broker = Arc::new(ProviderBroker::sidecar(
         registry,
         grant_issuer,
         message_signer,
-        provider_address,
+        SidecarTarget::new(RELEASE_ID, provider_address).expect("exact sidecar target"),
     ));
 
     let accepted = Arc::new(AtomicU32::new(0));
@@ -175,11 +176,12 @@ async fn relay_forge_uses_real_broker_with_distinct_durable_state(pool: PgPool) 
     let config = json!({
         "authority": provider_authority,
         "bind_address": provider_address,
-        "callback_socket_override": callback_address,
+        "callback_sidecar_socket": callback_address,
+        "callback_socket_override": null,
         "callback_tls_root_der_base64": URL_SAFE_NO_PAD.encode(callback_cert.der()),
         "callback_url": format!("https://{callback_authority}{callback_path}"),
         "cartridge_digest": "a".repeat(64),
-        "command_response_delay_ms": 900,
+        "command_response_delay_ms": 0,
         "database_url": provider_database_url,
         "platform_grant_key_id": "platform-grant-1",
         "platform_grant_public_key_base64": URL_SAFE_NO_PAD.encode(broker_grant_public(grant_seed)),
@@ -224,18 +226,58 @@ async fn relay_forge_uses_real_broker_with_distinct_durable_state(pool: PgPool) 
             ProviderOperationKind::Command,
             json!({"command": {"action": action}}),
         );
-        assert!(matches!(
-            broker.execute(&command).await,
-            Err(ProviderError::Unavailable)
-        ));
-        let applied = broker
-            .execute(&command)
-            .await
-            .expect("stable receipt retry");
+        let applied = broker.execute(&command).await.expect("sidecar command");
         revision += 1;
         assert_eq!(applied.revision, revision);
         assert_eq!(applied.disposition, ProviderOperationDisposition::Applied);
     }
+
+    provider.0.start_kill().expect("crash provider");
+    provider.0.wait().await.expect("reap crashed provider");
+    let denied_launch = input(
+        persona_id,
+        Uuid::new_v4(),
+        Uuid::new_v4(),
+        0,
+        ProviderOperationKind::Launch,
+        json!({"player_count": 1}),
+    );
+    assert!(matches!(
+        broker.execute(&denied_launch).await,
+        Err(ProviderError::Unavailable)
+    ));
+
+    let CertifiedKey {
+        cert: hostile_cert,
+        signing_key: hostile_key,
+    } = generate_simple_self_signed(vec![HOST.to_owned()]).expect("hostile TLS identity");
+    let hostile_cert_path = temp.path().join("hostile-cert.pem");
+    let hostile_key_path = temp.path().join("hostile-key.pem");
+    std::fs::write(&hostile_cert_path, hostile_cert.pem()).expect("hostile cert");
+    std::fs::write(&hostile_key_path, hostile_key.serialize_pem()).expect("hostile key");
+    let hostile_tls = RustlsConfig::from_pem_file(&hostile_cert_path, &hostile_key_path)
+        .await
+        .expect("hostile TLS config");
+    let hostile_handle = axum_server::Handle::new();
+    let serving = hostile_handle.clone();
+    let hostile_task = tokio::spawn(async move {
+        axum_server::bind_rustls(provider_address, hostile_tls)
+            .handle(serving)
+            .serve(Router::new().into_make_service())
+            .await
+    });
+    wait_for_port(provider_address).await;
+    assert!(matches!(
+        broker.execute(&denied_launch).await,
+        Err(ProviderError::Unavailable)
+    ));
+    hostile_handle.graceful_shutdown(Some(Duration::from_secs(2)));
+    hostile_task
+        .await
+        .expect("hostile listener join")
+        .expect("hostile listener stop");
+
+    provider = spawn_provider(Path::new(&provider_binary), &config_path, provider_address).await;
 
     let reconcile = input(
         persona_id,

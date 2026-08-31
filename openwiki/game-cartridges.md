@@ -61,14 +61,6 @@ sources:
     resource: repo://crates/marketplace-publisher/src/store.rs
   - id: openwiki-source-7495094e6001dc09ac9490e6
     resource: repo://crates/marketplace-trust/src/transport.rs
-  - id: openwiki-source-01584c5ba7d35b160c5de691
-    resource: repo://crates/provider-conformance/src/runner.rs
-  - id: openwiki-source-752bcc832cc8ddb9cef7a0f9
-    resource: repo://crates/provider-starter/src/rules.rs
-  - id: openwiki-source-80af29333d26b2334a88a2fb
-    resource: repo://crates/provider-starter/src/runtime.rs
-  - id: openwiki-source-313a20529fb1a051590d413d
-    resource: repo://crates/provider-starter/src/store.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-7243a317e3224aa82795a5fc
@@ -109,11 +101,7 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-  - id: openwiki-source-6323e860f0976ef977f38cf6
-    resource: repo://scripts/test-provider-developer-kit.sh
-  - id: openwiki-source-e44be3ca3ecf28e5a477dab2
-    resource: repo://scripts/test-provider-starter-conformance.sh
-generated: {by: "codex", at: "2026-08-30T21:12:56.668Z"}
+generated: {by: "codex", at: "2026-08-30T23:28:20.118Z"}
 ---
 
 # Game Cartridges and portable provider direction
@@ -160,8 +148,10 @@ admission/session history, player-confirmed client key pins, source-specific
 mounts, and persistent unvetted warnings. Ticket 039 and ADR-0004 select and
 prove the separate process-isolated no-WASI server-module boundary. Tickets 044
 and 045 now implement the public Provider SDK plus its starter, conformance,
-deterministic developer-kit release, and second clean-room game. Provider
-sidecar/operations and external-provider onboarding remain unimplemented.
+deterministic developer-kit release, and second clean-room game. Ticket 046
+adds the reviewed exact-release TLS-loopback sidecar, deployment templates,
+operator runbook, crash/restore drill, and provider-operation fencing. Real
+external-provider onboarding remains outside the repository.
 
 Ticket 014 contributes an isolated executable architecture proof. Its broker,
 provider, and QML surface are not a public SDK or deployed runtime. Ticket 018
@@ -374,7 +364,12 @@ An embedded `ProviderGame` receives no transport, signing, database, callback,
 account/persona, or platform-credential authority and implements only
 deterministic launch, command, view, and optional-event logic. The separate
 conformance package supplies the fixed fifteen-case TLS/fault corpus and signed
-developer-kit export. Sidecar and operations guidance remain later work.
+developer-kit export. The reviewed sidecar profile maps only one exact
+registered release to one exact nonzero loopback socket. Its canonical DNS URL,
+SNI, Host, registered roots, signed authority, protocol, grants, quotas,
+lifecycle, and replay contract remain unchanged. The deployment runbook and
+templates require separate process, OS identity, PostgreSQL role/database,
+secrets, writable state, backup, and lifecycle boundaries.
 General server modules form a third
 extension family. ADR-0004 selects one exact no-WASI Component Model release
 per dedicated contained host process, with typed hooks and intents,
@@ -645,6 +640,15 @@ stable IDs and are deduplicated before achievements, results, notifications,
 or sync projections are applied. Provider outage may expose the last validated
 view as stale/read-only, but OmarchyGS never invents a move or result.
 
+Commands and explicit reconciliation additionally claim one bounded durable
+session reservation. A transaction-scoped PostgreSQL advisory fence is held
+across broker I/O, then the reservation UUID is revalidated before the
+authenticated response can project. Competing work is rejected locally; an
+expired abandoned reservation first moves a formerly ready session into
+reconciliation, while the advisory fence prevents a still-live operation from
+being reclaimed. Failure cleanup and response projection preserve a newer
+operator suspension or retirement.
+
 Ticket 018 persists immutable registered releases, lifecycle scopes,
 append-only message-signing and TLS keys, grants, quota windows, concurrency
 leases, operation attempts, authenticated callback receipts, and safe audit
@@ -805,6 +809,16 @@ the production provider-security boundary against migrated PostgreSQL:
 scripts/test-provider-conformance.sh
 ```
 
+Gate 19a then exercises the production sidecar profile against a clean-room
+provider and independent PostgreSQL database. It proves exact TLS/socket/release
+binding, hostile local-peer rejection, crash denial, restart/reconciliation,
+callback recovery, separate backup/restore, hardened service/proxy templates,
+and a locally signed bounded receipt containing no credentials or database URL:
+
+```bash
+scripts/test-provider-sidecar.sh
+```
+
 Gate 20 then packages the Provider SDK, builds Door Legends from a clean clone
 without platform-only features, runs it as a separate TLS process
 against its own PostgreSQL database, drives catalog/start/command/reconcile and
@@ -887,8 +901,10 @@ gate and failure routing.
    three-package developer-kit release, and the second clean-room Relay Forge
    game, including real-broker, independent-database, restart, callback, replay,
    and unknown-outcome evidence.
-16. A later provider ticket adds the sidecar/operations profile before any
-   external onboarding.
+16. Ticket 046 adds the reviewed exact-release sidecar/operations profile,
+   hardened deployment templates, independent recovery drill, and durable
+   cross-process provider-operation fencing. External onboarding still requires
+   real provider, marketplace, hosting, custody, review, and support operations.
 
 First-party games use the same public schemas and conformance suite intended
 for later publishers. They may have a higher catalog trust tier, but never a
@@ -925,6 +941,7 @@ authority.
 | Separate-repository SDK/release | `crates/game-cartridge/src/sdk.rs`, `release.rs`, `lifecycle.rs`, `secure_store.rs`; Ticket 017 | `scripts/test-game-cartridge-sdk.sh`; deterministic export, clean-clone reproducibility, signed provenance/policy, lifecycle matrix, descriptor-relative import, rollback/race/permission rejection |
 | Public Provider SDK preview and negotiation | `crates/provider-sdk`; `crates/game-provider/src/broker.rs`, `registry.rs`; `docs/operators/provider-security.md`; Ticket 044 | `scripts/test-provider-sdk.sh`; `scripts/test-provider-conformance.sh`; exact package/inventory and two-clone release proof, compatibility downgrade/stripping denial, stale-material and aggregate-deadline races, strict network parsing, and exact historical duplicate recovery |
 | Public provider starter, conformance, and clean-room game | `crates/provider-starter`; `crates/provider-conformance`; `examples/provider-relay-forge`; Ticket 045 | `scripts/test-provider-developer-kit.sh`; `scripts/test-provider-starter-conformance.sh`; deterministic three-package export, private-dependency denial, two clean-clone builds, provider-side PostgreSQL persistence/restart, real-broker integration, exact TLS binding, fixed fifteen-case corpus, callback recovery, and replay |
+| Reviewed provider sidecar and operations | `crates/game-provider/src/egress.rs`; `crates/server/src/provider_games.rs`; migration `0029`; `deploy/provider-sidecar`; `docs/operators/provider-deployment.md`; Ticket 046 | `scripts/test-provider-sidecar.sh`; `scripts/test-provider-authority-pilot.sh`; exact release/socket/TLS identity, hostile peer and ambient proxy denial, durable reservation/advisory fencing, crash/restart/reconcile, lifecycle races, separate database restore, templates, and signed receipt |
 | Provider security foundation | `crates/game-provider`; migration `0014_provider_security_foundation.sql`; `docs/operators/provider-security.md`; Ticket 018 | `scripts/test-provider-conformance.sh`; TLS and sender authentication, public-only pinned egress, grant/replay/key/quota/lease/audit, lifecycle, race, and failure tests |
 | Remote authority migration | Constitution §10; ADR-0002; migration `0015`; `crates/server/src/provider_games.rs`; Ticket 019 | `scripts/test-provider-authority-pilot.sh`; one durable gameplay owner, exact replay/reconciliation, callback projection, lifecycle, independent database and restore evidence |
 | Marketplace synchronization and server admission | `marketplace.rs`, `marketplace_egress.rs`, `marketplace_sync.rs`, `cartridge_catalog.rs`; migration `0019`; administrator CLI and authenticated catalog route; Ticket 032 | Canonical signature hostile corpus; real TLS root/redirect/size tests; PostgreSQL replay/race/rollback/lifecycle tests; exact API and CLI fixtures; recovery rehearsal; security and authority review |

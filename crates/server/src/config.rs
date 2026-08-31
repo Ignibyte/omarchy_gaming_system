@@ -2,7 +2,9 @@ use std::{env, net::SocketAddr};
 
 use anyhow::{Context, Result, anyhow};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
+use omarchy_game_provider::egress::SidecarTarget;
 use omarchy_gaming_system_server::marketplace_sync::LocalCatalogConfig;
+use uuid::Uuid;
 
 use crate::mfa::MfaCipher;
 use crate::server_modules::ModuleConfig;
@@ -29,6 +31,7 @@ pub struct ProviderConfig {
     pub pairwise_secret: Vec<u8>,
     pub message_signing_seed: [u8; 32],
     pub callback_authority: String,
+    pub sidecar: Option<SidecarTarget>,
 }
 
 impl Config {
@@ -45,12 +48,26 @@ impl Config {
             "OGS_MFA_ENCRYPTION_KEY is required and must be a base64url-encoded 32-byte key",
         )?;
         let mfa_cipher = parse_mfa_cipher(&encoded_mfa_key)?;
-        let provider = parse_provider_config([
+        let mut provider = parse_provider_config([
             env::var("OGS_PROVIDER_GRANT_SIGNING_SEED").ok(),
             env::var("OGS_PROVIDER_PAIRWISE_SECRET").ok(),
             env::var("OGS_PROVIDER_MESSAGE_SIGNING_SEED").ok(),
             env::var("OGS_PROVIDER_CALLBACK_AUTHORITY").ok(),
         ])?;
+        let sidecar = parse_provider_sidecar_config([
+            env::var("OGS_PROVIDER_SIDECAR_RELEASE_ID").ok(),
+            env::var("OGS_PROVIDER_SIDECAR_SOCKET").ok(),
+        ])?;
+        if let Some(sidecar) = sidecar {
+            provider
+                .as_mut()
+                .ok_or_else(|| {
+                    anyhow!(
+                        "provider sidecar configuration requires the complete provider runtime configuration"
+                    )
+                })?
+                .sidecar = Some(sidecar);
+        }
         let cartridge_distribution = LocalCatalogConfig::optional_from_environment()
             .map_err(|_| {
                 anyhow!(
@@ -166,7 +183,32 @@ fn parse_provider_config(values: [Option<String>; 4]) -> Result<Option<ProviderC
         pairwise_secret,
         message_signing_seed,
         callback_authority,
+        sidecar: None,
     }))
+}
+
+fn parse_provider_sidecar_config(values: [Option<String>; 2]) -> Result<Option<SidecarTarget>> {
+    if values.iter().all(Option::is_none) {
+        return Ok(None);
+    }
+    let [release_id, socket] = values;
+    let (Some(release_id), Some(socket)) = (release_id, socket) else {
+        return Err(anyhow!(
+            "provider sidecar configuration is all-or-none: set OGS_PROVIDER_SIDECAR_RELEASE_ID and OGS_PROVIDER_SIDECAR_SOCKET"
+        ));
+    };
+    let release_id = Uuid::try_parse(&release_id)
+        .context("OGS_PROVIDER_SIDECAR_RELEASE_ID must be a non-nil UUID")?;
+    let socket = socket
+        .parse::<SocketAddr>()
+        .context("OGS_PROVIDER_SIDECAR_SOCKET must be one exact loopback socket")?;
+    SidecarTarget::new(release_id, socket)
+        .map(Some)
+        .map_err(|_| {
+            anyhow!(
+                "provider sidecar target must be a non-nil release and one exact nonzero loopback socket"
+            )
+        })
 }
 
 fn decode_exact_secret(name: &str, encoded: &str, length: usize) -> Result<Vec<u8>> {
@@ -242,8 +284,10 @@ mod tests {
 
     use super::{
         DEFAULT_BIND_ADDRESS, DEFAULT_DATABASE_URL, DEFAULT_SERVER_NAME, parse_mfa_cipher,
-        parse_module_config, parse_provider_config, parse_server_name, resolve_bind_address,
+        parse_module_config, parse_provider_config, parse_provider_sidecar_config,
+        parse_server_name, resolve_bind_address,
     };
+    use uuid::Uuid;
 
     #[test]
     fn development_defaults_are_local_only() {
@@ -340,6 +384,7 @@ mod tests {
         .expect("complete provider configuration should parse")
         .expect("provider should be enabled");
         assert_eq!(complete.callback_authority, "callbacks.example.test:8443");
+        assert!(complete.sidecar.is_none());
         assert!(
             parse_provider_config([
                 Some(URL_SAFE_NO_PAD.encode([1_u8; 31])),
@@ -349,6 +394,42 @@ mod tests {
             ])
             .is_err()
         );
+    }
+
+    #[test]
+    fn provider_sidecar_configuration_is_absent_or_exact_and_complete() {
+        assert!(
+            parse_provider_sidecar_config([None, None])
+                .expect("absent sidecar")
+                .is_none()
+        );
+        assert!(parse_provider_sidecar_config([Some(Uuid::new_v4().to_string()), None]).is_err());
+        for socket in ["10.0.0.1:9443", "127.0.0.1:0", "not-a-socket"] {
+            assert!(
+                parse_provider_sidecar_config([
+                    Some(Uuid::new_v4().to_string()),
+                    Some(socket.to_owned()),
+                ])
+                .is_err(),
+                "{socket} must reject"
+            );
+        }
+        assert!(
+            parse_provider_sidecar_config([
+                Some(Uuid::nil().to_string()),
+                Some("127.0.0.1:9443".to_owned()),
+            ])
+            .is_err()
+        );
+        let release_id = Uuid::new_v4();
+        let target = parse_provider_sidecar_config([
+            Some(release_id.to_string()),
+            Some("[::1]:9443".to_owned()),
+        ])
+        .expect("valid sidecar")
+        .expect("configured target");
+        assert_eq!(target.release_id(), release_id);
+        assert_eq!(target.socket(), "[::1]:9443".parse().expect("socket"));
     }
 
     #[test]

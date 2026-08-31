@@ -1,6 +1,7 @@
-use omarchygs_provider_sdk::{ProviderError, Result, protocol::{
-    ProviderEventKind, ProviderSessionStatus,
-}};
+use omarchygs_provider_sdk::{
+    ProviderError, Result,
+    protocol::{ProviderEventKind, ProviderSessionStatus},
+};
 use omarchygs_provider_starter::{
     GameEvent, GameIdentity, GameState, GameTransition, ProviderGame,
 };
@@ -106,10 +107,7 @@ impl ProviderGame for RelayForge {
             }
             _ => return Err(ProviderError::InvalidInput),
         }
-        state.round = state
-            .round
-            .checked_add(1)
-            .ok_or(ProviderError::Internal)?;
+        state.round = state.round.checked_add(1).ok_or(ProviderError::Internal)?;
         Ok(GameTransition {
             status: if state.forged {
                 ProviderSessionStatus::Completed
@@ -197,9 +195,10 @@ mod tests {
         assert_eq!(terminal.status, ProviderSessionStatus::Completed);
         assert_eq!(game.view(&terminal).expect("view")["forged"], true);
         assert!(game.event(&terminal).expect("event").is_some());
-        assert!(game
-            .command(&terminal, &json!({"command": {"action": "mine"}}))
-            .is_err());
+        assert!(
+            game.command(&terminal, &json!({"command": {"action": "mine"}}))
+                .is_err()
+        );
     }
 
     #[test]
@@ -207,12 +206,14 @@ mod tests {
         let game = RelayForge::new("b".repeat(64));
         assert!(game.launch(&json!({"player_count": 2})).is_err());
         let initial = launched(&game);
-        assert!(game
-            .command(&initial, &json!({"command": {"action": "forge"}}))
-            .is_err());
-        assert!(game
-            .command(&initial, &json!({"command": {"action": "enter"}}))
-            .is_err());
+        assert!(
+            game.command(&initial, &json!({"command": {"action": "forge"}}))
+                .is_err()
+        );
+        assert!(
+            game.command(&initial, &json!({"command": {"action": "enter"}}))
+                .is_err()
+        );
         assert_eq!(initial, launched(&game));
     }
 }

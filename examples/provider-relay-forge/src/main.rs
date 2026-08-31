@@ -32,6 +32,7 @@ const MAX_CONFIG_BYTES: usize = 64 * 1024;
 struct Config {
     authority: String,
     bind_address: SocketAddr,
+    callback_sidecar_socket: Option<SocketAddr>,
     callback_socket_override: Option<SocketAddr>,
     callback_tls_root_der_base64: String,
     callback_url: String,
@@ -57,8 +58,9 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_writer(std::io::stderr)
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("relay_forge_provider=info")),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                tracing_subscriber::EnvFilter::new("relay_forge_provider=info")
+            }),
         )
         .init();
     let path = std::env::args_os()
@@ -69,7 +71,9 @@ async fn main() -> Result<()> {
     let mut config: Config =
         serde_json::from_slice(&bytes).context("decode exact provider config")?;
     if serde_json::to_vec(&config).context("encode exact provider config")? != bytes.as_slice() {
-        return Err(anyhow!("provider config must use canonical compact field order"));
+        return Err(anyhow!(
+            "provider config must use canonical compact field order"
+        ));
     }
     drop(bytes);
     let provider_seed = Zeroizing::new(decode_32(
@@ -79,17 +83,29 @@ async fn main() -> Result<()> {
     config.provider_message_signing_seed_base64.zeroize();
     let signer = HttpMessageSigner::new(&config.provider_message_key_id, *provider_seed)
         .map_err(|_| anyhow!("provider signer configuration rejected"))?;
-    let callback = CallbackConfig::new(
-        Url::parse(&config.callback_url).context("callback URL")?,
-        decode_bounded(
-            &config.callback_tls_root_der_base64,
-            64,
-            4096,
-            "callback root",
-        )?,
-        config.release_id,
-        config.callback_socket_override,
+    if config.callback_sidecar_socket.is_some() && config.callback_socket_override.is_some() {
+        return Err(anyhow!(
+            "sidecar and conformance callback sockets are mutually exclusive"
+        ));
+    }
+    let callback_url = Url::parse(&config.callback_url).context("callback URL")?;
+    let callback_root = decode_bounded(
+        &config.callback_tls_root_der_base64,
+        64,
+        4096,
+        "callback root",
     )?;
+    let callback = match config.callback_sidecar_socket {
+        Some(socket) => {
+            CallbackConfig::sidecar(callback_url, callback_root, config.release_id, socket)?
+        }
+        None => CallbackConfig::new(
+            callback_url,
+            callback_root,
+            config.release_id,
+            config.callback_socket_override,
+        )?,
+    };
     let limits = StarterLimits {
         request_body_bytes: 65_536,
         operation_response_delay_after_commit: if config.command_response_delay_ms == 0 {
@@ -105,9 +121,15 @@ async fn main() -> Result<()> {
         config.release_id,
         config.authority,
         config.platform_grant_key_id,
-        decode_key(&config.platform_grant_public_key_base64, "platform grant key")?,
+        decode_key(
+            &config.platform_grant_public_key_base64,
+            "platform grant key",
+        )?,
         config.platform_message_key_id,
-        decode_key(&config.platform_message_public_key_base64, "platform message key")?,
+        decode_key(
+            &config.platform_message_public_key_base64,
+            "platform message key",
+        )?,
         signer,
         callback,
         limits,
@@ -116,9 +138,8 @@ async fn main() -> Result<()> {
     let game = RelayForge::new(config.cartridge_digest);
     let starter = ProviderStarter::connect(game, starter_config, &config.database_url, 8).await;
     config.database_url.zeroize();
-    let starter = Arc::new(
-        starter.map_err(|_| anyhow!("provider starter database initialization failed"))?,
-    );
+    let starter =
+        Arc::new(starter.map_err(|_| anyhow!("provider starter database initialization failed"))?);
     starter
         .serve_tls(
             config.bind_address,

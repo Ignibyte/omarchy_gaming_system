@@ -16,7 +16,7 @@ use uuid::Uuid;
 
 use crate::{
     ProviderError, Result,
-    egress::GuardedProviderClient,
+    egress::{GuardedProviderClient, SidecarTarget},
     model::SessionAdmission,
     protocol::{
         GrantIssuer, HttpMessageSigner, ProviderCompatibility, ProviderCompatibilityOffer,
@@ -105,8 +105,10 @@ impl AuthenticatedProviderEvent {
     }
 }
 
+#[derive(Clone, Copy)]
 enum TransportProfile {
     Production,
+    Sidecar(SidecarTarget),
     #[cfg(feature = "provider-conformance")]
     Conformance(SocketAddr),
 }
@@ -132,6 +134,23 @@ impl ProviderBroker {
             grant_issuer,
             message_signer,
             transport: TransportProfile::Production,
+        }
+    }
+
+    /// Construct a production broker that maps one exact registered release
+    /// to one exact loopback socket without changing its HTTPS identity.
+    #[must_use]
+    pub fn sidecar(
+        registry: ProviderRegistry,
+        grant_issuer: GrantIssuer,
+        message_signer: HttpMessageSigner,
+        target: SidecarTarget,
+    ) -> Self {
+        Self {
+            registry,
+            grant_issuer,
+            message_signer,
+            transport: TransportProfile::Sidecar(target),
         }
     }
 
@@ -526,6 +545,24 @@ impl ProviderBroker {
                     material.policy.quotas.clone(),
                 )
                 .await
+            }
+            TransportProfile::Sidecar(target) => {
+                match target.socket_for(material.policy.release_id) {
+                    Some(socket) => GuardedProviderClient::sidecar(
+                        material.policy.endpoint.clone(),
+                        socket,
+                        &material.tls_roots_der,
+                        material.policy.quotas.clone(),
+                    ),
+                    None => {
+                        GuardedProviderClient::production(
+                            material.policy.endpoint.clone(),
+                            &material.tls_roots_der,
+                            material.policy.quotas.clone(),
+                        )
+                        .await
+                    }
+                }
             }
             #[cfg(feature = "provider-conformance")]
             TransportProfile::Conformance(socket) => GuardedProviderClient::conformance_loopback(

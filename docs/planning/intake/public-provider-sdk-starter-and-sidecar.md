@@ -2,8 +2,8 @@
 title: INTAKE-public-provider-sdk-starter-and-sidecar
 status: promoted
 created: 2026-08-30
-ticket: TICKET-045
-pipeline_spec: docs/planning/pipeline/completed/provider-starter-conformance-and-second-game.spec.md
+ticket: TICKET-046
+pipeline_spec: docs/planning/pipeline/completed/reviewed-provider-sidecar-and-deployment-operations.spec.md
 ---
 
 # INTAKE-public-provider-sdk-starter-and-sidecar
@@ -42,8 +42,9 @@ This roadmap item is likely safest as three consecutive tickets:
    explicit negotiation and deterministic export/release provenance;
 2. [delivered by Ticket 045] build the game-agnostic starter backend and public
    conformance/fault kit, then prove a Relay Forge clean-room integration;
-3. design, implement, and drill the authenticated co-located sidecar deployment
-   profile and complete the deployment/operations guide.
+3. [delivered by Ticket 046] design, implement, and drill the authenticated
+   co-located sidecar deployment profile and complete the deployment/operations
+   guide.
 
 Each ticket must leave external-provider admission disabled.
 
@@ -96,11 +97,12 @@ Each ticket must leave external-provider admission disabled.
   exact v1 with launch, command, reconcile, and event capabilities required.
 - [x] Second clean-room game selected as Relay Forge, a deterministic
   resource-building state machine distinct from Door Legends.
-- [ ] Co-located transport profile receives a dedicated threat-model decision.
-- [x] Ticket sequence is promoted one shippable slice at a time; Tickets 044
-  and 045 are delivered and the sidecar/operations slice remains next.
+- [x] Co-located transport profile received a dedicated threat-model decision
+  in Ticket 046.
+- [x] Ticket sequence was promoted one shippable slice at a time; Tickets
+  044–046 deliver the complete locally actionable product.
 - [x] First promoted ticket's pipeline spec/notes pair completed and archived.
-- [x] `ticket:` and `pipeline_spec:` retain the most recently delivered slice
-  until the sidecar/operations ticket is opened.
-- [x] Status remains `promoted`; the sidecar slice retains its unchecked
-  threat-model decision.
+- [x] `ticket:` and `pipeline_spec:` identify the completed sidecar/operations
+  slice.
+- [x] Status remains `promoted`; external provider onboarding is still a
+  separate gated roadmap item.

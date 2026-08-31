@@ -76,11 +76,12 @@ exact-v1 capability negotiation, signing/grant/message helpers, schemas and
 fixtures, and deterministic locally signed release provenance. Ticket 045 adds
 the game-agnostic starter service, portable fifteen-case conformance/fault kit,
 deterministic three-package developer release, and Relay Forge second clean-room
-backend. Deployment/operations guidance and the reviewed co-located sidecar
-remain later slices. A provider owns only the rules/state surfaces of its exact
-registered game release; OmarchyGS remains the authenticated broker and
-platform authority. The provider contract—not a general plugin hook—is how
-portable game backends integrate.
+backend. Ticket 046 adds reviewed remote operations and an exact-release,
+equal-port TLS-over-loopback sidecar profile with separate process, identity,
+state, credentials, paths, limits, lifecycle, and recovery. A provider owns
+only the rules/state surfaces of its exact registered game release; OmarchyGS
+remains the authenticated broker and platform authority. The provider
+contract—not a general plugin hook—is how portable game backends integrate.
 
 An operator may deploy a custom provider on the same infrastructure as their
 OmarchyGS server, but it remains a separately identified service with separate
@@ -206,9 +207,9 @@ evidence.
 3. Bind mounted cartridge presentation to exact authoritative game sessions
    after server marketplace synchronization/import and player
    acquisition/cache/mounting.
-4. Complete the reviewed Provider SDK sidecar/deployment profile after the
+4. ~~Complete the reviewed Provider SDK sidecar/deployment profile after the
    implemented public contract, starter/conformance kit, and second clean-room
-   backend.
+   backend.~~ Completed by Ticket 046.
 5. Add explicit operator-local cartridge trust and provenance disclosure.
 6. Run the server extension isolation/hook architecture spike.
 7. Implement the selected module base, administration, audit, and conformance

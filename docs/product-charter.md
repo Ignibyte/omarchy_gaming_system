@@ -86,10 +86,11 @@ result recorded.
   administration and permanent player disclosure.
 - Portable game backends use the brokered provider protocol and the public-only
   Provider SDK preview with authenticated exact-v1 capability negotiation.
-  Starter/conformance, second-game, sidecar, and external-onboarding work
-  remain gated. General server modules and hooks are a separate, versioned,
-  capability-scoped extension family whose shared process-isolated runtime
-  cannot become game authority or client executable content.
+  The starter/conformance kit, second clean-room game, and reviewed
+  remote/sidecar operations are complete; external onboarding remains gated.
+  General server modules and hooks are a separate, versioned, capability-scoped
+  extension family whose shared process-isolated runtime cannot become game
+  authority or client executable content.
 
 ## Definition of private-alpha done
 

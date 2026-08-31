@@ -33,12 +33,6 @@ sources:
     resource: repo://crates/game-signal-siege/src/lib.rs
   - id: openwiki-source-2bc4557686cbe5b8dfa44f45
     resource: repo://crates/marketplace-publisher/src/lib.rs
-  - id: openwiki-source-01584c5ba7d35b160c5de691
-    resource: repo://crates/provider-conformance/src/runner.rs
-  - id: openwiki-source-752bcc832cc8ddb9cef7a0f9
-    resource: repo://crates/provider-starter/src/rules.rs
-  - id: openwiki-source-80af29333d26b2334a88a2fb
-    resource: repo://crates/provider-starter/src/runtime.rs
   - id: openwiki-source-66facc66e34ad7f2a74321e1
     resource: repo://crates/server/src/accounts.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
@@ -83,15 +77,11 @@ sources:
     resource: repo://docs/planning/ROADMAP.md
   - id: openwiki-source-85dba8f87dd5947de337aca5
     resource: repo://docs/product-charter.md
-  - id: openwiki-source-646f44c73d051dad95b4a950
-    resource: repo://examples/provider-relay-forge/src/lib.rs
   - id: openwiki-source-674113ba65eebb6f842b2dda
     resource: repo://migrations/0008_conversation_local_message_sequences.sql
   - id: openwiki-source-4331166a21e12c8c40994c1e
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
-  - id: openwiki-source-6323e860f0976ef977f38cf6
-    resource: repo://scripts/test-provider-developer-kit.sh
-generated: {by: "codex", at: "2026-08-30T21:12:56.668Z"}
+generated: {by: "codex", at: "2026-08-30T23:28:20.118Z"}
 ---
 
 # Product and architecture boundaries
@@ -261,6 +251,10 @@ developer-kit export, and Relay Forge clean-room consumer prove provider-side
 implementation. They add no registration, admission, discovery, direct-client,
 broker, egress, or platform-database authority. Relay Forge is not registered
 in production; Door Legends remains the sole authorized remote provider. The
+reviewed sidecar and operations profile is also implemented: it maps only that
+exact registered release to an exact TLS loopback socket while retaining the
+canonical provider identity, separate process/database/credentials, lifecycle,
+quotas, signed protocol, audit, and recovery boundaries. The
 production server-module boundary now
 includes both one exact compiled-in reviewed observation component and bounded
 database-local operator-custom import and lifecycle. The custom path changes
@@ -420,7 +414,10 @@ state, receipts, and callback delivery; its game seam receives no account or
 persona identifiers, platform credentials, broker or registry handles, or
 platform database access. The conformance runner and Relay Forge prove that
 public boundary without changing production registration or admission.
-Sidecar/operations and external onboarding remain separate future work.
+The reviewed sidecar profile and operations runbook now preserve that same
+boundary under co-location: exact release/socket routing changes no HTTPS,
+signed identity, grant, protocol, admission, or gameplay authority. Real
+external onboarding remains a separate human and infrastructure process.
 ADR-0004's
 dedicated no-WASI Component Model host is implemented for the opt-in compiled-in
 Sentinel release and up to eight explicitly admitted operator-custom module

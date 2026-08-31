@@ -91,7 +91,7 @@ sources:
     resource: repo://migrations/0016_operator_reporting_and_audit.sql
   - id: openwiki-source-a5928e7ee39885995efdc170
     resource: repo://scripts/dev.sh
-generated: {by: "codex", at: "2026-08-30T00:13:04.632Z"}
+generated: {by: "codex", at: "2026-08-30T23:28:20.118Z"}
 ---
 
 # Runtime foundation
@@ -112,7 +112,11 @@ and inject it into the router. The provider runtime is absent when all provider
 environment values are absent. It is enabled only when the grant-signing seed,
 pairwise secret, message-signing seed, and callback authority are all present
 and valid; a partial or malformed set stops startup rather than exposing a
-partially configured broker.
+partially configured broker. An optional sidecar pair adds one exact non-nil
+release UUID and one exact nonzero loopback socket. The pair is all-or-none,
+requires the complete provider runtime, and changes only that release's socket
+destination; the registered DNS authority, HTTPS URL, TLS roots, signed
+messages, grants, and all other releases retain their existing behavior.
 
 Startup may independently construct a `CartridgeDistributionRuntime` from the
 operator's existing secure-store configuration and either one manual
@@ -818,6 +822,17 @@ transaction. A timeout or outage marks an explicit recovery state, and an
 explicit reconcile operation asks the provider for authoritative state. There
 is no compiled fallback.
 
+Before command or reconciliation transport, the platform locks the provider
+session, rejects commands while it is non-ready, and claims one bounded durable
+operation reservation. Execution then holds a transaction-scoped PostgreSQL
+advisory fence for that session across broker I/O and revalidates the exact
+reservation after acquiring the fence. The authenticated response may clear
+only its own reservation. Competing operations are denied locally, an expired
+abandoned reservation forces reconciliation before more commands, and a live
+process cannot be reclaimed merely because its visible deadline passed.
+Failure and response projection preserve operator `suspended` or `retired`
+availability rather than reviving or overwriting it.
+
 Provider callbacks first validate the fixed callback authority and path,
 registered identity, pairwise subject, exact signed bytes, key, bounds, quota,
 and current pilot lifecycle. The projection transaction locks release, pilot,
@@ -972,6 +987,11 @@ bounded immutable database custody for custom component and public trust
 material, server-bound operator provenance, one-step release/snapshot rollback
 pointers, explicit custom lifecycle and gap reasons, and immutable
 whole-command operation receipts.
+Migration `0029` adds a shaped nullable provider-operation reservation UUID,
+kind, and expiry to registered-provider sessions. Runtime pairs that durable
+crash-recovery marker with a process-held PostgreSQL advisory fence so command
+and reconciliation admission, external effects, and response fencing remain
+linearized across platform processes.
 Add later
 capabilities through domain modules and thin handlers rather than placing policy
 directly in SQL or transport code.
@@ -1055,10 +1075,15 @@ case and QML transport/profile/accessibility fixtures. All module runtime or
 authority changes finish with `scripts/test-server-modules.sh`, the restore
 drill, and gate stages 17, 18, 21, and 24.
 Provider player-route changes use `provider_game_api_tests.rs` plus
-`scripts/test-provider-authority-pilot.sh`. The clean-clone proof covers the
+`scripts/test-provider-sidecar.sh` and
+`scripts/test-provider-authority-pilot.sh`. The sidecar proof covers exact
+release/socket/TLS binding, hostile local peers, hardened service and callback
+proxy templates, crash/restart/reconciliation, independent restore, and a
+signed secret-free receipt. The clean-clone authority proof covers the
 independent TLS process and database, protocol-only dependency, mixed catalog,
 exact start and command replay, expected-revision races, unknown-outcome
-reconciliation, callback authentication/deduplication/policy, participant
+reconciliation, durable reservation and advisory-fence races, callback
+authentication/deduplication/policy under hostile ambient proxies, participant
 privacy, lifecycle containment, restart, and separate provider backup/restore.
 
 Historical cartridge acquisition or navigation changes additionally use the

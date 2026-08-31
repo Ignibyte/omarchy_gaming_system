@@ -50,6 +50,15 @@ exact HTTPS callback URL, and the callback TLS root. The
 `DOOR_LEGENDS_CALLBACK_SOCKET_OVERRIDE` variable is conformance-only; a
 production build rejects it.
 
+For the reviewed co-located profile, configure the platform's exact
+`OGS_PROVIDER_SIDECAR_RELEASE_ID`/`OGS_PROVIDER_SIDECAR_SOCKET` pair and set
+`DOOR_LEGENDS_SIDECAR_CALLBACK_SOCKET` to the equal-port loopback TLS proxy for
+the canonical platform callback authority. Never set both Door Legends socket
+variables. Follow the separate identities, databases, paths, containment, and
+recovery procedure in
+[`provider-deployment.md`](provider-deployment.md); the sidecar does not alter
+this pilot's admission or authority.
+
 ## Register and activate
 
 First apply the exact release registration described in
