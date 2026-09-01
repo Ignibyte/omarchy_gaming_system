@@ -101,7 +101,7 @@ sources:
     resource: repo://packaging/arch/PKGBUILD
   - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
     resource: repo://scripts/check-qml-style.py
-generated: {by: "codex", at: "2026-08-30T23:28:20.118Z"}
+generated: {by: "codex", at: "2026-09-01T22:46:24.106Z"}
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -154,12 +154,45 @@ through authenticated exact-v1 capability negotiation to a separate provider
 process and database. The public provider developer kit packages that
 provider-facing contract, a fixed four-route Axum/PostgreSQL starter, a
 fifteen-case TLS conformance runner, and deterministic locally signed release
-artifacts. Its `ProviderGame` seam receives only deterministic game state and
-payloads; it has no platform registration, broker, egress, admission,
+artifacts. The runner retains Relay Forge as its default sequence but accepts
+one bounded optional gameplay profile for a persistent or terminal game's
+launch, timeout/replay command, finite continuation, and expected final status;
+the authentication, replay, fault, callback, reconciliation, and receipt corpus
+does not change. Its `ProviderGame` seam receives only deterministic game state
+and payloads; it has no platform registration, broker, egress, admission,
 administration, or player-route authority. Relay Forge consumes those public
-packages as an independent clean-room proof and is not a production-admitted
-provider. The main QML
-connector now handles direct or saved server selection through exact public
+packages as an independent clean-room proof. Tickets 048 through 058 additionally
+exercise them with a separate local Usurper development provider. Its rules-v3
+slice adds player-private equipment, shops and haggling, bank and chest
+transfers, healing-potion purchases, equipment-aware combat, configured
+quick-heal-then-attack turns, and seventeen inert signed screens. Its rules-v4
+slice adds three class-specific level-one spells, mana spend and daily refill,
+resistance, temporary Fog absorption, encounter reset, and same-turn monster
+response. Its rules-v5 slice adds the exact player mental and addiction defaults
+plus the original weapon-gated Assassin Backstab and HP-funded Paladin Soul
+Strike through one state-routed inert class-special action. Rules v6 adds the
+passive Gnoll bite, persistent encounter-owned monster poison, same-turn poison
+ticks before the monster response, and the source's no-immediate-reward outcome
+when poison is lethal. Rules v7 adds exact source-linked level-two monster data,
+draw-free level-one/level-two switching, the original rejection-loop draw order,
+level-aware combat and retreat, and inert signed controls; normal level-two
+selection preserves record 10 as data while accepting only records 11 through
+19. Rules v8 adds exact source-linked level-three records, draw-free switching
+across levels one through three, and the same rejection-loop and level-aware
+combat path; it retains record 20 as data while normally selecting only records
+21 through 29. Rules v9 extends that path through Level 4, retains record 30 as
+source data while normally selecting records 31 through 39, and initializes the
+selected monster at strength 14, defence 7, and 42 HP. Rules v10 extends that
+path through Level 5, retains record 40 as source data while normally selecting
+records 41 through 49, and initializes the selected monster at strength 15,
+defence 7, and 45 HP. Rules v11 extends that path through Level 6, retains
+record 50 as source data while normally selecting records 51 through 59, and
+initializes the selected monster at strength 16, defence 8, and 48 HP. The existing provider
+protocol, trusted QML vocabulary, and platform-owned state remain unchanged,
+and neither development game is
+thereby production-registered or admitted. The
+main QML connector now
+handles direct or saved server selection through exact public
 discovery, masked invitation entry and account registration, password or MFA
 sign-in, and owned-persona creation or selection before entering an
 authenticated home. From there it can manage persona connections and private
@@ -301,7 +334,15 @@ adds the public starter and conformance crates, deterministic three-package
 developer-kit export, and independently built Relay Forge second-game proof.
 Ticket 046 adds the reviewed exact-release TLS-loopback sidecar, separate
 deployment and recovery templates/runbook, hostile-peer and independent-restore
-drill, and durable cross-process command/reconcile fencing. Real external
+drill, and durable cross-process command/reconcile fencing. Tickets 048 through
+058 prove a persistent game's bounded profile and game-neutral authenticated
+views with a separate local Usurper provider, then extend it to a player-private
+equipment/potion economy, configured combat-quaff parity, and signed
+seventeen-screen cartridge plus the source-linked level-one spell and mana
+loop, the source-linked Assassin Backstab and Paladin Soul Strike combat
+branches, passive Gnoll poison, and the bounded source-faithful level-two,
+level-three, level-four, level-five, and level-six dungeon bands. They add no platform rule copy, route,
+migration, registration, admission, deployment, or publication. Real external
 provider onboarding remains separate work. Ticket
 033 adds independently
 trusted main-client acquisition,
@@ -362,7 +403,7 @@ roadmap or external work. The bounded custom path is not a general plugin loader
 | Change player reporting, account suspension, report disposition, invitation administration, operator audit, or platform restore | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `reports.rs`, `operator_admin.rs`, `bin/omarchygs-admin.rs`; migrations `0016`–`0017`; `docs/operators/operator-safety-and-recovery.md`; `docs/operators/private-alpha.md` | Report API and operator-domain PostgreSQL tests; real CLI test; recovery and private-alpha drills |
 | Change QML endpoint/profile selection, appearance/accessibility, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `ServerProfiles.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/components/`, `client/qml/screens/`, `client/qml/game/` | `scripts/check-qml-style.py`; `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
-| Change cartridge packaging, trusted rendering, SDK portability, provider integration or sidecar operations, marketplace or operator-custom trust, synchronization, server admission, player acquisition, session pinning, historical recovery, signed-screen navigation, package staging, or trusted launch | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/provider-sdk`; `crates/provider-starter`; `crates/provider-conformance`; `examples/provider-relay-forge`; `crates/game-cartridge-renderer`; `crates/client-cartridge-runtime`; `crates/marketplace-trust`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `operator_custom.rs`; `session_cartridges.rs`; `marketplace_sync.rs`; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `deploy/provider-sidecar`; `client/qml/MarketplaceController.qml`; `CartridgeController.qml`; `GameController.qml`; `client/qml/cartridge`; migrations `0014`–`0015`, `0019`–`0024`, and `0029`; ADR-0002; Tickets 015–019, 032–038, and 044–046 | Cartridge/renderer/SDK/provider focused scripts, including `scripts/test-provider-sdk.sh`, `scripts/test-provider-developer-kit.sh`, `scripts/test-provider-starter-conformance.sh`, and `scripts/test-provider-sidecar.sh`; root-signed trust-channel test; marketplace/custom PostgreSQL lifecycle/admission/migration tests; hostile companion/QML contract tests; clean-clone Relay Forge and Door Legends proofs; sidecar containment/restore/operation-fence proof; native package smoke; threat/authority review and constitutional authority check |
+| Change cartridge packaging, trusted rendering, SDK portability, provider integration or sidecar operations, marketplace or operator-custom trust, synchronization, server admission, player acquisition, session pinning, historical recovery, signed-screen navigation, package staging, or trusted launch | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/provider-sdk`; `crates/provider-starter`; `crates/provider-conformance`; `examples/provider-relay-forge`; `crates/game-cartridge-renderer`; `crates/client-cartridge-runtime`; `crates/marketplace-trust`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `operator_custom.rs`; `session_cartridges.rs`; `marketplace_sync.rs`; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `deploy/provider-sidecar`; `client/qml/MarketplaceController.qml`; `CartridgeController.qml`; `GameController.qml`; `client/qml/cartridge`; migrations `0014`–`0015`, `0019`–`0024`, and `0029`; ADR-0002; Tickets 015–019, 032–038, and 044–058 | Cartridge/renderer/SDK/provider focused scripts, including `scripts/test-provider-sdk.sh`, `scripts/test-provider-developer-kit.sh`, `scripts/test-provider-starter-conformance.sh`, and `scripts/test-provider-sidecar.sh`; root-signed trust-channel test; marketplace/custom PostgreSQL lifecycle/admission/migration tests; hostile companion/QML contract tests; clean-clone Relay Forge and Door Legends proofs; sidecar containment/restore/operation-fence proof; native package smoke; threat/authority review and constitutional authority check |
 | Change static marketplace preparation, offline-root signing, immutable activation, local verification, or mirror probes | [Game Cartridges](game-cartridges.md) and [Development and validation](development-and-validation.md) | `crates/marketplace-publisher`; `docs/operators/marketplace-publication.md`; Ticket 037 | `scripts/test-marketplace-publication.sh`; exact-tree, network-less ceremony, mirror, rotation, rollback, security, and canonical diff-gate evidence |
 | Change owner-operated server, Provider SDK, or executable custom-content direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `crates/provider-sdk`; `crates/provider-starter`; `crates/provider-conformance`; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | `scripts/test-provider-sdk.sh`; `scripts/test-provider-developer-kit.sh`; `scripts/test-provider-starter-conformance.sh`; current-versus-future audit; provenance/authority review; official-client containment |
 | Change the server-module WIT, fixed loader, host, custom import/custody, report observation, dispatch, typed intent, receipts/gaps, state, lifecycle, disclosure, restore, or containment | [Server modules](server-modules.md) and [Product boundaries](product-boundaries.md) | ADR-0004; `docs/architecture/server-modules.md`; `docs/operators/server-modules.md`; `crates/server-module-runtime`; `crates/server/src/server_modules.rs`; `server_module_custom.rs`; `server_discovery.rs`; trusted QML profile/shell surfaces; migrations `0025`–`0027`; `crates/server-module-spike`; Tickets 039–041 | `scripts/test-server-modules.sh`; focused PostgreSQL/operator/discovery/QML tests; restore drill; `scripts/test-server-module-spike.sh`; threat/authority review; canonical local diff gate |
@@ -470,7 +511,10 @@ safe. Door Legends commands retain their idempotency key and expected provider
 revision through the broker, while explicit reconciliation recovers unknown
 outcomes. Provider session reads expose only the authority-tagged platform
 envelope, last authenticated bounded view, availability, and optional
-allowlisted result—not provider-private rules state. The QML flow currently
+allowlisted result—not provider-private rules state. A projected provider view
+must be a non-empty object, pass the public SDK's safe-payload rules, and remain
+within 64 KiB; the exact signed screen schema still owns the game-specific
+presentation shape. The QML flow currently
 presents exact compiled Signal Siege v1/v2 state through its platform-owned
 surface and presents an eligible bound Door Legends session through the trusted
 cartridge surface. Missing or mismatched mounts, trust keys, helper authority,

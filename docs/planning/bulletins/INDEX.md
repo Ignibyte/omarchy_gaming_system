@@ -8,6 +8,7 @@ archive with a reason.
 
 | ID | Severity | Posted | Expires | Bulletin |
 |---|---|---|---|---|
+| `BUL-002-pre-rebuild-delivery-handoff` | info | 2026-09-01 | — | Before replacing the development system, preserve both `Ignibyte/omarchy_gaming_system` and the private `Ignibyte/omarchygs_usurper` `main` branches. Ticket 058 is complete; read [`REBUILD_HANDOFF.md`](../REBUILD_HANDOFF.md) before new work because ignored build, preview, provider-kit, upstream-reference, database, credential, and local receipt state is deliberately not source-controlled. |
 
 Severity: `critical`, `warn`, or `info`.
 

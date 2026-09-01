@@ -4,7 +4,7 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `047`**
+- **Next ticket number: `059`**
 
 ## Open queue
 
@@ -12,6 +12,18 @@ No locally actionable ticket is open.
 
 ## Closed
 
+- [`TICKET-058` — Usurper level-six dungeon band](closed/TICKET-058-usurper-level-six-dungeon-band.md)
+- [`TICKET-057` — Usurper level-five dungeon band](closed/TICKET-057-usurper-level-five-dungeon-band.md)
+- [`TICKET-056` — Usurper level-four dungeon band](closed/TICKET-056-usurper-level-four-dungeon-band.md)
+- [`TICKET-055` — Usurper level-three dungeon band](closed/TICKET-055-usurper-level-three-dungeon-band.md)
+- [`TICKET-054` — Usurper level-two dungeon band](closed/TICKET-054-usurper-level-two-dungeon-band.md)
+- [`TICKET-053` — Usurper Gnoll Poisonous Bite](closed/TICKET-053-usurper-gnoll-poisonous-bite.md)
+- [`TICKET-052` — Usurper Assassin Backstab and Paladin Soul Strike](closed/TICKET-052-usurper-assassin-backstab-and-paladin-soul-strike.md)
+- [`TICKET-050` — Usurper healing-potion shop and combat-turn parity](closed/TICKET-050-usurper-healing-potion-shop-and-combat-turn-parity.md)
+- [`TICKET-051` — Usurper level-one spellcasting and mana loop](closed/TICKET-051-usurper-level-one-spellcasting-and-mana-loop.md)
+- [`TICKET-049` — Usurper solo equipment economy](closed/TICKET-049-usurper-solo-equipment-economy.md)
+- [`TICKET-048` — Usurper one BBS day and trusted preview](closed/TICKET-048-usurper-one-bbs-day-and-trusted-preview.md)
+- [`TICKET-047` — Usurper v0.20e provenance and Rust port map](closed/TICKET-047-usurper-v020e-provenance-and-rust-port-map.md)
 - [`TICKET-046` — Reviewed provider sidecar and deployment operations](closed/TICKET-046-reviewed-provider-sidecar-and-deployment-operations.md)
 - [`TICKET-045` — Provider starter, conformance kit, and second clean-room game](closed/TICKET-045-provider-starter-conformance-and-second-game.md)
 - [`TICKET-044` — Public Provider SDK contract, negotiation, and release](closed/TICKET-044-public-provider-sdk-contract-negotiation-and-release.md)

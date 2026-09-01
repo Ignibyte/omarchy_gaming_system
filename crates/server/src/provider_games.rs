@@ -12,6 +12,7 @@ use omarchy_game_provider::{
         GrantIssuer, HttpMessageSigner, ProviderEvent, ProviderEventKind,
         ProviderOperationDisposition, ProviderOperationKind, ProviderOperationResponse,
         ProviderSessionStatus, RequestSignatureContext, SignatureHeaders, sha256_hex,
+        validate_provider_payload,
     },
     registry::ProviderRegistry,
 };
@@ -36,6 +37,7 @@ use crate::{
 const PROVIDER_GRANT_KEY_ID: &str = "ogs-grant-v1";
 const PROVIDER_MESSAGE_KEY_ID: &str = "ogs-message-v1";
 const CALLBACK_PATH_PREFIX: &str = "/v1/provider-events/";
+const MAX_PROVIDER_VIEW_BYTES: usize = 64 * 1024;
 
 #[derive(Clone)]
 pub(crate) struct ProviderRuntime {
@@ -579,7 +581,7 @@ async fn apply_authenticated_response(
     let response_payload: ProviderResponsePayload =
         serde_json::from_value(response.payload.clone())
             .map_err(|_| GameError::ProviderUnavailable)?;
-    validate_door_legends_view(&response_payload.view)?;
+    validate_provider_view(&response_payload.view)?;
     let response_revision =
         i64::try_from(response.revision).map_err(|_| GameError::ProviderUnavailable)?;
     let expected_revision =
@@ -1001,7 +1003,7 @@ async fn callback_policy_valid(
             if !canonical_identifier(&payload.outcome, 2, 32)
                 || !bounded_public_object(&payload.public_summary, 8 * 1024)
                 || payload.achievements.len() > 64
-                || validate_door_legends_view(&payload.view).is_err()
+                || validate_provider_view(&payload.view).is_err()
             {
                 return Ok(false);
             }
@@ -1040,7 +1042,7 @@ async fn callback_policy_valid(
             else {
                 return Ok(false);
             };
-            Ok(validate_door_legends_view(&payload.view).is_ok())
+            Ok(validate_provider_view(&payload.view).is_ok())
         }
         ProviderEventKind::ReconciliationRequired => {
             Ok(event.payload.as_object().is_some_and(Map::is_empty))
@@ -1345,7 +1347,7 @@ async fn upsert_view(
     digest: &str,
     view: &Value,
 ) -> Result<(), GameError> {
-    validate_door_legends_view(view)?;
+    validate_provider_view(view)?;
     sqlx::query(
         r#"
         INSERT INTO provider_game_session_views (
@@ -1372,21 +1374,12 @@ async fn upsert_view(
     Ok(())
 }
 
-fn validate_door_legends_view(view: &Value) -> Result<(), GameError> {
-    let Some(object) = view.as_object() else {
-        return Err(GameError::ProviderUnavailable);
-    };
-    if object.len() != 5
-        || !object.contains_key("chronicle_label")
-        || !object.contains_key("enter_label")
-        || !object.contains_key("lobby_label")
-        || !object.contains_key("status")
-        || !object.contains_key("welcome")
-        || object.values().any(|value| {
-            value
-                .as_str()
-                .is_none_or(|value| value.is_empty() || value.chars().count() > 256)
-        })
+fn validate_provider_view(view: &Value) -> Result<(), GameError> {
+    if view.as_object().is_none_or(Map::is_empty)
+        || validate_provider_payload(view).is_err()
+        || serde_json::to_vec(view)
+            .ok()
+            .is_none_or(|bytes| bytes.len() > MAX_PROVIDER_VIEW_BYTES)
     {
         Err(GameError::ProviderUnavailable)
     } else {
@@ -1541,4 +1534,48 @@ fn database_error(error_value: sqlx::Error, operation: &'static str) -> GameErro
         operation, "provider game database operation failed"
     );
     GameError::Internal
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn provider_view_validation_accepts_game_neutral_bounded_objects() {
+        let door_legends = json!({
+            "chronicle_label": "Read the chronicle",
+            "enter_label": "Enter",
+            "lobby_label": "Lobby",
+            "status": "Ready",
+            "welcome": "Welcome",
+        });
+        let usurper = json!({
+            "screen": "main-street",
+            "title": "Main Street",
+            "narrative": "A new realm day begins.",
+            "status": "Rust Usurper · Human Barbarian · Level 1",
+            "primary_label": "Dungeon",
+            "hit_points": 25,
+            "monster_hit_points": 0,
+        });
+
+        assert!(validate_provider_view(&door_legends).is_ok());
+        assert!(validate_provider_view(&usurper).is_ok());
+    }
+
+    #[test]
+    fn provider_view_validation_rejects_unsafe_or_oversized_values() {
+        assert!(validate_provider_view(&json!({})).is_err());
+        assert!(validate_provider_view(&json!(["not", "an", "object"])).is_err());
+        assert!(validate_provider_view(&json!({"account_id": "private"})).is_err());
+        assert!(validate_provider_view(&json!({"ratio": 0.5})).is_err());
+        assert!(validate_provider_view(&json!({"narrative": "line one\nline two"})).is_err());
+
+        let oversized = Value::Object(
+            (0..17)
+                .map(|index| (format!("field_{index}"), Value::String("x".repeat(4_096))))
+                .collect(),
+        );
+        assert!(validate_provider_view(&oversized).is_err());
+    }
 }

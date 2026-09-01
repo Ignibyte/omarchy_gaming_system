@@ -128,6 +128,18 @@ and in this register.
 | `PR-omarchy-gaming-system-linearize-external-effects-with-reservation-and-live-fence-001` | When authorization spans external I/O, pair a durable crash-recovery reservation with a process-held database fence from final admission through transport and response revalidation. | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
 | `PR-omarchy-gaming-system-preserve-newer-lifecycle-during-async-cleanup-001` | Asynchronous response and failure cleanup may clear only its exact operation identity and must preserve newer terminal or operator-controlled lifecycle state. | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
 | `PR-omarchy-gaming-system-disable-ambient-sidecar-management-and-proxy-planes-001` | Sidecar service and callback-proxy templates must explicitly disable ambient proxy selection and mutable administration listeners unless a separately reviewed control plane requires them. | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
+| `PR-omarchy-gaming-system-authenticate-duplicate-upstream-trees-001` | Authenticate every duplicate or nested upstream source tree against an immutable publisher-linked commit before choosing a port baseline. | `aar/AAR-047-usurper-v020e-provenance-and-rust-port-map.md` |
+| `PR-omarchy-gaming-system-classify-bundled-corpus-rights-by-artifact-001` | Classify source units, bundled libraries, binaries, generated records, text, and art separately; a distribution license is not blanket proof for every included artifact. | `aar/AAR-047-usurper-v020e-provenance-and-rust-port-map.md` |
+| `PR-omarchy-gaming-system-prove-provider-state-topology-fit-001` | Before selecting a generic provider starter, compare its state size, transaction, identity, input, and shared-realm seams with the target game's authoritative topology and stage mismatches explicitly. | `aar/AAR-047-usurper-v020e-provenance-and-rust-port-map.md` |
+| `PR-omarchy-gaming-system-parameterize-gameplay-without-weakening-provider-security-corpus-001` | Keep provider transport, authentication, replay, fault, callback, reconciliation, receipt, and case identities fixed; parameterize only a bounded game sequence and expected lifecycle. | `aar/AAR-048-usurper-one-bbs-day-and-trusted-preview.md` |
+| `PR-omarchy-gaming-system-validate-provider-views-by-public-bounds-not-pilot-vocabulary-001` | Enforce public safe-payload and byte contracts at provider projection; leave exact game fields to the authenticated cartridge schema. | `aar/AAR-048-usurper-one-bbs-day-and-trusted-preview.md` |
+| `PR-omarchy-gaming-system-prove-legacy-branch-scope-before-porting-behavior-001` | Trace legacy statements through enclosing conditions and canonical declarations before translating behavior, and retain deliberate oddities in compatibility tests. | `aar/AAR-048-usurper-one-bbs-day-and-trusted-preview.md` |
+| `PR-omarchy-gaming-system-verify-generated-provider-profiles-before-live-use-001` | Round-trip generated provider gameplay profiles through canonical JSON serialization and require byte equality before live conformance. | `aar/AAR-049-usurper-solo-equipment-economy.md` |
+| `PR-omarchy-gaming-system-declare-legacy-mode-before-composing-subsystems-001` | Declare the exact legacy mode first and compose only subsystem producers and consumers proven compatible with that mode. | `aar/AAR-049-usurper-solo-equipment-economy.md` |
+| `PR-omarchy-gaming-system-reconcile-composite-command-drivers-001` | When one accepted game command absorbs a previously separate follow-up transition, update every driver to choose one command per loop iteration and assert phase before issuing another command. | `aar/AAR-050-usurper-healing-potion-shop-and-combat-turn-parity.md` |
+| `PR-omarchy-gaming-system-preserve-legacy-guards-before-safe-arithmetic-001` | Translate the source branch guard before applying checked or saturating arithmetic; safer arithmetic must not make an originally skipped adjustment execute. | `aar/AAR-051-usurper-level-one-spellcasting-and-mana-loop.md` |
+| `PR-omarchy-gaming-system-separate-legacy-state-from-access-gates-001` | Preserve legacy stored flags independently from menu, class, phase, and capability gates unless the source explicitly couples them. | `aar/AAR-051-usurper-level-one-spellcasting-and-mana-loop.md` |
+| `PR-omarchy-gaming-system-preserve-discarded-legacy-rng-work-001` | Preserve source calculations whose values are discarded when they consume RNG or position later draws; observable deterministic order is behavior even when the intermediate value is unused. | `aar/AAR-053-usurper-gnoll-poisonous-bite.md` |
 
 ## Register
 
@@ -495,3 +507,26 @@ and in this register.
 | `PR-omarchy-gaming-system-disable-ambient-sidecar-management-and-proxy-planes-001` | rule | `aar/AAR-046-reviewed-provider-sidecar-and-deployment-operations.md` |
 | `AD-omarchy-gaming-system-exact-release-tls-sidecar-profile-001` | decision | `../../architecture/adr-0003-owner-operated-server-and-extension-boundary.md`; `../../architecture/game-cartridges.md`; `../../security/provider-sidecar-threat-model.md` |
 | `AD-omarchy-gaming-system-provider-session-operation-fence-001` | decision | `../../architecture/game-cartridges.md`; `../../security/provider-sidecar-threat-model.md`; `../../../migrations/0029_provider_operation_reservations.sql` |
+| `BF-omarchy-gaming-system-usurper-nested-source-baseline-ambiguity-001` | failure | `aar/AAR-047-usurper-v020e-provenance-and-rust-port-map.md` |
+| `BF-omarchy-gaming-system-usurper-distribution-license-overbreadth-001` | failure | `aar/AAR-047-usurper-v020e-provenance-and-rust-port-map.md` |
+| `BF-omarchy-gaming-system-usurper-provider-state-topology-mismatch-001` | failure | `aar/AAR-047-usurper-v020e-provenance-and-rust-port-map.md` |
+| `PR-omarchy-gaming-system-authenticate-duplicate-upstream-trees-001` | rule | `aar/AAR-047-usurper-v020e-provenance-and-rust-port-map.md` |
+| `PR-omarchy-gaming-system-classify-bundled-corpus-rights-by-artifact-001` | rule | `aar/AAR-047-usurper-v020e-provenance-and-rust-port-map.md` |
+| `PR-omarchy-gaming-system-prove-provider-state-topology-fit-001` | rule | `aar/AAR-047-usurper-v020e-provenance-and-rust-port-map.md` |
+| `AD-omarchy-gaming-system-usurper-v020e-deterministic-provider-port-001` | decision | `aar/AAR-047-usurper-v020e-provenance-and-rust-port-map.md` |
+| `BF-omarchy-gaming-system-provider-conformance-game-vocabulary-coupling-001` | failure | `aar/AAR-048-usurper-one-bbs-day-and-trusted-preview.md` |
+| `BF-omarchy-gaming-system-provider-view-pilot-vocabulary-coupling-001` | failure | `aar/AAR-048-usurper-one-bbs-day-and-trusted-preview.md` |
+| `BF-omarchy-gaming-system-legacy-adjacent-branch-scope-misread-001` | failure | `aar/AAR-048-usurper-one-bbs-day-and-trusted-preview.md` |
+| `PR-omarchy-gaming-system-parameterize-gameplay-without-weakening-provider-security-corpus-001` | rule | `aar/AAR-048-usurper-one-bbs-day-and-trusted-preview.md` |
+| `PR-omarchy-gaming-system-validate-provider-views-by-public-bounds-not-pilot-vocabulary-001` | rule | `aar/AAR-048-usurper-one-bbs-day-and-trusted-preview.md` |
+| `PR-omarchy-gaming-system-prove-legacy-branch-scope-before-porting-behavior-001` | rule | `aar/AAR-048-usurper-one-bbs-day-and-trusted-preview.md` |
+| `BF-omarchy-gaming-system-provider-profile-noncanonical-nested-field-order-001` | failure | `aar/AAR-049-usurper-solo-equipment-economy.md` |
+| `PR-omarchy-gaming-system-verify-generated-provider-profiles-before-live-use-001` | rule | `aar/AAR-049-usurper-solo-equipment-economy.md` |
+| `PR-omarchy-gaming-system-declare-legacy-mode-before-composing-subsystems-001` | rule | `aar/AAR-049-usurper-solo-equipment-economy.md` |
+| `BF-omarchy-gaming-system-usurper-composite-quaff-double-attack-001` | failure | `aar/AAR-050-usurper-healing-potion-shop-and-combat-turn-parity.md` |
+| `PR-omarchy-gaming-system-reconcile-composite-command-drivers-001` | rule | `aar/AAR-050-usurper-healing-potion-shop-and-combat-turn-parity.md` |
+| `BF-omarchy-gaming-system-usurper-guarded-saturating-sub-drift-001` | failure | `aar/AAR-051-usurper-level-one-spellcasting-and-mana-loop.md` |
+| `BF-omarchy-gaming-system-usurper-access-gate-state-conflation-001` | failure | `aar/AAR-051-usurper-level-one-spellcasting-and-mana-loop.md` |
+| `PR-omarchy-gaming-system-preserve-legacy-guards-before-safe-arithmetic-001` | rule | `aar/AAR-051-usurper-level-one-spellcasting-and-mana-loop.md` |
+| `PR-omarchy-gaming-system-separate-legacy-state-from-access-gates-001` | rule | `aar/AAR-051-usurper-level-one-spellcasting-and-mana-loop.md` |
+| `PR-omarchy-gaming-system-preserve-discarded-legacy-rng-work-001` | rule | `aar/AAR-053-usurper-gnoll-poisonous-bite.md` |

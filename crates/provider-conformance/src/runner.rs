@@ -12,7 +12,7 @@ use omarchygs_provider_sdk::{
         ProviderCompatibilitySelection, ProviderGrantClaims, ProviderOperationDisposition,
         ProviderOperationKind, ProviderOperationRequest, ProviderOperationResponse,
         ProviderSessionStatus, RequestSignatureContext, SignatureHeaders, parse_authenticated_json,
-        verify_response_signature,
+        validate_provider_payload, verify_response_signature,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -24,6 +24,7 @@ use crate::CallbackSink;
 
 const BASE_PATH: &str = "/omarchygs/provider/v1/";
 const BODY_LIMIT: usize = 65_536;
+const MAX_CONTINUATION_COMMANDS: usize = 64;
 
 /// Complete, sorted v1 case inventory. Adding or omitting a case changes the
 /// public receipt contract.
@@ -45,6 +46,75 @@ pub const REQUIRED_CASES: [&str; 15] = [
     "valid_flow",
 ];
 
+/// Bounded, game-specific payloads used by the otherwise fixed conformance
+/// corpus. This profile changes no transport, authentication, replay, fault,
+/// callback, or receipt assertion.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ConformanceGameplayProfile {
+    launch_payload: Value,
+    timeout_command_payload: Value,
+    continuation_command_payloads: Vec<Value>,
+    final_status: ProviderSessionStatus,
+}
+
+impl ConformanceGameplayProfile {
+    /// Create a persistent or terminal gameplay path for the fixed corpus.
+    /// The timeout command must leave the session active so the continuation
+    /// commands can execute, and at least one continuation command is required.
+    pub fn new(
+        launch_payload: Value,
+        timeout_command_payload: Value,
+        continuation_command_payloads: Vec<Value>,
+        final_status: ProviderSessionStatus,
+    ) -> Result<Self> {
+        let profile = Self {
+            launch_payload,
+            timeout_command_payload,
+            continuation_command_payloads,
+            final_status,
+        };
+        profile.validate()?;
+        Ok(profile)
+    }
+
+    fn relay_forge() -> Self {
+        Self {
+            launch_payload: json!({"player_count": 1}),
+            timeout_command_payload: json!({"command": {"action": "mine"}}),
+            continuation_command_payloads: ["mine", "charge", "forge"]
+                .into_iter()
+                .map(|action| json!({"command": {"action": action}}))
+                .collect(),
+            final_status: ProviderSessionStatus::Completed,
+        }
+    }
+
+    fn validate(&self) -> Result<()> {
+        if self.continuation_command_payloads.is_empty()
+            || self.continuation_command_payloads.len() > MAX_CONTINUATION_COMMANDS
+        {
+            return Err(anyhow!(
+                "conformance gameplay continuation is out of bounds"
+            ));
+        }
+        for payload in std::iter::once(&self.launch_payload)
+            .chain(std::iter::once(&self.timeout_command_payload))
+            .chain(self.continuation_command_payloads.iter())
+        {
+            validate_provider_payload(payload)
+                .map_err(|_| anyhow!("conformance gameplay payload rejected"))?;
+            if serde_json::to_vec(payload)
+                .context("encode conformance gameplay payload")?
+                .len()
+                > BODY_LIMIT
+            {
+                return Err(anyhow!("conformance gameplay payload exceeded bound"));
+            }
+        }
+        Ok(())
+    }
+}
+
 /// One exact local target and ephemeral platform test authority.
 pub struct ConformanceTarget {
     endpoint: Url,
@@ -63,6 +133,7 @@ pub struct ConformanceTarget {
     platform_signer: HttpMessageSigner,
     normal_timeout: Duration,
     unknown_outcome_timeout: Duration,
+    gameplay: ConformanceGameplayProfile,
 }
 
 impl ConformanceTarget {
@@ -129,7 +200,16 @@ impl ConformanceTarget {
                 .map_err(|_| anyhow!("platform message test authority rejected"))?,
             normal_timeout,
             unknown_outcome_timeout,
+            gameplay: ConformanceGameplayProfile::relay_forge(),
         })
+    }
+
+    /// Replace only the bounded game payload path. The default remains the
+    /// original Relay Forge sequence for backward compatibility.
+    pub fn with_gameplay_profile(mut self, gameplay: ConformanceGameplayProfile) -> Result<Self> {
+        gameplay.validate()?;
+        self.gameplay = gameplay;
+        Ok(self)
     }
 
     #[must_use]
@@ -224,7 +304,7 @@ pub async fn run_conformance(
         launch_id,
         0,
         ProviderOperationKind::Launch,
-        json!({"player_count": 1}),
+        target.gameplay.launch_payload.clone(),
     )?;
     let launched = send_operation(target, &client, &launch, target.normal_timeout).await?;
     require_state(
@@ -246,7 +326,7 @@ pub async fn run_conformance(
         launch_id,
         0,
         ProviderOperationKind::Launch,
-        json!({"player_count": 1, "variant": "changed"}),
+        json!({"conformance_changed_intent": true}),
     )?;
     expect_status(
         &post(
@@ -268,7 +348,7 @@ pub async fn run_conformance(
         Uuid::new_v4(),
         9,
         ProviderOperationKind::Command,
-        json!({"command": {"action": "mine"}}),
+        target.gameplay.timeout_command_payload.clone(),
     )?;
     let stale_response = send_operation(target, &client, &stale, target.normal_timeout).await?;
     require_state(
@@ -287,7 +367,7 @@ pub async fn run_conformance(
         Uuid::new_v4(),
         0,
         ProviderOperationKind::Command,
-        json!({"command": {"action": "mine"}}),
+        target.gameplay.timeout_command_payload.clone(),
     )?;
     if post(
         target,
@@ -320,14 +400,20 @@ pub async fn run_conformance(
     }
 
     let mut revision = 1;
-    for action in ["mine", "charge", "forge"] {
+    let continuation_count = target.gameplay.continuation_command_payloads.len();
+    for (index, payload) in target
+        .gameplay
+        .continuation_command_payloads
+        .iter()
+        .enumerate()
+    {
         let operation = prepare_operation(
             target,
             session_id,
             Uuid::new_v4(),
             revision,
             ProviderOperationKind::Command,
-            json!({"command": {"action": action}}),
+            payload.clone(),
         )?;
         let response = send_operation(target, &client, &operation, target.normal_timeout).await?;
         revision += 1;
@@ -335,8 +421,8 @@ pub async fn run_conformance(
             &response,
             revision,
             ProviderOperationDisposition::Applied,
-            if action == "forge" {
-                ProviderSessionStatus::Completed
+            if index + 1 == continuation_count {
+                target.gameplay.final_status
             } else {
                 ProviderSessionStatus::Active
             },
@@ -363,7 +449,7 @@ pub async fn run_conformance(
         &reconciled,
         revision,
         ProviderOperationDisposition::Applied,
-        ProviderSessionStatus::Completed,
+        target.gameplay.final_status,
     )?;
 
     let receipt = ConformanceReceipt {
@@ -438,7 +524,7 @@ async fn authentication_faults(target: &ConformanceTarget, client: &reqwest::Cli
         Uuid::new_v4(),
         0,
         ProviderOperationKind::Launch,
-        json!({"player_count": 1}),
+        target.gameplay.launch_payload.clone(),
     )?;
 
     let wrong = HttpMessageSigner::new("wrong-message-key", [99; 32])
@@ -918,5 +1004,53 @@ mod tests {
         let literal =
             Url::parse("https://127.0.0.1:4443/omarchygs/provider/v1/").expect("valid IP endpoint");
         assert!(validate_exact_transport(&literal, exact, Some("127.0.0.1:4443")).is_err());
+    }
+
+    #[test]
+    fn gameplay_profile_accepts_a_persistent_bounded_game_day() {
+        let profile = ConformanceGameplayProfile::new(
+            json!({"command": {"action": "enter"}}),
+            json!({"command": {"action": "status"}}),
+            vec![
+                json!({"command": {"action": "enter_dungeon"}}),
+                json!({"command": {"action": "sleep"}}),
+            ],
+            ProviderSessionStatus::Active,
+        )
+        .expect("persistent game profile");
+
+        assert_eq!(profile.final_status, ProviderSessionStatus::Active);
+        assert_eq!(profile.continuation_command_payloads.len(), 2);
+    }
+
+    #[test]
+    fn gameplay_profile_rejects_unbounded_or_sensitive_payloads() {
+        assert!(
+            ConformanceGameplayProfile::new(
+                json!({"command": {"action": "enter"}}),
+                json!({"command": {"action": "status"}}),
+                Vec::new(),
+                ProviderSessionStatus::Active,
+            )
+            .is_err()
+        );
+        assert!(
+            ConformanceGameplayProfile::new(
+                json!({"account_id": "forbidden"}),
+                json!({"command": {"action": "status"}}),
+                vec![json!({"command": {"action": "sleep"}})],
+                ProviderSessionStatus::Active,
+            )
+            .is_err()
+        );
+        assert!(
+            ConformanceGameplayProfile::new(
+                json!({"command": {"action": "enter"}}),
+                json!({"command": {"action": "status"}}),
+                vec![json!({"command": {"action": "status"}}); MAX_CONTINUATION_COMMANDS + 1],
+                ProviderSessionStatus::Active,
+            )
+            .is_err()
+        );
     }
 }

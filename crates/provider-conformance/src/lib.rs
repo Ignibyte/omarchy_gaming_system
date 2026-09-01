@@ -12,5 +12,6 @@ pub use release::{
     DeveloperKitIdentity, DeveloperKitReleaseSigner, export_developer_kit, verify_developer_kit,
 };
 pub use runner::{
-    ConformanceCase, ConformanceReceipt, ConformanceTarget, REQUIRED_CASES, run_conformance,
+    ConformanceCase, ConformanceGameplayProfile, ConformanceReceipt, ConformanceTarget,
+    REQUIRED_CASES, run_conformance,
 };

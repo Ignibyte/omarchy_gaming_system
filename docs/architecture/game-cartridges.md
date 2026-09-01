@@ -863,6 +863,23 @@ keep guarded public DNS. The provider-to-platform callback uses a separately
 named production sidecar mode with the same exact DNS/port/TLS binding; the
 conformance escape hatch remains feature-gated and distinct.
 
+Tickets 047 through 058 exercise those public seams with a separate local
+Usurper v0.20e Rust development repository. Its current rules-v11 provider owns
+one deterministic player-private BBS day; equipment, shops, bank, chest,
+potions, and configured combat turns; three level-one caster spells; Assassin
+Backstab and Paladin Soul Strike; passive Gnoll poison; and bounded dungeon
+levels one through six. The level-two through level-six slices retain their
+exact source records and original rejection-loop RNG order, including normally
+unreachable boundary records 10, 20, 30, 40, and 50; normal selection accepts
+records 11–19, 21–29, 31–39, 41–49, and 51–59 respectively. Level 5 initializes
+its selected monster at strength 15, defence 7, and 45 HP; Level 6 initializes
+strength 16, defence 8, and 48 HP. Signed inert controls switch among all six
+levels and the existing combat uses the selected monster band. Its cartridge
+still has seventeen trusted-renderer screens. This proof does not register or
+admit Usurper in production, publish it, copy its rules or state into OmarchyGS,
+introduce shared-realm persistence, or grant it publisher QML or direct client
+authority.
+
 A co-located provider remains a separate OS process and identity with separate
 PostgreSQL state, credentials, writable paths, resource limits, lifecycle, and
 backup/restore. It retains grants, message signatures, scopes, quotas,

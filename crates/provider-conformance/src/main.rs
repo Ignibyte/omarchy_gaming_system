@@ -11,13 +11,16 @@ use anyhow::{Context as _, Result, anyhow};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use ed25519_dalek::VerifyingKey;
 use omarchygs_provider_conformance::{
-    CallbackSink, CallbackSinkConfig, ConformanceTarget, run_conformance,
+    CallbackSink, CallbackSinkConfig, ConformanceGameplayProfile, ConformanceTarget,
+    run_conformance,
 };
+use omarchygs_provider_sdk::protocol::ProviderSessionStatus;
 use rustix::{
     fs::{CWD, Mode, OFlags, ResolveFlags, openat2},
     process::geteuid,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use url::Url;
 use uuid::Uuid;
 use zeroize::{Zeroize as _, Zeroizing};
@@ -36,6 +39,8 @@ struct ConformanceCliConfig {
     cartridge_digest: String,
     endpoint: String,
     game_key: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    gameplay_profile: Option<ConformanceGameplayConfig>,
     normal_timeout_ms: u64,
     pairwise_secret_base64: String,
     platform_grant_key_id: String,
@@ -51,6 +56,15 @@ struct ConformanceCliConfig {
     rules_version: u32,
     subject: String,
     unknown_outcome_timeout_ms: u64,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ConformanceGameplayConfig {
+    launch_payload: Value,
+    timeout_command_payload: Value,
+    continuation_command_payloads: Vec<Value>,
+    final_status: ProviderSessionStatus,
 }
 
 #[tokio::main]
@@ -92,7 +106,7 @@ async fn main() -> Result<()> {
         "provider message key",
     )?)
     .map_err(|_| anyhow!("provider message key rejected"))?;
-    let target = ConformanceTarget::new(
+    let mut target = ConformanceTarget::new(
         Url::parse(&config.endpoint).context("provider endpoint")?,
         config.provider_socket_override,
         config.authority,
@@ -113,6 +127,14 @@ async fn main() -> Result<()> {
         Duration::from_millis(config.normal_timeout_ms),
         Duration::from_millis(config.unknown_outcome_timeout_ms),
     )?;
+    if let Some(profile) = config.gameplay_profile.take() {
+        target = target.with_gameplay_profile(ConformanceGameplayProfile::new(
+            profile.launch_payload,
+            profile.timeout_command_payload,
+            profile.continuation_command_payloads,
+            profile.final_status,
+        )?)?;
+    }
     let callback = CallbackSink::start(CallbackSinkConfig {
         bind_address: config.callback_bind_address,
         authority: config.callback_authority,

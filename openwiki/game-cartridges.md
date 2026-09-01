@@ -61,6 +61,8 @@ sources:
     resource: repo://crates/marketplace-publisher/src/store.rs
   - id: openwiki-source-7495094e6001dc09ac9490e6
     resource: repo://crates/marketplace-trust/src/transport.rs
+  - id: openwiki-source-01584c5ba7d35b160c5de691
+    resource: repo://crates/provider-conformance/src/runner.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-7243a317e3224aa82795a5fc
@@ -101,7 +103,7 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-08-30T23:28:20.118Z"}
+generated: {by: "codex", at: "2026-09-01T22:46:24.106Z"}
 ---
 
 # Game Cartridges and portable provider direction
@@ -151,7 +153,37 @@ and 045 now implement the public Provider SDK plus its starter, conformance,
 deterministic developer-kit release, and second clean-room game. Ticket 046
 adds the reviewed exact-release TLS-loopback sidecar, deployment templates,
 operator runbook, crash/restore drill, and provider-operation fencing. Real
-external-provider onboarding remains outside the repository.
+external-provider onboarding remains outside the repository. Tickets 048
+through 058 use those public seams for a separate local Usurper development
+provider, including a persistent-game conformance profile, player-private
+equipment, shops and haggling, bank and chest transfers, healing-potion
+purchases, equipment-aware combat, configured quick-heal-then-attack turns,
+and a signed seventeen-screen inert cartridge. Rules v4 also adds the three
+source-linked level-one caster spells, mana spend and daily refill, resistance,
+encounter reset, and same-turn monster response. Rules v5 adds the original
+weapon-gated Assassin Backstab and HP-funded Paladin Soul Strike behind one
+provider-routed inert class-special action. Rules v6 adds the passive Gnoll
+bite and persistent encounter-owned monster poison across the existing attack,
+configured quick-heal, spell, Backstab, and Soul Strike turns, including a
+same-turn tick before monster response and provider replay/view coverage.
+Rules v7 adds exact source-linked level-two records, bounded draw-free
+level-one/level-two switching, preserved rejection-loop RNG work, level-aware
+combat and retreat, and inert signed level controls. Its normal level-two loop
+retains boundary record 10 as source data but accepts only records 11 through
+19. Rules v8 adds exact source-linked level-three records, bounded draw-free
+switching across levels one through three, and the same preserved rejection-loop
+and level-aware combat path. Its normal level-three loop retains boundary record
+20 as source data but accepts only records 21 through 29. Rules v9 extends that
+same path through Level 4, retains boundary record 30 as source data, accepts
+only records 31 through 39, and initializes combat at strength 14, defence 7,
+and 42 HP. Rules v10 extends that path through Level 5, retains boundary record
+40 as source data, accepts only records 41 through 49, and initializes combat
+at strength 15, defence 7, and 45 HP. Rules v11 extends that path through Level
+6, retains boundary record 50 as source data, accepts only records 51 through
+59, and initializes combat at strength 16, defence 8, and 48 HP. These tickets add no
+production registration, catalog admission, deployment,
+publication, platform rule copy, protocol change, trusted QML node, or platform
+migration.
 
 Ticket 014 contributes an isolated executable architecture proof. Its broker,
 provider, and QML surface are not a public SDK or deployed runtime. Ticket 018
@@ -364,18 +396,21 @@ An embedded `ProviderGame` receives no transport, signing, database, callback,
 account/persona, or platform-credential authority and implements only
 deterministic launch, command, view, and optional-event logic. The separate
 conformance package supplies the fixed fifteen-case TLS/fault corpus and signed
-developer-kit export. The reviewed sidecar profile maps only one exact
+developer-kit export. It defaults to Relay Forge but may substitute one bounded
+gameplay profile containing a launch payload, retry-safe timeout command,
+finite continuation, and active or completed final status. That substitution
+changes no transport, authentication, replay, fault, callback, reconciliation,
+or receipt assertion. The reviewed sidecar profile maps only one exact
 registered release to one exact nonzero loopback socket. Its canonical DNS URL,
 SNI, Host, registered roots, signed authority, protocol, grants, quotas,
 lifecycle, and replay contract remain unchanged. The deployment runbook and
 templates require separate process, OS identity, PostgreSQL role/database,
 secrets, writable state, backup, and lifecycle boundaries.
-General server modules form a third
-extension family. ADR-0004 selects one exact no-WASI Component Model release
-per dedicated contained host process, with typed hooks and intents,
-core-owned state/lifecycle, and core reauthorization of every protected effect.
-That architecture is proved but no production module runtime or dynamic
-in-process Rust plugin ABI exists today. A module cannot supply client QML or
+General server modules form a third extension family. Production admits exact
+reviewed or operator-custom no-WASI Component Model releases into dedicated
+contained host processes, with typed hooks and intents, core-owned
+state/lifecycle, and core reauthorization of every protected effect. No
+dynamic in-process Rust plugin ABI exists. A module cannot supply client QML or
 become a game's second rules authority. See [Server modules](server-modules.md).
 
 ## Package and presentation trust
@@ -671,10 +706,15 @@ start receipt, and sync invalidation, then performs network I/O. Commands and
 explicit reconciliation reuse a stable idempotency key and expected provider
 revision; no session transaction remains open across the provider call.
 
-Only authenticated bounded provider views are returned to the cartridge. A
-callback signature is authenticated before its session fields are used, then
-current policy and the durable receipt gate the transaction that records
-allowlisted results, achievement awards, audit, and persona-sync effects. A
+Only authenticated bounded provider views are returned to the cartridge. The
+platform requires a non-empty object, applies the public SDK's key, value,
+depth, cardinality, integer, control-character, and credential-shape rules, and
+caps the serialized view at 64 KiB. This protocol-safety gate is game-neutral;
+the authenticated signed screen schema remains responsible for the exact
+presentation shape. A callback signature is authenticated before its session
+fields are used, then current policy and the durable receipt gate the
+transaction that records allowlisted results, achievement awards, audit, and
+persona-sync effects. A
 pre-negotiation persisted callback can be upgraded only after its exact
 immutable receipt identity and body digest prove it is a duplicate; a fresh
 legacy-shaped callback rejects. Suspension removes the pilot from new discovery
@@ -800,6 +840,29 @@ source-path, credential, or platform-identity leakage:
 scripts/test-provider-developer-kit.sh
 ```
 
+Tickets 048 through 058 provide a development-only second consumer shape outside
+the platform repository: a persistent Usurper provider supplies its bounded
+gameplay profile, runs the same fifteen cases twice across process restart, and
+renders seventeen signed inert screens through the production preview boundary.
+Rules v4 includes player-private pack/equipment, shops and haggling, bank and
+chest transfers, healing-potion purchases, equipment-aware combat, and
+configured quick-heal-then-attack turns, plus three class-specific level-one
+spells with mana, resistance, temporary Fog absorption, encounter reset, and
+same-turn monster response. Rules v5 extends that proof with source-faithful
+Assassin Backstab and Paladin Soul Strike combat branches selected from current
+provider state through one inert action. Rules v6 adds passive Gnoll poison;
+rules v7 adds the exact bounded level-two dungeon band, rules v8 adds the exact
+bounded level-three band, rules v9 adds the exact bounded level-four band, and
+rules v10 adds the exact bounded level-five band. Rules v11 adds the exact
+bounded level-six band.
+All retain the original encounter rejection loop, level-aware combat, and inert
+level controls across selectable levels one through six. Level 6 retains
+boundary record 50 as source data, accepts records 51 through 59, and initializes
+combat at strength 16, defence 8, and 48 HP. That proof is not
+a production registration,
+server admission, marketplace release, deployment, shared-realm state, or
+additional platform gameplay authority.
+
 In diff/full modes, gate 19 first exercises starter persistence and the real
 broker against a distinct provider database, then runs the complete fifteen-case
 TLS conformance corpus twice across provider restart before continuing through
@@ -905,6 +968,15 @@ gate and failure routing.
    hardened deployment templates, independent recovery drill, and durable
    cross-process provider-operation fencing. External onboarding still requires
    real provider, marketplace, hosting, custody, review, and support operations.
+17. Tickets 048 through 058 exercise a persistent game's bounded conformance
+   profile and game-neutral authenticated view projection with a separate local
+   Usurper provider, then add a player-private equipment/potion economy,
+   configured combat-quaff parity, three level-one caster spells and their mana
+   lifecycle, the Assassin Backstab and Paladin Soul Strike combat branches,
+   passive Gnoll poison, the exact level-two, level-three, level-four, level-five, and level-six dungeon
+   bands and rejection loops, and seventeen inert signed screens without granting
+   production
+   registration, admission, shared-realm state, deployment, or publication.
 
 First-party games use the same public schemas and conformance suite intended
 for later publishers. They may have a higher catalog trust tier, but never a
@@ -940,7 +1012,7 @@ authority.
 | Trusted renderer and graphics profile | `crates/game-cartridge-renderer`; `client/qml/cartridge`; Ticket 016 | `scripts/test-game-cartridge-renderer.sh`; schema/action/resource rejection, keyboard/accessibility/fixed states, and constrained Core/Rich-2D measurements |
 | Separate-repository SDK/release | `crates/game-cartridge/src/sdk.rs`, `release.rs`, `lifecycle.rs`, `secure_store.rs`; Ticket 017 | `scripts/test-game-cartridge-sdk.sh`; deterministic export, clean-clone reproducibility, signed provenance/policy, lifecycle matrix, descriptor-relative import, rollback/race/permission rejection |
 | Public Provider SDK preview and negotiation | `crates/provider-sdk`; `crates/game-provider/src/broker.rs`, `registry.rs`; `docs/operators/provider-security.md`; Ticket 044 | `scripts/test-provider-sdk.sh`; `scripts/test-provider-conformance.sh`; exact package/inventory and two-clone release proof, compatibility downgrade/stripping denial, stale-material and aggregate-deadline races, strict network parsing, and exact historical duplicate recovery |
-| Public provider starter, conformance, and clean-room game | `crates/provider-starter`; `crates/provider-conformance`; `examples/provider-relay-forge`; Ticket 045 | `scripts/test-provider-developer-kit.sh`; `scripts/test-provider-starter-conformance.sh`; deterministic three-package export, private-dependency denial, two clean-clone builds, provider-side PostgreSQL persistence/restart, real-broker integration, exact TLS binding, fixed fifteen-case corpus, callback recovery, and replay |
+| Public provider starter, conformance, and clean-room game | `crates/provider-starter`; `crates/provider-conformance`; `examples/provider-relay-forge`; Tickets 045 and 048 | `scripts/test-provider-developer-kit.sh`; `scripts/test-provider-starter-conformance.sh`; deterministic three-package export, private-dependency denial, two clean-clone builds, provider-side PostgreSQL persistence/restart, real-broker integration, exact TLS binding, fixed fifteen-case corpus with bounded game profiles, callback recovery, and replay |
 | Reviewed provider sidecar and operations | `crates/game-provider/src/egress.rs`; `crates/server/src/provider_games.rs`; migration `0029`; `deploy/provider-sidecar`; `docs/operators/provider-deployment.md`; Ticket 046 | `scripts/test-provider-sidecar.sh`; `scripts/test-provider-authority-pilot.sh`; exact release/socket/TLS identity, hostile peer and ambient proxy denial, durable reservation/advisory fencing, crash/restart/reconcile, lifecycle races, separate database restore, templates, and signed receipt |
 | Provider security foundation | `crates/game-provider`; migration `0014_provider_security_foundation.sql`; `docs/operators/provider-security.md`; Ticket 018 | `scripts/test-provider-conformance.sh`; TLS and sender authentication, public-only pinned egress, grant/replay/key/quota/lease/audit, lifecycle, race, and failure tests |
 | Remote authority migration | Constitution §10; ADR-0002; migration `0015`; `crates/server/src/provider_games.rs`; Ticket 019 | `scripts/test-provider-authority-pilot.sh`; one durable gameplay owner, exact replay/reconciliation, callback projection, lifecycle, independent database and restore evidence |
