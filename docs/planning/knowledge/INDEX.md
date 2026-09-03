@@ -140,6 +140,19 @@ and in this register.
 | `PR-omarchy-gaming-system-preserve-legacy-guards-before-safe-arithmetic-001` | Translate the source branch guard before applying checked or saturating arithmetic; safer arithmetic must not make an originally skipped adjustment execute. | `aar/AAR-051-usurper-level-one-spellcasting-and-mana-loop.md` |
 | `PR-omarchy-gaming-system-separate-legacy-state-from-access-gates-001` | Preserve legacy stored flags independently from menu, class, phase, and capability gates unless the source explicitly couples them. | `aar/AAR-051-usurper-level-one-spellcasting-and-mana-loop.md` |
 | `PR-omarchy-gaming-system-preserve-discarded-legacy-rng-work-001` | Preserve source calculations whose values are discarded when they consume RNG or position later draws; observable deterministic order is behavior even when the intermediate value is unused. | `aar/AAR-053-usurper-gnoll-poisonous-bite.md` |
+| `PR-omarchy-gaming-system-resolve-cargo-artifacts-from-metadata-001` | A script that executes a Cargo-built binary must resolve the exact manifest's `target_directory` through structured `cargo metadata`, validate the path, and invoke the quoted resolved artifact instead of assuming `<repo>/target`. | `aar/AAR-059-usurper-level-seven-dungeon-band.md` |
+| `PR-omarchy-gaming-system-bind-control-enablement-across-loading-transitions-001` | Bind dynamically created interactive controls to their owning surface's current action authority, and test the disabled-to-enabled transition with a real click. | `aar/AAR-061-usurper-provider-backed-local-play.md` |
+| `PR-omarchy-gaming-system-place-development-qml-outside-production-inventory-001` | Put development-only QML harnesses under an excluded test/tool root and retain an exact production package-inventory gate. | `aar/AAR-061-usurper-provider-backed-local-play.md` |
+| `PR-omarchy-gaming-system-exercise-live-shell-across-provider-screen-transitions-001` | A provider-backed local-play smoke must cross multiple authenticated provider phase and screen transitions, not stop after the first confirmed mutation. | `aar/AAR-062-usurper-level-nine-dungeon-band.md` |
+| `PR-omarchy-gaming-system-render-one-phase-valid-command-per-visible-choice-001` | Render one phase-valid provider command for each visible game choice and reject duplicate visible button labels on every signed screen. | `aar/AAR-062-usurper-level-nine-dungeon-band.md` |
+| `PR-omarchy-gaming-system-reject-activation-autorepeat-across-plan-replacement-001` | Trusted interactive nodes must consume but ignore auto-repeat activation events, with a smoke proving the event cannot cross plan replacement. | `aar/AAR-062-usurper-level-nine-dungeon-band.md` |
+| `PR-omarchy-gaming-system-exercise-real-qml-input-lifecycle-001` | For an interactive QML regression, place the production control in a visible test window and synthesize real pointer/key input across enablement and plan replacement, asserting exact control and action cardinality. | `aar/AAR-065-usurper-local-play-control-regression.md` |
+| `PR-omarchy-gaming-system-count-instantiated-delegates-across-plan-replacement-001` | For data-driven QML controls, recursively assert actual trusted-delegate cardinality against the current plan before and after a realistic large replacement; model counts alone do not prove stale or duplicate visual delegates are absent. | `aar/AAR-067-usurper-level-thirteen-dungeon-band.md` |
+| `PR-omarchy-gaming-system-lock-provider-corpus-to-tested-phase-transitions-001` | Whenever a fixed provider corpus changes a band-specific combat path, traverse the same next-phase sequence in a focused provider test and assert phase/state before choosing the following corpus command. | `aar/AAR-070-usurper-level-sixteen-dungeon-band.md` |
+| `PR-omarchy-gaming-system-size-rejection-traces-against-valid-tail-risk-001` | When a bounded trace retains every draw from an unbounded rejection loop, quantify the implemented tail-exhaustion risk, test a deterministic long valid run near that risk, and prove the maximum retained serialized state remains inside its transport ceiling. | `aar/AAR-071-usurper-level-seventeen-dungeon-band.md` |
+| `PR-omarchy-gaming-system-bind-loader-row-to-loaded-item-geometry-001` | Heterogeneous asynchronous QML delegates in a positional layout must bind the delegate row to the loaded item's positive geometry and prove non-overlap after realistic plan replacement. | `aar/AAR-072-usurper-level-eighteen-dungeon-band.md` |
+| `PR-omarchy-gaming-system-preflight-fixture-port-and-identity-001` | Before a receipt gate starts an integration database, prove the listener is available and any reachable database is the intended disposable fixture; otherwise isolate the fixture without altering unrelated host services. | `aar/AAR-072-usurper-level-eighteen-dungeon-band.md` |
+| `PR-omarchy-gaming-system-require-real-compositor-output-for-preview-evidence-001` | Accept desktop preview visual or pointer evidence only from a process launched after the compositor exposes a real output; retire any process that reports placeholder output. | `aar/AAR-074-usurper-level-twenty-dungeon-band.md` |
 
 ## Register
 
@@ -530,3 +543,36 @@ and in this register.
 | `PR-omarchy-gaming-system-preserve-legacy-guards-before-safe-arithmetic-001` | rule | `aar/AAR-051-usurper-level-one-spellcasting-and-mana-loop.md` |
 | `PR-omarchy-gaming-system-separate-legacy-state-from-access-gates-001` | rule | `aar/AAR-051-usurper-level-one-spellcasting-and-mana-loop.md` |
 | `PR-omarchy-gaming-system-preserve-discarded-legacy-rng-work-001` | rule | `aar/AAR-053-usurper-gnoll-poisonous-bite.md` |
+| `BF-omarchy-gaming-system-cargo-target-directory-assumption-001` | failure | `aar/AAR-059-usurper-level-seven-dungeon-band.md` |
+| `PR-omarchy-gaming-system-resolve-cargo-artifacts-from-metadata-001` | rule | `aar/AAR-059-usurper-level-seven-dungeon-band.md` |
+| `BF-omarchy-gaming-system-qml-action-enablement-snapshot-001` | failure | `aar/AAR-061-usurper-provider-backed-local-play.md` |
+| `BF-omarchy-gaming-system-development-qml-production-inventory-leak-001` | failure | `aar/AAR-061-usurper-provider-backed-local-play.md` |
+| `PR-omarchy-gaming-system-bind-control-enablement-across-loading-transitions-001` | rule | `aar/AAR-061-usurper-provider-backed-local-play.md` |
+| `PR-omarchy-gaming-system-place-development-qml-outside-production-inventory-001` | rule | `aar/AAR-061-usurper-provider-backed-local-play.md` |
+| `AD-omarchy-gaming-system-usurper-provider-backed-local-play-001` | decision | `../../architecture/game-cartridges.md` |
+| `BF-omarchy-gaming-system-local-play-stale-provider-screen-001` | failure | `aar/AAR-062-usurper-level-nine-dungeon-band.md` |
+| `BF-omarchy-gaming-system-cartridge-command-navigation-twins-001` | failure | `aar/AAR-062-usurper-level-nine-dungeon-band.md` |
+| `BF-omarchy-gaming-system-trusted-action-autorepeat-plan-crossing-001` | failure | `aar/AAR-062-usurper-level-nine-dungeon-band.md` |
+| `PR-omarchy-gaming-system-exercise-live-shell-across-provider-screen-transitions-001` | rule | `aar/AAR-062-usurper-level-nine-dungeon-band.md` |
+| `PR-omarchy-gaming-system-render-one-phase-valid-command-per-visible-choice-001` | rule | `aar/AAR-062-usurper-level-nine-dungeon-band.md` |
+| `PR-omarchy-gaming-system-reject-activation-autorepeat-across-plan-replacement-001` | rule | `aar/AAR-062-usurper-level-nine-dungeon-band.md` |
+| `BF-omarchy-gaming-system-qml-direct-trigger-hit-testing-blind-spot-001` | failure | `aar/AAR-065-usurper-local-play-control-regression.md` |
+| `PR-omarchy-gaming-system-exercise-real-qml-input-lifecycle-001` | rule | `aar/AAR-065-usurper-local-play-control-regression.md` |
+| `PR-omarchy-gaming-system-count-instantiated-delegates-across-plan-replacement-001` | rule | `aar/AAR-067-usurper-level-thirteen-dungeon-band.md` |
+| `BF-omarchy-gaming-system-usurper-conformance-terminal-phase-drift-001` | failure | `aar/AAR-070-usurper-level-sixteen-dungeon-band.md` |
+| `PR-omarchy-gaming-system-lock-provider-corpus-to-tested-phase-transitions-001` | rule | `aar/AAR-070-usurper-level-sixteen-dungeon-band.md` |
+| `BF-omarchy-gaming-system-usurper-rng-trace-bound-exhaustion-001` | failure | `aar/AAR-071-usurper-level-seventeen-dungeon-band.md` |
+| `PR-omarchy-gaming-system-size-rejection-traces-against-valid-tail-risk-001` | rule | `aar/AAR-071-usurper-level-seventeen-dungeon-band.md` |
+| `BF-omarchy-gaming-system-implicit-qml-loader-row-overlap-001` | failure | `aar/AAR-072-usurper-level-eighteen-dungeon-band.md` |
+| `BF-omarchy-gaming-system-test-database-port-collision-001` | failure | `aar/AAR-072-usurper-level-eighteen-dungeon-band.md` |
+| `PR-omarchy-gaming-system-bind-loader-row-to-loaded-item-geometry-001` | rule | `aar/AAR-072-usurper-level-eighteen-dungeon-band.md` |
+| `PR-omarchy-gaming-system-preflight-fixture-port-and-identity-001` | rule | `aar/AAR-072-usurper-level-eighteen-dungeon-band.md` |
+| `BF-omarchy-gaming-system-local-play-capability-argv-exposure-001` | failure | `aar/AAR-074-usurper-level-twenty-dungeon-band.md` |
+| `BF-omarchy-gaming-system-placeholder-output-preview-evidence-001` | failure | `aar/AAR-074-usurper-level-twenty-dungeon-band.md` |
+| `PR-omarchy-gaming-system-require-real-compositor-output-for-preview-evidence-001` | rule | `aar/AAR-074-usurper-level-twenty-dungeon-band.md` |
+| `BF-omarchy-gaming-system-trusted-qml-native-manual-press-duplication-001` | failure | `aar/AAR-075-usurper-level-twenty-one-dungeon-band.md` |
+| `BF-omarchy-gaming-system-prelayout-accessibility-publication-001` | failure | `aar/AAR-075-usurper-level-twenty-one-dungeon-band.md` |
+| `BF-omarchy-gaming-system-contained-gate-egress-assumption-001` | failure | `aar/AAR-075-usurper-level-twenty-one-dungeon-band.md` |
+| `PR-omarchy-gaming-system-use-one-native-control-activation-path-001` | rule | `aar/AAR-075-usurper-level-twenty-one-dungeon-band.md` |
+| `PR-omarchy-gaming-system-retire-accessibility-before-plan-replacement-001` | rule | `aar/AAR-075-usurper-level-twenty-one-dungeon-band.md` |
+| `PR-omarchy-gaming-system-probe-contained-clean-room-egress-before-gate-001` | rule | `aar/AAR-075-usurper-level-twenty-one-dungeon-band.md` |

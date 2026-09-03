@@ -429,6 +429,59 @@ fn preview_cli_uses_production_verification_and_reports_isolation() {
     assert_eq!(receipt["database_required"], false);
     assert_eq!(receipt["platform_credentials_read"], false);
     assert!(output.path().join("render-plan.json").is_file());
+
+    let explicit_output = tempfile::tempdir().unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(explicit_output.path(), fs::Permissions::from_mode(0o700)).unwrap();
+    }
+    let explicit = Command::new(env!("CARGO_BIN_EXE_omarchygs-cartridge-preview"))
+        .args([
+            "prepare-screen",
+            archive.to_str().unwrap(),
+            public_key.to_str().unwrap(),
+            "rich2d",
+            "main",
+            view.to_str().unwrap(),
+            "ready",
+            preferences.to_str().unwrap(),
+            explicit_output.path().to_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        explicit.status.success(),
+        "{}",
+        String::from_utf8_lossy(&explicit.stdout)
+    );
+    let explicit_plan: serde_json::Value =
+        serde_json::from_slice(&fs::read(explicit_output.path().join("render-plan.json")).unwrap())
+            .unwrap();
+    assert_eq!(explicit_plan["title"], "Renderer Demo");
+
+    let unknown_output = tempfile::tempdir().unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(unknown_output.path(), fs::Permissions::from_mode(0o700)).unwrap();
+    }
+    let unknown = Command::new(env!("CARGO_BIN_EXE_omarchygs-cartridge-preview"))
+        .args([
+            "prepare-screen",
+            archive.to_str().unwrap(),
+            public_key.to_str().unwrap(),
+            "rich2d",
+            "missing-screen",
+            view.to_str().unwrap(),
+            "ready",
+            preferences.to_str().unwrap(),
+            unknown_output.path().to_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+    assert!(!unknown.status.success());
+    assert!(!unknown_output.path().join("render-plan.json").exists());
 }
 
 fn kind(node: &RenderedNode) -> &'static str {

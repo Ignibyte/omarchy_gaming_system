@@ -17,6 +17,8 @@ sources:
     resource: repo://client/qml/game/SignalSiegeSurface.qml
   - id: openwiki-source-da678ac479c336e5e6fc1d04
     resource: repo://client/qml/GameController.qml
+  - id: openwiki-source-29b3070f4c2872e1150fb5ea
+    resource: repo://client/qml/tests/cartridge/tst_trusted_cartridge_controls.qml
   - id: openwiki-source-bc8915a33f270bc28a270170
     resource: repo://crates/client-cartridge-runtime/src/service.rs
   - id: openwiki-source-f4e5b7474eca8daeac03aaab
@@ -61,8 +63,6 @@ sources:
     resource: repo://crates/marketplace-publisher/src/store.rs
   - id: openwiki-source-7495094e6001dc09ac9490e6
     resource: repo://crates/marketplace-trust/src/transport.rs
-  - id: openwiki-source-01584c5ba7d35b160c5de691
-    resource: repo://crates/provider-conformance/src/runner.rs
   - id: openwiki-source-e61b285fcaa489b63922f43f
     resource: repo://crates/server/src/app.rs
   - id: openwiki-source-7243a317e3224aa82795a5fc
@@ -103,7 +103,7 @@ sources:
     resource: repo://scripts/test-game-cartridge-spike.sh
   - id: openwiki-source-68106a790eb8acc94f8d3540
     resource: repo://scripts/test-game-cartridge.sh
-generated: {by: "codex", at: "2026-09-01T22:46:24.106Z"}
+generated: {by: "codex", at: "2026-09-03T15:38:08.451Z"}
 ---
 
 # Game Cartridges and portable provider direction
@@ -154,7 +154,7 @@ deterministic developer-kit release, and second clean-room game. Ticket 046
 adds the reviewed exact-release TLS-loopback sidecar, deployment templates,
 operator runbook, crash/restore drill, and provider-operation fencing. Real
 external-provider onboarding remains outside the repository. Tickets 048
-through 058 use those public seams for a separate local Usurper development
+through 075 use those public seams for a separate local Usurper development
 provider, including a persistent-game conformance profile, player-private
 equipment, shops and haggling, bank and chest transfers, healing-potion
 purchases, equipment-aware combat, configured quick-heal-then-attack turns,
@@ -180,7 +180,81 @@ and 42 HP. Rules v10 extends that path through Level 5, retains boundary record
 40 as source data, accepts only records 41 through 49, and initializes combat
 at strength 15, defence 7, and 45 HP. Rules v11 extends that path through Level
 6, retains boundary record 50 as source data, accepts only records 51 through
-59, and initializes combat at strength 16, defence 8, and 48 HP. These tickets add no
+59, and initializes combat at strength 16, defence 8, and 48 HP. Rules v12
+extends that path through Level 7, retains boundary record 60 as source data,
+accepts only records 61 through 69, and initializes combat at strength 17,
+defence 8, and 51 HP. Rules v13 extends that path through Level 8, retains
+boundary record 70 as source data, accepts only records 71 through 79, and
+initializes combat at strength 18, defence 9, and 54 HP. Rules v14 extends the
+same path through Level 9, retains boundary record 80, accepts only records 81
+through 89, and initializes combat at strength 19, defence 9, and 57 HP. Rules
+v15 extends the path through Level 10, retains boundary record 90, accepts
+only records 91 through 99, and initializes combat at strength 20, defence 10,
+and 60 HP. Rules v16 extends the path through Level 11, retains boundary record
+100 as normally unreachable source data, and accepts records 101 through 109 at
+strength 20, defence 10, and 60 HP. Rules v17 extends the path through Level 12,
+retains boundary record 110 as normally unreachable source data, and accepts
+records 111 through 119 at strength 20, defence 10, and 60 HP. Rules v18 extends
+the path through Level 13, retains record 120 as normally unreachable source
+data, and accepts records 121 through 129 at strength 20, defence 10, and 60 HP.
+Rules v19 extends the same path through Level 14, retains record 130 as normally
+unreachable source data, and accepts records 131 through 139 at strength 20,
+defence 10, and 60 HP. Rules v20 extends it through Level 15, retains record 140
+as normally unreachable source data, and accepts records 141 through 149 at
+strength 20, defence 10, and 60 HP. Rules v21 extends it through Level 16,
+retains record 150 as normally unreachable source data, and accepts records 151
+through 159 at strength 20, defence 10, and 60 HP. Rules v22 extends it through
+Level 17, retains record 160 as normally unreachable source data, and accepts
+records 161 through 169 at strength 21, defence 10, and 63 HP. Rules v23 extends
+it through Level 18, retains record 170 as normally unreachable source data,
+and accepts records 171 through 179 at strength 22, defence 11, and 66 HP.
+Rules v24 extends it through Level 19, retains record 180 as normally
+unreachable source data, and accepts records 181 through 189 at strength 23,
+defence 11, and 69 HP. Rules v25 extends it through Level 20, retains record
+190 as normally unreachable source data, and accepts records 191 through 199
+at strength 24, defence 12, and 72 HP. Rules v26 extends it through Level 21,
+retains record 200 as normally unreachable source data, and accepts records 201
+through 209 at strength 25, defence 12, and 75 HP. Its signed cartridge binds
+exactly one zero-payload Level 21 action through bounded `option_u`, and
+provider-backed QML advances one expected revision per accepted activation
+while duplicate-label and keyboard auto-repeat regressions remain enforced. The
+signed visible fixture preview
+renders fixed state and is
+explicitly non-interactive outside automated smoke, emitting only unconfirmed
+action requests. Ticket 061 adds a
+separate provider-backed local-play path: one in-memory development session
+invokes the real provider adapter, compiles each current signed screen through
+the production renderer, confirms provider mutations only after rendering
+succeeds, and follows the authenticated candidate view's next screen. The
+Usurper cartridge exposes one phase-valid provider command per visible choice
+instead of same-label navigation twins. Generic signed navigation remains
+separate from provider revision changes, and trusted controls ignore keyboard
+auto-repeat across asynchronous plan replacement.
+Ticket 065 adds real pointer and Return-event coverage around that surface,
+including disabled-to-enabled loading and exact delegate removal during plan
+replacement; it changes no action authority or provider contract. Ticket 067
+introduces recursive counting of the instantiated trusted-node tree, Ticket 068
+ratchets the replacement to sixteen controls followed by seventeen, Ticket 069
+ratchets it again from seventeen to eighteen, Ticket 070 ratchets it from
+eighteen to nineteen, and Ticket 071 ratchets it from nineteen to twenty
+without a stale, missing, or duplicate delegate. Ticket 072 ratchets the
+replacement from twenty to twenty-one, binds each heterogeneous Loader row to
+its loaded item's height, rejects zero-height or overlapping rows, and sends a
+real Return event once to every current control. Ticket 073 ratchets the
+replacement from twenty-one to twenty-two and hit-tests every current control
+through both the surface mouse path and Return-key path, requiring one action
+from each input. Ticket 074 ratchets the replacement from twenty-two to
+twenty-three and confirms seven provider-backed actions across six successive
+plan replacements while requiring one loaded node and one matching action at
+each step. Ticket 075 ratchets the replacement from twenty-three to twenty-four,
+requires an observable empty delegate turn before guarded rematerialization,
+waits for layout before exposing accessibility, and uses one native Button
+activation path while retaining one pointer and Return action per current
+control. Tickets 066 through 075 keep
+that proof around the Level 12, Level 13, Level 14, Level 15, Level 16, Level
+17, Level 18, Level 19, Level 20, and Level 21 choices and change no provider protocol,
+trusted QML vocabulary, or platform gameplay authority.
+These tickets add no
 production registration, catalog admission, deployment,
 publication, platform rule copy, protocol change, trusted QML node, or platform
 migration.
@@ -627,10 +701,47 @@ and requests at most 2,048 px in either dimension. Cartridge strings always use
 `Text.PlainText`.
 
 The preview CLI runs that same verifier/compiler over bounded regular files and
-requires an existing empty private output directory. It writes one read-only
-plan and read-only digest-named assets and reports that no provider, database,
-or platform credential was used. This is a same-user developer path, not the
-main-client launcher or a privileged multi-user sandbox.
+requires an existing empty private output directory. Its original `prepare`
+form compiles the signed entry screen; `prepare-screen` selects one explicit
+authenticated screen through the same compiler and fails without publishing a
+plan when that screen is unknown. Both write one read-only plan and read-only
+digest-named assets and report that no provider, database, or platform
+credential was used. This is a same-user developer path, not the main-client
+launcher or a privileged multi-user sandbox.
+
+Two visible development surfaces now have intentionally different semantics.
+`CartridgePreview.qml` is a signed-fixture viewer: ordinary controls are
+disabled, while its automated renderer smoke can exercise them and logs every
+request as unconfirmed. The non-packaged `CartridgeLocalPlay.qml` test harness
+reads only an absolute private startup-file path from process arguments, then
+exact-validates its strict loopback endpoint and random capability, current
+revision, screen, immutable asset generation, asset capability, and replacement
+render plan. It sends an exact current action with an empty payload while no
+request is in flight. The external launcher requires the startup document to
+be a bounded, owner-only, single-link regular file and keeps its bearer out of
+QML process arguments. It labels itself development-only and
+shows provider or navigation confirmation only after a successful response.
+Trusted node controls dynamically follow the parent surface's action-enabled
+state, so a plan instantiated during loading cannot remain accidentally inert
+after its caller confirms readiness. Each Loader delegate also derives its row
+height from the loaded trusted node so asynchronous heterogeneous delegates do
+not share or overlap an implicit row.
+The focused Qt Quick regression suite places the surface in a visible window,
+synthesizes a center mouse click and Return key, checks exactly one empty-payload
+action, and replaces a two-control plan with one while proving that both old
+delegates disappear. It also recursively counts the real delegate tree,
+replaces twenty-three controls with twenty-four, observes an empty delegate
+turn before guarded rematerialization, waits for layout before exposing
+accessibility, rejects zero-height or overlapping rows, and sends both a
+surface-level pointer hit and Return to every current native Button while
+requiring exactly one emitted action from each input.
+The provider-backed smoke separately crosses seven entry, creation, street,
+dungeon, and combat actions, requiring exactly one loaded node per plan node
+and exactly one node for each requested action before activation. A compositor
+preview created against Qt's placeholder output is invalid visual/input
+evidence and must be relaunched after a real output is exposed. Gate 12 resolves
+the test runner from the Qt 6 installation and runs this suite before the
+renderer fixtures and measurements.
 
 ## Authority and provider flow
 
@@ -840,7 +951,7 @@ source-path, credential, or platform-identity leakage:
 scripts/test-provider-developer-kit.sh
 ```
 
-Tickets 048 through 058 provide a development-only second consumer shape outside
+Tickets 048 through 075 provide a development-only second consumer shape outside
 the platform repository: a persistent Usurper provider supplies its bounded
 gameplay profile, runs the same fifteen cases twice across process restart, and
 renders seventeen signed inert screens through the production preview boundary.
@@ -853,12 +964,39 @@ Assassin Backstab and Paladin Soul Strike combat branches selected from current
 provider state through one inert action. Rules v6 adds passive Gnoll poison;
 rules v7 adds the exact bounded level-two dungeon band, rules v8 adds the exact
 bounded level-three band, rules v9 adds the exact bounded level-four band, and
-rules v10 adds the exact bounded level-five band. Rules v11 adds the exact
-bounded level-six band.
-All retain the original encounter rejection loop, level-aware combat, and inert
-level controls across selectable levels one through six. Level 6 retains
-boundary record 50 as source data, accepts records 51 through 59, and initializes
-combat at strength 16, defence 8, and 48 HP. That proof is not
+rules v10 adds the exact bounded level-five band, rules v11 adds the exact
+bounded level-six band, rules v12 adds the exact bounded level-seven band,
+rules v13 adds the exact bounded level-eight band, rules v14 adds the exact
+bounded level-nine band, rules v15 adds the exact bounded level-ten band, rules
+v16 adds the exact bounded level-eleven band, rules v17 adds the exact bounded
+level-twelve band, rules v18 adds the exact bounded level-thirteen band, rules
+v19 adds the exact bounded level-fourteen band, rules v20 adds the exact
+bounded level-fifteen band, rules v21 adds the exact bounded level-sixteen
+band, rules v22 adds the exact bounded level-seventeen band, rules v23 adds
+the exact bounded level-eighteen band, rules v24 adds the exact bounded
+level-nineteen band, rules v25 adds the exact bounded level-twenty band, and
+rules v26 adds the exact bounded level-twenty-one band.
+All retain the original
+encounter rejection loop, level-aware combat, and inert level controls across
+selectable levels one through twenty-one. Level 21 retains boundary record 200
+as normally unreachable source data, accepts records 201 through 209, and
+initializes combat at strength 25, defence 12, and 75 HP. Its one additional
+signed level choice uses bounded `option_u` without extending the platform
+renderer. The signed fixture preview sends only unconfirmed
+requests. A distinct local-play launcher now creates one in-memory real
+`UsurperGame` session, protects state/actions and immutable assets with separate
+ephemeral capabilities, and admits only actions in the current compiled plan.
+Each provider mutation chooses its screen from the authenticated candidate view
+and commits the candidate only after that screen compiles from the verified
+cartridge. The Usurper presentation renders one phase-valid command per visible
+choice; generic signed `navigate.*` actions remain revision-neutral. Trusted
+button and grid nodes ignore activation auto-repeat across plan replacement.
+The local shell reads its endpoint and bearer from a bounded owner-only startup
+file, and its smoke drives seven consecutive provider-confirmed actions while
+requiring one loaded node and one exact matching action at each screen.
+The complete provider
+conformance harness remains the PostgreSQL, TLS, replay, callback, and restart
+proof. None of these development paths is
 a production registration,
 server admission, marketplace release, deployment, shared-realm state, or
 additional platform gameplay authority.
@@ -968,14 +1106,18 @@ gate and failure routing.
    hardened deployment templates, independent recovery drill, and durable
    cross-process provider-operation fencing. External onboarding still requires
    real provider, marketplace, hosting, custody, review, and support operations.
-17. Tickets 048 through 058 exercise a persistent game's bounded conformance
+17. Tickets 048 through 075 exercise a persistent game's bounded conformance
    profile and game-neutral authenticated view projection with a separate local
    Usurper provider, then add a player-private equipment/potion economy,
    configured combat-quaff parity, three level-one caster spells and their mana
    lifecycle, the Assassin Backstab and Paladin Soul Strike combat branches,
-   passive Gnoll poison, the exact level-two, level-three, level-four, level-five, and level-six dungeon
-   bands and rejection loops, and seventeen inert signed screens without granting
-   production
+   passive Gnoll poison, the exact level-two, level-three, level-four,
+   level-five, level-six, level-seven, level-eight, level-nine, level-ten,
+   level-eleven, level-twelve, level-thirteen, level-fourteen, level-fifteen,
+   level-sixteen, level-seventeen, level-eighteen, level-nineteen,
+   level-twenty, and level-twenty-one dungeon bands
+   and rejection loops, seventeen inert signed screens, and the separate
+   provider-backed development local-play loop without granting production
    registration, admission, shared-realm state, deployment, or publication.
 
 First-party games use the same public schemas and conformance suite intended
@@ -1010,6 +1152,7 @@ authority.
 |---|---|---|
 | Package, signing, and capability contract | `crates/game-cartridge`; ADR-0002; `docs/architecture/game-cartridges.md`; Ticket 015 | `scripts/test-game-cartridge.sh`; deterministic fixtures, malformed package and resource-limit matrix, signature/capability/revocation checks |
 | Trusted renderer and graphics profile | `crates/game-cartridge-renderer`; `client/qml/cartridge`; Ticket 016 | `scripts/test-game-cartridge-renderer.sh`; schema/action/resource rejection, keyboard/accessibility/fixed states, and constrained Core/Rich-2D measurements |
+| Development fixture and provider-backed local play | preview CLI; `client/qml/cartridge/CartridgePreview.qml`; `client/qml/tests/CartridgeLocalPlay.qml`; `client/qml/tests/cartridge/tst_trusted_cartridge_controls.qml`; `TrustedCartridgeSurface.qml`; Tickets 061, 065, 067–075 | Default/explicit/unknown-screen renderer tests; ordinary fixture controls disabled; private startup-file and loopback/capability/envelope/current-action hostile cases; failed-render atomicity; seven provider-confirmed screen transitions; real pointer and Return input across enablement, an observable empty delegate turn, guarded rematerialization, layout-ready accessibility, and non-overlapping twenty-three-to-twenty-four native Button replacement; complete external provider suite; diff gate |
 | Separate-repository SDK/release | `crates/game-cartridge/src/sdk.rs`, `release.rs`, `lifecycle.rs`, `secure_store.rs`; Ticket 017 | `scripts/test-game-cartridge-sdk.sh`; deterministic export, clean-clone reproducibility, signed provenance/policy, lifecycle matrix, descriptor-relative import, rollback/race/permission rejection |
 | Public Provider SDK preview and negotiation | `crates/provider-sdk`; `crates/game-provider/src/broker.rs`, `registry.rs`; `docs/operators/provider-security.md`; Ticket 044 | `scripts/test-provider-sdk.sh`; `scripts/test-provider-conformance.sh`; exact package/inventory and two-clone release proof, compatibility downgrade/stripping denial, stale-material and aggregate-deadline races, strict network parsing, and exact historical duplicate recovery |
 | Public provider starter, conformance, and clean-room game | `crates/provider-starter`; `crates/provider-conformance`; `examples/provider-relay-forge`; Tickets 045 and 048 | `scripts/test-provider-developer-kit.sh`; `scripts/test-provider-starter-conformance.sh`; deterministic three-package export, private-dependency denial, two clean-clone builds, provider-side PostgreSQL persistence/restart, real-broker integration, exact TLS binding, fixed fifteen-case corpus with bounded game profiles, callback recovery, and replay |

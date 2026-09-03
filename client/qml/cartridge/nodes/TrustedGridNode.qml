@@ -51,9 +51,17 @@ Rectangle {
     Keys.onRightPressed: moveSelection(0, 1)
     Keys.onUpPressed: moveSelection(-1, 0)
     Keys.onDownPressed: moveSelection(1, 0)
-    Keys.onReturnPressed: triggerSelected()
-    Keys.onEnterPressed: triggerSelected()
-    Keys.onSpacePressed: triggerSelected()
+    Keys.onReturnPressed: function(event) { root.triggerFromKey(event) }
+    Keys.onEnterPressed: function(event) { root.triggerFromKey(event) }
+    Keys.onSpacePressed: function(event) { root.triggerFromKey(event) }
+
+    function triggerFromKey(event) {
+        event.accepted = true
+        if (event.isAutoRepeat || !actionsEnabled)
+            return false
+        triggerSelected()
+        return true
+    }
 
     Grid {
         anchors.fill: parent

@@ -4,14 +4,31 @@ This directory is the authoritative local ticket store.
 
 - Open tickets: [`open/`](open/)
 - Closed tickets: [`closed/`](closed/)
-- **Next ticket number: `059`**
+- **Next ticket number: `076`**
 
 ## Open queue
 
-No locally actionable ticket is open.
+- None.
 
 ## Closed
 
+- [`TICKET-075` — Usurper level-twenty-one dungeon band](closed/TICKET-075-usurper-level-twenty-one-dungeon-band.md)
+- [`TICKET-074` — Usurper level-twenty dungeon band](closed/TICKET-074-usurper-level-twenty-dungeon-band.md)
+- [`TICKET-073` — Usurper level-nineteen dungeon band](closed/TICKET-073-usurper-level-nineteen-dungeon-band.md)
+- [`TICKET-072` — Usurper level-eighteen dungeon band](closed/TICKET-072-usurper-level-eighteen-dungeon-band.md)
+- [`TICKET-071` — Usurper level-seventeen dungeon band](closed/TICKET-071-usurper-level-seventeen-dungeon-band.md)
+- [`TICKET-070` — Usurper level-sixteen dungeon band](closed/TICKET-070-usurper-level-sixteen-dungeon-band.md)
+- [`TICKET-069` — Usurper level-fifteen dungeon band](closed/TICKET-069-usurper-level-fifteen-dungeon-band.md)
+- [`TICKET-068` — Usurper level-fourteen dungeon band](closed/TICKET-068-usurper-level-fourteen-dungeon-band.md)
+- [`TICKET-067` — Usurper level-thirteen dungeon band](closed/TICKET-067-usurper-level-thirteen-dungeon-band.md)
+- [`TICKET-066` — Usurper level-twelve dungeon band](closed/TICKET-066-usurper-level-twelve-dungeon-band.md)
+- [`TICKET-065` — Usurper local-play control regression](closed/TICKET-065-usurper-local-play-control-regression.md)
+- [`TICKET-064` — Usurper level-eleven dungeon band](closed/TICKET-064-usurper-level-eleven-dungeon-band.md)
+- [`TICKET-063` — Usurper level-ten dungeon band](closed/TICKET-063-usurper-level-ten-dungeon-band.md)
+- [`TICKET-062` — Usurper level-nine dungeon band](closed/TICKET-062-usurper-level-nine-dungeon-band.md)
+- [`TICKET-061` — Usurper provider-backed local play](closed/TICKET-061-usurper-provider-backed-local-play.md)
+- [`TICKET-060` — Usurper level-eight dungeon band](closed/TICKET-060-usurper-level-eight-dungeon-band.md)
+- [`TICKET-059` — Usurper level-seven dungeon band](closed/TICKET-059-usurper-level-seven-dungeon-band.md)
 - [`TICKET-058` — Usurper level-six dungeon band](closed/TICKET-058-usurper-level-six-dungeon-band.md)
 - [`TICKET-057` — Usurper level-five dungeon band](closed/TICKET-057-usurper-level-five-dungeon-band.md)
 - [`TICKET-056` — Usurper level-four dungeon band](closed/TICKET-056-usurper-level-four-dungeon-band.md)

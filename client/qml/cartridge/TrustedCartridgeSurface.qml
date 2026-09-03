@@ -10,6 +10,8 @@ Rectangle {
     property var acceptedPlan: null
     property bool actionsEnabled: true
     property bool planAccepted: false
+    property bool nodesMaterialized: false
+    property int planGeneration: 0
     property string validationError: "No render plan loaded"
     property int instantiatedNodeCount: nodeRepeater.count
     signal actionRequested(string action, var payload)
@@ -173,6 +175,10 @@ Rectangle {
     }
 
     function acceptPlan(plan) {
+        accessibilityPublishTimer.stop()
+        planGeneration++
+        const acceptedGeneration = planGeneration
+        nodesMaterialized = false
         const error = validatePlan(plan)
         if (error !== "") {
             planAccepted = false
@@ -183,7 +189,32 @@ Rectangle {
         acceptedPlan = plan
         planAccepted = true
         validationError = ""
+        Qt.callLater(function() {
+            if (planAccepted && planGeneration === acceptedGeneration) {
+                nodesMaterialized = true
+                accessibilityPublishTimer.restart()
+            }
+        })
         return true
+    }
+
+    function publishButtonAccessibility(generation, remainingAttempts) {
+        if (!planAccepted || planGeneration !== generation)
+            return
+        if (loadedNodeCount() !== nodeRepeater.count) {
+            if (remainingAttempts > 0)
+                Qt.callLater(function() {
+                    publishButtonAccessibility(generation, remainingAttempts - 1)
+                })
+            return
+        }
+        for (let index = 0; index < nodeRepeater.count; index++) {
+            const loader = nodeRepeater.itemAt(index)
+            if (loader && loader.item
+                    && loader.modelData.kind === "button"
+                    && loader.item.accessibilityReady !== undefined)
+                loader.item.accessibilityReady = true
+        }
     }
 
     function componentForKind(kind) {
@@ -202,9 +233,48 @@ Rectangle {
         }
     }
 
+    function loadedNodeCount() {
+        let loaded = 0
+        for (let index = 0; index < nodeRepeater.count; index++) {
+            const loader = nodeRepeater.itemAt(index)
+            if (loader && loader.item)
+                loaded++
+        }
+        return loaded
+    }
+
+    function actionNodeCount(action) {
+        let matches = 0
+        for (let index = 0; index < nodeRepeater.count; index++) {
+            const loader = nodeRepeater.itemAt(index)
+            if (loader && loader.item && loader.modelData.action === action)
+                matches++
+        }
+        return matches
+    }
+
+    function triggerAction(action) {
+        if (actionNodeCount(action) !== 1)
+            return false
+        for (let index = 0; index < nodeRepeater.count; index++) {
+            const loader = nodeRepeater.itemAt(index)
+            if (loader && loader.item && loader.modelData.action === action) {
+                if (loader.modelData.kind === "button")
+                    loader.item.trigger()
+                else if (loader.modelData.kind === "grid")
+                    loader.item.triggerSelected()
+                else
+                    return false
+                return true
+            }
+        }
+        return false
+    }
+
     function smokeExercise() {
         let expected = 0
         let exercised = 0
+        let repeatsBlocked = 0
         let focusObserved = false
         for (let index = 0; index < nodeRepeater.count; index++) {
             const loader = nodeRepeater.itemAt(index)
@@ -215,17 +285,25 @@ Rectangle {
                 loader.item.forceActiveFocus()
                 focusObserved = focusObserved || loader.item.activeFocus
                 loader.item.moveSelection(0, 1)
+                if (!loader.item.triggerFromKey({"isAutoRepeat": true,
+                                                 "accepted": false}))
+                    repeatsBlocked++
                 loader.item.triggerSelected()
                 exercised++
             } else if (loader.modelData.kind === "button") {
                 expected++
                 loader.item.forceActiveFocus()
                 focusObserved = focusObserved || loader.item.activeFocus
+                if (!loader.item.triggerFromKey({"isAutoRepeat": true,
+                                                 "accepted": false}))
+                    repeatsBlocked++
                 loader.item.trigger()
                 exercised++
             }
         }
-        return {"expected": expected, "exercised": exercised, "focus_observed": focusObserved}
+        return {"expected": expected, "exercised": exercised,
+                "repeats_blocked": repeatsBlocked,
+                "focus_observed": focusObserved}
     }
 
     function focusInitial() {
@@ -251,6 +329,13 @@ Rectangle {
     Component { id: particleComponent; Nodes.TrustedParticleFieldNode {} }
     Component { id: audioComponent; Nodes.TrustedAudioCueNode {} }
     Component { id: placeholderComponent; Nodes.TrustedPlaceholderNode {} }
+
+    Timer {
+        id: accessibilityPublishTimer
+        interval: 50
+        repeat: false
+        onTriggered: root.publishButtonAccessibility(root.planGeneration, 4)
+    }
 
     Column {
         anchors.fill: parent
@@ -300,15 +385,18 @@ Rectangle {
 
                 Repeater {
                     id: nodeRepeater
-                    model: root.planAccepted && root.acceptedPlan.state === "ready"
+                    model: root.planAccepted && root.nodesMaterialized
+                           && root.acceptedPlan.state === "ready"
                         ? root.acceptedPlan.nodes : []
 
                     delegate: Loader {
                         id: nodeLoader
                         required property var modelData
                         width: nodeColumn.width
+                        height: item ? item.height : 0
                         sourceComponent: root.componentForKind(modelData.kind)
                         onLoaded: {
+                            item.objectName = "trusted-node-" + modelData.id
                             item.assetRoot = root.assetRoot
                             item.scaleFactor = root.acceptedPlan.preferences.scale
                             item.highContrast = root.acceptedPlan.preferences.high_contrast
@@ -316,7 +404,9 @@ Rectangle {
                             item.mutedAudio = root.acceptedPlan.preferences.muted_audio
                             item.nodeData = modelData
                             if (item.actionsEnabled !== undefined)
-                                item.actionsEnabled = root.actionsEnabled
+                                item.actionsEnabled = Qt.binding(function() {
+                                    return root.actionsEnabled
+                                })
                         }
 
                         Connections {

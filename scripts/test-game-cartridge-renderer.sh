@@ -15,7 +15,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-for ogs_command in base64 cargo cp mkdir ps python3 qml6 rg sed seq sleep stat tr; do
+for ogs_command in base64 cargo cp mkdir ps python3 qmake6 qml6 rg sed seq sleep stat tr; do
   command -v "$ogs_command" >/dev/null 2>&1 || {
     echo "required command is unavailable: $ogs_command" >&2
     exit 1
@@ -31,6 +31,15 @@ cd "$ogs_root"
 cargo test -p omarchygs-game-cartridge-renderer --all-targets
 cargo build -p omarchygs-game-cartridge --bin omarchygs-cartridge
 cargo build -p omarchygs-game-cartridge-renderer --bin omarchygs-cartridge-preview
+
+ogs_qt_bins="$(qmake6 -query QT_INSTALL_BINS)"
+ogs_qml_test_runner="$ogs_qt_bins/qmltestrunner"
+[[ -x "$ogs_qml_test_runner" ]] || {
+  echo "Qt Quick Test runner not found at $ogs_qml_test_runner" >&2
+  exit 1
+}
+QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \
+  "$ogs_qml_test_runner" -input "$ogs_root/client/qml/tests/cartridge" -o -,txt
 
 ogs_cartridge_bin="$ogs_root/target/debug/omarchygs-cartridge"
 ogs_preview_bin="$ogs_root/target/debug/omarchygs-cartridge-preview"
@@ -316,9 +325,9 @@ if match is None or float(match.group(1)) > 33.3:
     raise SystemExit(1)
 PY
   if [[ "$ogs_state" == "ready" ]]; then
-    rg --fixed-strings 'OGS_CARTRIDGE_INPUT_METRICS expected=2 exercised=2 focus=true' \
+    rg --fixed-strings 'OGS_CARTRIDGE_INPUT_METRICS expected=2 exercised=2 repeats_blocked=2 focus=true' \
       "$ogs_log" >/dev/null || {
-      echo "trusted cartridge QML did not prove input/focus behavior" >&2
+      echo "trusted cartridge QML did not prove input/focus/repeat behavior" >&2
       sed -n '1,240p' "$ogs_log" >&2
       return 1
     }

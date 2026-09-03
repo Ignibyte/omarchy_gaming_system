@@ -1,7 +1,8 @@
 import QtQuick
+import QtQuick.Controls
 import "../../components" as Components
 
-Rectangle {
+Button {
     id: root
 
     property var nodeData: ({"label": "", "action": "", "accessible_label": ""})
@@ -11,35 +12,40 @@ Rectangle {
     property bool reducedMotion: false
     property bool mutedAudio: false
     property bool actionsEnabled: true
+    property bool accessibilityReady: false
     signal actionRequested(string action, var payload)
 
     Components.OgsTheme { id: theme }
 
     width: parent ? parent.width : 640
     height: 46 * scaleFactor
-    radius: theme.radius
-    color: activeFocus || pointer.containsMouse
-           ? (highContrast ? theme.highContrastForeground : theme.surfaceHover)
-           : (highContrast ? theme.highContrastBackground : theme.surfaceRaised)
-    border.color: highContrast ? theme.highContrastForeground : theme.warning
-    border.width: activeFocus ? theme.focusWidth : theme.borderWidth
+    text: nodeData.label
     activeFocusOnTab: true
+    focusPolicy: Qt.StrongFocus
+    hoverEnabled: true
+    enabled: actionsEnabled
     opacity: actionsEnabled ? 1 : 0.6
-    Accessible.role: Accessible.Button
     Accessible.name: nodeData.accessible_label
-    Accessible.focused: activeFocus
-    Accessible.onPressAction: root.trigger()
-    Keys.onReturnPressed: root.trigger()
-    Keys.onEnterPressed: root.trigger()
-    Keys.onSpacePressed: root.trigger()
+    Accessible.ignored: !accessibilityReady
+    Keys.onReturnPressed: function(event) { root.triggerFromKey(event) }
+    Keys.onEnterPressed: function(event) { root.triggerFromKey(event) }
+    Keys.onSpacePressed: function(event) { root.triggerFromKey(event) }
+    onClicked: root.trigger()
 
     function trigger() {
         if (actionsEnabled)
             actionRequested(nodeData.action, {})
     }
 
-    Text {
-        anchors.centerIn: parent
+    function triggerFromKey(event) {
+        event.accepted = true
+        if (event.isAutoRepeat || !actionsEnabled)
+            return false
+        trigger()
+        return true
+    }
+
+    contentItem: Text {
         text: root.nodeData.label
         textFormat: Text.PlainText
         color: root.highContrast
@@ -49,17 +55,20 @@ Rectangle {
         font.family: theme.fontFamily
         font.bold: true
         font.pixelSize: theme.controlSize * root.scaleFactor
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
     }
 
-    MouseArea {
-        id: pointer
-        anchors.fill: parent
-        hoverEnabled: true
-        enabled: root.actionsEnabled
-        onClicked: {
-            root.forceActiveFocus()
-            root.trigger()
-        }
+    background: Rectangle {
+        radius: theme.radius
+        color: root.activeFocus || root.hovered
+               ? (root.highContrast ? theme.highContrastForeground
+                                    : theme.surfaceHover)
+               : (root.highContrast ? theme.highContrastBackground
+                                    : theme.surfaceRaised)
+        border.color: root.highContrast ? theme.highContrastForeground
+                                        : theme.warning
+        border.width: root.activeFocus ? theme.focusWidth : theme.borderWidth
     }
 }

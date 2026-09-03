@@ -63,16 +63,24 @@ fn main() -> ExitCode {
 }
 
 fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), CliError> {
-    if arguments.len() != 8 || arguments[0] != "prepare" {
-        return Err(CliError::InvalidArguments);
-    }
+    let (screen_id, view_index) = match (
+        arguments.first().and_then(|value| value.to_str()),
+        arguments.len(),
+    ) {
+        (Some("prepare"), 8) => (None, 4),
+        (Some("prepare-screen"), 9) => (
+            Some(arguments[4].to_str().ok_or(CliError::InvalidArguments)?),
+            5,
+        ),
+        _ => return Err(CliError::InvalidArguments),
+    };
     let archive_path = PathBuf::from(&arguments[1]);
     let public_key_path = PathBuf::from(&arguments[2]);
     let profile = parse_profile(&arguments[3])?;
-    let view_path = PathBuf::from(&arguments[4]);
-    let state = parse_state(&arguments[5])?;
-    let preferences_path = PathBuf::from(&arguments[6]);
-    let output_path = PathBuf::from(&arguments[7]);
+    let view_path = PathBuf::from(&arguments[view_index]);
+    let state = parse_state(&arguments[view_index + 1])?;
+    let preferences_path = PathBuf::from(&arguments[view_index + 2]);
+    let output_path = PathBuf::from(&arguments[view_index + 3]);
 
     let key = read_public_key(&public_key_path)?;
     let host = match profile {
@@ -83,7 +91,7 @@ fn run(arguments: Vec<std::ffi::OsString>) -> Result<(), CliError> {
     let view = read_bounded_regular_file(&view_path, profile.limits().max_view_bytes as u64)?;
     let preferences_bytes = read_bounded_regular_file(&preferences_path, MAX_PREFERENCES_BYTES)?;
     let preferences: RendererPreferences = serde_json::from_slice(&preferences_bytes)?;
-    let prepared = compile_render_plan(&cartridge, None, &view, profile, preferences, state)?;
+    let prepared = compile_render_plan(&cartridge, screen_id, &view, profile, preferences, state)?;
     let receipt = write_prepared_preview(&prepared, &output_path)?;
     print_json(&receipt)?;
     Ok(())

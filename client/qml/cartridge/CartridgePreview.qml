@@ -10,7 +10,7 @@ Window {
     height: 600
     visible: true
     color: theme.background
-    title: "OmarchyGS Cartridge Preview"
+    title: "OmarchyGS Signed Fixture Preview — Non-interactive"
 
     property bool smokeTest: Qt.application.arguments.indexOf("--smoke-test") !== -1
     property int frames: 0
@@ -77,6 +77,7 @@ Window {
         id: surface
         anchors.fill: parent
         assetRoot: root.argument("--asset-root=")
+        actionsEnabled: root.smokeTest
         onActionRequested: function(action, payload) {
             root.actionRequests++
             console.log("OGS_CARTRIDGE_ACTION requested=" + action
@@ -91,8 +92,12 @@ Window {
         onTriggered: {
             const result = surface.smokeExercise()
             console.log("OGS_CARTRIDGE_INPUT_METRICS expected=" + result.expected
-                + " exercised=" + result.exercised + " focus=" + result.focus_observed)
-            if (result.expected !== result.exercised || !result.focus_observed)
+                + " exercised=" + result.exercised
+                + " repeats_blocked=" + result.repeats_blocked
+                + " focus=" + result.focus_observed)
+            if (result.expected !== result.exercised
+                    || result.expected !== result.repeats_blocked
+                    || !result.focus_observed)
                 Qt.exit(5)
             root.smokeExerciseComplete = true
         }
@@ -114,7 +119,7 @@ Window {
                         && surface.instantiatedNodeCount !== surface.acceptedPlan.nodes.length)
                     Qt.exit(3)
                 if (surface.acceptedPlan.state === "ready"
-                        && (!root.smokeExerciseComplete || root.actionRequests < 2))
+                        && (!root.smokeExerciseComplete || root.actionRequests < 1))
                     Qt.exit(5)
                 console.log("OGS_CARTRIDGE_RENDER_METRICS state=" + surface.acceptedPlan.state
                     + " nodes=" + surface.instantiatedNodeCount

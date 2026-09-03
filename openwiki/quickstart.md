@@ -5,6 +5,10 @@ openwiki_generated: true
 sources:
   - id: openwiki-source-0bb8016edf4f4744d3a09cf4
     resource: repo://bin/gate.sh
+  - id: openwiki-source-2bcdc046ce25b89194fc5af0
+    resource: repo://client/qml/cartridge/nodes/TrustedButtonNode.qml
+  - id: openwiki-source-c566a55d52a9744f7b26b7c4
+    resource: repo://client/qml/cartridge/TrustedCartridgeSurface.qml
   - id: openwiki-source-0196de8872a3fef5b0b350d3
     resource: repo://client/qml/CartridgeController.qml
   - id: openwiki-source-998b0f5a7b56d7475101b7a2
@@ -19,6 +23,8 @@ sources:
     resource: repo://client/qml/screens/SocialScreen.qml
   - id: openwiki-source-4f5334e859a4d83e2a196fcf
     resource: repo://client/qml/SocialController.qml
+  - id: openwiki-source-29b3070f4c2872e1150fb5ea
+    resource: repo://client/qml/tests/cartridge/tst_trusted_cartridge_controls.qml
   - id: openwiki-source-fc035ef77d2451c6e8138211
     resource: repo://client/qml/tests/fixture/tst_accessibility.qml
   - id: openwiki-source-3156e0b1532bb1d02a0118e1
@@ -101,7 +107,7 @@ sources:
     resource: repo://packaging/arch/PKGBUILD
   - id: openwiki-source-f30a02c87f1e4ddc4bad65fa
     resource: repo://scripts/check-qml-style.py
-generated: {by: "codex", at: "2026-09-01T22:46:24.106Z"}
+generated: {by: "codex", at: "2026-09-03T15:38:08.451Z"}
 ---
 
 # Omarchy Gaming System engineering quickstart
@@ -161,7 +167,7 @@ the authentication, replay, fault, callback, reconciliation, and receipt corpus
 does not change. Its `ProviderGame` seam receives only deterministic game state
 and payloads; it has no platform registration, broker, egress, admission,
 administration, or player-route authority. Relay Forge consumes those public
-packages as an independent clean-room proof. Tickets 048 through 058 additionally
+packages as an independent clean-room proof. Tickets 048 through 075 additionally
 exercise them with a separate local Usurper development provider. Its rules-v3
 slice adds player-private equipment, shops and haggling, bank and chest
 transfers, healing-potion purchases, equipment-aware combat, configured
@@ -187,7 +193,83 @@ path through Level 5, retains record 40 as source data while normally selecting
 records 41 through 49, and initializes the selected monster at strength 15,
 defence 7, and 45 HP. Rules v11 extends that path through Level 6, retains
 record 50 as source data while normally selecting records 51 through 59, and
-initializes the selected monster at strength 16, defence 8, and 48 HP. The existing provider
+initializes the selected monster at strength 16, defence 8, and 48 HP. Rules v12
+extends the same path through Level 7, retains record 60 as source data while
+normally selecting records 61 through 69, and initializes the selected monster
+at strength 17, defence 8, and 51 HP. Rules v13 extends the same path through
+Level 8, retains record 70 as source data while normally selecting records 71
+through 79, and initializes the selected monster at strength 18, defence 9, and
+54 HP. Rules v14 extends it through Level 9, retains record 80 as source data
+while normally selecting records 81 through 89, and initializes the selected
+monster at strength 19, defence 9, and 57 HP. Rules v15 extends the same path
+through Level 10, retains record 90 as source data while normally selecting
+records 91 through 99, and initializes the selected monster at strength 20,
+defence 10, and 60 HP. Rules v16 extends it through Level 11, retains record
+100 as normally unreachable source data, and selects records 101 through 109
+at strength 20, defence 10, and 60 HP. Rules v17 extends it through Level 12,
+retains record 110 as normally unreachable source data, and selects records 111
+through 119 at strength 20, defence 10, and 60 HP. Rules v18 extends it through
+Level 13, retains record 120 as normally unreachable source data, and selects
+records 121 through 129 at strength 20, defence 10, and 60 HP. Rules v19
+extends the same path through Level 14, retains record 130 as normally
+unreachable source data, and selects records 131 through 139 at strength 20,
+defence 10, and 60 HP. Rules v20 extends it through Level 15, retains record 140
+as normally unreachable source data, and selects records 141 through 149 at
+strength 20, defence 10, and 60 HP. Rules v21 extends it through Level 16,
+retains record 150 as normally unreachable source data, and selects records 151
+through 159 at strength 20, defence 10, and 60 HP. Rules v22 extends it through
+Level 17, retains record 160 as normally unreachable source data, and selects
+records 161 through 169 at strength 21, defence 10, and 63 HP. Rules v23 extends
+it through Level 18, retains record 170 as normally unreachable source data,
+and selects records 171 through 179 at strength 22, defence 11, and 66 HP.
+Rules v24 extends it through Level 19, retains record 180 as normally
+unreachable source data, and selects records 181 through 189 at strength 23,
+defence 11, and 69 HP. Rules v25 extends it through Level 20, retains record
+190 as normally unreachable source data, and selects records 191 through 199
+at strength 24, defence 12, and 72 HP. Rules v26 extends it through Level 21,
+retains record 200 as normally unreachable source data, and selects records
+201 through 209 at strength 25, defence 12, and 75 HP. Its signed cartridge
+appends exactly one zero-payload Level 21 choice through bounded `option_u`, and
+provider-backed QML advances one expected revision per accepted activation
+while duplicate-label rejection and keyboard auto-repeat suppression remain
+enforced. The signed visible fixture preview
+renders fixed state, disables ordinary input, and emits only unconfirmed action
+requests. A separate development-only local-play launcher now drives one
+in-memory real Usurper provider session through exact revision/screen/action
+requests and the same trusted render-plan surface. It passes QML only a private
+startup-file path, keeps the bearer out of process arguments, and confirms
+seven successive entry, creation, street, dungeon, and combat actions while
+requiring one loaded node and one exact action match at every step. Each visible
+Usurper choice is one phase-valid provider command;
+provider mutations follow the authenticated candidate view's next screen and
+are confirmed only after that signed screen renders successfully. Trusted
+buttons and grids ignore keyboard auto-repeat so one held activation cannot
+cross a plan replacement into the newly focused control.
+Ticket 065 adds a visible-window Qt Quick regression suite that sends actual
+mouse and Return input, proves a control loaded while disabled becomes active,
+checks one emitted action, and verifies that plan replacement removes the old
+delegates. Ticket 067 introduces recursive counting of the real delegate tree,
+Ticket 068 ratchets the replacement to sixteen controls followed by seventeen,
+Ticket 069 ratchets it again from seventeen to eighteen, Ticket 070 ratchets it
+from eighteen to nineteen, and Ticket 071 ratchets it from nineteen to twenty
+while requiring exactly one current delegate per node. Ticket 072 ratchets the
+replacement from twenty to twenty-one, requires every loaded node to own one
+explicit non-overlapping row, and sends a real Return event to each current
+control. Ticket 073 ratchets that replacement from twenty-one to twenty-two and
+hit-tests every current control through the surface mouse path and Return-key
+path, requiring exactly one emitted action from each input. Ticket 074 ratchets
+the replacement from twenty-two to twenty-three and retains the same one-action
+pointer/Return proof for every current control. Ticket 075 ratchets it from
+twenty-three to twenty-four, requires an observable empty delegate turn before
+guarded rematerialization, waits for layout before exposing accessibility, and
+uses one native Button activation path while retaining one pointer and Return
+action per current control. The renderer gate
+discovers and runs the matching Qt 6 test runner.
+Tickets 066 through 075 reuse that input boundary for the Level 12, Level 13,
+Level 14, Level 15, Level 16, Level 17, Level 18, Level 19, Level 20, and Level 21 actions
+without changing the provider protocol or trusted renderer vocabulary.
+The complete live provider conformance corpus remains the durable state,
+security, callback, and restart proof. The existing provider
 protocol, trusted QML vocabulary, and platform-owned state remain unchanged,
 and neither development game is
 thereby production-registered or admitted. The
@@ -335,13 +417,17 @@ developer-kit export, and independently built Relay Forge second-game proof.
 Ticket 046 adds the reviewed exact-release TLS-loopback sidecar, separate
 deployment and recovery templates/runbook, hostile-peer and independent-restore
 drill, and durable cross-process command/reconcile fencing. Tickets 048 through
-058 prove a persistent game's bounded profile and game-neutral authenticated
+075 prove a persistent game's bounded profile and game-neutral authenticated
 views with a separate local Usurper provider, then extend it to a player-private
 equipment/potion economy, configured combat-quaff parity, and signed
 seventeen-screen cartridge plus the source-linked level-one spell and mana
 loop, the source-linked Assassin Backstab and Paladin Soul Strike combat
 branches, passive Gnoll poison, and the bounded source-faithful level-two,
-level-three, level-four, level-five, and level-six dungeon bands. They add no platform rule copy, route,
+level-three, level-four, level-five, level-six, level-seven, level-eight,
+level-nine, level-ten, level-eleven, level-twelve, level-thirteen,
+level-fourteen, level-fifteen, level-sixteen, level-seventeen, level-eighteen,
+level-nineteen, level-twenty, and level-twenty-one dungeon bands.
+They add no platform rule copy, route,
 migration, registration, admission, deployment, or publication. Real external
 provider onboarding remains separate work. Ticket
 033 adds independently
@@ -403,7 +489,7 @@ roadmap or external work. The bounded custom path is not a general plugin loader
 | Change player reporting, account suspension, report disposition, invitation administration, operator audit, or platform restore | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `reports.rs`, `operator_admin.rs`, `bin/omarchygs-admin.rs`; migrations `0016`–`0017`; `docs/operators/operator-safety-and-recovery.md`; `docs/operators/private-alpha.md` | Report API and operator-domain PostgreSQL tests; real CLI test; recovery and private-alpha drills |
 | Change QML endpoint/profile selection, appearance/accessibility, account access, MFA sign-in, persona onboarding, social/inbox, game catalog, challenges, or gameplay | [Runtime foundation](runtime-foundation.md) and [Development and validation](development-and-validation.md) | `client/qml/Main.qml`, `ApiClient.qml`, `ServerProfiles.qml`, `OnboardingController.qml`, `SocialController.qml`, `GameController.qml`, `client/qml/components/`, `client/qml/screens/`, `client/qml/game/` | `scripts/check-qml-style.py`; `scripts/test-qml-onboarding.sh`; live QML smoke in `scripts/dev.sh --smoke-test` |
 | Change inbox, challenges, synchronization, or game behavior | [Runtime foundation](runtime-foundation.md) and [Product boundaries](product-boundaries.md) | `inboxes.rs`, `challenges.rs`, `sync.rs`, `games.rs`, `crates/game-runtime`, `crates/game-signal-siege`; migrations `0007`–`0013`; challenge, game, Signal Siege, inbox, and sync API tests | Participant privacy, relationship policy, exact-version state, lifecycle, expiry, transition and revision races, retry effects, cursor/reconnect, and PostgreSQL evidence |
-| Change cartridge packaging, trusted rendering, SDK portability, provider integration or sidecar operations, marketplace or operator-custom trust, synchronization, server admission, player acquisition, session pinning, historical recovery, signed-screen navigation, package staging, or trusted launch | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/provider-sdk`; `crates/provider-starter`; `crates/provider-conformance`; `examples/provider-relay-forge`; `crates/game-cartridge-renderer`; `crates/client-cartridge-runtime`; `crates/marketplace-trust`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `operator_custom.rs`; `session_cartridges.rs`; `marketplace_sync.rs`; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `deploy/provider-sidecar`; `client/qml/MarketplaceController.qml`; `CartridgeController.qml`; `GameController.qml`; `client/qml/cartridge`; migrations `0014`–`0015`, `0019`–`0024`, and `0029`; ADR-0002; Tickets 015–019, 032–038, and 044–058 | Cartridge/renderer/SDK/provider focused scripts, including `scripts/test-provider-sdk.sh`, `scripts/test-provider-developer-kit.sh`, `scripts/test-provider-starter-conformance.sh`, and `scripts/test-provider-sidecar.sh`; root-signed trust-channel test; marketplace/custom PostgreSQL lifecycle/admission/migration tests; hostile companion/QML contract tests; clean-clone Relay Forge and Door Legends proofs; sidecar containment/restore/operation-fence proof; native package smoke; threat/authority review and constitutional authority check |
+| Change cartridge packaging, trusted rendering, SDK portability, provider integration or sidecar operations, marketplace or operator-custom trust, synchronization, server admission, player acquisition, session pinning, historical recovery, signed-screen navigation, development local play, package staging, or trusted launch | [Game Cartridges](game-cartridges.md) and [Product boundaries](product-boundaries.md) | `crates/game-cartridge`; `crates/provider-sdk`; `crates/provider-starter`; `crates/provider-conformance`; `examples/provider-relay-forge`; `crates/game-cartridge-renderer`; `crates/client-cartridge-runtime`; `crates/marketplace-trust`; `crates/game-provider`; `crates/server/src/provider_games.rs`; `operator_custom.rs`; `session_cartridges.rs`; `marketplace_sync.rs`; `cartridge_catalog.rs`; `cartridge_distribution.rs`; `deploy/provider-sidecar`; `client/qml/MarketplaceController.qml`; `CartridgeController.qml`; `GameController.qml`; `client/qml/cartridge`; `client/qml/tests/CartridgeLocalPlay.qml`; `client/qml/tests/cartridge/tst_trusted_cartridge_controls.qml`; migrations `0014`–`0015`, `0019`–`0024`, and `0029`; ADR-0002; Tickets 015–019, 032–038, and 044–075 | Cartridge/renderer/SDK/provider focused scripts, including `scripts/test-provider-sdk.sh`, `scripts/test-provider-developer-kit.sh`, `scripts/test-provider-starter-conformance.sh`, and `scripts/test-provider-sidecar.sh`; root-signed trust-channel test; marketplace/custom PostgreSQL lifecycle/admission/migration tests; hostile companion/QML contract tests; private local startup-file checks and seven-action provider-backed trusted-QML confirmation; real pointer and Return input across a non-overlapping, accessibility-ready 23-to-24 control replacement; clean-clone Relay Forge and Door Legends proofs; sidecar containment/restore/operation-fence proof; native package smoke; threat/authority review and constitutional authority check |
 | Change static marketplace preparation, offline-root signing, immutable activation, local verification, or mirror probes | [Game Cartridges](game-cartridges.md) and [Development and validation](development-and-validation.md) | `crates/marketplace-publisher`; `docs/operators/marketplace-publication.md`; Ticket 037 | `scripts/test-marketplace-publication.sh`; exact-tree, network-less ceremony, mirror, rotation, rollback, security, and canonical diff-gate evidence |
 | Change owner-operated server, Provider SDK, or executable custom-content direction | [Product boundaries](product-boundaries.md) and [Game Cartridges](game-cartridges.md) | ADR-0003; `crates/provider-sdk`; `crates/provider-starter`; `crates/provider-conformance`; `docs/architecture/game-cartridges.md`; `docs/operators/owner-operated-servers.md`; `docs/planning/ROADMAP.md` | `scripts/test-provider-sdk.sh`; `scripts/test-provider-developer-kit.sh`; `scripts/test-provider-starter-conformance.sh`; current-versus-future audit; provenance/authority review; official-client containment |
 | Change the server-module WIT, fixed loader, host, custom import/custody, report observation, dispatch, typed intent, receipts/gaps, state, lifecycle, disclosure, restore, or containment | [Server modules](server-modules.md) and [Product boundaries](product-boundaries.md) | ADR-0004; `docs/architecture/server-modules.md`; `docs/operators/server-modules.md`; `crates/server-module-runtime`; `crates/server/src/server_modules.rs`; `server_module_custom.rs`; `server_discovery.rs`; trusted QML profile/shell surfaces; migrations `0025`–`0027`; `crates/server-module-spike`; Tickets 039–041 | `scripts/test-server-modules.sh`; focused PostgreSQL/operator/discovery/QML tests; restore drill; `scripts/test-server-module-spike.sh`; threat/authority review; canonical local diff gate |

@@ -489,11 +489,79 @@ cannot construct an OmarchyGS authentication or MFA prompt.
 
 The developer preview command verifies the real `.ogsc`, compiles the same
 production plan, and writes a canonical plan plus digest-named assets into an
-explicit empty `0700` directory. Its files are `0444`; it reads no platform
-credentials and has no database, provider, or network dependency. This is a
-same-user developer boundary. A future privileged or multi-user launcher still
-requires descriptor-relative directory containment and stronger process
-isolation.
+explicit empty `0700` directory. Its original `prepare` form selects the signed
+entry screen; `prepare-screen` selects one explicit authenticated screen and
+fails without publishing a plan for an unknown screen. Output files are `0444`;
+the command reads no platform credentials and has no database, provider, or
+network dependency.
+
+The visible `CartridgePreview.qml` is therefore a fixture renderer, not a game
+session. Its title identifies it as non-interactive, ordinary controls are
+disabled, and only the automated renderer smoke can exercise controls while
+logging requests as unconfirmed. Ticket 061 adds a separate, non-packaged
+`client/qml/tests/CartridgeLocalPlay.qml` development harness. It admits only a
+strict loopback endpoint plus a random capability read from an absolute private
+startup file, exact-validates every revision/screen/asset-generation/plan
+response, disables controls during each request, and sends only a current
+declared action with an empty payload. The launcher validates that startup
+document as one bounded, mode-`0600`, single-link regular file owned by the
+effective user and passes only its path to QML. Authenticated command-line
+`curl` calls read the capability from a private config, so the bearer and
+endpoint do not enter child process arguments. The
+trusted surface binds each loaded node's action enablement dynamically to its
+parent so loading-time disablement cannot leave controls inert after a confirmed
+response. Each heterogeneous Loader delegate also derives its row height from
+the loaded trusted node so asynchronous instantiation cannot collapse multiple
+controls into one implicit row.
+
+Ticket 065 adds a focused Qt Quick regression suite around that development
+surface. It places the trusted surface in an explicit visible window, loads a
+control while actions are disabled, proves a real center mouse click works
+after enablement, sends a real Return event, and replaces a two-control plan
+with one while asserting both old delegates disappear and exactly one current
+empty-payload action is emitted. Ticket 067 additionally introduced recursive
+counting of the instantiated trusted-node tree, Ticket 068 ratchets the
+large-screen replacement from sixteen controls to seventeen, Ticket 069
+ratchets it from seventeen to eighteen, Ticket 070 ratchets it from eighteen
+to nineteen, and Ticket 071 ratchets it from nineteen to twenty so stale,
+missing, or duplicate delegates fail directly at the current dungeon
+cardinality. Ticket 072 ratchets it from twenty to twenty-one, rejects
+zero-height or overlapping rows after layout settles, and sends one real Return
+event to every current control. Ticket 073 ratchets it from twenty-one to
+twenty-two and hit-tests every current control through both the surface mouse
+path and Return-key path, requiring exactly one action from each input. Ticket
+074 ratchets the replacement from twenty-two to twenty-three, exposes bounded
+loaded-node and exact-action counts, and drives seven provider-confirmed
+actions across entry, race, class, street, dungeon, and combat plan
+replacements. Ticket 075 ratchets the replacement from twenty-three to
+twenty-four and closes a live accessibility/input defect: each accepted plan
+first retires the prior delegate model for one guarded event-loop turn, then
+publishes the newly laid-out buttons after a short polish interval. Each
+control is now one native Qt Quick Controls `Button` with one native
+accessibility press action instead of custom native/manual press semantics.
+The regression waits for every current control to become accessibility-ready,
+rejects overlap, and activates each one exactly once by both real pointer and
+Return input. The
+renderer gate resolves the matching Qt 6 test runner through `qmake6`; direct
+`trigger()` calls remain narrow signal tests and are not accepted as
+player-input evidence.
+
+Tickets 066 through 075 reuse that exact input lifecycle for the additional
+signed Usurper Level 12, Level 13, Level 14, Level 15, Level 16, Level 17,
+Level 18, Level 19, Level 20, and Level 21 actions. The external game widens only its bounded data
+view with `option_l`, `option_m`, `option_n`, `option_o`, `option_p`,
+`option_q`, `option_r`, `option_s`, `option_t`, and `option_u`; the
+provider protocol, render-plan vocabulary, trusted QML nodes, and platform
+gameplay authority remain unchanged.
+
+Both are same-user development boundaries. A desktop preview is valid visual
+or input evidence only when Qt launches after the compositor exposes a real
+output; a process that reports a placeholder output while the desktop is
+locked must be retired and relaunched after unlock. The local-play service and its
+separate asset capability are supplied by the external game repository; they
+are not part of the production QML package, platform server, provider protocol,
+or admission system. A future privileged or multi-user launcher still requires
+descriptor-relative directory containment and stronger process isolation.
 
 ### Frontend option decision
 
@@ -863,22 +931,57 @@ keep guarded public DNS. The provider-to-platform callback uses a separately
 named production sidecar mode with the same exact DNS/port/TLS binding; the
 conformance escape hatch remains feature-gated and distinct.
 
-Tickets 047 through 058 exercise those public seams with a separate local
-Usurper v0.20e Rust development repository. Its current rules-v11 provider owns
+Tickets 047 through 075 exercise those public seams with a separate local
+Usurper v0.20e Rust development repository. Its current rules-v26 provider owns
 one deterministic player-private BBS day; equipment, shops, bank, chest,
 potions, and configured combat turns; three level-one caster spells; Assassin
 Backstab and Paladin Soul Strike; passive Gnoll poison; and bounded dungeon
-levels one through six. The level-two through level-six slices retain their
-exact source records and original rejection-loop RNG order, including normally
-unreachable boundary records 10, 20, 30, 40, and 50; normal selection accepts
-records 11–19, 21–29, 31–39, 41–49, and 51–59 respectively. Level 5 initializes
-its selected monster at strength 15, defence 7, and 45 HP; Level 6 initializes
-strength 16, defence 8, and 48 HP. Signed inert controls switch among all six
-levels and the existing combat uses the selected monster band. Its cartridge
-still has seventeen trusted-renderer screens. This proof does not register or
-admit Usurper in production, publish it, copy its rules or state into OmarchyGS,
-introduce shared-realm persistence, or grant it publisher QML or direct client
-authority.
+levels one through twenty-one. The level-two through level-twenty-one slices retain
+their exact source records and original rejection-loop RNG order, including
+normally unreachable boundary records 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
+110, 120, 130, 140, 150, 160, 170, 180, 190, and 200; normal selection accepts records 11–19, 21–29, 31–39,
+41–49, 51–59, 61–69, 71–79, 81–89, 91–99, 101–109, 111–119, 121–129,
+131–139, 141–149, 151–159, 161–169, 171–179, 181–189, 191–199, and 201–209 respectively.
+Level 6 initializes its selected monster at strength 16, defence 8, and 48 HP;
+Level 7 initializes strength 17, defence 8, and 51 HP; Level 8 initializes
+strength 18, defence 9, and 54 HP. Level 9 initializes strength 19, defence 9,
+and 57 HP. Levels 10 through 16 initialize strength 20, defence 10, and 60 HP.
+Level 17 initializes strength 21, defence 10, and 63 HP. Level 18 initializes
+strength 22, defence 11, and 66 HP. Level 19 initializes strength 23, defence
+11, and 69 HP. Level 20 initializes strength 24, defence 12, and 72 HP. Level
+21 initializes strength 25, defence 12, and 75 HP. Signed inert controls switch
+among all twenty-one levels and the
+existing combat
+uses the selected monster band. Each visible Usurper choice is one
+phase-valid provider command; the cartridge no longer pairs those commands
+with same-label, state-skipping navigation controls. Its cartridge still has
+seventeen trusted-renderer screens. The visible preview renders a fixed signed
+fixture and emits unconfirmed action requests without attaching a provider
+session.
+The distinct Ticket 061 launcher creates one in-memory real `UsurperGame`
+session and protects state/actions and immutable renderer assets with separate
+ephemeral capabilities. It admits only actions in the current compiled plan,
+binds expected provider revision and selected signed screen, keeps
+generic `navigate.*` screen changes outside provider mutation, derives every
+provider mutation's next screen from the authenticated candidate view, and
+publishes a cloned candidate state only after that screen compiles from the
+verified cartridge. Trusted button and grid nodes ignore keyboard auto-repeat
+events so an activation cannot cross an asynchronous plan replacement and
+invoke the newly focused control. A real-input regression suite independently
+checks pointer hit-testing, disabled-to-enabled action authority, Return
+activation, exact delegate cardinality across a non-overlapping
+twenty-three-to-twenty-four control plan replacement, one surface-level pointer
+hit and one Return activation per current control, stale-delegate retirement,
+layout-gated accessibility publication, and seven consecutive
+provider-confirmed screen/action transitions. Its random
+session capability reaches QML only through a validated private startup file;
+the smoke also rejects capability-bearing QML process arguments. Closing the
+shell discards the session; the
+complete live conformance run remains the TLS, replay, persistence, callback,
+reconciliation, and restart proof. These development paths do not register or
+admit Usurper in production, publish it, copy its rules or state into
+OmarchyGS, introduce shared-realm persistence, or grant it publisher QML or
+direct client authority.
 
 A co-located provider remains a separate OS process and identity with separate
 PostgreSQL state, credentials, writable paths, resource limits, lifecycle, and
